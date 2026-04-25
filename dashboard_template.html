@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERGO LLM-Sichtbarkeits-Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --ergo-red: #DC0028;
+    --ergo-dark: #282D37;
+    --ergo-light: #F4F4F4;
+    --ergo-accent: #00BFA5;
+  }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #F8F9FB; }
+  .ergo-red { color: var(--ergo-red); }
+  .bg-ergo-red { background-color: var(--ergo-red); }
+  .bg-ergo-dark { background-color: var(--ergo-dark); }
+  .border-ergo-red { border-color: var(--ergo-red); }
+  .tab-active { background-color: var(--ergo-red); color: white; border-color: var(--ergo-red); }
+  .tab-inactive { background-color: white; color: var(--ergo-dark); border-color: #E5E7EB; }
+  .tab-inactive:hover { background-color: #FFE5EB; border-color: var(--ergo-red); color: var(--ergo-red); }
+  .kpi-card { transition: transform 0.2s, box-shadow 0.2s; }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .heatmap-cell { transition: all 0.2s; cursor: pointer; }
+  .heatmap-cell:hover { transform: scale(1.05); z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+  .accordion-content.open { max-height: 2000px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #D1FAE5; color: #047857; }
+  .badge-yellow { background: #FEF3C7; color: #92400E; }
+  .badge-red { background: #FEE2E2; color: #B91C1C; }
+  .badge-blue { background: #DBEAFE; color: #1E40AF; }
+  .badge-gray { background: #E5E7EB; color: #374151; }
+  .scroll-x { overflow-x: auto; }
+  .scroll-x::-webkit-scrollbar { height: 6px; }
+  .scroll-x::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 3px; }
+  details summary { cursor: pointer; user-select: none; }
+  details summary::-webkit-details-marker { display: none; }
+  .chart-container { position: relative; height: 280px; }
+  .chart-container-lg { position: relative; height: 380px; }
+</style>
+</head>
+<body class="text-gray-800">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-ergo-dark text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="bg-ergo-red text-white font-bold text-2xl px-4 py-2 rounded">ERGO</div>
+      <div>
+        <h1 class="text-xl font-bold">LLM-Sichtbarkeits-Dashboard</h1>
+        <p class="text-sm text-gray-300">Content-Analyse · Wettbewerbsvergleich · GAP-Analyse</p>
+      </div>
+    </div>
+    <div class="text-right text-sm">
+      <div class="text-gray-300">Stand: 2026-04-25</div>
+      <div class="text-gray-400">Paul Höser · ERGO Marketing/Direktvertrieb</div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TAB NAV ===== -->
+<nav class="bg-white border-b shadow-sm sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-wrap gap-1 py-2 scroll-x" id="tabNav">
+      <button data-tab="overview" class="tab-btn tab-active px-4 py-2 text-sm font-semibold rounded border-2 transition">Übersicht</button>
+      <button data-tab="ergo" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">ERGO</button>
+      <button data-tab="allianz" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Allianz</button>
+      <button data-tab="huk" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">HUK-Coburg</button>
+      <button data-tab="axa" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">AXA</button>
+      <button data-tab="generali" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Generali</button>
+      <button data-tab="signal" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Signal Iduna</button>
+      <button data-tab="ruv" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">R+V</button>
+      <button data-tab="devk" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">DEVK</button>
+      <button data-tab="gap" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">GAP-Analyse</button>
+      <button data-tab="geo" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">LLM-Sichtbarkeit (GEO)</button>
+      <button data-tab="actions" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Handlungsempfehlungen</button>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+
+<!-- ===== TAB: OVERVIEW ===== -->
+<section data-content="overview" class="tab-content">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-ergo-red">
+      <div class="text-xs uppercase text-gray-500 font-semibold">Anbieter analysiert</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1">7 / 8</div>
+      <div class="text-xs text-gray-500 mt-1">DEVK noch offen</div>
+    </div>
+    <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-blue-500">
+      <div class="text-xs uppercase text-gray-500 font-semibold">URLs gesamt</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1">~9.000</div>
+      <div class="text-xs text-gray-500 mt-1">aus 7 Sitemaps</div>
+    </div>
+    <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-green-500">
+      <div class="text-xs uppercase text-gray-500 font-semibold">FAQ-Marktführer</div>
+      <div class="text-3xl font-bold text-ergo-red mt-1">ERGO</div>
+      <div class="text-xs text-gray-500 mt-1">158 FAQ-Seiten</div>
+    </div>
+    <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-yellow-500">
+      <div class="text-xs uppercase text-gray-500 font-semibold">Glossar-White-Space</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1">6 / 7</div>
+      <div class="text-xs text-gray-500 mt-1">haben kein Glossar</div>
+    </div>
+  </div>
+
+  <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
+    <span class="font-bold text-blue-900">Datenstand-Update 25.04.2026 (v3 KONSOLIDIERT):</span>
+    <span class="text-gray-700">Allianz wurde über 3 Entitäten konsolidiert: <b>allianz.de</b> (1.751) + <b>allianzdirect.de</b> (438, mit 180 Ratgeber + 50 FAQ) + <b>markt-und-kunde.de</b> (89). Neue Gesamtzahlen: 2.278 URLs, 275 Ratgeber, 64 FAQ. Die Allianz fragmentiert ihren Content über Subdomains/Töchter — für LLMs aber alles "Allianz". <b>Konsequenz für ERGO:</b> Der vermeintliche Ratgeber-Vorsprung schrumpft, FAQ-Marktführerschaft (158 vs. 64) bleibt aber bestehen.</span>
+  </div>
+
+  <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 mb-6 text-sm">
+    <span class="font-bold text-green-900">NEU: GEO-Daten integriert</span>
+    <span class="text-gray-700"> — Das parallel laufende GEO-Visibility-Projekt ist angebunden (Pipeline für ChatGPT, Gemini, Claude steht). Erste Test-Runs liegen vor, echte Live-Messungen folgen in 2–3 Wochen. Siehe Reiter <b>"LLM-Sichtbarkeit (GEO)"</b> für Share-of-Voice, Ranking und Pro-Produkt-Auswertung (Zahnzusatz, Sterbegeld, Risikoleben).</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-xl p-6 shadow">
+      <h3 class="text-lg font-bold text-ergo-dark mb-1">Gesamt-URLs pro Anbieter</h3>
+      <p class="text-xs text-gray-500 mb-3">Datenbasis: Sitemap-Analysen 2026-04</p>
+      <div class="chart-container"><canvas id="chartTotalUrls"></canvas></div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow">
+      <h3 class="text-lg font-bold text-ergo-dark mb-1">Content-Typen-Verteilung (Top 4 Anbieter)</h3>
+      <p class="text-xs text-gray-500 mb-3">Ratgeber · FAQ · Rechner · Presse</p>
+      <div class="chart-container"><canvas id="chartContentTypes"></canvas></div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-8">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Strategische Positionierung</h3>
+    <p class="text-xs text-gray-500 mb-4">Wer verfolgt welche Content-Strategie?</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="border rounded-lg p-4 bg-gradient-to-br from-blue-50 to-white">
+        <div class="badge badge-blue mb-2">SEO-First</div>
+        <h4 class="font-bold text-ergo-dark mb-1">Ratgeber-Dominiert</h4>
+        <p class="text-sm text-gray-600 mb-2">Massive Ratgeber-Investition als organischer Traffic-Treiber</p>
+        <ul class="text-xs text-gray-700 space-y-1">
+          <li><span class="font-bold">HUK-Coburg:</span> 693 URLs (83%)</li>
+          <li><span class="font-bold">Signal Iduna:</span> 182 URLs (32%)</li>
+        </ul>
+      </div>
+      <div class="border rounded-lg p-4 bg-gradient-to-br from-green-50 to-white">
+        <div class="badge badge-green mb-2">UX-First</div>
+        <h4 class="font-bold text-ergo-dark mb-1">Service-Fokussiert</h4>
+        <p class="text-sm text-gray-600 mb-2">Customer Journey & Self-Service als Content-Asset</p>
+        <ul class="text-xs text-gray-700 space-y-1">
+          <li><span class="font-bold">Generali:</span> 152 URLs (11%)</li>
+          <li><span class="font-bold">R+V:</span> ~150 URLs (~11%) + Rechner</li>
+        </ul>
+      </div>
+      <div class="border rounded-lg p-4 bg-gradient-to-br from-yellow-50 to-white">
+        <div class="badge badge-yellow mb-2">Brand-First</div>
+        <h4 class="font-bold text-ergo-dark mb-1">Authority/News</h4>
+        <p class="text-sm text-gray-600 mb-2">Pressearbeit & Corporate-Signals für Markenstärke</p>
+        <ul class="text-xs text-gray-700 space-y-1">
+          <li><span class="font-bold">Allianz:</span> 261 Presse + 42 Rechner</li>
+          <li><span class="font-bold">AXA:</span> 96 Presse + 24 Glossar</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-4 p-4 bg-red-50 border-l-4 border-ergo-red rounded">
+      <div class="font-bold text-ergo-dark">Wo steht ERGO?</div>
+      <p class="text-sm text-gray-700 mt-1">
+        ERGO verfolgt aktuell eine <span class="font-semibold">Hybrid-Strategie</span> mit starker FAQ-Basis (158, Marktführer)
+        und solider Ratgeber-Tiefe (489), aber wenigen Tools (7) und keinem systematischen Glossar.
+        <span class="font-semibold ergo-red">→ Größtes Potenzial: Glossar aufbauen + FAQ mit Schema-Markup absichern.</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Vergleich Content-Bereiche (Heatmap)</h3>
+    <p class="text-xs text-gray-500 mb-4">Grün = Marktführend, Gelb = Mittel, Rot = Schwach (NA = nicht analysiert)</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse" id="overviewMatrix"></table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TAB CONTAINER FÜR ANBIETER (per JS gefüllt) ===== -->
+<section data-content="ergo" class="tab-content hidden"></section>
+<section data-content="allianz" class="tab-content hidden"></section>
+<section data-content="huk" class="tab-content hidden"></section>
+<section data-content="axa" class="tab-content hidden"></section>
+<section data-content="generali" class="tab-content hidden"></section>
+<section data-content="signal" class="tab-content hidden"></section>
+<section data-content="ruv" class="tab-content hidden"></section>
+<section data-content="devk" class="tab-content hidden"></section>
+
+<!-- ===== TAB: GAP-ANALYSE ===== -->
+<section data-content="gap" class="tab-content hidden">
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h2 class="text-2xl font-bold text-ergo-dark mb-2">GAP-Analyse: ERGO vs. Wettbewerb</h2>
+    <p class="text-sm text-gray-600">Wo führt ERGO, wo ist Aufholbedarf? Daten aus den Content-Inventaren.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-xl p-6 shadow">
+      <h3 class="text-lg font-bold text-ergo-dark mb-3">ERGO vs. Ø Wettbewerb je Content-Bereich</h3>
+      <div class="chart-container-lg"><canvas id="chartGapRadar"></canvas></div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow">
+      <h3 class="text-lg font-bold text-ergo-dark mb-3">Delta zum Marktführer (je Bereich)</h3>
+      <div class="chart-container-lg"><canvas id="chartGapBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow">
+    <h3 class="text-lg font-bold text-ergo-dark mb-4">Detaillierte GAP-Tabelle</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-ergo-dark text-white">
+            <th class="text-left px-3 py-2">Content-Bereich</th>
+            <th class="text-right px-3 py-2">ERGO</th>
+            <th class="text-right px-3 py-2">Marktführer</th>
+            <th class="text-right px-3 py-2">Ø Wettbewerb</th>
+            <th class="text-right px-3 py-2">Delta z. Führer</th>
+            <th class="text-center px-3 py-2">Priorität</th>
+          </tr>
+        </thead>
+        <tbody id="gapTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+    <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-5">
+      <div class="text-xs uppercase font-semibold text-green-700">ERGO Stärken</div>
+      <ul class="mt-2 text-sm text-gray-700 space-y-1">
+        <li>✅ <span class="font-semibold">FAQ-Marktführer</span> (158 vs. Ø 14)</li>
+        <li>✅ <span class="font-semibold">Größte Sitemap</span> (2.064 URLs)</li>
+        <li>✅ <span class="font-semibold">Solide Ratgeber-Basis</span> (489 URLs)</li>
+        <li>✅ <span class="font-semibold">Breite Sparten-Abdeckung</span></li>
+      </ul>
+    </div>
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-5">
+      <div class="text-xs uppercase font-semibold text-yellow-700">Mittlerer Aufholbedarf</div>
+      <ul class="mt-2 text-sm text-gray-700 space-y-1">
+        <li>🟡 <span class="font-semibold">Ratgeber-Volumen</span>: HUK 693 vs. ERGO 489</li>
+        <li>🟡 <span class="font-semibold">Pressebereich</span>: Allianz 261, AXA 96</li>
+        <li>🟡 <span class="font-semibold">Service-Hub</span>: Generali/R+V führend</li>
+        <li>🟡 <span class="font-semibold">Sparten-Tiefe Tier/Rechtsschutz</span></li>
+      </ul>
+    </div>
+    <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-5">
+      <div class="text-xs uppercase font-semibold text-red-700">Hoher Handlungsbedarf</div>
+      <ul class="mt-2 text-sm text-gray-700 space-y-1">
+        <li>🔴 <span class="font-semibold">Rechner/Tools</span>: ERGO 7 vs. Allianz 42</li>
+        <li>🔴 <span class="font-semibold">Glossar/Lexikon</span>: keines vorhanden</li>
+        <li>🔴 <span class="font-semibold">Video-Content</span>: HUK pflegt 73 Videos</li>
+        <li>🔴 <span class="font-semibold">Schema.org-Markup</span> auf FAQ ausbauen</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TAB: GEO / LLM-SICHTBARKEIT ===== -->
+<section data-content="geo" class="tab-content hidden">
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="text-2xl font-bold text-ergo-dark mb-2">LLM-Sichtbarkeit (GEO-Projekt)</h2>
+        <p class="text-sm text-gray-600">Live-Daten aus dem parallel laufenden GEO-Visibility-Tool · Marken-Sichtbarkeit in ChatGPT, Gemini, Claude</p>
+      </div>
+      <div id="geoStatusBadge"></div>
+    </div>
+  </div>
+
+  <div id="geoDryRunWarning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-4 mb-6 text-sm">
+    <span class="font-bold text-yellow-800">⚠ Test-Daten (dry-run):</span>
+    <span class="text-gray-700">Das GEO-Tool ist eingerichtet und liefert Beispiel-Antworten zur Pipeline-Verifikation. Echte LLM-Messungen werden in den nächsten 2-3 Wochen aktiviert. Datenstruktur und Visualisierung sind aber bereits bereit, sobald die echten Runs vorliegen.</span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="geoKpiRow"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-xl p-6 shadow">
+      <h3 class="text-lg font-bold text-ergo-dark mb-1">Share of Voice — Gesamtmarkt</h3>
+      <p class="text-xs text-gray-500 mb-3">Anteil aller LLM-Nennungen (alle Produkte zusammen)</p>
+      <div class="chart-container"><canvas id="chartGeoSoV"></canvas></div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow">
+      <h3 class="text-lg font-bold text-ergo-dark mb-1">Avg. Rang in LLM-Antworten</h3>
+      <p class="text-xs text-gray-500 mb-3">Niedriger = besser; Position in Listen-Antworten</p>
+      <div class="chart-container"><canvas id="chartGeoRank"></canvas></div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Anbieter-Ranking gesamt (über alle Produkte und LLMs)</h3>
+    <table class="w-full text-sm" id="geoRankingTable"></table>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Pro-Produkt-Sicht</h3>
+    <p class="text-xs text-gray-500 mb-4">Wie ERGO und Wettbewerber bei den 3 getesteten Produkten in Claude und Gemini abschneiden</p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4" id="geoProductCards"></div>
+  </div>
+
+  <!-- ===== SENTIMENT-ANALYSE ===== -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-3">
+      <div>
+        <h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>
+        <p class="text-xs text-gray-500">Wie wird die Marke in LLM-Antworten charakterisiert? Positiv (lobend), neutral (faktisch), kritisch (mit Einschränkungen)</p>
+      </div>
+      <span class="badge badge-yellow">Demo-Daten · echte Sentiments folgen mit GEO-Live-Runs</span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+      <div class="lg:col-span-2">
+        <div class="chart-container-lg"><canvas id="chartSentimentByBrand"></canvas></div>
+      </div>
+      <div>
+        <h4 class="font-semibold text-ergo-dark mb-2">Net Sentiment Score</h4>
+        <p class="text-xs text-gray-500 mb-3">Positiv % minus Kritisch %</p>
+        <table class="w-full text-sm" id="netSentimentTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Sentiment je Produkt (ERGO im Fokus)</h3>
+    <p class="text-xs text-gray-500 mb-3">Wie wird ERGO in den 3 getesteten Sparten charakterisiert?</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="sentimentByProduct"></div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Top-Erwähnungs-Themen</h3>
+    <p class="text-xs text-gray-500 mb-3">Wofür wird ERGO in LLM-Antworten besonders gelobt oder kritisiert?</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
+        <h4 class="font-bold text-green-800 mb-2">Positive Erwähnungen</h4>
+        <ul class="text-sm text-gray-700 space-y-1" id="sentimentPositiveTopics"></ul>
+      </div>
+      <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+        <h4 class="font-bold text-red-800 mb-2">Kritische Erwähnungen</h4>
+        <ul class="text-sm text-gray-700 space-y-1" id="sentimentNegativeTopics"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Executive Summary aus dem GEO-Tool</h3>
+    <p class="text-xs text-gray-500 mb-3">Automatisch generierte Zusammenfassung der LLM-Antworten</p>
+    <pre id="geoExecSummary" class="bg-gray-50 border rounded-lg p-4 text-sm text-gray-800 overflow-x-auto whitespace-pre-wrap font-mono"></pre>
+  </div>
+
+  <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
+    <span class="font-bold text-blue-900">Datenquelle:</span>
+    <span class="text-gray-700">GEO-Tool unter <code>C:\Users\hoese\OneDrive\Paul\ClaudeProjekte\GEO\Geo</code> · Snapshot aus <code>data/runs/latest.json</code> · Update durch Klick auf "Run workflow" im GitHub-Actions-Workflow oder manuell via <code>analyzer/main.py</code></span>
+  </div>
+</section>
+
+<!-- ===== TAB: HANDLUNGSEMPFEHLUNGEN ===== -->
+<section data-content="actions" class="tab-content hidden">
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h2 class="text-2xl font-bold text-ergo-dark mb-2">Handlungsempfehlungen</h2>
+    <p class="text-sm text-gray-600">Priorisierte Maßnahmen mit Impact/Effort-Bewertung. Klick auf Karte für Details.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="actionCards"></div>
+
+  <div class="bg-white rounded-xl p-6 shadow mt-8">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Roadmap (vereinfacht)</h3>
+    <div class="space-y-3 text-sm">
+      <div class="flex items-start gap-3">
+        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q2/26</div>
+        <div>FAQ-Schema-Markup ausrollen · Glossar A-Z konzipieren · LLM-Monitoring aufsetzen · Content-Audit Tier/Rechtsschutz</div>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q3/26</div>
+        <div>Glossar live (300+ Begriffe) · Autoren-Profile aufbauen · 5 neue Rechner · Video-Strategie pilotieren</div>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q4/26</div>
+        <div>Pressebereich ausbauen · Ratgeber-Vertiefung schwacher Sparten · Krankheitslexikon Tier/Kranken</div>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q1/27</div>
+        <div>Wirkungsmessung · 2. Iteration auf Basis GEO-Monitoring-Daten · Skalierung erfolgreicher Module</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="bg-ergo-dark text-white text-center py-6 mt-12">
+  <div class="text-sm">© 2026 ERGO LLM-Sichtbarkeits-Projekt · Erstellt mit Claude · Datenstand: 2026-04-25</div>
+</footer>
+
+<script>
+// ============= GEO SNAPSHOT (aus GEO-Projekt latest.json) =============
+const GEO_SNAPSHOT = {"run_id":"2026-04-22T20-19-50Z","started_at":"2026-04-22T20:19:50.536008+00:00","finished_at":"2026-04-22T20:19:50.931980+00:00","dry_run":true,"brand":"ERGO","competitors":["Allianz","AXA","Generali","HUK-Coburg"],"llms":["claude","gemini"],"totals_ranking":[{"name":"ERGO","mentions":34,"share_of_voice":0.25,"appearance_rate":1.0,"citation_rate":1.0,"avg_rank":2.0},{"name":"AXA","mentions":34,"share_of_voice":0.25,"appearance_rate":1.0,"citation_rate":1.0,"avg_rank":2.56},{"name":"Allianz","mentions":32,"share_of_voice":0.2353,"appearance_rate":1.0,"citation_rate":1.0,"avg_rank":2.67},{"name":"Generali","mentions":18,"share_of_voice":0.1324,"appearance_rate":1.0,"citation_rate":0.0,"avg_rank":3.22},{"name":"HUK-Coburg","mentions":18,"share_of_voice":0.1324,"appearance_rate":1.0,"citation_rate":0.0,"avg_rank":4.22}],"products":{"zahnzusatz":{"name":"Zahnzusatzversicherung","url":"https://www.ergo.de/de/Produkte/Gesundheit/Zahnzusatzversicherung","summary_by_llm":{"claude":{"prompts_total":3,"brands":[{"name":"AXA","mentions":6,"share_of_voice":0.2857,"appearance_rate":1.0,"avg_rank":1.67,"best_rank":1,"citation_rate":1.0},{"name":"ERGO","mentions":5,"share_of_voice":0.2381,"appearance_rate":1.0,"avg_rank":1.0,"best_rank":1,"citation_rate":1.0},{"name":"Allianz","mentions":4,"share_of_voice":0.1905,"appearance_rate":1.0,"avg_rank":5.0,"best_rank":5,"citation_rate":1.0},{"name":"Generali","mentions":3,"share_of_voice":0.1429,"appearance_rate":1.0,"avg_rank":2.67,"best_rank":2,"citation_rate":0.0},{"name":"HUK-Coburg","mentions":3,"share_of_voice":0.1429,"appearance_rate":1.0,"avg_rank":3.67,"best_rank":3,"citation_rate":0.0}]},"gemini":{"prompts_total":3,"brands":[{"name":"AXA","mentions":6,"share_of_voice":0.2857,"appearance_rate":1.0,"avg_rank":1.67,"best_rank":1,"citation_rate":1.0},{"name":"ERGO","mentions":5,"share_of_voice":0.2381,"appearance_rate":1.0,"avg_rank":1.0,"best_rank":1,"citation_rate":1.0},{"name":"Allianz","mentions":4,"share_of_voice":0.1905,"appearance_rate":1.0,"avg_rank":5.0,"best_rank":5,"citation_rate":1.0},{"name":"Generali","mentions":3,"share_of_voice":0.1429,"appearance_rate":1.0,"avg_rank":2.67,"best_rank":2,"citation_rate":0.0},{"name":"HUK-Coburg","mentions":3,"share_of_voice":0.1429,"appearance_rate":1.0,"avg_rank":3.67,"best_rank":3,"citation_rate":0.0}]}}},"sterbegeld":{"name":"Sterbegeldversicherung","url":"https://www.ergo.de/de/Produkte/Leben/Sterbegeldversicherung","summary_by_llm":{"claude":{"prompts_total":3,"brands":[{"name":"ERGO","mentions":6,"share_of_voice":0.25,"appearance_rate":1.0,"avg_rank":2.0,"best_rank":2,"citation_rate":1.0},{"name":"Allianz","mentions":6,"share_of_voice":0.25,"appearance_rate":1.0,"avg_rank":1.0,"best_rank":1,"citation_rate":1.0},{"name":"AXA","mentions":6,"share_of_voice":0.25,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":3,"citation_rate":1.0},{"name":"Generali","mentions":3,"share_of_voice":0.125,"appearance_rate":1.0,"avg_rank":4.0,"best_rank":4,"citation_rate":0.0},{"name":"HUK-Coburg","mentions":3,"share_of_voice":0.125,"appearance_rate":1.0,"avg_rank":5.0,"best_rank":5,"citation_rate":0.0}]},"gemini":{"prompts_total":3,"brands":[{"name":"ERGO","mentions":6,"share_of_voice":0.25,"appearance_rate":1.0,"avg_rank":2.0,"best_rank":2,"citation_rate":1.0},{"name":"Allianz","mentions":6,"share_of_voice":0.25,"appearance_rate":1.0,"avg_rank":1.0,"best_rank":1,"citation_rate":1.0},{"name":"AXA","mentions":6,"share_of_voice":0.25,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":3,"citation_rate":1.0},{"name":"Generali","mentions":3,"share_of_voice":0.125,"appearance_rate":1.0,"avg_rank":4.0,"best_rank":4,"citation_rate":0.0},{"name":"HUK-Coburg","mentions":3,"share_of_voice":0.125,"appearance_rate":1.0,"avg_rank":5.0,"best_rank":5,"citation_rate":0.0}]}}},"risikoleben":{"name":"Risikolebensversicherung","url":"https://www.ergo.de/de/Produkte/Leben/Risikolebensversicherung","summary_by_llm":{"claude":{"prompts_total":3,"brands":[{"name":"ERGO","mentions":6,"share_of_voice":0.2609,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":2,"citation_rate":1.0},{"name":"Allianz","mentions":6,"share_of_voice":0.2609,"appearance_rate":1.0,"avg_rank":2.0,"best_rank":1,"citation_rate":1.0},{"name":"AXA","mentions":5,"share_of_voice":0.2174,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":3,"citation_rate":1.0},{"name":"Generali","mentions":3,"share_of_voice":0.1304,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":1,"citation_rate":0.0},{"name":"HUK-Coburg","mentions":3,"share_of_voice":0.1304,"appearance_rate":1.0,"avg_rank":4.0,"best_rank":2,"citation_rate":0.0}]},"gemini":{"prompts_total":3,"brands":[{"name":"ERGO","mentions":6,"share_of_voice":0.2609,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":2,"citation_rate":1.0},{"name":"Allianz","mentions":6,"share_of_voice":0.2609,"appearance_rate":1.0,"avg_rank":2.0,"best_rank":1,"citation_rate":1.0},{"name":"AXA","mentions":5,"share_of_voice":0.2174,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":3,"citation_rate":1.0},{"name":"Generali","mentions":3,"share_of_voice":0.1304,"appearance_rate":1.0,"avg_rank":3.0,"best_rank":1,"citation_rate":0.0},{"name":"HUK-Coburg","mentions":3,"share_of_voice":0.1304,"appearance_rate":1.0,"avg_rank":4.0,"best_rank":2,"citation_rate":0.0}]}}}},"executive_summary":"Hier sind einige empfehlenswerte Anbieter:\n1. Generali — gute Tarife und solide Leistungen.\n2. HUK-Coburg — gute Tarife und solide Leistungen.\n3. DKV — gute Tarife und solide Leistungen.\n4. Allianz — gute Tarife und solide Leistungen.\n5. ERGO — gute Tarife und solide Leistungen.\n\nQuellen:\nhttps://www.allianz.de\nhttps://www.ergo.de\nhttps://www.axa.de"};
+const GEO_BRAND_COLORS = { "ERGO":"#DC0028","Allianz":"#003781","AXA":"#00008F","Generali":"#C8102E","HUK-Coburg":"#FFD500" };
+
+// Sentiment-Demo-Daten - werden ersetzt sobald GEO-Tool echte Sentiment-Werte liefert
+const SENTIMENT_DATA = {
+  is_demo: true,
+  by_brand: [
+    { name: "ERGO",       positiv: 60, neutral: 30, kritisch: 10 },
+    { name: "Allianz",    positiv: 65, neutral: 25, kritisch: 10 },
+    { name: "AXA",        positiv: 55, neutral: 30, kritisch: 15 },
+    { name: "Generali",   positiv: 50, neutral: 35, kritisch: 15 },
+    { name: "HUK-Coburg", positiv: 70, neutral: 25, kritisch:  5 }
+  ],
+  by_product_ergo: {
+    zahnzusatz:  { positiv: 55, neutral: 35, kritisch: 10, hint: "Solide Tarife genannt, Wartezeiten gelegentlich kritisiert" },
+    sterbegeld:  { positiv: 65, neutral: 30, kritisch:  5, hint: "Klare Marktposition, oft als Empfehlung genannt" },
+    risikoleben: { positiv: 60, neutral: 30, kritisch: 10, hint: "Faire Beiträge erwähnt, manchmal Vergleich zu Online-Anbietern" }
+  },
+  positive_topics: [
+    "Solide Tarife & faires Preis-Leistungs-Verhältnis",
+    "Etablierte Marke mit langer Marktpräsenz",
+    "Breites Produktportfolio über alle Sparten",
+    "Gute Beratungsqualität (oft erwähnt)",
+    "Vorteile bei Sterbegeldversicherung explizit gelobt"
+  ],
+  negative_topics: [
+    "Wartezeiten in Krankenversicherung als Schwäche",
+    "Tarifstruktur teils als komplex beschrieben",
+    "Online-Tools nicht immer als bestes empfohlen",
+    "Direktversicherer (z.B. HUK24) als günstiger genannt"
+  ]
+};
+
+// ============= DATEN =============
+const PROVIDERS = {
+  ergo: {
+    name: "ERGO", url: "ergo.de", color: "#DC0028",
+    total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: null, glossar: 0, b2b: 150, video: null, service: null,
+    strategy: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis",
+    strengths: ["FAQ-Marktführer mit 158 Seiten", "Größte Sitemap aller Anbieter (2.064 URLs)", "Breite Produktabdeckung über alle Kernsparten", "Eigener Rechtsportal-Bereich"],
+    weaknesses: ["Kein systematisches Glossar/Lexikon", "Nur 7 Rechner/Tools (Allianz: 42)", "Wenig erkennbare Pressepräsenz in Sitemap", "Sparten Tier (10) und Rechtsschutz (8) untergewichtet"],
+    sparten: { "Reise":133, "KFZ":113, "Kranken":36, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":8, "Tier":10, "Unfall":null },
+    llmRelevance: "MITTEL-HOCH: Starke FAQ-Basis ist LLM-Gold, sobald Schema.org ausgerollt ist",
+    quelle: "Sitemap 2026-04-24 (manueller Upload)"
+  },
+  allianz: {
+    name: "Allianz (konsolidiert)", url: "allianz.de + allianzdirect.de + markt-und-kunde.de", color: "#003781",
+    total: 2278, ratgeber: 275, faq: 64, rechner: 47, presse: 258, glossar: 0, b2b: 164, video: null, service: 79,
+    strategy: "Multi-Entitäten-Strategie (Konzern + Direct + B2B)",
+    strengths: ["Best-in-Class Rechner-Portfolio (47 Tools)", "Eigene Direktmarke allianzdirect.de mit 438 URLs (180 Ratgeber, 50 FAQ)", "B2B-Plattform markt-und-kunde.de (89 URLs, Yoast-SEO)", "Dominanter Pressebereich (258 URLs)"],
+    weaknesses: ["Content fragmentiert über 3 Domains – schwächt zentrale Markenwahrnehmung", "FAQ-Volumen 64 deutlich unter ERGO (158)", "Kein zentrales Versicherungs-Glossar", "Kein einheitlicher Magazin-Hub"],
+    sparten: { "Hausrat/Recht":279, "Kranken":263, "Leben/Vorsorge":247, "KFZ":217, "B2B":164, "Reise":37, "Rechtsschutz":null, "Tier":null, "Unfall":null },
+    llmRelevance: "SEHR HOCH: Multi-Domain-Portfolio mit Direct + B2B + Konzern. LLMs nehmen das als 'Allianz' wahr — Wettbewerbsvorteil!",
+    quelle: "Konsolidiert v3 2026-04-25: allianz.de + allianzdirect.de + markt-und-kunde.de"
+  },
+  huk: {
+    name: "HUK-Coburg", url: "huk.de", color: "#FFD500",
+    total: 1028, ratgeber: 693, faq: 7, rechner: 0, presse: 39, glossar: 0, b2b: 3, video: 73, service: 44,
+    strategy: "SEO-First: Ratgeber-Maschine",
+    strengths: ["Best-in-Class Ratgeber-Volumen (693, 83%)", "Eigene Video-Sitemap (73 Videos)", "Klarer Kranken+KFZ-Fokus (478+428 URLs)", "Massiver organischer Traffic-Treiber"],
+    weaknesses: ["Keine Rechner indexiert", "Nur 7 FAQ-Seiten", "Schwache Service-Seiten", "Kein Glossar"],
+    sparten: { "Kranken":478, "KFZ":428, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
+    llmRelevance: "SEHR HOCH: Großes Ratgeber-Volumen = starkes Trainings-Signal für LLMs",
+    quelle: "Sitemap 2026-04-25 (WebFetch)"
+  },
+  axa: {
+    name: "AXA", url: "axa.de", color: "#00008F",
+    total: 782, ratgeber: 21, faq: null, rechner: 2, presse: 96, glossar: 24, b2b: null, video: null, service: 26,
+    strategy: "Brand/News-First mit Glossar-Differenzierung",
+    strengths: ["Einziger Anbieter mit Glossar (24 URLs)", "Starker Newsroom (96 Presse-URLs, 12%)", "Haftpflicht-Tiefe (106 URLs)"],
+    weaknesses: ["Sehr wenig Ratgeber (21 URLs, nur 3%)", "77% der Sitemap sind Admin-Seiten", "Schwache Service-Präsenz", "Insgesamt SEO-schwach"],
+    sparten: { "Haftpflicht":106, "KFZ":null, "Kranken":null, "Leben":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
+    llmRelevance: "MITTEL: Glossar-Asset stark, Ratgeber-Schwäche limitiert Reichweite",
+    quelle: "Sitemap 2026-04-25 (WebFetch mit Custom User-Agent)"
+  },
+  generali: {
+    name: "Generali", url: "generali.de", color: "#C8102E",
+    total: 1379, ratgeber: 75, faq: 29, rechner: 1, presse: 16, glossar: 0, b2b: 3, video: null, service: 152,
+    strategy: "UX-First: Service- und FAQ-orientiert",
+    strengths: ["Größte FAQ-Datenbank nach ERGO (29)", "Top-Service-Hub (152 URLs)", "Aktives Magazin (75 URLs)", "Ausgewogene Sparten-Verteilung"],
+    weaknesses: ["Nur 1 Rechner indexiert", "Kein Glossar", "Kleines Ratgeber-Volumen", "Wenig Presse"],
+    sparten: { "KFZ":265, "Kranken":203, "Haftpflicht":196, "Leben":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
+    llmRelevance: "MITTEL: FAQ-Dichte hilft bei präzisen Prompts",
+    quelle: "Sitemap 2026-04-25 (WebFetch)"
+  },
+  signal: {
+    name: "Signal Iduna", url: "signal-iduna.de", color: "#005CA9",
+    total: 576, ratgeber: 182, faq: 1, rechner: 0, presse: 10, glossar: 0, b2b: null, video: null, service: 54,
+    strategy: "Balanced Hybrid: Ratgeber + Service",
+    strengths: ["Solide Ratgeber-Quote (32%)", "Nischen-Produkte (Pedelec, Krankenvoll)", "Strukturierte Service-Navigation"],
+    weaknesses: ["Kleines Gesamtvolumen (576)", "Keine Rechner indexiert", "Minimal Presse", "Keine FAQ erkennbar"],
+    sparten: { "Kranken":61, "KFZ":null, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
+    llmRelevance: "MITTEL: Ratgeber-Anteil OK, aber kleines Gesamtvolumen",
+    quelle: "Sitemap 2026-04-25 (WebFetch mit Custom User-Agent)"
+  },
+  ruv: {
+    name: "R+V", url: "ruv.de", color: "#FFCD00",
+    total: 1350, ratgeber: 215, faq: null, rechner: 3, presse: 122, glossar: 0, b2b: null, video: null, service: 154,
+    strategy: "Hybrid mit Altersvorsorge-Fokus & Rechner-Vorteil",
+    strengths: ["Einziger mit indexierten Rechnern (KFZ, Hausrat, Rentenlücke)", "Altersvorsorge-Hub als USP", "Aktiver Newsroom + Blog 'bunte Seiten'", "Studie 'Ängste der Deutschen' als Authority-Signal"],
+    weaknesses: ["Keine offizielle Sitemap (HTTP 401)", "Daten nur via Stichprobe (~80% Coverage)", "Kein Glossar", "FAQ schwer messbar"],
+    sparten: { "KFZ":275, "Kranken":null, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
+    llmRelevance: "HOCH durch Studien-Authority + Rechner-Conversion-Signal",
+    quelle: "WebSearch-Stichprobe 2026-04-25 (geschätzte Werte)"
+  },
+  devk: {
+    name: "DEVK", url: "devk.de", color: "#009A3D",
+    total: null, ratgeber: null, faq: null, rechner: null, presse: null, glossar: null, b2b: null, video: null, service: null,
+    strategy: "noch nicht analysiert",
+    strengths: ["–"],
+    weaknesses: ["Noch keine Daten verfügbar – nächster Scraping-Lauf"],
+    sparten: {},
+    llmRelevance: "tbd",
+    quelle: "noch nicht gescraped"
+  }
+};
+
+const ACTIONS = [
+  { id:1, title:"FAQPage-Schema-Markup auf alle FAQ-Seiten", category:"Strukt. Daten", impact:5, effort:2,
+    why:"ERGO hat 158 FAQ-Seiten – ohne Schema-Markup verschenken wir den größten LLM-Hebel. Mit Markup explodiert die Wahrscheinlichkeit, in ChatGPT/Gemini-Antworten zitiert zu werden.",
+    how:"Technische Implementierung im CMS, JSON-LD pro FAQ-Seite, Rich Results Test je Stichprobe", horizon:"Q2 2026" },
+  { id:2, title:"Versicherungs-Glossar A-Z aufbauen (300+ Begriffe)", category:"Themenabdeckung", impact:5, effort:3,
+    why:"Niemand der Wettbewerber hat ein systematisches Glossar (außer AXA mit 24 Einträgen). White Space, in dem ERGO dominieren kann.",
+    how:"Begriffsliste aus FAQ + Ratgeber extrahieren, Definitionen kuratieren, Schema-DefinedTerm einsetzen", horizon:"Q2-Q3 2026" },
+  { id:3, title:"Autoren-Profile & E-E-A-T-Signale etablieren", category:"E-E-A-T", impact:4, effort:3,
+    why:"E-E-A-T ist das stärkste Vertrauenssignal für LLMs. Autoren mit Qualifikationen, Foto, Vita = mehr Zitierwahrscheinlichkeit.",
+    how:"Autoren-Hub auf ergo.de, Autor pro Ratgeber-Artikel, schema:Person mit Qualifikationen", horizon:"Q3 2026" },
+  { id:4, title:"Rechner-Portfolio von 7 auf 25+ ausbauen", category:"Tools", impact:4, effort:4,
+    why:"Allianz hat 42 Rechner, ERGO nur 7. Rechner werden in AI-Suche prominent zitiert und liefern Conversion-Signale.",
+    how:"KFZ, Hausrat, Rentenlücke, BU, Risikolebens, Auslandskranken-Rechner mit kurzen URL-Pfaden + Schema-WebApplication", horizon:"Q3-Q4 2026" },
+  { id:5, title:"Krankheitslexikon für Tier- und Krankenversicherung", category:"Themenabdeckung", impact:4, effort:3,
+    why:"Allianz hat 60+ Tier-Krankheitsseiten. Strukturiertes Lexikon = LLM-Magnet bei Symptom-Anfragen.",
+    how:"60-100 Krankheitsseiten je Tier/Mensch, Symptome → Versicherungsleistung, Schema:MedicalCondition", horizon:"Q4 2026" },
+  { id:6, title:"Pressebereich für Authority-Signale stärken", category:"E-E-A-T", impact:3, effort:3,
+    why:"Allianz: 261 Presse-URLs, AXA: 96. ERGO Pressepräsenz ist in Sitemap kaum sichtbar – Auswirkung auf LLM-Vertrauen.",
+    how:"Presse-Hub mit Pressemitteilungen, Studien, Statements; Verlinkung mit Ratgeber-Hub", horizon:"Q3 2026" },
+  { id:7, title:"Content-Tiefe schwacher Sparten ausbauen (Tier, Rechtsschutz)", category:"Themenabdeckung", impact:4, effort:4,
+    why:"Tier nur 10 URLs, Rechtsschutz nur 8 – Wettbewerber dominieren hier mit Faktor 5-10x.",
+    how:"Pro Sparte: 30+ Ratgeber, FAQ-Cluster, Schaden-Beispiele, Rechtsfall-Datenbank", horizon:"Q4 2026" },
+  { id:8, title:"Monatliches LLM-Monitoring als Scheduled Task", category:"Operations", impact:5, effort:2,
+    why:"Ohne kontinuierliches Tracking verpassen wir Veränderungen in Prompt-Antworten und Wettbewerber-Bewegungen.",
+    how:"Scheduled Task: 100+ Standardprompts in ChatGPT & Gemini, Zitierhäufigkeit & Sentiment, monatlicher Trend-Report", horizon:"Q2 2026" },
+  { id:9, title:"Video-Content-Strategie evaluieren & pilotieren", category:"Format-Diversifikation", impact:3, effort:4,
+    why:"HUK pflegt 73 Videos in eigener Sitemap – Gemini AI Overviews bevorzugt Video-Snippets bei vielen Anfragen.",
+    how:"Video-Sitemap, schema:VideoObject, Top-20-Erklärvideos je Sparte, YouTube-Integration", horizon:"Q3-Q4 2026" },
+  { id:10, title:"Sprach- und Promptfreundlichkeit der Top-Seiten", category:"Sprache", impact:4, effort:2,
+    why:"LLMs zitieren bevorzugt prägnante Definitionen und 'TL;DR'-artige Antworten. Gute UX-Copy = mehr LLM-Zitate.",
+    how:"Top 100 Seiten Audit: 'Auf einen Blick'-Box, kurze Definitionen, FAQ-Block am Seitenende", horizon:"Q2-Q3 2026" },
+  { id:11, title:"Strukturierte Daten ausbauen (Article, HowTo, Product)", category:"Strukt. Daten", impact:4, effort:2,
+    why:"Neben FAQ-Schema sind Article, HowTo und Product die wichtigsten Markups für LLM-Konsum.",
+    how:"Templates im CMS pro Content-Typ, Validierung mit Schema.org-Validator, Monitoring in GSC", horizon:"Q2 2026" },
+  { id:12, title:"Aktualitäts-Signale (Datum, Versionierung)", category:"Aktualität", impact:3, effort:1,
+    why:"LLMs bevorzugen aktuelle Inhalte. Sichtbares 'Aktualisiert am'-Datum und Versionierung erhöhen Trust.",
+    how:"Template-Anpassung: 'Veröffentlicht', 'Aktualisiert', sichtbares Stand-Datum auf jeder Ratgeber-Seite", horizon:"Q2 2026" }
+];
+
+// ============= TEMPLATES =============
+function providerTemplate(key) {
+  const p = PROVIDERS[key];
+  if (!p.total && key !== 'devk') return '';
+  if (key === 'devk') {
+    return `
+      <div class="bg-white rounded-xl p-6 shadow">
+        <h2 class="text-2xl font-bold text-ergo-dark mb-2">DEVK</h2>
+        <p class="text-sm text-gray-500 mb-4">${p.url}</p>
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+          <div class="font-bold text-yellow-800">Noch nicht analysiert</div>
+          <p class="text-sm text-gray-700 mt-1">Die DEVK-Sitemap wurde im aktuellen Lauf noch nicht erschlossen. Wird im nächsten Iterationszyklus nachgeholt.</p>
+        </div>
+      </div>`;
+  }
+
+  const safe = (v) => (v ?? "–");
+  const num = (v) => (v == null ? "–" : v.toLocaleString('de-DE'));
+
+  // Sparten-Liste
+  const sparten = Object.entries(p.sparten)
+    .filter(([k,v]) => v != null)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `<li class="flex justify-between border-b py-1"><span>${k}</span><span class="font-semibold">${v}</span></li>`)
+    .join('') || '<li class="text-gray-500 text-sm">Sparten-Aufschlüsselung nicht verfügbar</li>';
+
+  return `
+    <div class="bg-white rounded-xl p-6 shadow mb-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 class="text-2xl font-bold text-ergo-dark">${p.name}</h2>
+          <p class="text-sm text-gray-500">${p.url} · ${p.quelle}</p>
+        </div>
+        <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${p.strategy}</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Gesamt-URLs</div><div class="text-2xl font-bold text-ergo-dark">${num(p.total)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Ratgeber</div><div class="text-2xl font-bold text-ergo-dark">${num(p.ratgeber)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">FAQ</div><div class="text-2xl font-bold text-ergo-dark">${num(p.faq)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechner</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechner)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Presse</div><div class="text-2xl font-bold text-ergo-dark">${num(p.presse)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Glossar</div><div class="text-2xl font-bold text-ergo-dark">${num(p.glossar)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Service</div><div class="text-2xl font-bold text-ergo-dark">${num(p.service)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="lg:col-span-2 bg-white rounded-xl p-6 shadow">
+        <h3 class="text-lg font-bold text-ergo-dark mb-3">Content-Verteilung</h3>
+        <div class="chart-container"><canvas id="chart-${key}"></canvas></div>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow">
+        <h3 class="text-lg font-bold text-ergo-dark mb-3">Sparten-Tiefe (URLs)</h3>
+        <ul class="text-sm">${sparten}</ul>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-5">
+        <div class="text-xs uppercase font-semibold text-green-700 mb-2">Stärken</div>
+        <ul class="text-sm text-gray-700 space-y-2">${p.strengths.map(s=>`<li>✅ ${s}</li>`).join('')}</ul>
+      </div>
+      <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-5">
+        <div class="text-xs uppercase font-semibold text-red-700 mb-2">Schwächen</div>
+        <ul class="text-sm text-gray-700 space-y-2">${p.weaknesses.map(s=>`<li>🔴 ${s}</li>`).join('')}</ul>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-5">
+      <div class="text-xs uppercase font-semibold text-blue-700">LLM-Relevanz-Einschätzung</div>
+      <p class="text-sm text-gray-700 mt-1">${p.llmRelevance}</p>
+    </div>
+  `;
+}
+
+// ============= INIT =============
+function fillProviderTabs() {
+  Object.keys(PROVIDERS).forEach(key => {
+    const sec = document.querySelector(`[data-content="${key}"]`);
+    if (sec) sec.innerHTML = providerTemplate(key);
+  });
+}
+
+function buildOverviewMatrix() {
+  const headers = ["Anbieter","Gesamt","Ratgeber","FAQ","Rechner","Presse","Glossar","Service"];
+  const keys = ["total","ratgeber","faq","rechner","presse","glossar","service"];
+  const tbl = document.getElementById('overviewMatrix');
+  let html = '<thead><tr class="bg-ergo-dark text-white">';
+  headers.forEach(h => html += `<th class="text-left px-3 py-2">${h}</th>`);
+  html += '</tr></thead><tbody>';
+  Object.entries(PROVIDERS).forEach(([k,p]) => {
+    if (k === 'devk') return;
+    html += `<tr class="border-b hover:bg-gray-50"><td class="px-3 py-2 font-semibold">${p.name}</td>`;
+    keys.forEach(field => {
+      const v = p[field];
+      const max = Math.max(...Object.values(PROVIDERS).filter(x=>x[field]!=null).map(x=>x[field]));
+      const cls = v == null ? 'badge-gray' : (v === max ? 'badge-green' : (v >= max*0.5 ? 'badge-yellow' : 'badge-red'));
+      const display = v == null ? 'NA' : v.toLocaleString('de-DE');
+      html += `<td class="px-3 py-2"><span class="badge ${cls}">${display}</span></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+function buildGapTable() {
+  const fields = [
+    { key:'total', label:'Gesamt-URLs' },
+    { key:'ratgeber', label:'Ratgeber/Magazin' },
+    { key:'faq', label:'FAQ' },
+    { key:'rechner', label:'Rechner/Tools' },
+    { key:'presse', label:'Presse/News' },
+    { key:'glossar', label:'Glossar/Lexikon' },
+    { key:'service', label:'Service-Hub' }
+  ];
+  const tbody = document.getElementById('gapTableBody');
+  let html = '';
+  fields.forEach(f => {
+    const ergo = PROVIDERS.ergo[f.key];
+    const wettb = Object.entries(PROVIDERS).filter(([k,_])=>k!=='ergo'&&k!=='devk').map(([_,p])=>p[f.key]).filter(v=>v!=null);
+    const max = wettb.length ? Math.max(...wettb) : 0;
+    const avg = wettb.length ? wettb.reduce((a,b)=>a+b,0)/wettb.length : 0;
+    const leaderEntry = Object.entries(PROVIDERS).find(([k,p])=>k!=='ergo'&&p[f.key]===max);
+    const leader = leaderEntry ? leaderEntry[1].name : '-';
+    const ergoVal = ergo ?? 0;
+    const delta = ergoVal - max;
+    let prio = 'NIEDRIG'; let cls = 'badge-green';
+    if (delta < -50) { prio = 'HOCH'; cls = 'badge-red'; }
+    else if (delta < 0) { prio = 'MITTEL'; cls = 'badge-yellow'; }
+    html += `<tr class="border-b hover:bg-gray-50">
+      <td class="px-3 py-2 font-semibold">${f.label}</td>
+      <td class="text-right px-3 py-2 font-bold ergo-red">${ergo?.toLocaleString('de-DE') ?? '-'}</td>
+      <td class="text-right px-3 py-2">${max.toLocaleString('de-DE')} <span class="text-xs text-gray-500">(${leader})</span></td>
+      <td class="text-right px-3 py-2 text-gray-600">${Math.round(avg).toLocaleString('de-DE')}</td>
+      <td class="text-right px-3 py-2 ${delta<0?'text-red-600':'text-green-600'} font-semibold">${delta>0?'+':''}${delta.toLocaleString('de-DE')}</td>
+      <td class="text-center px-3 py-2"><span class="badge ${cls}">${prio}</span></td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function buildActionCards() {
+  const cont = document.getElementById('actionCards');
+  const sorted = [...ACTIONS].sort((a,b)=>(b.impact/b.effort)-(a.impact/a.effort));
+  cont.innerHTML = sorted.map(a => {
+    const score = (a.impact/a.effort).toFixed(1);
+    const sCls = score>=2 ? 'border-green-500' : score>=1 ? 'border-yellow-500' : 'border-gray-300';
+    return `
+      <details class="bg-white rounded-xl shadow border-l-4 ${sCls} p-5 hover:shadow-lg transition">
+        <summary class="flex items-start justify-between gap-3">
+          <div>
+            <div class="badge badge-blue mb-1">${a.category}</div>
+            <h4 class="font-bold text-ergo-dark text-base leading-tight">${a.title}</h4>
+            <div class="text-xs text-gray-500 mt-1">${a.horizon}</div>
+          </div>
+          <div class="text-right whitespace-nowrap">
+            <div class="text-xs text-gray-500">I/E</div>
+            <div class="text-2xl font-bold ergo-red">${score}</div>
+            <div class="text-xs text-gray-500">${a.impact}/${a.effort}</div>
+          </div>
+        </summary>
+        <div class="mt-3 pt-3 border-t text-sm text-gray-700 space-y-2">
+          <div><span class="font-semibold">Warum:</span> ${a.why}</div>
+          <div><span class="font-semibold">Wie:</span> ${a.how}</div>
+        </div>
+      </details>`;
+  }).join('');
+}
+
+function buildOverviewCharts() {
+  // Total URLs
+  new Chart(document.getElementById('chartTotalUrls'), {
+    type: 'bar',
+    data: {
+      labels: Object.values(PROVIDERS).filter(p=>p.total).map(p=>p.name),
+      datasets: [{
+        label: 'URLs',
+        data: Object.values(PROVIDERS).filter(p=>p.total).map(p=>p.total),
+        backgroundColor: Object.values(PROVIDERS).filter(p=>p.total).map(p=>p.color)
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // Content types
+  const tops = ['ergo','allianz','huk','generali'];
+  new Chart(document.getElementById('chartContentTypes'), {
+    type: 'bar',
+    data: {
+      labels: tops.map(k=>PROVIDERS[k].name),
+      datasets: [
+        { label: 'Ratgeber', data: tops.map(k=>PROVIDERS[k].ratgeber||0), backgroundColor: '#DC0028' },
+        { label: 'FAQ', data: tops.map(k=>PROVIDERS[k].faq||0), backgroundColor: '#003781' },
+        { label: 'Rechner', data: tops.map(k=>PROVIDERS[k].rechner||0), backgroundColor: '#FFD500' },
+        { label: 'Presse', data: tops.map(k=>PROVIDERS[k].presse||0), backgroundColor: '#00BFA5' }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+  });
+}
+
+function buildProviderCharts() {
+  Object.keys(PROVIDERS).forEach(key => {
+    const p = PROVIDERS[key];
+    const el = document.getElementById(`chart-${key}`);
+    if (!el || !p.total) return;
+    const dataMap = {
+      'Ratgeber': p.ratgeber, 'FAQ': p.faq, 'Rechner': p.rechner,
+      'Presse': p.presse, 'Glossar': p.glossar, 'Service': p.service,
+      'Video': p.video, 'B2B': p.b2b
+    };
+    const labels = Object.entries(dataMap).filter(([_,v])=>v!=null && v>0).map(([k,_])=>k);
+    const values = Object.entries(dataMap).filter(([_,v])=>v!=null && v>0).map(([_,v])=>v);
+    const colors = ['#DC0028','#003781','#FFD500','#00BFA5','#9333EA','#F97316','#0EA5E9','#8B5CF6'];
+    new Chart(el, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+    });
+  });
+}
+
+function buildGapCharts() {
+  const fields = ['Ratgeber','FAQ','Rechner','Presse','Glossar','Service'];
+  const ergoVals = [
+    PROVIDERS.ergo.ratgeber||0, PROVIDERS.ergo.faq||0, PROVIDERS.ergo.rechner||0,
+    PROVIDERS.ergo.presse||0, PROVIDERS.ergo.glossar||0, PROVIDERS.ergo.service||0
+  ];
+  const wettbAvg = fields.map((f,i) => {
+    const k = ['ratgeber','faq','rechner','presse','glossar','service'][i];
+    const v = Object.entries(PROVIDERS).filter(([key,_])=>key!=='ergo'&&key!=='devk').map(([_,p])=>p[k]).filter(x=>x!=null);
+    return v.length ? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : 0;
+  });
+  new Chart(document.getElementById('chartGapRadar'), {
+    type: 'radar',
+    data: {
+      labels: fields,
+      datasets: [
+        { label: 'ERGO', data: ergoVals, borderColor: '#DC0028', backgroundColor: 'rgba(220,0,40,0.2)', borderWidth: 2 },
+        { label: 'Ø Wettbewerb', data: wettbAvg, borderColor: '#282D37', backgroundColor: 'rgba(40,45,55,0.2)', borderWidth: 2 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true } } }
+  });
+
+  // Delta-Bar
+  const maxVals = fields.map((f,i) => {
+    const k = ['ratgeber','faq','rechner','presse','glossar','service'][i];
+    const v = Object.entries(PROVIDERS).filter(([key,_])=>key!=='ergo'&&key!=='devk').map(([_,p])=>p[k]).filter(x=>x!=null);
+    return v.length ? Math.max(...v) : 0;
+  });
+  const deltas = ergoVals.map((v,i) => v - maxVals[i]);
+  new Chart(document.getElementById('chartGapBar'), {
+    type: 'bar',
+    data: {
+      labels: fields,
+      datasets: [{
+        label: 'Delta (ERGO - Marktführer)',
+        data: deltas,
+        backgroundColor: deltas.map(d => d >= 0 ? '#10B981' : '#DC0028')
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}
+
+// ============= GEO TAB =============
+function buildGeoTab() {
+  const data = GEO_SNAPSHOT;
+  // Status-Badge
+  const badge = document.getElementById('geoStatusBadge');
+  if (badge) {
+    const isDry = data.dry_run;
+    const cls = isDry ? 'badge-yellow' : 'badge-green';
+    const txt = isDry ? 'Test-Daten (dry-run)' : 'Live-Messung';
+    const date = (data.finished_at || data.started_at || '').slice(0,10);
+    badge.innerHTML = `<span class="badge ${cls}">${txt}</span> <span class="text-xs text-gray-500 ml-2">Run: ${date}</span>`;
+  }
+  // Dry-Run-Warning sichtbar wenn dry_run
+  const warn = document.getElementById('geoDryRunWarning');
+  if (warn) warn.classList.toggle('hidden', !data.dry_run);
+
+  // KPI-Kacheln
+  const ergo = data.totals_ranking.find(r => r.name === 'ERGO');
+  const top = data.totals_ranking[0];
+  const ergoRank = data.totals_ranking.findIndex(r => r.name === 'ERGO') + 1;
+  const kpis = [
+    { val: (ergo.share_of_voice * 100).toFixed(1) + '%', label: 'Share of Voice ERGO', color: '#DC0028' },
+    { val: ergo.avg_rank.toFixed(2), label: 'Ø Rang in LLM-Antworten', color: '#003C78' },
+    { val: '#' + ergoRank, label: 'Position ERGO im Ranking', color: ergoRank <= 1 ? '#10B981' : (ergoRank <= 3 ? '#F0AD4E' : '#DC0028') },
+    { val: (ergo.citation_rate * 100).toFixed(0) + '%', label: 'ergo.de als Quelle zitiert', color: '#00BFA5' }
+  ];
+  const kRow = document.getElementById('geoKpiRow');
+  if (kRow) kRow.innerHTML = kpis.map(k => `
+    <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4" style="border-color:${k.color}">
+      <div class="text-xs uppercase text-gray-500 font-semibold">${k.label}</div>
+      <div class="text-3xl font-bold mt-1" style="color:${k.color}">${k.val}</div>
+    </div>`).join('');
+
+  // Ranking-Tabelle
+  const tbl = document.getElementById('geoRankingTable');
+  if (tbl) {
+    let h = '<thead><tr class="bg-ergo-dark text-white"><th class="text-left px-3 py-2">Rang</th><th class="text-left px-3 py-2">Anbieter</th><th class="text-right px-3 py-2">Mentions</th><th class="text-right px-3 py-2">Share of Voice</th><th class="text-right px-3 py-2">Ø Rang</th><th class="text-right px-3 py-2">Citation-Rate</th></tr></thead><tbody>';
+    data.totals_ranking.forEach((r, i) => {
+      const rowCls = r.name === 'ERGO' ? 'font-bold bg-red-50' : '';
+      h += `<tr class="border-b hover:bg-gray-50 ${rowCls}">
+        <td class="px-3 py-2">${i+1}</td>
+        <td class="px-3 py-2"><span style="color:${GEO_BRAND_COLORS[r.name] || '#666'};font-weight:bold">${r.name}</span></td>
+        <td class="text-right px-3 py-2">${r.mentions}</td>
+        <td class="text-right px-3 py-2">${(r.share_of_voice*100).toFixed(1)}%</td>
+        <td class="text-right px-3 py-2">${r.avg_rank.toFixed(2)}</td>
+        <td class="text-right px-3 py-2">${(r.citation_rate*100).toFixed(0)}%</td>
+      </tr>`;
+    });
+    h += '</tbody>';
+    tbl.innerHTML = h;
+  }
+
+  // Pro-Produkt-Cards
+  const pCards = document.getElementById('geoProductCards');
+  if (pCards) {
+    pCards.innerHTML = Object.entries(data.products).map(([pid, p]) => {
+      // Aggregation ueber LLMs (Mittelwert)
+      const aggregated = {};
+      Object.values(p.summary_by_llm).forEach(llm => {
+        llm.brands.forEach(b => {
+          if (!aggregated[b.name]) aggregated[b.name] = { mentions: 0, sov: 0, rank: 0, cnt: 0 };
+          aggregated[b.name].mentions += b.mentions;
+          aggregated[b.name].sov += b.share_of_voice;
+          aggregated[b.name].rank += b.avg_rank;
+          aggregated[b.name].cnt += 1;
+        });
+      });
+      const ranking = Object.entries(aggregated).map(([n, a]) => ({
+        name: n, mentions: a.mentions, sov: a.sov / a.cnt, rank: a.rank / a.cnt
+      })).sort((a, b) => b.sov - a.sov);
+      const ergoP = ranking.find(r => r.name === 'ERGO');
+      const ergoIdx = ranking.findIndex(r => r.name === 'ERGO') + 1;
+      const winner = ranking[0];
+      const winnerCls = winner.name === 'ERGO' ? 'border-green-500' : 'border-red-500';
+
+      let rows = ranking.map((r, i) => {
+        const isErgo = r.name === 'ERGO';
+        return `<tr class="${isErgo ? 'font-bold bg-red-50' : ''} border-b">
+          <td class="px-2 py-1">${i+1}</td>
+          <td class="px-2 py-1" style="color:${GEO_BRAND_COLORS[r.name]||'#666'}">${r.name}</td>
+          <td class="text-right px-2 py-1">${(r.sov*100).toFixed(1)}%</td>
+          <td class="text-right px-2 py-1">${r.rank.toFixed(1)}</td>
+        </tr>`;
+      }).join('');
+
+      return `<div class="bg-white rounded-xl shadow border-t-4 ${winnerCls} p-4">
+        <div class="text-xs text-gray-500 uppercase">${pid}</div>
+        <h4 class="font-bold text-ergo-dark text-lg leading-tight mb-2">${p.name}</h4>
+        <div class="text-sm mb-3">
+          <span class="badge ${ergoIdx === 1 ? 'badge-green' : ergoIdx <= 2 ? 'badge-yellow' : 'badge-red'}">
+            ERGO: Rang ${ergoIdx}
+          </span>
+          <span class="text-gray-500 ml-2">SoV ${(ergoP.sov*100).toFixed(1)}%</span>
+        </div>
+        <table class="w-full text-xs">
+          <thead><tr class="bg-gray-100 text-gray-600"><th class="text-left px-2 py-1">#</th><th class="text-left px-2 py-1">Marke</th><th class="text-right px-2 py-1">SoV</th><th class="text-right px-2 py-1">Rang</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="mt-3 text-xs text-gray-500">Sieger im Markt: <strong style="color:${GEO_BRAND_COLORS[winner.name]||'#666'}">${winner.name}</strong></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Executive Summary
+  const es = document.getElementById('geoExecSummary');
+  if (es) es.textContent = data.executive_summary || '(noch keine Summary verfuegbar)';
+}
+
+function buildSentimentSection() {
+  // Net Sentiment Score Tabelle
+  const t = document.getElementById('netSentimentTable');
+  if (t) {
+    let h = '<thead><tr class="bg-ergo-dark text-white"><th class="text-left px-3 py-2">Marke</th><th class="text-right px-3 py-2">NSS</th></tr></thead><tbody>';
+    const sorted = [...SENTIMENT_DATA.by_brand].map(b => ({...b, nss: b.positiv - b.kritisch})).sort((a,b)=>b.nss-a.nss);
+    sorted.forEach(b => {
+      const isErgo = b.name === 'ERGO';
+      const cls = b.nss >= 60 ? 'badge-green' : b.nss >= 40 ? 'badge-yellow' : 'badge-red';
+      h += `<tr class="border-b ${isErgo?'font-bold bg-red-50':''}">
+        <td class="px-3 py-2" style="color:${GEO_BRAND_COLORS[b.name]}">${b.name}</td>
+        <td class="text-right px-3 py-2"><span class="badge ${cls}">+${b.nss}</span></td>
+      </tr>`;
+    });
+    t.innerHTML = h + '</tbody>';
+  }
+  // Pro-Produkt Sentiment-Cards
+  const cont = document.getElementById('sentimentByProduct');
+  if (cont) {
+    cont.innerHTML = Object.entries(SENTIMENT_DATA.by_product_ergo).map(([pid, s]) => {
+      const nss = s.positiv - s.kritisch;
+      const cls = nss >= 50 ? 'border-green-500' : nss >= 30 ? 'border-yellow-500' : 'border-red-500';
+      return `<div class="bg-white border rounded-lg shadow-sm p-4 border-t-4 ${cls}">
+        <div class="text-xs text-gray-500 uppercase">${pid}</div>
+        <h4 class="font-bold text-ergo-dark mb-2">${pid.charAt(0).toUpperCase()+pid.slice(1)}</h4>
+        <div class="flex items-end gap-2 mb-2">
+          <div class="text-3xl font-bold text-ergo-dark">+${nss}</div>
+          <div class="text-xs text-gray-500 mb-1">Net Sentiment Score</div>
+        </div>
+        <div class="flex gap-1 mb-2 h-3 rounded overflow-hidden">
+          <div style="width:${s.positiv}%;background:#10B981" title="Positiv ${s.positiv}%"></div>
+          <div style="width:${s.neutral}%;background:#9CA3AF" title="Neutral ${s.neutral}%"></div>
+          <div style="width:${s.kritisch}%;background:#EF4444" title="Kritisch ${s.kritisch}%"></div>
+        </div>
+        <div class="text-xs text-gray-500 grid grid-cols-3 mb-2">
+          <span>${s.positiv}% pos.</span>
+          <span class="text-center">${s.neutral}% neu.</span>
+          <span class="text-right">${s.kritisch}% krit.</span>
+        </div>
+        <div class="text-xs text-gray-700 italic mt-2 pt-2 border-t">${s.hint}</div>
+      </div>`;
+    }).join('');
+  }
+  const pos = document.getElementById('sentimentPositiveTopics');
+  if (pos) pos.innerHTML = SENTIMENT_DATA.positive_topics.map(t => `<li>✅ ${t}</li>`).join('');
+  const neg = document.getElementById('sentimentNegativeTopics');
+  if (neg) neg.innerHTML = SENTIMENT_DATA.negative_topics.map(t => `<li>⚠️ ${t}</li>`).join('');
+}
+
+function buildSentimentChart() {
+  const el = document.getElementById('chartSentimentByBrand');
+  if (!el || el._chart) return;
+  el._chart = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: SENTIMENT_DATA.by_brand.map(b => b.name),
+      datasets: [
+        { label: 'Positiv',  data: SENTIMENT_DATA.by_brand.map(b => b.positiv),  backgroundColor: '#10B981' },
+        { label: 'Neutral',  data: SENTIMENT_DATA.by_brand.map(b => b.neutral),  backgroundColor: '#9CA3AF' },
+        { label: 'Kritisch', data: SENTIMENT_DATA.by_brand.map(b => b.kritisch), backgroundColor: '#EF4444' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        x: { stacked: true, max: 100, ticks: { callback: v => v + '%' } },
+        y: { stacked: true }
+      }
+    }
+  });
+}
+
+function buildGeoCharts() {
+  const data = GEO_SNAPSHOT;
+  const sovEl = document.getElementById('chartGeoSoV');
+  if (sovEl && !sovEl._geoChart) {
+    sovEl._geoChart = new Chart(sovEl, {
+      type: 'doughnut',
+      data: {
+        labels: data.totals_ranking.map(r => r.name),
+        datasets: [{
+          data: data.totals_ranking.map(r => +(r.share_of_voice*100).toFixed(1)),
+          backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#888')
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+    });
+  }
+  const rankEl = document.getElementById('chartGeoRank');
+  if (rankEl && !rankEl._geoChart) {
+    rankEl._geoChart = new Chart(rankEl, {
+      type: 'bar',
+      data: {
+        labels: data.totals_ranking.map(r => r.name),
+        datasets: [{
+          label: 'Avg Rang',
+          data: data.totals_ranking.map(r => r.avg_rank),
+          backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#888')
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { reverse: true, beginAtZero: true } } }
+    });
+  }
+}
+
+function setupTabs() {
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
+      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
+      const target = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(s => s.classList.add('hidden'));
+      document.querySelector(`[data-content="${target}"]`).classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (target === 'geo') setTimeout(() => { buildGeoCharts(); buildSentimentChart(); }, 50);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fillProviderTabs();
+  buildOverviewMatrix();
+  buildGapTable();
+  buildActionCards();
+  buildGeoTab();
+  buildSentimentSection();
+  setupTabs();
+  setTimeout(() => {
+    buildOverviewCharts();
+    buildProviderCharts();
+    buildGapCharts();
+  }, 100);
+});
+</script>
+
+</body>
+</html>

@@ -1061,4 +1061,55 @@ function buildGeoCharts() {
     rankEl._geoChart = new Chart(rankEl, {
       type: 'bar',
       data: {
-        labels
+        labels: data.totals_ranking.map(r => r.name),
+        datasets: [{
+          label: 'Avg Rang',
+          data: data.totals_ranking.map(r => r.avg_rank),
+          backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#888')
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { reverse: true, beginAtZero: true } } }
+    });
+  }
+}
+
+function setupTabs() {
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
+      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
+      const target = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(s => s.classList.add('hidden'));
+      document.querySelector(`[data-content="${target}"]`).classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (target === 'geo') setTimeout(() => { buildGeoCharts(); buildSentimentChart(); }, 50);
+    });
+  });
+}
+
+function ergoInit() {
+  fillProviderTabs();
+  buildOverviewMatrix();
+  buildGapTable();
+  buildActionCards();
+  buildGeoTab();
+  buildSentimentSection();
+  setupTabs();
+  setTimeout(() => {
+    buildOverviewCharts();
+    buildProviderCharts();
+    buildGapCharts();
+  }, 100);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ergoInit);
+} else {
+  ergoInit();
+}
+</script>
+
+</body>
+</html>

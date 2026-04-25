@@ -2,15 +2,15 @@ name: Nightly Dashboard Update
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # 02:00 UTC = 03:00 MEZ / 04:00 MESZ
-  workflow_dispatch:       # erlaubt manuellen Start
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: nightly-dashboard-update
   cancel-in-progress: false
 
 permissions:
-  contents: write          # Workflow darf in dieses Repo committen
+  contents: write
 
 jobs:
   update:
@@ -27,7 +27,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Install StatiCrypt (CLI)
+      - name: Install StatiCrypt
         run: npm install -g staticrypt@^3.5.4
 
       - name: Lade aktuellsten GEO-Snapshot
@@ -45,20 +45,22 @@ jobs:
             --short \
             --remember 30 \
             --template-title "ERGO LLM-Cockpit" \
-            --template-instructions "Bitte Passwort eingeben, um auf das Dashboard zuzugreifen." \
+            --template-instructions "Bitte Passwort eingeben." \
             --template-button "Anmelden" \
-            --template-error "Falsches Passwort. Bitte erneut versuchen." \
+            --template-error "Falsches Passwort." \
             --template-color-primary "#DC0028" \
             --template-color-secondary "#282D37" \
             --output index.html
           rm -f dashboard_unencrypted.html
 
-      - name: Commit & Push neuen Stand
+      - name: Commit und Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet index.html; then
+          git add index.html
+          if git diff --staged --quiet; then
             echo "Keine Aenderungen am Dashboard."
           else
-            git add index.html
-            git commit -m "chore:
+            git commit -m "chore: nightly dashboard update"
+            git push
+          fi

@@ -5,6 +5,10 @@ on:
     - cron: '0 2 * * *'   # 02:00 UTC = 03:00 MEZ / 04:00 MESZ
   workflow_dispatch:       # erlaubt manuellen Start
 
+concurrency:
+  group: nightly-dashboard-update
+  cancel-in-progress: false
+
 permissions:
   contents: write          # Workflow darf in dieses Repo committen
 
@@ -24,7 +28,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Install StatiCrypt (CLI)
-        run: npm install -g staticrypt@3.4.0
+        run: npm install -g staticrypt@^3.5.4
 
       - name: Lade aktuellsten GEO-Snapshot
         env:
@@ -57,6 +61,4 @@ jobs:
             echo "Keine Aenderungen am Dashboard."
           else
             git add index.html
-            git commit -m "chore: nightly dashboard update $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
-          fi
+            git commit -m "chore: nightly dashboar

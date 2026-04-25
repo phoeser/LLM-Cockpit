@@ -1,0 +1,62 @@
+name: Nightly Dashboard Update
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC = 03:00 MEZ / 04:00 MESZ
+  workflow_dispatch:       # erlaubt manuellen Start
+
+permissions:
+  contents: write          # Workflow darf in dieses Repo committen
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout LLM-Cockpit-Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install StatiCrypt (CLI)
+        run: npm install -g staticrypt@3.4.0
+
+      - name: Lade aktuellsten GEO-Snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GEO_REPO_TOKEN }}
+          GEO_REPO: phoeser/Geo
+        run: python scripts/update_snapshot.py
+
+      - name: Verschluessele Dashboard mit StatiCrypt
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: |
+          staticrypt dashboard_unencrypted.html \
+            --password "$DASHBOARD_PASSWORD" \
+            --short \
+            --remember 30 \
+            --template-title "ERGO LLM-Cockpit" \
+            --template-instructions "Bitte Passwort eingeben, um auf das Dashboard zuzugreifen." \
+            --template-button "Anmelden" \
+            --template-error "Falsches Passwort. Bitte erneut versuchen." \
+            --template-color-primary "#DC0028" \
+            --template-color-secondary "#282D37" \
+            --output index.html
+          rm -f dashboard_unencrypted.html
+
+      - name: Commit & Push neuen Stand
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet index.html; then
+            echo "Keine Aenderungen am Dashboard."
+          else
+            git add index.html
+            git commit -m "chore: nightly dashboard update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi

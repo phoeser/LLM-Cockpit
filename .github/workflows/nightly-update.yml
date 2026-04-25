@@ -40,18 +40,32 @@ jobs:
         env:
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
         run: |
-          staticrypt dashboard_unencrypted.html \
-            --password "$DASHBOARD_PASSWORD" \
-            --short \
-            --remember 30 \
-            --template-title "ERGO LLM-Cockpit" \
-            --template-instructions "Bitte Passwort eingeben." \
-            --template-button "Anmelden" \
-            --template-error "Falsches Passwort." \
-            --template-color-primary "#DC0028" \
-            --template-color-secondary "#282D37" \
-            --output index.html
-          rm -f dashboard_unencrypted.html
+          set -e
+          echo "=== Vor StatiCrypt ==="
+          ls -la dashboard_unencrypted.html
+          echo "=== StatiCrypt-Aufruf ==="
+          staticrypt dashboard_unencrypted.html             --password "$DASHBOARD_PASSWORD"             --short             --remember 30             --template-title "ERGO LLM-Cockpit"             --template-instructions "Bitte Passwort eingeben."             --template-button "Anmelden"             --template-error "Falsches Passwort."             --template-color-primary "#DC0028"             --template-color-secondary "#282D37"             --short             -d ./out
+          echo "=== Output-Verzeichnis ==="
+          ls -la ./out/ || true
+          ls -la ./encrypted/ || true
+          # StatiCrypt 3.x schreibt standardmaessig in ./encrypted/<input>.html oder ./out/<input>.html
+          if [ -f ./out/dashboard_unencrypted.html ]; then
+            mv ./out/dashboard_unencrypted.html index.html
+            echo "Output gefunden in ./out/"
+          elif [ -f ./encrypted/dashboard_unencrypted.html ]; then
+            mv ./encrypted/dashboard_unencrypted.html index.html
+            echo "Output gefunden in ./encrypted/"
+          elif [ -f dashboard_unencrypted_encrypted.html ]; then
+            mv dashboard_unencrypted_encrypted.html index.html
+            echo "Output gefunden als _encrypted.html"
+          else
+            echo "FEHLER: kein StatiCrypt-Output gefunden"
+            ls -la
+            exit 1
+          fi
+          rm -rf ./out ./encrypted dashboard_unencrypted.html
+          echo "=== Final ==="
+          ls -la index.html
 
       - name: Commit und Push
         run: |

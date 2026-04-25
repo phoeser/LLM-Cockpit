@@ -2,8 +2,24 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ERGO LLM-Sichtbarkeits-Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ERGO LLM-Cockpit</title>
+<meta name="description" content="Sichtbarkeit der ERGO in ChatGPT, Gemini & Co. - Content-Analyse, Wettbewerbsvergleich, Handlungsempfehlungen." />
+<meta name="theme-color" content="#DC0028" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="LLM-Cockpit" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="msapplication-TileColor" content="#DC0028" />
+<meta name="msapplication-TileImage" content="icons/icon-192.png" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="ERGO LLM-Cockpit" />
+<meta property="og:description" content="Wie ERGO in ChatGPT & Gemini gewinnt - Content-Analyse, Wettbewerbsvergleich, Handlungsempfehlungen." />
+<meta property="og:image" content="icons/og-image.png" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -1031,43 +1047,4 @@ function buildGeoCharts() {
           backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#888')
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-        plugins: { legend: { display: false } },
-        scales: { x: { reverse: true, beginAtZero: true } } }
-    });
-  }
-}
-
-function setupTabs() {
-  const buttons = document.querySelectorAll('.tab-btn');
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      buttons.forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
-      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
-      const target = btn.getAttribute('data-tab');
-      document.querySelectorAll('.tab-content').forEach(s => s.classList.add('hidden'));
-      document.querySelector(`[data-content="${target}"]`).classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (target === 'geo') setTimeout(() => { buildGeoCharts(); buildSentimentChart(); }, 50);
-    });
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  fillProviderTabs();
-  buildOverviewMatrix();
-  buildGapTable();
-  buildActionCards();
-  buildGeoTab();
-  buildSentimentSection();
-  setupTabs();
-  setTimeout(() => {
-    buildOverviewCharts();
-    buildProviderCharts();
-    buildGapCharts();
-  }, 100);
-});
-</script>
-
-</body>
-</html>
+      options: { responsive: true, maintainAspectRatio: false, indexAx

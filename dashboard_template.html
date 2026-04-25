@@ -14,12 +14,6 @@
 <meta name="apple-mobile-web-app-title" content="LLM-Cockpit" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="msapplication-TileColor" content="#DC0028" />
-<meta name="msapplication-TileImage" content="icons/icon-192.png" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="ERGO LLM-Cockpit" />
-<meta property="og:description" content="Wie ERGO in ChatGPT & Gemini gewinnt - Content-Analyse, Wettbewerbsvergleich, Handlungsempfehlungen." />
-<meta property="og:image" content="icons/og-image.png" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -1047,4 +1041,49 @@ function buildGeoCharts() {
           backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#888')
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false, indexAx
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { reverse: true, beginAtZero: true } } }
+    });
+  }
+}
+
+function setupTabs() {
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
+      btn.classList.add('tab-active'); btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
+      const target = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(s => s.classList.add('hidden'));
+      document.querySelector(`[data-content="${target}"]`).classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (target === 'geo') setTimeout(() => { buildGeoCharts(); buildSentimentChart(); }, 50);
+    });
+  });
+}
+
+// ============= INIT (robust gegen StatiCrypt-Injection nach DOMContentLoaded) =============
+function ergoInit() {
+  fillProviderTabs();
+  buildOverviewMatrix();
+  buildGapTable();
+  buildActionCards();
+  buildGeoTab();
+  buildSentimentSection();
+  setupTabs();
+  setTimeout(() => {
+    buildOverviewCharts();
+    buildProviderCharts();
+    buildGapCharts();
+  }, 100);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ergoInit);
+} else {
+  ergoInit();
+}
+</script>
+
+</body>
+</html>

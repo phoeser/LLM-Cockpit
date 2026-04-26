@@ -46,41 +46,23 @@ jobs:
         run: |
           set -e
           echo "=== Vor StatiCrypt ==="
+          ls -la dashboard_unencrypted.html 2>/dev/null || cp dashboard_template.html dashboard_unencrypted.html
           ls -la dashboard_unencrypted.html
           echo "=== StatiCrypt-Aufruf ==="
           staticrypt dashboard_unencrypted.html             --password "$DASHBOARD_PASSWORD"             --short             --remember 30             --template-title "ERGO LLM-Cockpit"             --template-instructions "Bitte Passwort eingeben."             --template-button "Anmelden"             --template-error "Falsches Passwort."             --template-color-primary "#DC0028"             --template-color-secondary "#282D37"             --short             -d ./out
-          echo "=== Output-Verzeichnis ==="
-          ls -la ./out/ || true
-          ls -la ./encrypted/ || true
-          # StatiCrypt 3.x schreibt standardmaessig in ./encrypted/<input>.html oder ./out/<input>.html
           if [ -f ./out/dashboard_unencrypted.html ]; then
             mv ./out/dashboard_unencrypted.html index.html
-            echo "Output gefunden in ./out/"
           elif [ -f ./encrypted/dashboard_unencrypted.html ]; then
             mv ./encrypted/dashboard_unencrypted.html index.html
-            echo "Output gefunden in ./encrypted/"
           elif [ -f dashboard_unencrypted_encrypted.html ]; then
             mv dashboard_unencrypted_encrypted.html index.html
-            echo "Output gefunden als _encrypted.html"
           else
-            echo "FEHLER: kein StatiCrypt-Output gefunden"
-            ls -la
+            echo "FEHLER: kein StatiCrypt-Output"
             exit 1
           fi
           rm -rf ./out ./encrypted dashboard_unencrypted.html
-          echo "=== Patche index.html: Passwort-Feld leeren + Remember-Me checked ==="
-          cat > /tmp/inject_passwort_fix.py <<'PYSCRIPT'
-import sys
-html = open('index.html').read()
-inject = '<script>function _ergoFix(){var p=document.getElementById("staticrypt-password");if(p){p.value="";p.setAttribute("autocomplete","new-password");}var c=document.getElementById("staticrypt-remember");if(c){c.checked=true;}}setTimeout(_ergoFix,150);setTimeout(_ergoFix,500);setTimeout(_ergoFix,1200);</script>'
-idx = html.rfind('</body>')
-if idx == -1:
-    print('FEHLER: kein </body> gefunden'); sys.exit(1)
-html = html[:idx] + inject + html[idx:]
-open('index.html','w').write(html)
-print('Patch eingefuegt, neue Groesse:', len(html))
-PYSCRIPT
-          python3 /tmp/inject_passwort_fix.py
+          echo "=== Patche index.html ==="
+          python scripts/inject_password_fix.py
           echo "=== Final ==="
           ls -la index.html
 

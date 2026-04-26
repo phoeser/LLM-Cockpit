@@ -1109,4 +1109,37 @@ function setupTabs() {
   const buttons = document.querySelectorAll('.tab-btn');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => { b.classList.remove
+      buttons.forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
+      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
+      const target = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(s => s.classList.add('hidden'));
+      document.querySelector(`[data-content="${target}"]`).classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (target === 'geo') setTimeout(() => { buildGeoCharts(); buildSentimentChart(); }, 50);
+    });
+  });
+}
+
+function ergoInit() {
+  fillProviderTabs();
+  buildOverviewMatrix();
+  buildGapTable();
+  buildActionCards();
+  buildGeoTab();
+  buildSentimentSection();
+  setupTabs();
+  setTimeout(() => {
+    buildOverviewCharts();
+    buildProviderCharts();
+    buildGapCharts();
+  }, 100);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ergoInit);
+} else {
+  ergoInit();
+}
+</script>
+
+</body>
+</html>

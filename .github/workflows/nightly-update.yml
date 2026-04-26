@@ -76,18 +76,4 @@ jobs:
           fi
           rm -rf ./out ./encrypted dashboard_unencrypted.html
           echo "=== Patche index.html ==="
-          python scripts/inject_password_fix.py
-          echo "=== Final ==="
-          ls -la index.html
-
-      - name: Commit und Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --staged --quiet; then
-            echo "Keine Aenderungen am Dashboard."
-          else
-            git commit -m "chore: nightly dashboard update"
-            git push
-          fi
+          python scri

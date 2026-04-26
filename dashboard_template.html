@@ -84,6 +84,8 @@
       <button data-tab="signal" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Signal Iduna</button>
       <button data-tab="ruv" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">R+V</button>
       <button data-tab="devk" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">DEVK</button>
+      <button data-tab="hannoversche" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Hannoversche</button>
+      <button data-tab="cosmosdirekt" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Cosmos Direkt</button>
       <button data-tab="gap" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">GAP-Analyse</button>
       <button data-tab="geo" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">LLM-Sichtbarkeit (GEO)</button>
       <button data-tab="actions" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Handlungsempfehlungen</button>
@@ -201,6 +203,8 @@
 <section data-content="signal" class="tab-content hidden"></section>
 <section data-content="ruv" class="tab-content hidden"></section>
 <section data-content="devk" class="tab-content hidden"></section>
+<section data-content="hannoversche" class="tab-content hidden"></section>
+<section data-content="cosmosdirekt" class="tab-content hidden"></section>
 
 <!-- ===== TAB: GAP-ANALYSE ===== -->
 <section data-content="gap" class="tab-content hidden">
@@ -418,8 +422,10 @@ const SITEMAPS = {
   axa:      { file: "sitemaps/axa_sitemap.html",          count: 782,  label: "axa.de Sitemap" },
   generali: { file: "sitemaps/generali_sitemap.html",     count: 1379, label: "generali.de Sitemap" },
   signal:   { file: "sitemaps/signal-iduna_sitemap.html", count: 576,  label: "signal-iduna.de Sitemap" },
-  ruv:      { file: "sitemaps/ruv_sitemap.html",          count: 91,   label: "ruv.de Sitemap (Stichprobe, WAF-blockiert)" },
-  devk:     { file: "sitemaps/devk_sitemap.html",         count: 315,  label: "devk.de Sitemap" }
+  ruv:          { file: "sitemaps/ruv_sitemap.html",          count: 91,   label: "ruv.de Sitemap (Stichprobe, WAF-blockiert)" },
+  devk:         { file: "sitemaps/devk_sitemap.html",         count: 315,  label: "devk.de Sitemap" },
+  hannoversche: { file: "sitemaps/hannoversche_sitemap.html", count: 366,  label: "hannoversche.de Sitemap" },
+  cosmosdirekt: { file: "sitemaps/cosmosdirekt_sitemap.html", count: 694,  label: "cosmosdirekt.de Sitemap" }
 };
 
 // Sentiment-Demo-Daten - werden ersetzt sobald GEO-Tool echte Sentiment-Werte liefert
@@ -526,13 +532,33 @@ const PROVIDERS = {
   },
   devk: {
     name: "DEVK", url: "devk.de", color: "#009A3D",
-    total: null, ratgeber: null, faq: null, rechner: null, presse: null, glossar: null, b2b: null, video: null, service: null,
-    strategy: "noch nicht analysiert",
-    strengths: ["–"],
-    weaknesses: ["Noch keine Daten verfügbar – nächster Scraping-Lauf"],
+    total: 315, ratgeber: null, faq: null, rechner: null, presse: null, glossar: 0, b2b: null, video: null, service: null,
+    strategy: "Klein-skalierte Sitemap, breite Sparten-Abdeckung",
+    strengths: ["315 URLs in offizieller Sitemap", "Breite Versicherungs-Abdeckung", "Niedrigschwellig sitemapped"],
+    weaknesses: ["Sehr kleines Inventar im Vergleich zu HUK/Generali", "Keine prominent indexierten Tools", "Wenig Ratgeber-Tiefe"],
     sparten: {},
-    llmRelevance: "tbd",
-    quelle: "noch nicht gescraped"
+    llmRelevance: "GERING: kleines URL-Volumen = wenig LLM-Trainings-Signal",
+    quelle: "Sitemap 2026-04-25"
+  },
+  hannoversche: {
+    name: "Hannoversche", url: "hannoversche.de", color: "#005CA9",
+    total: 366, ratgeber: 56, faq: 10, rechner: 11, presse: 7, glossar: 0, b2b: null, video: null, service: 33,
+    strategy: "Lebensversicherungs-Spezialist mit Beratungsfokus",
+    strengths: ["56 Ratgeber-Artikel (15% der Sitemap) trotz Spezialisierung", "11 Rechner indexiert", "Klarer Leben-Fokus (72 URLs)"],
+    weaknesses: ["Nur 366 URLs gesamt – sehr klein", "Eingeschränktes Sparten-Spektrum (kein KFZ-Schwerpunkt)", "Wenig Presse-Content"],
+    sparten: { "Leben": 72, "Kranken": 12, "KFZ": 8, "Sach": 3, "Haftpflicht": 2, "Tier": 2, "Reise": 1 },
+    llmRelevance: "MITTEL für Lebens-Versicherung-Anfragen, sonst niedrig",
+    quelle: "Sitemap 2026-04-26"
+  },
+  cosmosdirekt: {
+    name: "Cosmos Direkt", url: "cosmosdirekt.de", color: "#FF6600",
+    total: 694, ratgeber: 105, faq: null, rechner: 3, presse: 3, glossar: 0, b2b: null, video: null, service: 32,
+    strategy: "Direktversicherer mit starker Produkt-Fokussierung",
+    strengths: ["421 Produktseiten (61% der Sitemap)", "105 Ratgeber-Artikel", "Breites Sparten-Portfolio (Leben, KFZ, Hausrat, Haftpflicht, Kranken)"],
+    weaknesses: ["Nur 3 Rechner indexiert", "Wenig Presse-Content", "Kein Glossar"],
+    sparten: { "Leben": 158, "KFZ": 126, "Hausrat": 68, "Haftpflicht": 46, "Kranken": 40, "Unfall": 25, "Reise": 14, "Rechtsschutz": 2 },
+    llmRelevance: "MITTEL-HOCH durch breite Produkt-Tiefe und Direktvertrieb-Reputation",
+    quelle: "Sitemap 2026-04-26"
   }
 };
 

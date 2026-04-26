@@ -36,8 +36,22 @@ jobs:
           GEO_REPO: phoeser/geo-visibility-tool
         run: python scripts/update_snapshot.py
 
-      - name: Aktualisiere Sentiment-Daten (Trustpilot Crawl)
+      - name: Aktualisiere Sentiment-Daten (Trustpilot Live - Phase A)
         run: python scripts/update_sentiment.py
+        continue-on-error: true
+
+      - name: Install Playwright fuer Sentiment Fallback
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+        continue-on-error: true
+
+      - name: Aktualisiere Sentiment via Browser (Phase B - Fallback)
+        run: python scripts/update_sentiment_browser.py
+        continue-on-error: true
+
+      - name: Aktualisiere Berater-Daten (ERGO Vermittler-API)
+        run: python scripts/update_berater.py
         continue-on-error: true
 
       - name: Verschluessele Dashboard mit StatiCrypt

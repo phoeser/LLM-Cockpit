@@ -70,8 +70,7 @@ jobs:
           # Eventuell vorbefuellte value-Attribute entfernen
           sed -i 's/<input type="password"\([^>]*\)value="[^"]*"/<input type="password"\1/g' index.html
           # JS-Patch: Browser-Passwort-Manager unterdruecken + Remember-Me-Checkbox auf checked
-          sed -i "s|</body>|<script>document.addEventListener(\"DOMContentLoaded\",function(){var p=document.querySelector(\"input[type=password]\");if(p){p.value=\"\";p.setAttribute(\"autocomplete\",\"new-password\");}var c=document.querySelector(\"input[type=checkbox]\");if(c){c.checked=true;}});</script></body>|" index.html
-          
+          sed -i "s|</body>|<script>document.addEventListener('DOMContentLoaded',function(){var p=document.querySelector('input[type=password]');if(p){p.value='';p.setAttribute('autocomplete','new-password');}var c=document.querySelector('input[type=checkbox]');if(c){c.checked=true;}});</script></body>|" index.html
           echo "=== Final ==="
           ls -la index.html
 

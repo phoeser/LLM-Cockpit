@@ -36,6 +36,10 @@ jobs:
           GEO_REPO: phoeser/geo-visibility-tool
         run: python scripts/update_snapshot.py
 
+      - name: Aktualisiere Sentiment-Daten (Trustpilot Crawl)
+        run: python scripts/update_sentiment.py
+        continue-on-error: true
+
       - name: Verschluessele Dashboard mit StatiCrypt
         env:
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
@@ -48,34 +52,30 @@ jobs:
           echo "=== Output-Verzeichnis ==="
           ls -la ./out/ || true
           ls -la ./encrypted/ || true
-          # StatiCrypt 3.x schreibt standardmaessig in ./encrypted/<input>.html oder ./out/<input>.html
           if [ -f ./out/dashboard_unencrypted.html ]; then
             mv ./out/dashboard_unencrypted.html index.html
-            echo "Output gefunden in ./out/"
           elif [ -f ./encrypted/dashboard_unencrypted.html ]; then
             mv ./encrypted/dashboard_unencrypted.html index.html
-            echo "Output gefunden in ./encrypted/"
           elif [ -f dashboard_unencrypted_encrypted.html ]; then
             mv dashboard_unencrypted_encrypted.html index.html
-            echo "Output gefunden als _encrypted.html"
           else
-            echo "FEHLER: kein StatiCrypt-Output gefunden"
-            ls -la
+            echo "FEHLER: kein StatiCrypt-Output"
             exit 1
           fi
           rm -rf ./out ./encrypted dashboard_unencrypted.html
-          echo "=== Patche index.html: Auto-Fill abschalten ==="
-          # StatiCrypt rendert Form runtime - daher Script-Inject vor dem letzten </script>: leert Passwort-Feld und setzt Remember-Checkbox auf checked nach 200ms
-          # Wichtig: NACH dem StatiCrypt-Script + VOR </body>, damit Decrypt-Logic NICHT ueberschrieben wird
-          python3 -c "
-          import sys
-          html = open('index.html').read()
-          inject = '<script>setTimeout(function(){var p=document.getElementById(\"staticrypt-password\");if(p){p.value=\"\";p.setAttribute(\"autocomplete\",\"new-password\");}var c=document.getElementById(\"staticrypt-remember\");if(c){c.checked=true;}},200);setTimeout(function(){var p=document.getElementById(\"staticrypt-password\");if(p){p.value=\"\";}var c=document.getElementById(\"staticrypt-remember\");if(c){c.checked=true;}},800);</script>'
-          # Vor letztem </body> einfuegen
-          idx = html.rfind('</body>')
-          if idx != -1:
-              html = html[:idx] + inject + html[idx:]
-              open('index.html','w').write(html)
-              print('Patch eingefuegt')
-          else:
-              print('FEHLER: kein
+          echo "=== Patche index.html ==="
+          python scripts/inject_password_fix.py
+          echo "=== Final ==="
+          ls -la index.html
+
+      - name: Commit und Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --staged --quiet; then
+            echo "Keine Aenderungen am Dashboard."
+          else
+            git commit -m "chore: nightly dashboard update"
+            git push
+          fi

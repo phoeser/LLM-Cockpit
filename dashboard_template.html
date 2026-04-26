@@ -100,13 +100,13 @@
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-ergo-red">
       <div class="text-xs uppercase text-gray-500 font-semibold">Anbieter analysiert</div>
-      <div class="text-3xl font-bold text-ergo-dark mt-1">7 / 8</div>
-      <div class="text-xs text-gray-500 mt-1">DEVK noch offen</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1">10 / 10</div>
+      <div class="text-xs text-gray-500 mt-1">Vollständige Coverage</div>
     </div>
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-blue-500">
       <div class="text-xs uppercase text-gray-500 font-semibold">URLs gesamt</div>
-      <div class="text-3xl font-bold text-ergo-dark mt-1">~9.000</div>
-      <div class="text-xs text-gray-500 mt-1">aus 7 Sitemaps</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1">~10.700</div>
+      <div class="text-xs text-gray-500 mt-1">aus 10 Sitemaps</div>
     </div>
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-green-500">
       <div class="text-xs uppercase text-gray-500 font-semibold">FAQ-Marktführer</div>
@@ -115,8 +115,8 @@
     </div>
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-yellow-500">
       <div class="text-xs uppercase text-gray-500 font-semibold">Glossar-White-Space</div>
-      <div class="text-3xl font-bold text-ergo-dark mt-1">6 / 7</div>
-      <div class="text-xs text-gray-500 mt-1">haben kein Glossar</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1">9 / 10</div>
+      <div class="text-xs text-gray-500 mt-1">nur AXA hat Glossar</div>
     </div>
   </div>
 
@@ -604,18 +604,7 @@ const ACTIONS = [
 // ============= TEMPLATES =============
 function providerTemplate(key) {
   const p = PROVIDERS[key];
-  if (!p.total && key !== 'devk') return '';
-  if (key === 'devk') {
-    return `
-      <div class="bg-white rounded-xl p-6 shadow">
-        <h2 class="text-2xl font-bold text-ergo-dark mb-2">DEVK</h2>
-        <p class="text-sm text-gray-500 mb-4">${p.url}</p>
-        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-          <div class="font-bold text-yellow-800">Noch nicht analysiert</div>
-          <p class="text-sm text-gray-700 mt-1">Die DEVK-Sitemap wurde im aktuellen Lauf noch nicht erschlossen. Wird im nächsten Iterationszyklus nachgeholt.</p>
-        </div>
-      </div>`;
-  }
+  if (!p.total) return '';
 
   const safe = (v) => (v ?? "–");
   const num = (v) => (v == null ? "–" : v.toLocaleString('de-DE'));

@@ -31,4 +31,5 @@ if idx == -1:
     sys.exit(1)
 
 html = html[:idx] + inject + html[idx:]
-htm
+html_path.write_text(html, encoding="utf-8")
+print(f"Passwort-Patch eingefuegt, neue Groesse: {len(html)} chars")

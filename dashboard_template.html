@@ -137,8 +137,8 @@
       <div class="chart-container"><canvas id="chartTotalUrls"></canvas></div>
     </div>
     <div class="bg-white rounded-xl p-6 shadow">
-      <h3 class="text-lg font-bold text-ergo-dark mb-1">Content-Typen-Verteilung (Top 4 Anbieter)</h3>
-      <p class="text-xs text-gray-500 mb-3">Ratgeber · FAQ · Rechner · Presse</p>
+      <h3 class="text-lg font-bold text-ergo-dark mb-1">Content-Typen-Verteilung (alle 10 Anbieter)</h3>
+      <p class="text-xs text-gray-500 mb-3">Ratgeber · FAQ · Rechner · Presse · Service - sortiert nach Gesamt-URLs</p>
       <div class="chart-container"><canvas id="chartContentTypes"></canvas></div>
     </div>
   </div>
@@ -461,14 +461,14 @@ const SENTIMENT_DATA = {
 // ============= DATEN =============
 const PROVIDERS = {
   ergo: {
-    name: "ERGO", url: "ergo.de", color: "#DC0028",
-    total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: null, glossar: 0, b2b: 150, video: null, service: null,
-    strategy: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis",
-    strengths: ["FAQ-Marktführer mit 158 Seiten", "Größte Sitemap aller Anbieter (2.064 URLs)", "Breite Produktabdeckung über alle Kernsparten", "Eigener Rechtsportal-Bereich"],
-    weaknesses: ["Kein systematisches Glossar/Lexikon", "Nur 7 Rechner/Tools (Allianz: 42)", "Wenig erkennbare Pressepräsenz in Sitemap", "Sparten Tier (10) und Rechtsschutz (8) untergewichtet"],
+    name: "ERGO", url: "ergo.de + ergo.com", color: "#DC0028",
+    total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: 308, glossar: 0, b2b: 150, video: null, service: 161,
+    strategy: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis + großer Konzern-Newsroom",
+    strengths: ["FAQ-Marktführer mit 158 Seiten", "Größte Sitemap aller Anbieter (2.064 URLs)", "Breite Produktabdeckung über alle Kernsparten", "Eigener Rechtsportal-Bereich (944 URLs)", "Konzern-Newsroom auf ergo.com/de mit 308 Presse-URLs", "161 Service-URLs (Datenschutz, AGB, Schadenmeldung)"],
+    weaknesses: ["Kein systematisches Glossar/Lexikon", "Nur 7 Rechner/Tools (Allianz: 42)", "Service-Subseiten sind primär Datenschutz/Rechtliches, weniger Self-Service", "Sparten Tier (10) und Rechtsschutz (8) untergewichtet"],
     sparten: { "Reise":133, "KFZ":113, "Kranken":36, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":8, "Tier":10, "Unfall":null },
-    llmRelevance: "MITTEL-HOCH: Starke FAQ-Basis ist LLM-Gold, sobald Schema.org ausgerollt ist",
-    quelle: "Sitemap 2026-04-24 (manueller Upload)"
+    llmRelevance: "MITTEL-HOCH: Starke FAQ-Basis ist LLM-Gold, sobald Schema.org ausgerollt ist; Konzern-Newsroom liefert Authority-Signale",
+    quelle: "Sitemap 2026-04-24 ergo.de + 2026-04-26 ergo.com/de (Konzern-Newsroom)"
   },
   allianz: {
     name: "Allianz (konsolidiert)", url: "allianz.de + allianzdirect.de + markt-und-kunde.de", color: "#003781",
@@ -532,13 +532,13 @@ const PROVIDERS = {
   },
   devk: {
     name: "DEVK", url: "devk.de", color: "#009A3D",
-    total: 315, ratgeber: null, faq: null, rechner: null, presse: null, glossar: 0, b2b: null, video: null, service: null,
-    strategy: "Klein-skalierte Sitemap, breite Sparten-Abdeckung",
-    strengths: ["315 URLs in offizieller Sitemap", "Breite Versicherungs-Abdeckung", "Niedrigschwellig sitemapped"],
-    weaknesses: ["Sehr kleines Inventar im Vergleich zu HUK/Generali", "Keine prominent indexierten Tools", "Wenig Ratgeber-Tiefe"],
-    sparten: {},
-    llmRelevance: "GERING: kleines URL-Volumen = wenig LLM-Trainings-Signal",
-    quelle: "Sitemap 2026-04-25"
+    total: 314, ratgeber: 36, faq: 0, rechner: 13, presse: 78, glossar: 0, b2b: 1, video: null, service: 28,
+    strategy: "Kompakter Privatkunden-Vollsortimenter mit Newsroom-Fokus",
+    strengths: ["KFZ-stark (49 URLs, Eisenbahner-DNA)", "13 Tarif-Rechner (mehr als ERGO mit 7)", "Aktiver Newsroom mit 78 Pressemitteilungen", "Haftpflicht (29) + Hausrat (22) strukturell dichter als ERGO"],
+    weaknesses: ["Nur 314 URLs - kompakteste Sitemap aller Wettbewerber", "0 FAQ-Seiten indexiert", "0 Glossar/Lexikon", "Praktisch kein B2B-Bereich (1 URL)", "Nur 5 Standortseiten - Local-SEO ungenutzt"],
+    sparten: { "KFZ": 49, "Haftpflicht": 29, "Hausrat": 22, "Kranken": 21, "Leben": 17, "Rechtsschutz": 12, "Unfall": 8, "Reise": 7, "Finanzen": 7 },
+    llmRelevance: "GERING-MITTEL: kleines URL-Volumen begrenzt LLM-Sichtbarkeit, aber gute Strukturqualität",
+    quelle: "Sitemap 2026-04-26 (devk_inventar.csv)"
   },
   hannoversche: {
     name: "Hannoversche", url: "hannoversche.de", color: "#005CA9",
@@ -803,20 +803,24 @@ function buildOverviewCharts() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
   });
 
-  // Content types
-  const tops = ['ergo','allianz','huk','generali'];
+  // Content types - alle Anbieter (sortiert nach Gesamt-URLs)
+  const allKeys = Object.entries(PROVIDERS)
+    .filter(([_,p]) => p.total)
+    .sort((a,b) => b[1].total - a[1].total)
+    .map(([k,_]) => k);
   new Chart(document.getElementById('chartContentTypes'), {
     type: 'bar',
     data: {
-      labels: tops.map(k=>PROVIDERS[k].name),
+      labels: allKeys.map(k=>PROVIDERS[k].name),
       datasets: [
-        { label: 'Ratgeber', data: tops.map(k=>PROVIDERS[k].ratgeber||0), backgroundColor: '#DC0028' },
-        { label: 'FAQ', data: tops.map(k=>PROVIDERS[k].faq||0), backgroundColor: '#003781' },
-        { label: 'Rechner', data: tops.map(k=>PROVIDERS[k].rechner||0), backgroundColor: '#FFD500' },
-        { label: 'Presse', data: tops.map(k=>PROVIDERS[k].presse||0), backgroundColor: '#00BFA5' }
+        { label: 'Ratgeber', data: allKeys.map(k=>PROVIDERS[k].ratgeber||0), backgroundColor: '#DC0028' },
+        { label: 'FAQ', data: allKeys.map(k=>PROVIDERS[k].faq||0), backgroundColor: '#003781' },
+        { label: 'Rechner', data: allKeys.map(k=>PROVIDERS[k].rechner||0), backgroundColor: '#FFD500' },
+        { label: 'Presse', data: allKeys.map(k=>PROVIDERS[k].presse||0), backgroundColor: '#00BFA5' },
+        { label: 'Service', data: allKeys.map(k=>PROVIDERS[k].service||0), backgroundColor: '#9333EA' }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } }
   });
 }
 
@@ -1105,37 +1109,4 @@ function setupTabs() {
   const buttons = document.querySelectorAll('.tab-btn');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
-      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
-      const target = btn.getAttribute('data-tab');
-      document.querySelectorAll('.tab-content').forEach(s => s.classList.add('hidden'));
-      document.querySelector(`[data-content="${target}"]`).classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (target === 'geo') setTimeout(() => { buildGeoCharts(); buildSentimentChart(); }, 50);
-    });
-  });
-}
-
-function ergoInit() {
-  fillProviderTabs();
-  buildOverviewMatrix();
-  buildGapTable();
-  buildActionCards();
-  buildGeoTab();
-  buildSentimentSection();
-  setupTabs();
-  setTimeout(() => {
-    buildOverviewCharts();
-    buildProviderCharts();
-    buildGapCharts();
-  }, 100);
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', ergoInit);
-} else {
-  ergoInit();
-}
-</script>
-
-</body>
-</html>
+      buttons.forEach(b => { b.classList.remove

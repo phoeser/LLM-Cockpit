@@ -48,21 +48,28 @@ jobs:
           echo "=== Output-Verzeichnis ==="
           ls -la ./out/ || true
           ls -la ./encrypted/ || true
+          # StatiCrypt 3.x schreibt standardmaessig in ./encrypted/<input>.html oder ./out/<input>.html
           if [ -f ./out/dashboard_unencrypted.html ]; then
             mv ./out/dashboard_unencrypted.html index.html
+            echo "Output gefunden in ./out/"
           elif [ -f ./encrypted/dashboard_unencrypted.html ]; then
             mv ./encrypted/dashboard_unencrypted.html index.html
+            echo "Output gefunden in ./encrypted/"
           elif [ -f dashboard_unencrypted_encrypted.html ]; then
             mv dashboard_unencrypted_encrypted.html index.html
+            echo "Output gefunden als _encrypted.html"
           else
             echo "FEHLER: kein StatiCrypt-Output gefunden"
             ls -la
             exit 1
           fi
           rm -rf ./out ./encrypted dashboard_unencrypted.html
-          echo "=== Patche index.html: Auto-Fill abschalten + Remember-Me checked ==="
+          echo "=== Patche index.html: Auto-Fill abschalten ==="
+          # Browser-Passwort-Manager-Auto-Fill deaktivieren + leere Defaults (NUR Attribute, KEIN Script-Inject - wuerde StatiCrypt-Decrypt stoeren)
           sed -i 's/<input type="password"\([^>]*\)/<input type="password" autocomplete="new-password" data-lpignore="true" data-form-type="other"\1/g' index.html
+          # Eventuell vorbefuellte value-Attribute entfernen
           sed -i 's/<input type="password"\([^>]*\)value="[^"]*"/<input type="password"\1/g' index.html
+          # Remember-Me-Checkbox standardmaessig aktivieren
           sed -i 's/<input type="checkbox"\([^>]*\)/<input type="checkbox" checked\1/g' index.html
           echo "=== Final ==="
           ls -la index.html

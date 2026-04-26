@@ -64,17 +64,9 @@ jobs:
             exit 1
           fi
           rm -rf ./out ./encrypted dashboard_unencrypted.html
-          echo "=== Final ==="
-          ls -la index.html
-
-      - name: Commit und Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --staged --quiet; then
-            echo "Keine Aenderungen am Dashboard."
-          else
-            git commit -m "chore: nightly dashboard update"
-            git push
-          fi
+          echo "=== Patche index.html: Auto-Fill abschalten ==="
+          # Browser-Passwort-Manager-Auto-Fill deaktivieren + leere Defaults
+          sed -i 's/<input type="password"\([^>]*\)/<input type="password" autocomplete="off" data-lpignore="true" data-form-type="other"\1/g' index.html
+          # Eventuell vorbefuellte value-Attribute entfernen
+          sed -i 's/<input type="password"\([^>]*\)value="[^"]*"/<input type="password"\1/g' index.html
+          

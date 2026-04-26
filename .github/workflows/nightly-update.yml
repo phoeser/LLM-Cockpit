@@ -65,23 +65,17 @@ jobs:
           fi
           rm -rf ./out ./encrypted dashboard_unencrypted.html
           echo "=== Patche index.html: Auto-Fill abschalten ==="
-          # Browser-Passwort-Manager-Auto-Fill deaktivieren + leere Defaults (NUR Attribute, KEIN Script-Inject - wuerde StatiCrypt-Decrypt stoeren)
-          sed -i 's/<input type="password"\([^>]*\)/<input type="password" autocomplete="new-password" data-lpignore="true" data-form-type="other"\1/g' index.html
-          # Eventuell vorbefuellte value-Attribute entfernen
-          sed -i 's/<input type="password"\([^>]*\)value="[^"]*"/<input type="password"\1/g' index.html
-          # Remember-Me-Checkbox standardmaessig aktivieren
-          sed -i 's/<input type="checkbox"\([^>]*\)/<input type="checkbox" checked\1/g' index.html
-          echo "=== Final ==="
-          ls -la index.html
-
-      - name: Commit und Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --staged --quiet; then
-            echo "Keine Aenderungen am Dashboard."
-          else
-            git commit -m "chore: nightly dashboard update"
-            git push
-          fi
+          # StatiCrypt rendert Form runtime - daher Script-Inject vor dem letzten </script>: leert Passwort-Feld und setzt Remember-Checkbox auf checked nach 200ms
+          # Wichtig: NACH dem StatiCrypt-Script + VOR </body>, damit Decrypt-Logic NICHT ueberschrieben wird
+          python3 -c "
+          import sys
+          html = open('index.html').read()
+          inject = '<script>setTimeout(function(){var p=document.getElementById(\"staticrypt-password\");if(p){p.value=\"\";p.setAttribute(\"autocomplete\",\"new-password\");}var c=document.getElementById(\"staticrypt-remember\");if(c){c.checked=true;}},200);setTimeout(function(){var p=document.getElementById(\"staticrypt-password\");if(p){p.value=\"\";}var c=document.getElementById(\"staticrypt-remember\");if(c){c.checked=true;}},800);</script>'
+          # Vor letztem </body> einfuegen
+          idx = html.rfind('</body>')
+          if idx != -1:
+              html = html[:idx] + inject + html[idx:]
+              open('index.html','w').write(html)
+              print('Patch eingefuegt')
+          else:
+              print('FEHLER: kein

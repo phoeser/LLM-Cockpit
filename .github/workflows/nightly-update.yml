@@ -50,51 +50,8 @@ jobs:
         run: python scripts/update_sentiment_browser.py
         continue-on-error: true
 
-      - name: Verschluessele Dashboard mit StatiCrypt
-        env:
-          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
-        run: |
-          set -e
-          echo "=== Vor StatiCrypt ==="
-          ls -la dashboard_unencrypted.html 2>/dev/null || cp dashboard_template.html dashboard_unencrypted.html
-          ls -la dashboard_unencrypted.html
-          echo "=== StatiCrypt-Aufruf ==="
-          staticrypt dashboard_unencrypted.html             --password "$DASHBOARD_PASSWORD"             --short             --remember 30             --template-title "ERGO LLM-Cockpit"             --template-instructions "Bitte Passwort eingeben."             --template-button "Anmelden"             --template-error "Falsches Passwort."             --template-color-primary "#DC0028"             --template-color-secondary "#282D37"             --short             -d ./out
-          if [ -f ./out/dashboard_unencrypted.html ]; then
-            mv ./out/dashboard_unencrypted.html index.html
-          elif [ -f ./encrypted/dashboard_unencrypted.html ]; then
-            mv ./encrypted/dashboard_unencrypted.html index.html
-          elif [ -f dashboard_unencrypted_encrypted.html ]; then
-            mv dashboard_unencrypted_encrypted.html index.html
-          else
-            echo "FEHLER: kein StatiCrypt-Output"
-            exit 1
-          fi
-          rm -rf ./out ./encrypted dashboard_unencrypted.html
-          echo "=== Patche index.html ==="
-          python scripts/inject_password_fix.py
-          echo "=== Final ==="
-          ls -la index.html
-
-      - name: Commit und Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --staged --quiet; then
-            echo "Keine Aenderungen am Dashboard."
-            exit 0
-          fi
-          git commit -m "chore: nightly dashboard update"
-          # Robust push: pull --rebase + 3x retry bei Konflikten
-          for i in 1 2 3; do
-            git pull --rebase origin main || true
-            if git push; then
-              echo "Push OK auf Versuch $i"
-              exit 0
-            fi
-            echo "Push fail, retry $i"
-            sleep 5
-          done
-          echo "FEHLER: Push nach 3 Versuchen gescheitert"
-          exit 1
+      - name: Build und Deploy
+        uses: ./.github/actions/build-and-deploy
+        with:
+          dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
+          commit-message: "chore: nightly dashboard update"

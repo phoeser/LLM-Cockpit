@@ -1279,9 +1279,91 @@ function buildGeoTab() {
     }).join('');
   }
 
-  // Executive Summary
+  // Executive Summary - mit Fallback wenn GEO-Tool nichts oder Fehler liefert
   const es = document.getElementById('geoExecSummary');
-  if (es) es.textContent = data.executive_summary || '(noch keine Summary verfuegbar)';
+  if (es) {
+    const summary = data.executive_summary || '';
+    const hasError = !summary || /nicht verf|nicht generiert|client nicht|error|fehler/i.test(summary);
+    if (hasError) {
+      // Generiere intelligente Summary aus den Daten
+      const ergo = data.totals_ranking.find(r => r.name === 'ERGO');
+      const top = data.totals_ranking[0];
+      const ergoRank = data.totals_ranking.findIndex(r => r.name === 'ERGO') + 1;
+      const totalBrands = data.totals_ranking.length;
+      const ergoSoV = (ergo.share_of_voice * 100).toFixed(1);
+      const ergoRankAvg = ergo.avg_rank.toFixed(1);
+      const topName = top.name;
+      const topSoV = (top.share_of_voice * 100).toFixed(1);
+      const products = Object.keys(data.products || {}).length;
+      const llms = (data.llms || []).join(', ');
+      let msg = `LLM-Sichtbarkeit ERGO im Wettbewerb (${products} Produkte, ${llms || 'mehrere LLMs'})\n`;
+      msg += `\n• Position: ERGO liegt auf Rang ${ergoRank} von ${totalBrands} Anbietern`;
+      msg += `\n• Share of Voice: ${ergoSoV}% (Marktführer ${topName}: ${topSoV}%)`;
+      msg += `\n• Durchschnittlicher Rang in Antworten: ${ergoRankAvg}`;
+      msg += `\n• Citation-Rate (ergo.de als Quelle): ${(ergo.citation_rate*100).toFixed(0)}%`;
+      msg += `\n\nProdukt-Highlights:`;
+      Object.entries(data.products || {}).forEach(([pid, p]) => {
+        // Aggregiere LLMs
+        let totalSoV = 0, count = 0;
+        Object.values(p.summary_by_llm || {}).forEach(llm => {
+          const e = llm.brands.find(b => b.name === 'ERGO');
+          if (e) { totalSoV += e.share_of_voice; count++; }
+        });
+        const avgSoV = count ? (totalSoV / count * 100).toFixed(1) : 'n/a';
+        msg += `\n• ${p.name}: ${avgSoV}% SoV`;
+      });
+      if (data.dry_run) msg += '\n\n(Hinweis: aktueller Run war ein dry_run - echte Live-Messung folgt)';
+      es.textContent = msg;
+    } else {
+      es.textContent = summary;
+    }
+  }
+
+  // ===== Chart: Share of Voice (Doughnut) =====
+  const sovCv = document.getElementById('chartGeoSoV');
+  if (sovCv) {
+    if (Chart.getChart(sovCv)) Chart.getChart(sovCv).destroy();
+    new Chart(sovCv.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: data.totals_ranking.map(r => r.name),
+        datasets: [{
+          data: data.totals_ranking.map(r => (r.share_of_voice * 100).toFixed(1)),
+          backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#666')
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right' },
+          tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '%' } }
+        }
+      }
+    });
+  }
+
+  // ===== Chart: Avg. Rang (Horizontal Bar, niedriger = besser) =====
+  const rankCv = document.getElementById('chartGeoRank');
+  if (rankCv) {
+    if (Chart.getChart(rankCv)) Chart.getChart(rankCv).destroy();
+    const sorted = [...data.totals_ranking].sort((a, b) => a.avg_rank - b.avg_rank);
+    new Chart(rankCv.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: sorted.map(r => r.name),
+        datasets: [{
+          label: 'Avg. Rang (niedriger = besser)',
+          data: sorted.map(r => r.avg_rank),
+          backgroundColor: sorted.map(r => GEO_BRAND_COLORS[r.name] || '#666')
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        scales: { x: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
   }
 
   // ===== Tab-Click-Handler =====

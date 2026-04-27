@@ -19,7 +19,7 @@ runs:
       run: |
         set -e
         echo "=== Vor StatiCrypt ==="
-        cp dashboard_template.html dashboard_unencrypted.html
+        ls -la dashboard_unencrypted.html 2>/dev/null || cp dashboard_template.html dashboard_unencrypted.html
         ls -la dashboard_unencrypted.html
         echo "=== StatiCrypt-Aufruf (Passwort via stdin, kein CLI-Leak) ==="
         echo "$DASHBOARD_PASSWORD" | staticrypt dashboard_unencrypted.html \

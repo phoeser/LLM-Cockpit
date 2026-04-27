@@ -262,12 +262,22 @@ def crawl_ekomi(slugs, multi_id=None):
         html = fetch_html(url)
         if not html:
             continue
-        # Versuche JSON-LD aggregateRating
+        # eKomi-Format: "Bewertung: 4.5 Sterne von 32835 Bewertungen"
+        m_title = re.search(r'Bewertung:\s*([\d.,]+)\s*Sterne\s*von\s*([\d.]+)\s*Bewertungen', html)
+        if m_title:
+            m_score = m_title
+            m_count = m_title
+            score_val = float(m_title.group(1).replace(",", "."))
+            count_val = int(m_title.group(2).replace(".", ""))
+            if count_val >= best["count"]:
+                best = {"score": round(score_val, 1), "count": count_val, "url": url}
+            continue
+        # Fallback: JSON-LD aggregateRating
         m_score = re.search(r'"ratingValue"[:\s]*"?([\d.]+)"?', html)
         m_count = re.search(r'"ratingCount"[:\s]*"?(\d+)"?', html)
         if not m_count:
             m_count = re.search(r'"reviewCount"[:\s]*"?(\d+)"?', html)
-        # Fallback: Meta-Tags oder sichtbarer Text
+        # Fallback: Score/5 Pattern
         if not m_score:
             m_score = re.search(r'(\d[.,]\d)\s*/\s*5', html)
         if not m_count:
@@ -298,41 +308,53 @@ def crawl_ekomi_products(products):
         if not html:
             results.append({"name": prod["name"], "score": None, "count": None, "url": url})
             continue
-        m_score = re.search(r'"ratingValue"[:\s]*"?([\d.]+)"?', html)
-        m_count = re.search(r'"ratingCount"[:\s]*"?(\d+)"?', html)
-        if not m_count:
-            m_count = re.search(r'"reviewCount"[:\s]*"?(\d+)"?', html)
-        if not m_score:
-            m_score = re.search(r'(\d[.,]\d)\s*/\s*5', html)
-        if not m_count:
-            m_count = re.search(r'von\s+(\d[\d.]*)\s+Bewertungen', html)
-        score = round(float(m_score.group(1).replace(",", ".")), 1) if m_score else None
-        count_val = m_count.group(1).replace(".", "") if m_count else None
-        count = int(count_val) if count_val else None
+        # eKomi-Format: "Bewertung: X.X Sterne von NNNNN Bewertungen"
+        m_title = re.search(r'Bewertung:\s*([\d.,]+)\s*Sterne\s*von\s*([\d.]+)\s*Bewertungen', html)
+        if m_title:
+            score = round(float(m_title.group(1).replace(",", ".")), 1)
+            count = int(m_title.group(2).replace(".", ""))
+        else:
+            m_score = re.search(r'"ratingValue"[:\s]*"?([\d.]+)"?', html)
+            m_count = re.search(r'von\s+([\d.]+)\s+Bewertungen', html)
+            score = round(float(m_score.group(1).replace(",", ".")), 1) if m_score else None
+            count_str = m_count.group(1).replace(".", "") if m_count else None
+            count = int(count_str) if count_str else None
         results.append({"name": prod["name"], "score": score, "count": count, "url": url})
     return results
 
 
 # ── 3. GOOGLE PLACES ─────────────────────────────────────────────────────────
 def crawl_google_places(query, api_key):
-    """Google Places API: Text Search -> Rating + Count."""
+    """Google Places API (New): Text Search -> Rating + Count."""
     if not api_key:
         return {"score": None, "count": None, "error": "no API key"}
-    encoded = urllib.parse.quote(query)
-    url = ("https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
-           "?input=%s&inputtype=textquery&fields=name,rating,user_ratings_total,place_id"
-           "&language=de&key=%s" % (encoded, api_key))
-    data = fetch_json(url)
-    if not data or data.get("status") != "OK":
-        # Fallback: Text Search
+
+    # Neue Places API (v1) - POST-Request
+    url = "https://places.googleapis.com/v1/places:searchText"
+    payload = json.dumps({
+        "textQuery": query,
+        "languageCode": "de",
+        "maxResultCount": 3,
+    }).encode("utf-8")
+    try:
+        req = urllib.request.Request(url, data=payload, method="POST", headers={
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": api_key,
+            "X-Goog-FieldMask": "places.displayName,places.rating,places.userRatingCount,places.id",
+        })
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        # Fallback auf Legacy API
+        encoded = urllib.parse.quote(query)
         url2 = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
                 "?query=%s&language=de&key=%s" % (encoded, api_key))
         data = fetch_json(url2)
         if not data:
-            return {"score": None, "count": None, "error": "API request failed"}
+            return {"score": None, "count": None, "error": "API failed: " + str(e)[:50]}
         results = data.get("results", [])
         if not results:
-            return {"score": None, "count": None, "error": "no results"}
+            return {"score": None, "count": None, "error": "no results (legacy fallback)"}
         best = max(results, key=lambda r: r.get("user_ratings_total", 0))
         return {
             "score": round(best.get("rating", 0), 1) or None,
@@ -341,15 +363,18 @@ def crawl_google_places(query, api_key):
             "matched_name": best.get("name"),
         }
 
-    candidates = data.get("candidates", [])
-    if not candidates:
-        return {"score": None, "count": None, "error": "no candidates"}
-    c = candidates[0]
+    places = data.get("places", [])
+    if not places:
+        return {"score": None, "count": None, "error": "no results"}
+
+    # Nimm das Ergebnis mit den meisten Bewertungen
+    best = max(places, key=lambda p: p.get("userRatingCount", 0))
+    name = best.get("displayName", {})
     return {
-        "score": round(c.get("rating", 0), 1) or None,
-        "count": c.get("user_ratings_total"),
-        "place_id": c.get("place_id"),
-        "matched_name": c.get("name"),
+        "score": round(best.get("rating", 0), 1) or None,
+        "count": best.get("userRatingCount"),
+        "place_id": best.get("id"),
+        "matched_name": name.get("text", "") if isinstance(name, dict) else str(name),
     }
 
 
@@ -628,7 +653,7 @@ def main():
         '// Sentiment-Daten (Live-Crawl aus 4 Quellen: Trustpilot, eKomi, Google, Finanztip)\n',
         content, count=1
     )
-    pattern = re.compile(r"const SENTIMENT_DATA\s*=\s*\{[\s\S]*?\n\};", re.MULTILINE)
+    pattern = re.compile(r"const SENTIMENT_DATA\s*=\s*\{.*?\};", re.DOTALL)
     if pattern.search(content):
         content = pattern.sub(new_block, content, count=1)
     else:
@@ -658,8 +683,3 @@ def main():
     print("\nPatched dashboard_template.html")
     print("  %d/10 Brands mit >= 2 Quellen" % success_count)
     print("  SENTIMENT_DATA: %d bytes" % len(new_block))
-    print("\nDone.")
-
-
-if __name__ == "__main__":
-    main()

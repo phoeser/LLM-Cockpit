@@ -190,4 +190,10 @@ def main():
             content = p2.sub(new_b, content, count=1)
             content = re.sub(r'as_of:\s*"[^"]*"', 'as_of: "' + today + '"', content)
             template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-            print("Patched (fallback): nur b
+            print("Patched (fallback): nur by_brand")
+        else:
+            print("WARN: Kein Pattern gefunden")
+
+
+if __name__ == "__main__":
+    main()

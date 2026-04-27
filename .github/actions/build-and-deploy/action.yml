@@ -54,20 +54,14 @@ runs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+        # Workflow-Outputs adden (Update-Scripts patchen Template + JSONs in-place)
         git add index.html
+        git add -u dashboard_template.html 2>/dev/null || true
+        for f in berater_data.json domain_footprint_data.json snapshot.json; do
+          if [ -f "$f" ]; then git add "$f"; fi
+        done
+        if [ -d data ]; then git add data/ 2>/dev/null || true; fi
         if git diff --staged --quiet; then
           echo "Keine Aenderungen am Dashboard."
           exit 0
-        fi
-        git commit -m "$COMMIT_MSG"
-        for i in 1 2 3; do
-          git pull --rebase origin main || true
-          if git push; then
-            echo "Push OK auf Versuch $i"
-            exit 0
-          fi
-          echo "Push fail, retry $i"
-          sleep 5
-        done
-        echo "FEHLER: Push nach 3 Versuchen gescheitert"
-        exit 1
+        f

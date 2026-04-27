@@ -30,25 +30,22 @@ jobs:
       - name: Install StatiCrypt
         run: npm install -g staticrypt@^3.5.4
 
+      - name: Install Playwright fuer Trustpilot-Fallback
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+        continue-on-error: true
+
       - name: Lade aktuellsten GEO-Snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
           GEO_REPO: phoeser/geo-visibility-tool
         run: python scripts/update_snapshot.py
 
-      - name: Aktualisiere Sentiment-Daten (Trustpilot Live - Phase A)
+      - name: Aktualisiere Sentiment-Daten (4 Quellen)
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: python scripts/update_sentiment.py
-        continue-on-error: true
-
-      - name: Install Playwright fuer Sentiment Fallback
-        run: |
-          pip install playwright
-          playwright install chromium --with-deps
-        continue-on-error: true
-
-      - name: Aktualisiere Sentiment via Browser (Phase B - Fallback)
-        run: python scripts/update_sentiment_browser.py
-        continue-on-error: true
 
       - name: Aktualisiere Domain-Footprint (Subdomain-Crawl)
         run: python scripts/update_domain_footprint.py

@@ -296,13 +296,32 @@
       <div class="text-xs text-gray-400 mt-1">Facebook / Instagram / Co.</div>
     </div>
   </div>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Subdomain-Pattern-Verteilung</h3><div id="berPattern" class="text-sm text-gray-700 space-y-2">--</div></div>
-    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Top 10 Vermittler-Funktionen</h3><div id="berFunctions" class="text-xs text-gray-700">--</div></div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Subdomain-Pattern</h3><div id="berPattern" class="text-sm text-gray-700 space-y-2">--</div></div>
+    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Top 10 Funktionen</h3><div id="berFunctions" class="text-xs text-gray-700">--</div></div>
+    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Top 20 Staedte</h3><div id="berCities" class="text-xs text-gray-700" style="max-height:280px;overflow-y:auto">--</div></div>
   </div>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Top 20 Staedte (im Sample)</h3><div id="berCities" class="text-xs text-gray-700">--</div></div>
-    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Sample: 12 Vermittler</h3><div id="berSample" class="text-xs text-gray-700 space-y-2">--</div></div>
+  <!-- Berater-Liste mit Suche + Lazy-Render -->
+  <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
+    <div class="p-4 border-b bg-gray-50 flex flex-wrap items-center gap-3">
+      <h3 class="text-lg font-bold text-ergo-dark mr-auto">Alle Berater</h3>
+      <div class="text-sm text-gray-500"><span id="berListVisible">0</span> / <span id="berListTotal">0</span></div>
+      <input id="berSearch" type="search" placeholder="Suche: Name, Stadt, PLZ, Webseite..." class="px-3 py-2 border rounded text-sm w-64 focus:outline-none focus:border-ergo-red">
+      <select id="berStateFilter" class="px-3 py-2 border rounded text-sm">
+        <option value="">Alle Bundeslaender</option>
+      </select>
+      <select id="berTypeFilter" class="px-3 py-2 border rounded text-sm">
+        <option value="">Alle Typen</option>
+        <option value="standard">Standard-Agentur</option>
+        <option value="rd">RD (Regionaldirektion)</option>
+        <option value="dkv">DKV-Partner</option>
+        <option value="image">Mit Foto</option>
+        <option value="social">Mit Social Media</option>
+      </select>
+    </div>
+    <div id="berList" class="divide-y divide-gray-100" style="max-height:75vh;overflow-y:auto;"></div>
+    <div id="berListEmpty" class="hidden p-8 text-center text-gray-400 text-sm">Keine Berater gefunden.</div>
+    <div id="berListLoading" class="p-8 text-center text-gray-400 text-sm">Laden...</div>
   </div>
 </section>
 
@@ -1211,59 +1230,50 @@ window.BERATER_DATA = /* BERATER_DATA_START */{"generated_at":"2026-04-26T23:34:
 (function(){
   function fmt(n){return (n||0).toLocaleString('de-DE');}
   function setText(id, txt){var el=document.getElementById(id); if(el) el.textContent=txt;}
-  function render(){
-    var d = window.BERATER_DATA; if(!d) return;
-    var t = d.totals || {};
-    setText('berTotal', fmt(t.vermittler));
-    setText('berSubs', fmt(t.with_subdomain));
-    setText('berPages', fmt(t.estimated_subpages_low) + '-' + fmt(t.estimated_subpages_high));
-    setText('berSocial', fmt(t.with_social));
-    if(d.generated_at){
-      var dt = d.generated_at.replace('T',' ').replace('Z',' UTC');
-      setText('berAsOf', 'Stand: ' + dt + ' - Daten aus ergo.de Vermittler-API');
+  function escHtml(s){return String(s||'').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  // PLZ -> Bundesland (anhand erste 1-2 Ziffern, vereinfacht)
+  function plzState(plz){
+    if(!plz || plz.length<2) return '';
+    var p = plz.substring(0,2);
+    var n = parseInt(p,10);
+    if(p[0]==='0' && p<='09') {
+      if(p<='02' || p==='09' || p==='08') return 'Sachsen';
+      if(p==='03' || p==='04') return 'Sachsen';
+      if(p==='06') return 'Sachsen-Anhalt';
+      if(p==='07') return 'Thueringen';
+      return 'Sachsen';
     }
-    var p = d.subdomain_pattern || {};
-    var elP = document.getElementById('berPattern');
-    if(elP){
-      var total = (p.standard_einzelagent||0)+(p.rd_regional||0)+(p.dkv_partner||0);
-      function row(label, n, color){
-        var pct = total>0 ? (n*100/total).toFixed(1) : '0.0';
-        return '<div><div class="flex justify-between"><span>'+label+'</span><span class="font-semibold">'+fmt(n)+' ('+pct+'%)</span></div><div class="bg-gray-100 h-2 rounded mt-1"><div class="h-2 rounded" style="width:'+pct+'%;background:'+color+'"></div></div></div>';
-      }
-      elP.innerHTML = row('Einzelagent (vorname-nachname)', p.standard_einzelagent||0, '#DC0028')
-        + row('Regionaldirektion (rd-stadt)', p.rd_regional||0, '#3b82f6')
-        + row('DKV-Partner (name-dkv)', p.dkv_partner||0, '#10b981');
-    }
-    var elF = document.getElementById('berFunctions');
-    if(elF){
-      var fns = d.functions || {};
-      var arr = Object.entries(fns).slice(0,10);
-      var max = arr.length ? arr[0][1] : 1;
-      elF.innerHTML = arr.map(function(kv){
-        var w = (kv[1]*100/max).toFixed(0);
-        return '<div class="flex items-center gap-2 mb-1"><span class="w-20 font-mono text-gray-600">'+kv[0]+'</span><div class="flex-1 bg-gray-100 h-3 rounded"><div class="h-3 bg-ergo-red rounded" style="width:'+w+'%"></div></div><span class="w-10 text-right">'+fmt(kv[1])+'</span></div>';
-      }).join('');
-    }
-    var elC = document.getElementById('berCities');
-    if(elC){
-      var cities = d.top_cities || [];
-      elC.innerHTML = '<table class="w-full"><tbody>'+cities.map(function(kv,i){
-        return '<tr class="border-b"><td class="py-1 px-1 text-gray-500">'+(i+1)+'.</td><td class="py-1 px-1">'+kv[0]+'</td><td class="py-1 px-1 text-right font-semibold">'+fmt(kv[1])+'</td></tr>';
-      }).join('')+'</tbody></table>';
-    }
-    var elS = document.getElementById('berSample');
-    if(elS){
-      var verm = (d.vermittler||[]).slice(0,12);
-      elS.innerHTML = verm.map(function(v){
-        var name = (v.firstname+' '+v.lastname).trim();
-        var hp = v.homepage ? '<a href="https://'+v.homepage+'" target="_blank" class="text-blue-600 hover:underline">'+v.homepage+'</a>' : '<span class="text-gray-400">(keine Subdomain)</span>';
-        return '<div class="border-b pb-1"><span class="font-semibold">'+name+'</span> &middot; '+(v.zipcode||'')+' '+(v.city||'')+' &middot; '+hp+'</div>';
-      }).join('');
-    }
+    if(n>=10 && n<=14) return 'Berlin/Brandenburg';
+    if(n>=15 && n<=16) return 'Brandenburg';
+    if(n>=17 && n<=19) return 'Mecklenburg-Vorpommern';
+    if(n>=20 && n<=22) return 'Hamburg';
+    if(n>=23 && n<=25) return 'Schleswig-Holstein';
+    if(n>=26 && n<=27) return 'Niedersachsen/Bremen';
+    if(n===28) return 'Bremen';
+    if(n>=29 && n<=31) return 'Niedersachsen';
+    if(n>=32 && n<=33) return 'NRW (OWL)';
+    if(n>=34 && n<=36) return 'Hessen';
+    if(n===37 || n===38) return 'Niedersachsen';
+    if(n===39) return 'Sachsen-Anhalt';
+    if(n>=40 && n<=48) return 'NRW';
+    if(n===49) return 'Niedersachsen';
+    if(n>=50 && n<=53) return 'NRW (Rheinland)';
+    if(n>=54 && n<=55) return 'Rheinland-Pfalz';
+    if(n===56 || n===57) return 'NRW (Suedwest)';
+    if(n>=58 && n<=59) return 'NRW';
+    if(n>=60 && n<=65) return 'Hessen';
+    if(n===66) return 'Saarland';
+    if(n>=67 && n<=68) return 'Rheinland-Pfalz';
+    if(n>=68 && n<=69) return 'Baden-Wuerttemberg';
+    if(n>=70 && n<=79) return 'Baden-Wuerttemberg';
+    if(n>=80 && n<=87) return 'Bayern';
+    if(n>=88 && n<=89) return 'Baden-Wuerttemberg/Bayern';
+    if(n>=90 && n<=96) return 'Bayern';
+    if(n===97) return 'Bayern (Unterfranken)';
+    if(n===98 || n===99) return 'Thueringen';
+    return '';
   }
-  if(document.readyState!=='loading'){ render(); }
-  else { document.addEventListener('DOMContentLoaded', render); }
-})();
-</script>
-</body>
-</html>
+
+  function classifyType(v){
+   

@@ -2,14 +2,6 @@
 
 API: GET https://www.ergo.de/ergode/handlers/agentsearchhandler.ashx
      ?zip={plz}&radius={km}&page={n}
-Response: {"TotalAgentCount": int,
-           "Agents": [{firstname, lastname, zipcode, city, address,
-                       phone, mobile, homepage, function: [Codes],
-                       social: {...}}]}
-
-ENV BERATER_PLZ_LIMIT=N -> nur erste N Seed-PLZ crawlen (lokales Test-Helper).
-
-Stand 2026-04-26 - API ist oeffentlich abrufbar, kein Auth noetig.
 """
 import json
 import os
@@ -19,8 +11,8 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+# DE-flaechendeckend: 95 PLZ-Seeds, eine pro 2-stelligem Bereich + Grossstaedte
 SEED_PLZ = [
-    # DE-flaechendeckend: ~90 PLZ, eine pro 2-stelligem Bereich + Grossstaedte
     ("01067", "Dresden"), ("02625", "Bautzen"), ("03046", "Cottbus"),
     ("04109", "Leipzig"), ("06108", "Halle"), ("07743", "Jena"),
     ("08056", "Zwickau"), ("09111", "Chemnitz"),
@@ -68,7 +60,7 @@ HEADERS = {
     "Accept": "application/json, text/javascript, */*; q=0.01",
 }
 RADIUS_KM = 50
-PAGE_LIMIT = 60
+PAGE_LIMIT = 80
 SLEEP_BETWEEN = 0.15
 
 
@@ -134,11 +126,12 @@ def aggregate(rows):
         city_count[c] = city_count.get(c, 0) + 1
     top_cities = sorted(city_count.items(), key=lambda kv: -kv[1])[:20]
     rd_count = sum(1 for r in rows if r["homepage"].startswith("rd-"))
-    dkv_count = sum(1 for r in rows if "-dkv." in r["homepage"])
+    dkv_count = sum(1 for r in rows if "-dkv." in r["homepage"] or "dkv-" in r["homepage"])
     standard_count = sum(1 for r in rows
                          if r["homepage"]
                          and not r["homepage"].startswith("rd-")
-                         and "-dkv." not in r["homepage"])
+                         and "-dkv." not in r["homepage"]
+                         and "dkv-" not in r["homepage"])
     return {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "totals": {
@@ -185,6 +178,36 @@ def main():
     agg = aggregate(rows)
     payload = dict(agg)
     payload["vermittler"] = rows
-    out = out_dir / "berater_data.json"
-    out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("OK Geschrieben: %s (%d bytes)" % (o
+    out_path = out_dir / "berater_data.json"
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("OK Geschrieben: %s (%d bytes)" % (out_path, out_path.stat().st_size))
+    t = agg["totals"]
+    print("   Total: %d Vermittler" % t["vermittler"])
+    print("   Mit Subdomain: %d" % t["with_subdomain"])
+    print("   Mit Foto: %d" % t["with_image"])
+    print("   Mit Social: %d" % t["with_social"])
+    # Patch dashboard_template.html: BERATER_DATA Block austauschen (nur Aggregate + 50er-Sample-Fallback)
+    template = out_dir / "dashboard_template.html"
+    if template.exists():
+        import re as _re
+        html = template.read_text(encoding="utf-8")
+        compact = dict(agg)
+        sample_keys = ("firstname", "lastname", "zipcode", "city", "homepage", "image")
+        compact["vermittler"] = [{k: v.get(k, "") for k in sample_keys} for v in rows[:50]]
+        block = json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
+        new_marker = "/* BERATER_DATA_START */" + block + "/* BERATER_DATA_END */"
+        pat = _re.compile(r"/\*\s*BERATER_DATA_START\s*\*/[\s\S]*?/\*\s*BERATER_DATA_END\s*\*/")
+        if pat.search(html):
+            html = pat.sub(lambda m: new_marker, html, count=1)
+            data = html.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n"
+            template.write_bytes(data)
+            print("   Template gepatcht: %s (%d bytes)" % (template, template.stat().st_size))
+        else:
+            print("   WARN: BERATER_DATA marker nicht gefunden im Template")
+    else:
+        print("   INFO: %s nicht vorhanden, skip Template-Patch" % template)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

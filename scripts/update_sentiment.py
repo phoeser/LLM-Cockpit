@@ -76,8 +76,10 @@ def aggregate(tp_score, ft_verdict, google_score=None):
 def find_sentiment_json():
     """Sucht 06_sentiment/sentiment_data.json relativ zu CWD oder Repo-Root."""
     candidates = [
+        Path("data/sentiment_data.json"),
         Path("06_sentiment/sentiment_data.json"),
         Path("../06_sentiment/sentiment_data.json"),
+        Path(__file__).parent.parent / "data" / "sentiment_data.json",
         Path(__file__).parent.parent.parent / "06_sentiment" / "sentiment_data.json",
     ]
     for c in candidates:
@@ -188,10 +190,4 @@ def main():
             content = p2.sub(new_b, content, count=1)
             content = re.sub(r'as_of:\s*"[^"]*"', 'as_of: "' + today + '"', content)
             template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-            print("Patched (fallback): nur by_brand")
-        else:
-            print("WARN: Kein Pattern gefunden")
-
-
-if __name__ == "__main__":
-    main()
+            print("Patched (fallback): nur b

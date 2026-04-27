@@ -28,10 +28,8 @@ from pathlib import Path
 
 def find_sentiment_json():
     candidates = [
-        Path("data/sentiment_data.json"),
         Path("06_sentiment/sentiment_data.json"),
         Path("../06_sentiment/sentiment_data.json"),
-        Path(__file__).parent.parent / "data" / "sentiment_data.json",
         Path(__file__).parent.parent.parent / "06_sentiment" / "sentiment_data.json",
     ]
     for c in candidates:
@@ -168,45 +166,26 @@ def main():
     src_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     print("Saved: " + str(src_path))
 
-    # Patch template - komplettes SENTIMENT_DATA-Object ersetzen (gleiche Logik wie update_sentiment.py)
+    # Patch template
     template = Path("dashboard_template.html")
     if not template.exists():
         return 0
     content = template.read_text(encoding="utf-8")
-    sd = {
-        "is_demo": False,
-        "as_of": today,
-        "sources": ["Trustpilot", "Finanztip", "Google Reviews"],
-        "by_brand": [],
-        "by_source": {},
-    }
+    by_brand_lines = []
     for e in brands:
         agg = e.get("aggregate", {})
-        sd["by_brand"].append({
-            "name": e["name"],
-            "positiv": agg.get("positiv", 50),
-            "neutral": agg.get("neutral", 25),
-            "kritisch": agg.get("kritisch", 25),
-        })
-        tp = e.get("trustpilot") or {}
-        ft = e.get("finanztip") or {}
-        g = e.get("google") or {}
-        sd["by_source"][e["key"]] = {
-            "name": e["name"],
-            "trustpilot": {"score": tp.get("score"), "count": tp.get("count")},
-            "finanztip": ft.get("verdict") if isinstance(ft, dict) else ft,
-            "google": g.get("score") if isinstance(g, dict) else g,
-            "positive": e.get("topics_positive", []),
-            "negative": e.get("topics_negative", []),
-        }
-    new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"
-    pat = re.compile(r"const SENTIMENT_DATA\s*=\s*\{[\s\S]*?\n\};", re.MULTILINE)
+        by_brand_lines.append(
+            "    { name: \"" + e["name"] + "\", positiv: " + str(agg.get("positiv", 50))
+            + ", neutral: " + str(agg.get("neutral", 25))
+            + ", kritisch: " + str(agg.get("kritisch", 25)) + " }"
+        )
+    new_block = "  by_brand: [\n" + ",\n".join(by_brand_lines) + "\n  ],"
+    pat = re.compile(r"  by_brand:\s*\[[\s\S]*?\n  \],", re.MULTILINE)
     if pat.search(content):
         content = pat.sub(new_block, content, count=1)
+        content = re.sub(r'as_of:\s*"[^"]*"', 'as_of: "' + today + '"', content)
         template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-        print("Patched dashboard_template.html (Browser-Source) mit " + str(len(sd["by_brand"])) + " Live-Brands")
-    else:
-        print("WARN: SENTIMENT_DATA-Pattern nicht gefunden - Template-Format unerwartet")
+        print("Patched dashboard_template.html (Browser-Source)")
     return 0
 
 

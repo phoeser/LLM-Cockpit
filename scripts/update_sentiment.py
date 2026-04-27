@@ -28,10 +28,20 @@ BRANDS = [
     {
         "key": "ergo", "name": "ERGO", "domain": "ergo.de",
         "ekomi_slugs": ["ergo-direkt-versicherungen-regulierung", "ergo-versicherungsgruppe"],
+        "ekomi_multi": None,
         "google_query": "ERGO Group AG Düsseldorf Versicherung",
         "finanztip_urls": [
             "https://www.finanztip.de/erfahrungen/ergo/",
             "https://www.finanztip.de/kfz-versicherung/ergo-kfz-versicherung/",
+        ],
+        "products": [
+            {"name": "KFZ-Versicherung", "ekomi": "ergo-versicherung-service"},
+            {"name": "Krankenversicherung", "ekomi": "ergo-versicherungsgruppe"},
+            {"name": "Reiseversicherung", "ekomi": "reiseversicherungde"},
+            {"name": "Rechtsschutz (DAS)", "ekomi": "das-rechtsschutzversicherung"},
+            {"name": "Schadenregulierung", "ekomi": "ergo-direkt-versicherungen-regulierung"},
+            {"name": "Vermittler-Service", "ekomi": "ergo-versicherung"},
+            {"name": "Online-Abschluss", "ekomi": "ergo-direkt-versicherungen-abschluss"},
         ],
     },
     {
@@ -43,70 +53,107 @@ BRANDS = [
             "https://www.finanztip.de/erfahrungen/allianz/",
             "https://www.finanztip.de/kfz-versicherung/allianz-kfz-versicherung/",
         ],
+        "products": [
+            {"name": "KFZ-Versicherung", "ekomi": "allianz-kfz-versicherung"},
+            {"name": "Reiserücktritt", "ekomi": "allianz-reiseruecktrittsversicherung"},
+            {"name": "Reisekranken", "ekomi": "allianz-reisekrankenversicherung"},
+            {"name": "Unfallversicherung", "ekomi": "allianz-unfallversicherung"},
+            {"name": "Risikolebensversicherung", "ekomi": "allianz-risikolebensversicherung"},
+            {"name": "Haftpflicht", "ekomi": "allianz-privat-haftpflichtversicherung"},
+        ],
     },
     {
         "key": "axa", "name": "AXA", "domain": "axa.de",
         "ekomi_slugs": ["axa-nps", "axa-konzern-ag-service"],
+        "ekomi_multi": None,
         "google_query": "AXA Versicherung Deutschland Köln",
         "finanztip_urls": [
             "https://www.finanztip.de/kfz-versicherung/axa-kfz-versicherung/",
+        ],
+        "products": [
+            {"name": "Schadenservice", "ekomi": "axa-nps"},
+            {"name": "Kundenservice (DBV)", "ekomi": "axa-konzern-ag-service"},
+            {"name": "Leistung (DBV)", "ekomi": "axa-de-dbv-leistung"},
         ],
     },
     {
         "key": "huk", "name": "HUK-Coburg", "domain": "huk.de",
         "ekomi_slugs": [],
+        "ekomi_multi": None,
         "google_query": "HUK-Coburg Versicherung Coburg",
         "finanztip_urls": [
             "https://www.finanztip.de/kfz-versicherung/kfz-versicherung-der-huk-coburg/",
         ],
+        "products": [],
     },
     {
         "key": "generali", "name": "Generali", "domain": "generali.de",
         "ekomi_slugs": [],
+        "ekomi_multi": None,
         "google_query": "Generali Deutschland Versicherung München",
         "finanztip_urls": [
             "https://www.finanztip.de/kfz-versicherung/generali-kfz-versicherung/",
         ],
+        "products": [],
     },
     {
         "key": "signal-iduna", "name": "Signal Iduna", "domain": "signal-iduna.de",
         "ekomi_slugs": [],
+        "ekomi_multi": None,
         "google_query": "Signal Iduna Versicherung Dortmund",
         "finanztip_urls": [
             "https://www.finanztip.de/erfahrungen/signal-iduna/",
         ],
+        "products": [],
     },
     {
         "key": "ruv", "name": "R+V", "domain": "ruv.de",
         "ekomi_slugs": ["ruv"],
+        "ekomi_multi": None,
         "google_query": "R+V Versicherung Wiesbaden",
         "finanztip_urls": [],
+        "products": [
+            {"name": "Gesamt", "ekomi": "ruv"},
+        ],
     },
     {
         "key": "devk", "name": "DEVK", "domain": "devk.de",
         "ekomi_slugs": ["devk"],
+        "ekomi_multi": None,
         "google_query": "DEVK Versicherungen Köln",
         "finanztip_urls": [
             "https://www.finanztip.de/kfz-versicherung/devk-kfz-versicherung/",
+        ],
+        "products": [
+            {"name": "Gesamt", "ekomi": "devk"},
         ],
     },
     {
         "key": "hannoversche", "name": "Hannoversche", "domain": "hannoversche.de",
         "ekomi_slugs": ["hannoversche-leben"],
+        "ekomi_multi": None,
         "google_query": "Hannoversche Lebensversicherung Hannover",
         "finanztip_urls": [
             "https://www.finanztip.de/risikolebensversicherung/hannoversche-rlv/",
+        ],
+        "products": [
+            {"name": "Lebensversicherung", "ekomi": "hannoversche-leben"},
         ],
     },
     {
         "key": "cosmosdirekt", "name": "Cosmos Direkt", "domain": "cosmosdirekt.de",
         "ekomi_slugs": [],
+        "ekomi_multi": None,
         "google_query": "CosmosDirekt Versicherung Saarbrücken",
         "finanztip_urls": [
             "https://www.finanztip.de/erfahrungen/cosmosdirekt/",
         ],
+        "products": [],
     },
 ]
+
+
+# ── HTTP-Helper
 
 
 # ── HTTP-Helper ──────────────────────────────────────────────────────────────
@@ -236,6 +283,34 @@ def crawl_ekomi(slugs, multi_id=None):
     if best["score"] is not None:
         return best
     return {"score": None, "count": None, "url": urls_to_try[0] if urls_to_try else None}
+
+
+
+def crawl_ekomi_products(products):
+    """Crawlt eKomi-Produktseiten und gibt Liste mit Score/Count/URL pro Produkt zurueck."""
+    results = []
+    for prod in products:
+        slug = prod.get("ekomi", "")
+        if not slug:
+            continue
+        url = "https://www.ekomi.de/bewertungen-%s.html" % slug
+        html = fetch_html(url)
+        if not html:
+            results.append({"name": prod["name"], "score": None, "count": None, "url": url})
+            continue
+        m_score = re.search(r'"ratingValue"[:\s]*"?([\d.]+)"?', html)
+        m_count = re.search(r'"ratingCount"[:\s]*"?(\d+)"?', html)
+        if not m_count:
+            m_count = re.search(r'"reviewCount"[:\s]*"?(\d+)"?', html)
+        if not m_score:
+            m_score = re.search(r'(\d[.,]\d)\s*/\s*5', html)
+        if not m_count:
+            m_count = re.search(r'von\s+(\d[\d.]*)\s+Bewertungen', html)
+        score = round(float(m_score.group(1).replace(",", ".")), 1) if m_score else None
+        count_val = m_count.group(1).replace(".", "") if m_count else None
+        count = int(count_val) if count_val else None
+        results.append({"name": prod["name"], "score": score, "count": count, "url": url})
+    return results
 
 
 # ── 3. GOOGLE PLACES ─────────────────────────────────────────────────────────
@@ -405,6 +480,13 @@ def main():
         else:
             print("  [eKomi]       MISS — kein Profil oder keine Bewertungen")
 
+        # 2b) eKomi Produkt-Level
+        products_data = []
+        if brand.get("products"):
+            products_data = crawl_ekomi_products(brand["products"])
+            ok_count = sum(1 for p in products_data if p.get("score"))
+            print("  [eKomi Prod]  %d/%d Produkte mit Score" % (ok_count, len(products_data)))
+
         # 3) Google Places
         gp = crawl_google_places(brand["google_query"], google_key) if google_key else {"score": None, "count": None}
         if gp.get("score"):
@@ -457,6 +539,7 @@ def main():
             },
             "aggregate": agg,
             "sources_count": sources_count,
+            "products": products_data,
         })
 
     # Playwright-Fallback fuer fehlende Trustpilot-Scores
@@ -534,6 +617,7 @@ def main():
             "google": {"score": e["google"]["score"], "count": e["google"]["count"]},
             "finanztip": {"verdict": e["finanztip"]["verdict"], "url": e["finanztip"]["url"]},
             "sources_count": e["sources_count"],
+            "products": e.get("products", []),
         }
 
     new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"

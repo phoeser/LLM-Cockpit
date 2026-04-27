@@ -20,18 +20,43 @@ import urllib.error
 from pathlib import Path
 
 SEED_PLZ = [
-    ("20095", "Hamburg"), ("28195", "Bremen"), ("24103", "Kiel"),
-    ("23552", "Luebeck"), ("19053", "Schwerin"), ("18055", "Rostock"),
-    ("30159", "Hannover"), ("33602", "Bielefeld"), ("44135", "Dortmund"),
-    ("48143", "Muenster"), ("50667", "Koeln"), ("40213", "Duesseldorf"),
-    ("47051", "Duisburg"), ("52062", "Aachen"), ("55116", "Mainz"),
-    ("60311", "Frankfurt"), ("65183", "Wiesbaden"), ("66111", "Saarbruecken"),
-    ("34117", "Kassel"), ("99084", "Erfurt"), ("06108", "Halle"),
-    ("10115", "Berlin"), ("14467", "Potsdam"), ("01067", "Dresden"),
-    ("04109", "Leipzig"), ("39104", "Magdeburg"), ("03046", "Cottbus"),
-    ("80331", "Muenchen"), ("90402", "Nuernberg"), ("70173", "Stuttgart"),
-    ("76133", "Karlsruhe"), ("79098", "Freiburg"), ("89073", "Ulm"),
-    ("93047", "Regensburg"), ("86150", "Augsburg"), ("87435", "Kempten"),
+    # DE-flaechendeckend: ~90 PLZ, eine pro 2-stelligem Bereich + Grossstaedte
+    ("01067", "Dresden"), ("02625", "Bautzen"), ("03046", "Cottbus"),
+    ("04109", "Leipzig"), ("06108", "Halle"), ("07743", "Jena"),
+    ("08056", "Zwickau"), ("09111", "Chemnitz"),
+    ("10115", "Berlin"), ("12099", "Berlin-Tempelhof"), ("13347", "Berlin-Wedding"),
+    ("14467", "Potsdam"), ("15230", "Frankfurt-Oder"), ("16225", "Eberswalde"),
+    ("17033", "Neubrandenburg"), ("18055", "Rostock"), ("19053", "Schwerin"),
+    ("20095", "Hamburg"), ("21073", "Hamburg-Sued"), ("22043", "Hamburg-Wandsbek"),
+    ("23552", "Luebeck"), ("24103", "Kiel"), ("25524", "Itzehoe"),
+    ("26122", "Oldenburg"), ("27568", "Bremerhaven"), ("28195", "Bremen"),
+    ("29221", "Celle"),
+    ("30159", "Hannover"), ("31134", "Hildesheim"), ("32257", "Buende"),
+    ("33602", "Bielefeld"), ("34117", "Kassel"), ("35037", "Marburg"),
+    ("36037", "Fulda"), ("37073", "Goettingen"), ("38100", "Braunschweig"),
+    ("39104", "Magdeburg"),
+    ("40213", "Duesseldorf"), ("41061", "Moenchengladbach"), ("42103", "Wuppertal"),
+    ("44135", "Dortmund"), ("45127", "Essen"), ("46045", "Oberhausen"),
+    ("47051", "Duisburg"), ("48143", "Muenster"), ("49074", "Osnabrueck"),
+    ("50667", "Koeln"), ("51063", "Koeln-Muelheim"), ("52062", "Aachen"),
+    ("53111", "Bonn"), ("54290", "Trier"), ("55116", "Mainz"),
+    ("56068", "Koblenz"), ("57072", "Siegen"), ("58095", "Hagen"),
+    ("59065", "Hamm"),
+    ("60311", "Frankfurt-Main"), ("61169", "Friedberg"), ("63065", "Offenbach"),
+    ("64283", "Darmstadt"), ("65183", "Wiesbaden"), ("66111", "Saarbruecken"),
+    ("67059", "Ludwigshafen"), ("68159", "Mannheim"), ("69115", "Heidelberg"),
+    ("70173", "Stuttgart"), ("71032", "Boeblingen"), ("72072", "Tuebingen"),
+    ("73033", "Goeppingen"), ("74072", "Heilbronn"), ("75175", "Pforzheim"),
+    ("76133", "Karlsruhe"), ("77652", "Offenburg"), ("78050", "Villingen"),
+    ("79098", "Freiburg"),
+    ("80331", "Muenchen"), ("81369", "Muenchen-Sued"), ("82041", "Furth"),
+    ("83022", "Rosenheim"), ("84028", "Landshut"), ("85049", "Ingolstadt"),
+    ("86150", "Augsburg"), ("87435", "Kempten"), ("88045", "Friedrichshafen"),
+    ("89073", "Ulm"),
+    ("90402", "Nuernberg"), ("91054", "Erlangen"), ("92224", "Amberg"),
+    ("93047", "Regensburg"), ("94032", "Passau"), ("95028", "Hof"),
+    ("96047", "Bamberg"), ("97070", "Wuerzburg"), ("98527", "Suhl"),
+    ("99084", "Erfurt"),
 ]
 
 API_URL = "https://www.ergo.de/ergode/handlers/agentsearchhandler.ashx"
@@ -162,34 +187,4 @@ def main():
     payload["vermittler"] = rows
     out = out_dir / "berater_data.json"
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("OK Geschrieben: %s (%d bytes)" % (out, out.stat().st_size))
-    t = agg["totals"]
-    print("   Total: %d Vermittler" % t["vermittler"])
-    print("   Mit Subdomain: %d" % t["with_subdomain"])
-    print("   Geschaetzt %d-%d Subseiten" % (t["estimated_subpages_low"], t["estimated_subpages_high"]))
-    # Patch dashboard_template.html: BERATER_DATA Block austauschen
-    template = out_dir / "dashboard_template.html"
-    if template.exists():
-        import re as _re
-        html = template.read_text(encoding="utf-8")
-        # Compact payload fuer Inline-Embed: Aggregationen voll, Vermittler-Liste auf 50 limitiert
-        compact = dict(agg)
-        sample_keys = ("firstname", "lastname", "zipcode", "city", "homepage")
-        compact["vermittler"] = [{k: v.get(k, "") for k in sample_keys} for v in rows[:50]]
-        block = json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
-        new_marker = "/* BERATER_DATA_START */" + block + "/* BERATER_DATA_END */"
-        pat = _re.compile(r"/\*\s*BERATER_DATA_START\s*\*/[\s\S]*?/\*\s*BERATER_DATA_END\s*\*/")
-        if pat.search(html):
-            html = pat.sub(lambda m: new_marker, html, count=1)
-            data = html.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n"
-            template.write_bytes(data)
-            print("   Template gepatcht: %s (%d bytes)" % (template, template.stat().st_size))
-        else:
-            print("   WARN: BERATER_DATA marker nicht gefunden im Template")
-    else:
-        print("   INFO: %s nicht vorhanden, skip Template-Patch" % template)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+    print("OK Geschrieben: %s (%d bytes)" % (o

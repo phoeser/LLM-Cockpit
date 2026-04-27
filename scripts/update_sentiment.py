@@ -1,198 +1,580 @@
-"""Sammelt Sentiment-Daten fuer 10 Versicherer und patcht dashboard_template.html.
+"""Sammelt ECHTE Sentiment-Daten fuer 10 Versicherer aus 4 Quellen und patcht dashboard_template.html.
 
-Quellen-Hierarchie (in Reihenfolge):
-1. 06_sentiment/sentiment_data.json   -> manuell gepflegte Vollversion (Finanztip + Google + Topics)
-2. Trustpilot live (best-effort)       -> ueberschreibt tp.score wenn erreichbar
-3. Aggregate wird neu berechnet aus tp + finanztip + google
+Quellen:
+1. Trustpilot    (urllib + Playwright-Fallback)  — Score + Count
+2. eKomi         (HTML-Scrape)                   — Score + Count
+3. Google Places (API, braucht GOOGLE_PLACES_API_KEY) — Score + Count
+4. Finanztip     (HTML-Scrape)                   — Verdict + Topics
 
-Workflow im Repo: lebt in github-deployment/, sucht ../06_sentiment/sentiment_data.json
-Workflow lokal:   gleicher Pfad relativ zu cwd
-
+Workflow: laeuft in github-deployment/ als CWD
 Output:
-- 06_sentiment/sentiment_data.json (mit aktualisiertem as_of + tp-Werten)
-- dashboard_template.html: by_brand Block + as_of patched
+- data/sentiment_data.json (alle Rohdaten + Aggregate)
+- dashboard_template.html: SENTIMENT_DATA-Block gepatcht
 """
 import json
 import re
-import urllib.request
-import gzip
 import os
+import sys
+import gzip
+import urllib.request
+import urllib.parse
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
+# ── Brand-Konfiguration ──────────────────────────────────────────────────────
+BRANDS = [
+    {
+        "key": "ergo", "name": "ERGO", "domain": "ergo.de",
+        "ekomi_slugs": ["ergo-direkt-versicherungen-regulierung", "ergo-versicherungsgruppe"],
+        "google_query": "ERGO Group AG Düsseldorf Versicherung",
+        "finanztip_urls": [
+            "https://www.finanztip.de/erfahrungen/ergo/",
+            "https://www.finanztip.de/kfz-versicherung/ergo-kfz-versicherung/",
+        ],
+    },
+    {
+        "key": "allianz", "name": "Allianz", "domain": "allianz.de",
+        "ekomi_slugs": ["allianz-kfz-versicherung"],
+        "ekomi_multi": "allianz-kundenbewertungen",
+        "google_query": "Allianz Versicherung München Deutschland",
+        "finanztip_urls": [
+            "https://www.finanztip.de/erfahrungen/allianz/",
+            "https://www.finanztip.de/kfz-versicherung/allianz-kfz-versicherung/",
+        ],
+    },
+    {
+        "key": "axa", "name": "AXA", "domain": "axa.de",
+        "ekomi_slugs": ["axa-nps", "axa-konzern-ag-service"],
+        "google_query": "AXA Versicherung Deutschland Köln",
+        "finanztip_urls": [
+            "https://www.finanztip.de/kfz-versicherung/axa-kfz-versicherung/",
+        ],
+    },
+    {
+        "key": "huk", "name": "HUK-Coburg", "domain": "huk.de",
+        "ekomi_slugs": [],
+        "google_query": "HUK-Coburg Versicherung Coburg",
+        "finanztip_urls": [
+            "https://www.finanztip.de/kfz-versicherung/kfz-versicherung-der-huk-coburg/",
+        ],
+    },
+    {
+        "key": "generali", "name": "Generali", "domain": "generali.de",
+        "ekomi_slugs": [],
+        "google_query": "Generali Deutschland Versicherung München",
+        "finanztip_urls": [
+            "https://www.finanztip.de/kfz-versicherung/generali-kfz-versicherung/",
+        ],
+    },
+    {
+        "key": "signal-iduna", "name": "Signal Iduna", "domain": "signal-iduna.de",
+        "ekomi_slugs": [],
+        "google_query": "Signal Iduna Versicherung Dortmund",
+        "finanztip_urls": [
+            "https://www.finanztip.de/erfahrungen/signal-iduna/",
+        ],
+    },
+    {
+        "key": "ruv", "name": "R+V", "domain": "ruv.de",
+        "ekomi_slugs": ["ruv"],
+        "google_query": "R+V Versicherung Wiesbaden",
+        "finanztip_urls": [],
+    },
+    {
+        "key": "devk", "name": "DEVK", "domain": "devk.de",
+        "ekomi_slugs": ["devk"],
+        "google_query": "DEVK Versicherungen Köln",
+        "finanztip_urls": [
+            "https://www.finanztip.de/kfz-versicherung/devk-kfz-versicherung/",
+        ],
+    },
+    {
+        "key": "hannoversche", "name": "Hannoversche", "domain": "hannoversche.de",
+        "ekomi_slugs": ["hannoversche-leben"],
+        "google_query": "Hannoversche Lebensversicherung Hannover",
+        "finanztip_urls": [
+            "https://www.finanztip.de/risikolebensversicherung/hannoversche-rlv/",
+        ],
+    },
+    {
+        "key": "cosmosdirekt", "name": "Cosmos Direkt", "domain": "cosmosdirekt.de",
+        "ekomi_slugs": [],
+        "google_query": "CosmosDirekt Versicherung Saarbrücken",
+        "finanztip_urls": [
+            "https://www.finanztip.de/erfahrungen/cosmosdirekt/",
+        ],
+    },
+]
 
 
-def fetch_trustpilot(domain):
-    url = "https://de.trustpilot.com/review/" + domain
+# ── HTTP-Helper ──────────────────────────────────────────────────────────────
+def fetch_html(url, timeout=15):
+    """Holt HTML von einer URL, decompressed gzip falls noetig."""
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=15) as r:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": UA,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "de-DE,de;q=0.9,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+        })
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             data = r.read()
             if data[:2] == b"\x1f\x8b":
                 data = gzip.decompress(data)
-            html = data.decode("utf-8", errors="ignore")
-        m_score = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
-        m_count = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
+            return data.decode("utf-8", errors="ignore")
+    except Exception as e:
+        return None
+
+
+def fetch_json(url, timeout=15):
+    """Holt JSON von einer URL."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        return None
+
+
+# ── 1. TRUSTPILOT ────────────────────────────────────────────────────────────
+def crawl_trustpilot(domain):
+    """Trustpilot-Score via urllib (JSON-LD aus HTML)."""
+    url = "https://de.trustpilot.com/review/" + domain
+    html = fetch_html(url)
+    if not html:
+        return {"score": None, "count": None, "url": url, "error": "fetch failed"}
+    m_score = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
+    m_count = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
+    if m_score:
         return {
-            "score": float(m_score.group(1)) if m_score else None,
+            "score": round(float(m_score.group(1)), 1),
             "count": int(m_count.group(1)) if m_count else None,
             "url": url,
         }
-    except Exception as e:
-        return {"score": None, "count": None, "url": url, "error": str(e)[:80]}
+    return {"score": None, "count": None, "url": url, "error": "no ratingValue found"}
 
 
-def aggregate(tp_score, ft_verdict, google_score=None):
-    """Sentiment-Verteilung positiv/neutral/kritisch aus drei Signalen."""
-    scores = []
+def crawl_trustpilot_browser(brands_data):
+    """Playwright-Fallback fuer Trustpilot (nur fuer Brands ohne urllib-Score)."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("  [TP-Browser] playwright nicht installiert, skip")
+        return {}
+    import time
+    results = {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-blink-features=AutomationControlled", "--disable-dev-shm-usage"],
+        )
+        ctx = browser.new_context(
+            user_agent=UA, locale="de-DE", timezone_id="Europe/Berlin",
+            viewport={"width": 1280, "height": 800},
+        )
+        ctx.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});")
+        page = ctx.new_page()
+        for entry in brands_data:
+            key = entry["key"]
+            domain = entry["domain"]
+            url = "https://de.trustpilot.com/review/" + domain
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                time.sleep(2)
+                html = page.content()
+                m_s = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
+                m_c = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
+                if m_s:
+                    results[key] = {
+                        "score": round(float(m_s.group(1)), 1),
+                        "count": int(m_c.group(1)) if m_c else None,
+                        "url": url,
+                    }
+                    print("  [TP-Browser] %s -> %.1f (%s)" % (entry["name"], results[key]["score"], results[key]["count"]))
+            except Exception as e:
+                print("  [TP-Browser] %s error: %s" % (entry["name"], str(e)[:60]))
+            time.sleep(2)
+        browser.close()
+    return results
+
+
+# ── 2. eKOMI ─────────────────────────────────────────────────────────────────
+def crawl_ekomi(slugs, multi_id=None):
+    """eKomi-Score aus HTML-Seite extrahieren. Nimmt den Slug mit den meisten Reviews."""
+    best = {"score": None, "count": 0, "url": None}
+
+    urls_to_try = []
+    for s in slugs:
+        urls_to_try.append("https://www.ekomi.de/bewertungen-%s.html" % s)
+    if multi_id:
+        urls_to_try.append("https://www.ekomi.de/certificate_multi.php?id=%s" % multi_id)
+
+    for url in urls_to_try:
+        html = fetch_html(url)
+        if not html:
+            continue
+        # Versuche JSON-LD aggregateRating
+        m_score = re.search(r'"ratingValue"[:\s]*"?([\d.]+)"?', html)
+        m_count = re.search(r'"ratingCount"[:\s]*"?(\d+)"?', html)
+        if not m_count:
+            m_count = re.search(r'"reviewCount"[:\s]*"?(\d+)"?', html)
+        # Fallback: Meta-Tags oder sichtbarer Text
+        if not m_score:
+            m_score = re.search(r'(\d[.,]\d)\s*/\s*5', html)
+        if not m_count:
+            m_count = re.search(r'von\s+(\d[\d.]*)\s+Bewertungen', html)
+
+        if m_score:
+            score = float(m_score.group(1).replace(",", "."))
+            count_val = m_count.group(1).replace(".", "") if m_count else "0"
+            count = int(count_val)
+            if count >= best["count"]:
+                best = {"score": round(score, 1), "count": count, "url": url}
+
+    if best["score"] is not None:
+        return best
+    return {"score": None, "count": None, "url": urls_to_try[0] if urls_to_try else None}
+
+
+# ── 3. GOOGLE PLACES ─────────────────────────────────────────────────────────
+def crawl_google_places(query, api_key):
+    """Google Places API: Text Search -> Rating + Count."""
+    if not api_key:
+        return {"score": None, "count": None, "error": "no API key"}
+    encoded = urllib.parse.quote(query)
+    url = ("https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+           "?input=%s&inputtype=textquery&fields=name,rating,user_ratings_total,place_id"
+           "&language=de&key=%s" % (encoded, api_key))
+    data = fetch_json(url)
+    if not data or data.get("status") != "OK":
+        # Fallback: Text Search
+        url2 = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
+                "?query=%s&language=de&key=%s" % (encoded, api_key))
+        data = fetch_json(url2)
+        if not data:
+            return {"score": None, "count": None, "error": "API request failed"}
+        results = data.get("results", [])
+        if not results:
+            return {"score": None, "count": None, "error": "no results"}
+        best = max(results, key=lambda r: r.get("user_ratings_total", 0))
+        return {
+            "score": round(best.get("rating", 0), 1) or None,
+            "count": best.get("user_ratings_total"),
+            "place_id": best.get("place_id"),
+            "matched_name": best.get("name"),
+        }
+
+    candidates = data.get("candidates", [])
+    if not candidates:
+        return {"score": None, "count": None, "error": "no candidates"}
+    c = candidates[0]
+    return {
+        "score": round(c.get("rating", 0), 1) or None,
+        "count": c.get("user_ratings_total"),
+        "place_id": c.get("place_id"),
+        "matched_name": c.get("name"),
+    }
+
+
+# ── 4. FINANZTIP ─────────────────────────────────────────────────────────────
+FINANZTIP_VERDICTS = {
+    "empfehlung": ["finanztip empfehlung", "finanztip-empfehlung", "empfohlen von finanztip",
+                    "unser tipp", "unsere empfehlung", "finanztip empfiehlt"],
+    "alternativ": ["alternative", "günstige alternative", "kann eine option sein",
+                    "unter bestimmten voraussetzungen"],
+    "nicht-empfohlen": ["nicht empfohlen", "nicht empfehlung", "raten wir ab",
+                         "können wir nicht empfehlen", "nicht zu empfehlen"],
+}
+
+def crawl_finanztip(urls):
+    """Finanztip-Verdict aus HTML extrahieren."""
+    if not urls:
+        return {"verdict": None, "url": None, "topics": []}
+
+    for url in urls:
+        html = fetch_html(url)
+        if not html:
+            continue
+        text_lower = html.lower()
+
+        # Verdict erkennen (Prioritaet: empfehlung > nicht-empfohlen > alternativ)
+        verdict = None
+        for v_key in ["empfehlung", "nicht-empfohlen", "alternativ"]:
+            for phrase in FINANZTIP_VERDICTS[v_key]:
+                if phrase in text_lower:
+                    # "nicht empfohlen" darf nicht "empfehlung" ueberschreiben wenn beides vorkommt
+                    if v_key == "empfehlung" and any(neg in text_lower for neg in FINANZTIP_VERDICTS["nicht-empfohlen"]):
+                        verdict = "nicht-empfohlen"
+                    else:
+                        verdict = v_key
+                    break
+            if verdict:
+                break
+
+        # Topics: <h2> und <h3> als Themen-Hinweise
+        topics = []
+        for m in re.finditer(r'<h[23][^>]*>(.*?)</h[23]>', html, re.IGNORECASE):
+            t = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+            if 5 < len(t) < 80 and not any(skip in t.lower() for skip in ["cookie", "newsletter", "inhalt", "navigation"]):
+                topics.append(t)
+
+        if verdict:
+            return {"verdict": verdict, "url": url, "topics": topics[:5]}
+
+    return {"verdict": "keine-klare-empfehlung", "url": urls[0], "topics": []}
+
+
+# ── AGGREGATION ──────────────────────────────────────────────────────────────
+def aggregate(tp_score, ekomi_score, google_score, ft_verdict):
+    """Sentiment-Verteilung aus 4 Quellen gewichtet berechnen.
+
+    Gewichte (normiert auf verfuegbare Quellen):
+    - Trustpilot:  0.35
+    - eKomi:       0.20
+    - Google:      0.15
+    - Finanztip:   0.30
+    """
+    scores = []  # (positiv-%, gewicht)
+
+    # Sterne -> Positiv-% Mapping: 1.0=10%, 2.0=25%, 3.0=45%, 4.0=65%, 5.0=85%
+    def stars_to_pos(s):
+        return max(10, min(90, 10 + (s - 1) * 18.75))
+
     if tp_score is not None:
-        scores.append((30 + (tp_score - 1) * 15, 0.5))
+        scores.append((stars_to_pos(tp_score), 0.35))
+    if ekomi_score is not None:
+        scores.append((stars_to_pos(ekomi_score), 0.20))
     if google_score is not None:
-        scores.append((30 + (google_score - 1) * 15, 0.2))
-    weights = {"empfehlung": 75, "alternativ": 58, "nicht-empfohlen": 38}
-    if ft_verdict in weights:
-        scores.append((weights[ft_verdict], 0.3))
-    elif ft_verdict:
-        scores.append((50, 0.3))
+        scores.append((stars_to_pos(google_score), 0.15))
+
+    ft_map = {"empfehlung": 78, "alternativ": 55, "nicht-empfohlen": 30, "keine-klare-empfehlung": 45}
+    if ft_verdict in ft_map:
+        scores.append((ft_map[ft_verdict], 0.30))
+
     if not scores:
         return {"positiv": 50, "neutral": 25, "kritisch": 25}
+
     total_w = sum(w for _, w in scores)
     pos = sum(p * w for p, w in scores) / total_w
-    # pos in [20, 80], neg ~= 55% des Rests (Rest = 100-pos), neu = Rest - neg
-    pos = max(20, min(80, pos))
+    pos = max(15, min(85, pos))
     rest = 100 - pos
-    neg = max(5, min(45, rest * 0.55))
+    neg = max(5, min(40, rest * 0.55))
     neu = max(5, rest - neg)
-    # Normieren falls pos+neu+neg != 100
+
     total = pos + neu + neg
-    if total != 100:
-        pos = round(pos * 100 / total, 1)
-        neu = round(neu * 100 / total, 1)
-        neg = round(neg * 100 / total, 1)
-    return {"positiv": round(pos), "neutral": round(neu), "kritisch": round(neg)}
+    return {
+        "positiv": round(pos * 100 / total),
+        "neutral": round(neu * 100 / total),
+        "kritisch": round(neg * 100 / total),
+    }
 
 
-def find_sentiment_json():
-    """Sucht 06_sentiment/sentiment_data.json relativ zu CWD oder Repo-Root."""
-    candidates = [
-        Path("data/sentiment_data.json"),
-        Path("06_sentiment/sentiment_data.json"),
-        Path("../06_sentiment/sentiment_data.json"),
-        Path(__file__).parent.parent / "data" / "sentiment_data.json",
-        Path(__file__).parent.parent.parent / "06_sentiment" / "sentiment_data.json",
-    ]
-    for c in candidates:
-        if c.exists():
-            return c
-    return None
-
-
+# ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    src_path = find_sentiment_json()
-    if not src_path:
-        print("ERROR: 06_sentiment/sentiment_data.json nicht gefunden")
-        # Fallback: minimale Liste
-        manual_data = {"by_brand": []}
-    else:
-        manual_data = json.loads(src_path.read_text(encoding="utf-8"))
-        print("Lade manuelle Sentiment-Daten aus: " + str(src_path))
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    google_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+    if not google_key:
+        print("WARN: GOOGLE_PLACES_API_KEY nicht gesetzt — Google-Quelle wird uebersprungen")
 
-    today = datetime.utcnow().strftime("%Y-%m-%d")
-    manual_data["as_of"] = today
+    print("=" * 60)
+    print("Sentiment-Crawl %s  |  4 Quellen  |  10 Brands" % today)
+    print("=" * 60)
 
-    # Trustpilot live refresh + neu aggregieren
-    for entry in manual_data.get("by_brand", []):
-        name = entry.get("name", "?")
-        domain = entry.get("domain", "")
-        if domain:
-            tp_live = fetch_trustpilot(domain)
-            if tp_live.get("score") is not None:
-                entry.setdefault("trustpilot", {})
-                entry["trustpilot"]["score"] = tp_live["score"]
-                entry["trustpilot"]["count"] = tp_live.get("count") or entry["trustpilot"].get("count")
-                entry["trustpilot"]["url"] = tp_live["url"]
-                entry["trustpilot"]["note"] = "Live-Crawl " + today
-                print("  TP live: " + name + " -> " + str(tp_live["score"]))
-            else:
-                print("  TP fail: " + name + " (manueller Wert bleibt)")
-        # Re-aggregate (auch falls TP nicht live ging)
-        tp_score = entry.get("trustpilot", {}).get("score")
-        ft = entry.get("finanztip") or {}
-        ft_verdict = ft.get("verdict") if isinstance(ft, dict) else ft
-        g = entry.get("google") or {}
-        g_score = g.get("score") if isinstance(g, dict) else None
-        entry["aggregate"] = aggregate(tp_score, ft_verdict, g_score)
+    results = []
+    tp_missing_keys = []  # Fuer Playwright-Fallback
 
-    # JSON zurueckschreiben
-    if src_path:
-        src_path.write_text(json.dumps(manual_data, indent=2, ensure_ascii=False), encoding="utf-8")
-        print("Saved: " + str(src_path))
+    for brand in BRANDS:
+        key = brand["key"]
+        name = brand["name"]
+        print("\n--- %s ---" % name)
 
-    # dashboard_template.html patchen: kompletten SENTIMENT_DATA-Block ersetzen
+        # 1) Trustpilot
+        tp = crawl_trustpilot(brand["domain"])
+        if tp.get("score"):
+            print("  [Trustpilot]  %.1f / 5  (%s Reviews)" % (tp["score"], tp.get("count", "?")))
+        else:
+            print("  [Trustpilot]  MISS — %s" % tp.get("error", "unbekannt"))
+            tp_missing_keys.append(brand)
+
+        # 2) eKomi
+        ek = crawl_ekomi(brand.get("ekomi_slugs", []), brand.get("ekomi_multi"))
+        if ek.get("score"):
+            print("  [eKomi]       %.1f / 5  (%s Reviews)" % (ek["score"], ek.get("count", "?")))
+        else:
+            print("  [eKomi]       MISS — kein Profil oder keine Bewertungen")
+
+        # 3) Google Places
+        gp = crawl_google_places(brand["google_query"], google_key) if google_key else {"score": None, "count": None}
+        if gp.get("score"):
+            print("  [Google]      %.1f / 5  (%s Reviews)  [%s]" % (gp["score"], gp.get("count", "?"), gp.get("matched_name", "")))
+        else:
+            print("  [Google]      MISS — %s" % gp.get("error", "kein Key"))
+
+        # 4) Finanztip
+        ft = crawl_finanztip(brand.get("finanztip_urls", []))
+        if ft.get("verdict"):
+            print("  [Finanztip]   %s" % ft["verdict"])
+        else:
+            print("  [Finanztip]   MISS — keine Seite gefunden")
+
+        # Aggregate
+        agg = aggregate(tp.get("score"), ek.get("score"), gp.get("score"), ft.get("verdict"))
+        print("  => Aggregate: positiv=%d%% neutral=%d%% kritisch=%d%%" % (agg["positiv"], agg["neutral"], agg["kritisch"]))
+
+        # Quellen-Zaehler
+        sources_count = sum(1 for s in [tp.get("score"), ek.get("score"), gp.get("score"), ft.get("verdict")] if s)
+        print("  => %d/4 Quellen erfolgreich" % sources_count)
+
+        results.append({
+            "key": key,
+            "name": name,
+            "domain": brand["domain"],
+            "trustpilot": {
+                "score": tp.get("score"),
+                "count": tp.get("count"),
+                "url": tp.get("url", "https://de.trustpilot.com/review/" + brand["domain"]),
+                "note": "Live-Crawl " + today if tp.get("score") else tp.get("error", "nicht verfuegbar"),
+            },
+            "ekomi": {
+                "score": ek.get("score"),
+                "count": ek.get("count"),
+                "url": ek.get("url"),
+                "note": "Live-Crawl " + today if ek.get("score") else "kein Profil",
+            },
+            "google": {
+                "score": gp.get("score"),
+                "count": gp.get("count"),
+                "place_id": gp.get("place_id"),
+                "matched_name": gp.get("matched_name"),
+                "note": "Google Places API " + today if gp.get("score") else gp.get("error", "nicht verfuegbar"),
+            },
+            "finanztip": {
+                "verdict": ft.get("verdict"),
+                "url": ft.get("url"),
+                "topics": ft.get("topics", []),
+            },
+            "aggregate": agg,
+            "sources_count": sources_count,
+        })
+
+    # Playwright-Fallback fuer fehlende Trustpilot-Scores
+    if tp_missing_keys:
+        print("\n--- Playwright-Fallback fuer %d Brands ---" % len(tp_missing_keys))
+        browser_results = crawl_trustpilot_browser(tp_missing_keys)
+        for entry in results:
+            br = browser_results.get(entry["key"])
+            if br and br.get("score"):
+                entry["trustpilot"]["score"] = br["score"]
+                entry["trustpilot"]["count"] = br.get("count") or entry["trustpilot"].get("count")
+                entry["trustpilot"]["url"] = br["url"]
+                entry["trustpilot"]["note"] = "Browser-Crawl " + today
+                # Re-aggregate mit neuem TP-Score
+                entry["aggregate"] = aggregate(
+                    br["score"],
+                    entry["ekomi"]["score"],
+                    entry["google"]["score"],
+                    entry["finanztip"]["verdict"],
+                )
+                entry["sources_count"] = sum(1 for s in [
+                    br["score"], entry["ekomi"]["score"],
+                    entry["google"]["score"], entry["finanztip"]["verdict"]
+                ] if s)
+                print("  [TP-Browser] %s -> %.1f (re-aggregated)" % (entry["name"], br["score"]))
+
+    # ── JSON speichern ────────────────────────────────────────────────────
+    out_data = {
+        "as_of": today,
+        "sources": ["Trustpilot", "eKomi", "Google Places", "Finanztip"],
+        "methodology": {
+            "trustpilot": "Direct HTML crawl (urllib + Playwright fallback); JSON-LD ratingValue extraction",
+            "ekomi": "Direct HTML crawl; JSON-LD/Meta aggregateRating extraction",
+            "google": "Google Places API (findplacefromtext); requires GOOGLE_PLACES_API_KEY",
+            "finanztip": "HTML crawl; keyword-based verdict extraction (empfehlung/alternativ/nicht-empfohlen)",
+            "aggregate_weights": {"trustpilot": 0.35, "ekomi": 0.20, "google": 0.15, "finanztip": 0.30},
+        },
+        "by_brand": results,
+    }
+
+    json_path = Path("data/sentiment_data.json")
+    if not json_path.parent.exists():
+        json_path.parent.mkdir(parents=True)
+    json_path.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("\nSaved: %s (%d bytes)" % (json_path, json_path.stat().st_size))
+
+    # ── Dashboard-Template patchen ────────────────────────────────────────
     template = Path("dashboard_template.html")
     if not template.exists():
         print("WARN: dashboard_template.html nicht gefunden, skip patch")
         return
+
     content = template.read_text(encoding="utf-8")
 
-    # Build full SENTIMENT_DATA structure
+    # SENTIMENT_DATA-Block fuer JS aufbauen
     sd = {
         "is_demo": False,
         "as_of": today,
-        "sources": ["Trustpilot", "Finanztip", "Google Reviews"],
+        "sources": ["Trustpilot", "eKomi", "Google Places", "Finanztip"],
         "by_brand": [],
         "by_source": {},
     }
-    for e in manual_data.get("by_brand", []):
-        agg = e.get("aggregate", {})
+    for e in results:
+        agg = e["aggregate"]
         sd["by_brand"].append({
             "name": e["name"],
-            "positiv": agg.get("positiv", 50),
-            "neutral": agg.get("neutral", 25),
-            "kritisch": agg.get("kritisch", 25),
+            "positiv": agg["positiv"],
+            "neutral": agg["neutral"],
+            "kritisch": agg["kritisch"],
         })
-        # by_source mit detailed fields
-        tp = e.get("trustpilot") or {}
-        ft = e.get("finanztip") or {}
-        g = e.get("google") or {}
         sd["by_source"][e["key"]] = {
             "name": e["name"],
-            "trustpilot": {"score": tp.get("score"), "count": tp.get("count")},
-            "finanztip": ft.get("verdict") if isinstance(ft, dict) else ft,
-            "google": g.get("score") if isinstance(g, dict) else g,
-            "positive": e.get("topics_positive", []),
-            "negative": e.get("topics_negative", []),
+            "trustpilot": {"score": e["trustpilot"]["score"], "count": e["trustpilot"]["count"], "url": e["trustpilot"]["url"]},
+            "ekomi": {"score": e["ekomi"]["score"], "count": e["ekomi"]["count"], "url": e["ekomi"]["url"]},
+            "google": {"score": e["google"]["score"], "count": e["google"]["count"]},
+            "finanztip": {"verdict": e["finanztip"]["verdict"], "url": e["finanztip"]["url"]},
+            "sources_count": e["sources_count"],
         }
 
-    # Compact JSON-Style fuer JS-Var
     new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"
-    # Replace whole `const SENTIMENT_DATA = {...};` statement
+
+    # Alten Kommentar + Block ersetzen
+    content = re.sub(
+        r'// Sentiment-Demo-Daten[^\n]*\n',
+        '// Sentiment-Daten (Live-Crawl aus 4 Quellen: Trustpilot, eKomi, Google, Finanztip)\n',
+        content, count=1
+    )
     pattern = re.compile(r"const SENTIMENT_DATA\s*=\s*\{[\s\S]*?\n\};", re.MULTILINE)
     if pattern.search(content):
         content = pattern.sub(new_block, content, count=1)
-        # NULL-byte safe schreiben
-        template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-        print("Patched dashboard_template.html, SENTIMENT_DATA komplett ersetzt mit " + str(len(sd["by_brand"])) + " Brands + by_source-Details")
     else:
-        # Fallback: try old by_brand-only pattern
-        by_brand_lines = []
-        for e in manual_data.get("by_brand", []):
-            agg = e.get("aggregate", {})
-            by_brand_lines.append(
-                "    { name: \"" + e["name"] + "\", positiv: " + str(agg.get("positiv", 50))
-                + ", neutral: " + str(agg.get("neutral", 25))
-                + ", kritisch: " + str(agg.get("kritisch", 25)) + " }"
-            )
-        new_b = "  by_brand: [\n" + ",\n".join(by_brand_lines) + "\n  ],"
-        p2 = re.compile(r"  by_brand:\s*\[[\s\S]*?\n  \],", re.MULTILINE)
-        if p2.search(content):
-            content = p2.sub(new_b, content, count=1)
-            content = re.sub(r'as_of:\s*"[^"]*"', 'as_of: "' + today + '"', content)
-            template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-            print("Patched (fallback): nur by_brand")
-        else:
-            print("WARN: Kein Pattern gefunden")
+        print("WARN: SENTIMENT_DATA-Pattern nicht gefunden")
+        return
+
+    # Demo-Badge entfernen
+    content = re.sub(
+        r'\s*<span class="badge badge-yellow">Demo-Daten[^<]*</span>',
+        '',
+        content, count=1
+    )
+
+    # Live-Badge einfuegen (falls nicht schon vorhanden)
+    if 'badge-sentiment-live' not in content:
+        content = content.replace(
+            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
+            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>\n'
+            '        <span class="badge badge-sentiment-live" style="background:#e8f5e9;color:#2e7d32;font-size:11px;padding:2px 8px;border-radius:4px;margin-left:8px;">'
+            'Live-Daten · Stand <span id="sentimentDate"></span></span>',
+        )
+
+    # NULL-byte-safe schreiben
+    template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
+
+    success_count = sum(1 for e in results if e["sources_count"] >= 2)
+    print("\nPatched dashboard_template.html")
+    print("  %d/10 Brands mit >= 2 Quellen" % success_count)
+    print("  SENTIMENT_DATA: %d bytes" % len(new_block))
+    print("\nDone.")
 
 
 if __name__ == "__main__":

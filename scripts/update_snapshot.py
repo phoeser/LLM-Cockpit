@@ -77,14 +77,17 @@ def transform_to_dashboard_format(geo: dict) -> dict:
 
 
 def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) -> None:
+    """Patcht GEO_SNAPSHOT IN-PLACE in dashboard_template.html.
+    Nutzt out_path NUR fuer Backwards-Compat (falls Workflow sie erwartet)."""
     html = template_path.read_text(encoding="utf-8")
     new_line = "const GEO_SNAPSHOT = " + json.dumps(snapshot, ensure_ascii=False) + ";"
     pattern = re.compile(r"const GEO_SNAPSHOT\s*=\s*\{.*?\};", re.DOTALL)
     new_html, n = pattern.subn(new_line, html, count=1)
     if n != 1:
         sys.exit("FEHLER: GEO_SNAPSHOT-Zeile im Template nicht gefunden.")
-    out_path.write_text(new_html, encoding="utf-8")
-    print(f"OK - Snapshot eingebettet ({len(json.dumps(snapshot)):,} Zeichen JSON)")
+    # Patch IN-PLACE (NULL-byte safe)
+    template_path.write_bytes(new_html.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
+    print(f"OK - Snapshot eingebettet IN dashboard_template.html ({len(json.dumps(snapshot)):,} Zeichen JSON)")
 
 
 def main():
@@ -103,9 +106,9 @@ def main():
     if not template.exists():
         sys.exit("FEHLER: dashboard_template.html fehlt im Repo-Root.")
 
-    out = Path("dashboard_unencrypted.html")
-    inject_into_template(template, snapshot, out)
-    print(f"   Output: {out} ({out.stat().st_size:,} Bytes)")
+    # Patch in-place (template = dashboard_template.html)
+    inject_into_template(template, snapshot, template)
+    print(f"   Patched: {template} ({template.stat().st_size:,} Bytes)")
 
 
 if __name__ == "__main__":

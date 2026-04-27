@@ -76,8 +76,10 @@ def aggregate(tp_score, ft_verdict, google_score=None):
 def find_sentiment_json():
     """Sucht 06_sentiment/sentiment_data.json relativ zu CWD oder Repo-Root."""
     candidates = [
+        Path("data/sentiment_data.json"),
         Path("06_sentiment/sentiment_data.json"),
         Path("../06_sentiment/sentiment_data.json"),
+        Path(__file__).parent.parent / "data" / "sentiment_data.json",
         Path(__file__).parent.parent.parent / "06_sentiment" / "sentiment_data.json",
     ]
     for c in candidates:
@@ -127,30 +129,70 @@ def main():
         src_path.write_text(json.dumps(manual_data, indent=2, ensure_ascii=False), encoding="utf-8")
         print("Saved: " + str(src_path))
 
-    # dashboard_template.html patchen (im aktuellen cwd)
+    # dashboard_template.html patchen: kompletten SENTIMENT_DATA-Block ersetzen
     template = Path("dashboard_template.html")
     if not template.exists():
         print("WARN: dashboard_template.html nicht gefunden, skip patch")
         return
     content = template.read_text(encoding="utf-8")
-    by_brand_lines = []
+
+    # Build full SENTIMENT_DATA structure
+    sd = {
+        "is_demo": False,
+        "as_of": today,
+        "sources": ["Trustpilot", "Finanztip", "Google Reviews"],
+        "by_brand": [],
+        "by_source": {},
+    }
     for e in manual_data.get("by_brand", []):
         agg = e.get("aggregate", {})
-        by_brand_lines.append(
-            "    { name: \"" + e["name"] + "\", positiv: " + str(agg.get("positiv", 50))
-            + ", neutral: " + str(agg.get("neutral", 25))
-            + ", kritisch: " + str(agg.get("kritisch", 25)) + " }"
-        )
-    new_block = "  by_brand: [\n" + ",\n".join(by_brand_lines) + "\n  ],"
-    pattern = re.compile(r"  by_brand:\s*\[[\s\S]*?\n  \],", re.MULTILINE)
+        sd["by_brand"].append({
+            "name": e["name"],
+            "positiv": agg.get("positiv", 50),
+            "neutral": agg.get("neutral", 25),
+            "kritisch": agg.get("kritisch", 25),
+        })
+        # by_source mit detailed fields
+        tp = e.get("trustpilot") or {}
+        ft = e.get("finanztip") or {}
+        g = e.get("google") or {}
+        sd["by_source"][e["key"]] = {
+            "name": e["name"],
+            "trustpilot": {"score": tp.get("score"), "count": tp.get("count")},
+            "finanztip": ft.get("verdict") if isinstance(ft, dict) else ft,
+            "google": g.get("score") if isinstance(g, dict) else g,
+            "positive": e.get("topics_positive", []),
+            "negative": e.get("topics_negative", []),
+        }
+
+    # Compact JSON-Style fuer JS-Var
+    new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"
+    # Replace whole `const SENTIMENT_DATA = {...};` statement
+    pattern = re.compile(r"const SENTIMENT_DATA\s*=\s*\{[\s\S]*?\n\};", re.MULTILINE)
     if pattern.search(content):
         content = pattern.sub(new_block, content, count=1)
-        content = re.sub(r'as_of:\s*"[^"]*"', 'as_of: "' + today + '"', content)
         # NULL-byte safe schreiben
         template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-        print("Patched dashboard_template.html, as_of=" + today)
+        print("Patched dashboard_template.html, SENTIMENT_DATA komplett ersetzt mit " + str(len(sd["by_brand"])) + " Brands + by_source-Details")
     else:
-        print("WARN: by_brand pattern nicht im Template gefunden")
+        # Fallback: try old by_brand-only pattern
+        by_brand_lines = []
+        for e in manual_data.get("by_brand", []):
+            agg = e.get("aggregate", {})
+            by_brand_lines.append(
+                "    { name: \"" + e["name"] + "\", positiv: " + str(agg.get("positiv", 50))
+                + ", neutral: " + str(agg.get("neutral", 25))
+                + ", kritisch: " + str(agg.get("kritisch", 25)) + " }"
+            )
+        new_b = "  by_brand: [\n" + ",\n".join(by_brand_lines) + "\n  ],"
+        p2 = re.compile(r"  by_brand:\s*\[[\s\S]*?\n  \],", re.MULTILINE)
+        if p2.search(content):
+            content = p2.sub(new_b, content, count=1)
+            content = re.sub(r'as_of:\s*"[^"]*"', 'as_of: "' + today + '"', content)
+            template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
+            print("Patched (fallback): nur by_brand")
+        else:
+            print("WARN: Kein Pattern gefunden")
 
 
 if __name__ == "__main__":

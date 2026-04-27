@@ -28,8 +28,10 @@ from pathlib import Path
 
 def find_sentiment_json():
     candidates = [
+        Path("data/sentiment_data.json"),
         Path("06_sentiment/sentiment_data.json"),
         Path("../06_sentiment/sentiment_data.json"),
+        Path(__file__).parent.parent / "data" / "sentiment_data.json",
         Path(__file__).parent.parent.parent / "06_sentiment" / "sentiment_data.json",
     ]
     for c in candidates:

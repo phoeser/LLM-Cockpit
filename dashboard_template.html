@@ -90,6 +90,7 @@
       <button data-tab="gap" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">GAP-Analyse</button>
       <button data-tab="geo" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">LLM-Sichtbarkeit (GEO)</button>
       <button data-tab="actions" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Handlungsempfehlungen</button>
+      <button data-tab="domain" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Domain-Footprint</button>
     </div>
   </div>
 </nav>
@@ -206,6 +207,61 @@
 <section data-content="devk" class="tab-content hidden"></section>
 <section data-content="hannoversche" class="tab-content hidden"></section>
 <section data-content="cosmosdirekt" class="tab-content hidden"></section>
+
+<!-- ===== TAB: DOMAIN-FOOTPRINT ===== -->
+<section data-content="domain" class="tab-content hidden">
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="text-2xl font-bold text-ergo-dark">Domain-Footprint</h2>
+        <p class="text-sm text-gray-500" id="domAsOf">Subdomains pro Marke - wo liegt was, wie zerstreut ist die Marke?</p>
+      </div>
+      <div class="px-4 py-2 rounded text-white font-semibold bg-ergo-red">SEO-Authority &amp; LLM-Sichtbarkeit</div>
+    </div>
+  </div>
+
+  <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-4 mb-6">
+    <strong class="text-yellow-900">Warum dieser Tab?</strong>
+    <p class="text-sm text-gray-700 mt-1">Pressemeldungen auf ergo.com (statt ergo.de), Vermittler auf Subdomains, Service-Portale separat - jede Domain baut eigene Authority auf. Fuer LLM-Sichtbarkeit gilt: konsolidiert &gt; fragmentiert. Hannoversche und HUK-Coburg sind Beispiele fuer fokussierte Domain-Strategie.</p>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">Domain-Footprint je Marke</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="domFootprintTable">
+        <thead>
+          <tr class="bg-ergo-dark text-white">
+            <th class="text-left px-3 py-2">Marke</th>
+            <th class="text-left px-3 py-2">Hauptdomain</th>
+            <th class="text-right px-3 py-2"># Domains</th>
+            <th class="text-right px-3 py-2">Unique Subs</th>
+            <th class="text-right px-3 py-2">Vermittler</th>
+            <th class="text-right px-3 py-2">Service</th>
+            <th class="text-right px-3 py-2">Newsroom</th>
+            <th class="text-right px-3 py-2">Tech</th>
+            <th class="text-right px-3 py-2">Fragmentierung</th>
+          </tr>
+        </thead>
+        <tbody id="domFootprintTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-3">ERGO im Detail - Domain-Verteilung</h3>
+    <div id="domErgoDetail" class="text-sm"></div>
+  </div>
+
+  <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 mb-6">
+    <strong class="text-red-900">Hebel fuer ERGO</strong>
+    <ul class="text-sm text-gray-700 mt-2 space-y-1">
+      <li>&#x2022; <b>Pressemeldungen mirroren:</b> ergo.de/newsroom/ als Spiegel von ergo.com mit Canonical-Tags zur Konzern-Quelle</li>
+      <li>&#x2022; <b>Schema.org NewsArticle:</b> auf jeder Pressemeldungs-Seite - signalisiert LLMs &quot;authoritative news source&quot;</li>
+      <li>&#x2022; <b>Cross-Posting Verbraucher-PR:</b> Erstveröffentlichung auf ergo.de, ergo.com syndiziert</li>
+      <li>&#x2022; <b>Berater-Subdomains konsolidieren:</b> 90% Boilerplate &rarr; pro Berater eigenstaendige FAQ + Schema.org LocalBusiness</li>
+    </ul>
+  </div>
+</section>
 
 <!-- ===== TAB: ERGO BERATER (live aus ergo.de Vermittler-API) ===== -->
 <section data-content="berater" class="tab-content hidden">
@@ -813,6 +869,117 @@ function providerTemplate(key) {
   `;
 }
 
+// ============= SENTIMENT CHART (NEU 2026-04-27) =============
+function buildSentimentChart() {
+  if (typeof SENTIMENT_DATA === 'undefined') return;
+  const data = SENTIMENT_DATA;
+  // 1) Stacked Bar Chart
+  const cv = document.getElementById('chartSentimentByBrand');
+  if (cv) {
+    if (Chart.getChart(cv)) Chart.getChart(cv).destroy();
+    new Chart(cv.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: data.by_brand.map(b => b.name),
+        datasets: [
+          { label: 'Positiv',   data: data.by_brand.map(b => b.positiv),   backgroundColor: '#10B981', stack: 's' },
+          { label: 'Neutral',   data: data.by_brand.map(b => b.neutral),   backgroundColor: '#9CA3AF', stack: 's' },
+          { label: 'Kritisch',  data: data.by_brand.map(b => b.kritisch),  backgroundColor: '#DC0028', stack: 's' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: v => v + '%' } } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+  // 2) Net Sentiment Score Tabelle (positiv minus kritisch)
+  const tbl = document.getElementById('netSentimentTable');
+  if (tbl) {
+    const rows = [...data.by_brand].sort((a,b) => (b.positiv - b.kritisch) - (a.positiv - a.kritisch));
+    let h = '<thead><tr class="bg-gray-100"><th class="text-left px-2 py-1">#</th><th class="text-left px-2 py-1">Marke</th><th class="text-right px-2 py-1">Net</th></tr></thead><tbody>';
+    rows.forEach((r,i) => {
+      const net = r.positiv - r.kritisch;
+      const cls = r.name === 'ERGO' ? 'font-bold bg-red-50' : '';
+      const netCls = net >= 50 ? 'text-green-600 font-bold' : (net >= 30 ? 'text-yellow-600' : 'text-red-600 font-bold');
+      h += '<tr class="border-b ' + cls + '"><td class="px-2 py-1">'+(i+1)+'</td><td class="px-2 py-1">'+r.name+'</td><td class="px-2 py-1 text-right '+netCls+'">'+(net > 0 ? '+' : '')+net+'</td></tr>';
+    });
+    tbl.innerHTML = h + '</tbody>';
+  }
+  // 3) Top-Themen (positive + kritische) - aus by_source[ergo]
+  const ergo = (data.by_source && data.by_source.ergo) || {};
+  const posUl = document.getElementById('sentimentPositiveTopics');
+  if (posUl) posUl.innerHTML = (ergo.positive || []).map(t => '<li>&#x2713; ' + t + '</li>').join('') || '<li class="text-gray-400">keine Daten</li>';
+  const negUl = document.getElementById('sentimentNegativeTopics');
+  if (negUl) negUl.innerHTML = (ergo.negative || []).map(t => '<li>&#x2717; ' + t + '</li>').join('') || '<li class="text-gray-400">keine Daten</li>';
+  // 4) Sentiment je Produkt (ERGO im Fokus) - aktuell Demo, zeigt 3 Karten
+  const cards = document.getElementById('sentimentByProduct');
+  if (cards) {
+    const products = [
+      { name: 'Zahnzusatzversicherung', score: ergo.trustpilot ? ergo.trustpilot.score : null, note: 'aus Trustpilot-Reviews aggregiert' },
+      { name: 'Sterbegeldversicherung', score: ergo.google || null, note: 'aus Google-Bewertungen' },
+      { name: 'Risikolebensversicherung', score: null, note: 'noch keine Live-Daten' }
+    ];
+    cards.innerHTML = products.map(p => {
+      const scoreStr = p.score !== null ? p.score.toFixed(1) + ' / 5' : 'n/a';
+      const cls = p.score >= 4 ? 'text-green-600' : (p.score >= 3 ? 'text-yellow-600' : 'text-red-600');
+      return '<div class="border rounded-lg p-4 bg-gray-50"><div class="text-xs uppercase text-gray-500">'+p.name+'</div><div class="text-2xl font-bold mt-1 '+cls+'">'+scoreStr+'</div><div class="text-xs text-gray-500 mt-1">'+p.note+'</div></div>';
+    }).join('');
+  }
+}
+
+// ============= DOMAIN FOOTPRINT (NEU 2026-04-27) =============
+function buildDomainFootprint() {
+  const data = window.DOMAIN_FOOTPRINT;
+  if (!data || !data.brands || data.brands.length === 0) {
+    const tbody = document.getElementById('domFootprintTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-gray-500">Noch keine Crawl-Daten - update_domain_footprint.py muss laufen</td></tr>';
+    return;
+  }
+  // Tabelle
+  const tbody = document.getElementById('domFootprintTableBody');
+  if (tbody) {
+    tbody.innerHTML = data.brands.map(b => {
+      const c = b.categories || {};
+      const fragCls = b.fragmentation_score >= 30 ? 'text-red-600 font-bold' : (b.fragmentation_score >= 10 ? 'text-yellow-600' : 'text-green-600');
+      const isErgo = b.key === 'ergo';
+      return '<tr class="border-b ' + (isErgo ? 'font-bold bg-red-50' : '') + '">'
+        + '<td class="px-3 py-2">' + b.name + '</td>'
+        + '<td class="px-3 py-2 font-mono text-xs">' + b.primary_domain + '</td>'
+        + '<td class="text-right px-3 py-2">' + b.domain_count + '</td>'
+        + '<td class="text-right px-3 py-2">' + b.total_unique_subdomains + '</td>'
+        + '<td class="text-right px-3 py-2">' + (c.vermittler || 0) + '</td>'
+        + '<td class="text-right px-3 py-2">' + (c.service || 0) + '</td>'
+        + '<td class="text-right px-3 py-2">' + (c.newsroom || 0) + '</td>'
+        + '<td class="text-right px-3 py-2">' + (c.tech || 0) + '</td>'
+        + '<td class="text-right px-3 py-2 ' + fragCls + '">' + b.fragmentation_score + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+  // ERGO Detail
+  const ergo = data.brands.find(b => b.key === 'ergo');
+  const det = document.getElementById('domErgoDetail');
+  if (det && ergo) {
+    let h = '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">';
+    Object.entries(ergo.per_domain || {}).forEach(([d, info]) => {
+      h += '<div class="border rounded-lg p-4 bg-gray-50">'
+        + '<div class="font-mono text-sm font-bold text-ergo-red">' + d + '</div>'
+        + '<div class="text-2xl font-bold mt-1">' + info.count + '</div>'
+        + '<div class="text-xs text-gray-500">Subdomains gefunden</div>'
+        + '</div>';
+    });
+    h += '</div>';
+    h += '<div class="text-xs text-gray-500 mt-3">Quelle: ' + (data.source || 'hackertarget.com') + ' &middot; Stand: ' + (data.generated_at || 'n/a') + '</div>';
+    det.innerHTML = h;
+  }
+  // As-of
+  const asOf = document.getElementById('domAsOf');
+  if (asOf && data.generated_at) {
+    asOf.textContent = 'Stand: ' + data.generated_at + ' - Subdomains pro Marke (max 50/Domain via hackertarget.com)';
+  }
+}
+
 // ============= INIT =============
 function fillProviderTabs() {
   Object.keys(PROVIDERS).forEach(key => {
@@ -1118,6 +1285,26 @@ function buildGeoTab() {
   }
 
   // ===== Tab-Click-Handler =====
+  // Pro Tab: welche Build-Funktion erneut aufrufen (wegen Chart-Render in vorher hidden Containers)
+  const TAB_BUILDERS = {
+    overview: ['buildOverviewMatrix','buildOverviewCharts'],
+    gap: ['buildGapTable','buildGapCharts'],
+    geo: ['buildGeoTab','buildSentimentChart','renderGeoData_init'],
+    actions: ['buildActionCards'],
+    domain: ['buildDomainFootprint']
+  };
+  function rebuildTab(tab) {
+    const fns = TAB_BUILDERS[tab] || [];
+    fns.forEach(name => {
+      try {
+        if (name === 'renderGeoData_init') {
+          if (typeof renderGeoData === 'function' && typeof GEO_SNAPSHOT !== 'undefined') renderGeoData(GEO_SNAPSHOT);
+        } else if (typeof window[name] === 'function') {
+          window[name]();
+        }
+      } catch(e) { console.warn('rebuild '+name+':', e.message); }
+    });
+  }
   document.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
@@ -1130,6 +1317,8 @@ function buildGeoTab() {
       document.querySelectorAll('[data-content]').forEach(s => s.classList.add('hidden'));
       const sec = document.querySelector('[data-content="' + tab + '"]');
       if (sec) sec.classList.remove('hidden');
+      // Charts neu rendern (Chart.js braucht sichtbaren Container)
+      requestAnimationFrame(() => rebuildTab(tab));
       window.scrollTo({top: 0, behavior: 'smooth'});
     });
   });
@@ -1140,12 +1329,16 @@ function buildGeoTab() {
     catch (e) { console.warn('init ' + name + ':', e.message); }
   }
   ['fillProviderTabs','buildOverviewMatrix','buildOverviewCharts','buildProviderCharts',
-   'buildGapTable','buildGapCharts','buildActionCards','buildGeoTab','buildSentimentChart'
+   'buildGapTable','buildGapCharts','buildActionCards','buildGeoTab','buildSentimentChart',
+   'buildDomainFootprint'
   ].forEach(safeCall);
   // GEO-Daten rendern (falls Funktion existiert)
   try {
     if (typeof renderGeoData === 'function' && typeof GEO_SNAPSHOT !== 'undefined') renderGeoData(GEO_SNAPSHOT);
   } catch(e) { console.warn('GEO init:', e.message); }
+</script>
+<script id="domain-data">
+window.DOMAIN_FOOTPRINT = /* DOMAIN_FOOTPRINT_START */{"generated_at":"","brands":[]}/* DOMAIN_FOOTPRINT_END */;
 </script>
 <script id="berater-data">
 window.BERATER_DATA = /* BERATER_DATA_START */{"generated_at":"2026-04-26T23:34:24Z","totals":{"vermittler":261,"with_subdomain":248,"with_image":261,"with_social":154,"estimated_subpages_low":2480,"estimated_subpages_high":3720},"subdomain_pattern":{"rd_regional":0,"dkv_partner":11,"standard_einzelagent":237},"functions":{"EAO":239,"ERGOAOZ":226,"EAOAGT":163,"NeoGST":66,"EAOAGTSP":63,"EAOGST":57,"NeoGAGT":56,"NeoHAGT":54,"EAOGA":39,"EAOHASP":38,"EAOSUB":33,"NeoSUBD":33,"EAOBD":26,"NeoBD":26,"AO1":22,"ERGOPRO":22,"ERGOPROSTR":22,"HREP":15,"EAOGASP":13,"ERGOAO55P":12,"DKVPLUS":11,"EAOGSTSP":9,"EAOHA":8,"CREP":6,"EAO55PSP":6,"EAO55P":6,"55PHASP":5,"55PHA":3,"EAOTPSP":3,"NeoTP":3,"55PGA":3,"55PGASP":1,"DREP":1,"AADAGT2":1,"EAOAADAGT":1,"ERGOAAD":1},"top_cities":[["Hamburg",64],["Bremen",22],["Lüneburg",9],["Oldenburg",9],["Kiel",9],["Norderstedt",7],["Stade",5],["Achim",5],["Neumünster",5],["Lübeck",5],["Schwerin",5],["Elmshorn",4],["Delmenhorst",4],["Hude",4],["Wismar",4],["Bad Bramstedt",3],["Wardenburg",3],["Stadland",3],["Oststeinbek",2],["Seevetal",2]],"vermittler":[{"firstname":"Ralf","lastname":"Poggensee","zipcode":"20097","city":"Hamburg","homepage":"ralf-poggensee.ergo.de"},{"firstname":"Meldin","lastname":"Bajramovic","zipcode":"20097","city":"Hamburg","homepage":"meldin-bajramovic.ergo.de"},{"firstname":"Luis","lastname":"Pacheco","zipcode":"20459","city":"Hamburg","homepage":"luis-manuel-pacheco.ergo.de"},{"firstname":"Tim","lastname":"Hemmers","zipcode":"20457","city":"Hamburg","homepage":"tim-hemmers.ergo.de"},{"firstname":"Saltanat","lastname":"Sediqi","zipcode":"22085","city":"Hamburg","homepage":"saltanat-sediqi.ergo.de"},{"firstname":"André","lastname":"Clausen","zipcode":"20359","city":"Hamburg","homepage":"andre-clausen.ergo.de"},{"firstname":"Maik","lastname":"Moselewski","zipcode":"20359","city":"Hamburg","homepage":"maik-moselewski.ergo.de"},{"firstname":"Farhin","lastname":"Sidiqi","zipcode":"20537","city":"Hamburg","homepage":""},{"firstname":"Tolga","lastname":"Akbaba","zipcode":"22083","city":"Hamburg","homepage":"tolga-akbaba.ergo.de"},{"firstname":"Kevin","lastname":"Klinkmüller","zipcode":"22083","city":"Hamburg","homepage":"kevin-klinkmueller.ergo.de"},{"firstname":"Kinga","lastname":"Wasilewski","zipcode":"22083","city":"Hamburg","homepage":"kinga-wasilewski.ergo.de"},{"firstname":"Grigorios","lastname":"Tsarouchas","zipcode":"22085","city":"Hamburg","homepage":"grigorios-tsarouchas.ergo.de"},{"firstname":"Yashar","lastname":"Kahvand","zipcode":"20535","city":"Hamburg","homepage":"yashar-kahvand.ergo.de"},{"firstname":"Marie Luise","lastname":"Pokrandt","zipcode":"20535","city":"Hamburg","homepage":"marie-luise-pokrandt.ergo.de"},{"firstname":"Roya","lastname":"Saghafi","zipcode":"20535","city":"Hamburg","homepage":"roya-saghafi.ergo.de"},{"firstname":"Oliver","lastname":"Classen","zipcode":"20259","city":"Hamburg","homepage":"oliver-classen.ergo.de"},{"firstname":"Eric","lastname":"Mehl","zipcode":"20259","city":"Hamburg","homepage":"eric-mehl.ergo.de"},{"firstname":"Henry","lastname":"Vahldieck","zipcode":"20259","city":"Hamburg","homepage":"henry-vahldieck.ergo.de"},{"firstname":"Lars","lastname":"Walden","zipcode":"20259","city":"Hamburg","homepage":"lars-walden.ergo.de"},{"firstname":"Stefan","lastname":"Debes","zipcode":"22089","city":"Hamburg","homepage":"stefan-debes.ergo.de"},{"firstname":"Philipp","lastname":"Feese","zipcode":"22089","city":"Hamburg","homepage":"philipp-feese.ergo.de"},{"firstname":"Ömer","lastname":"Iqbal","zipcode":"22089","city":"Hamburg","homepage":"oemer-iqbal.ergo.de"},{"firstname":"Judith","lastname":"Afewerki","zipcode":"20255","city":"Hamburg","homepage":"judith-afewerki-dkv.ergo.de"},{"firstname":"Georgio","lastname":"Jerani","zipcode":"20255","city":"Hamburg","homepage":"georgio-jerani.ergo.de"},{"firstname":"Marla Carlotta","lastname":"Schneider","zipcode":"20251","city":"Hamburg","homepage":"marla-carlotta-schneider.ergo.de"},{"firstname":"Seher","lastname":"Simsek","zipcode":"22761","city":"Hamburg","homepage":"seher-simsek.ergo.de"},{"firstname":"Andre","lastname":"Trapp","zipcode":"22305","city":"Hamburg","homepage":"andre-trapp.ergo.de"},{"firstname":"Guido","lastname":"Balczukat","zipcode":"22763","city":"Hamburg","homepage":"guido-balczukat.ergo.de"},{"firstname":"Claus","lastname":"Kühl","zipcode":"22763","city":"Hamburg","homepage":"claus-kuehl.ergo.de"},{"firstname":"Philipp","lastname":"Makris","zipcode":"22763","city":"Hamburg","homepage":"philipp-makris.ergo.de"},{"firstname":"Ramin","lastname":"Barikzai","zipcode":"22525","city":"Hamburg","homepage":"ramin-barikzai.ergo.de"},{"firstname":"Maik","lastname":"Weißberg","zipcode":"22307","city":"Hamburg","homepage":""},{"firstname":"Andreas","lastname":"Maschmann","zipcode":"22111","city":"Hamburg","homepage":"andreas-maschmann.ergo.de"},{"firstname":"Sophia","lastname":"Cheung","zipcode":"22179","city":"Hamburg","homepage":"sophia-cheung.ergo.de"},{"firstname":"Alexej","lastname":"Gratschow","zipcode":"22177","city":"Hamburg","homepage":"alexej-gratschow.ergo.de"},{"firstname":"Horst","lastname":"Jacobi","zipcode":"22177","city":"Hamburg","homepage":"horst-jacobi-dkv.ergo.de"},{"firstname":"Thomas","lastname":"Matthies","zipcode":"22177","city":"Hamburg","homepage":"thomas-matthies.ergo.de"},{"firstname":"Anna-Maria","lastname":"Petzold","zipcode":"22177","city":"Hamburg","homepage":"anna-maria-petzold.ergo.de"},{"firstname":"Lars","lastname":"Schmidt","zipcode":"22177","city":"Hamburg","homepage":"l-schmidt-dkv.ergo.de"},{"firstname":"Martin","lastname":"Witkowski","zipcode":"22177","city":"Hamburg","homepage":"martin-witkowski.ergo.de"},{"firstname":"Abdoul Nazif","lastname":"Kondi","zipcode":"22117","city":"Hamburg","homepage":"abdoul-nazif-kondi.ergo.de"},{"firstname":"Christopher","lastname":"De Bastos Francisco","zipcode":"22047","city":"Hamburg","homepage":"christopher-de-bastos-francisco.ergo.de"},{"firstname":"Sinan Cem","lastname":"Dulak","zipcode":"22047","city":"Hamburg","homepage":"sinan-cem-dulak.ergo.de"},{"firstname":"Timo","lastname":"Engelfried","zipcode":"22047","city":"Hamburg","homepage":"timo-engelfried.ergo.de"},{"firstname":"Ingo","lastname":"Hübner","zipcode":"22047","city":"Hamburg","homepage":"ingo-huebner.ergo.de"},{"firstname":"Phi Long","lastname":"Cao","zipcode":"22117","city":"Hamburg","homepage":""},{"firstname":"Lisa","lastname":"Thalmaier","zipcode":"22117","city":"Hamburg","homepage":"lisa-thalmaier.ergo.de"},{"firstname":"Can","lastname":"Kurnaz","zipcode":"22177","city":"Hamburg","homepage":"can-kurnaz.ergo.de"},{"firstname":"Long David","lastname":"Nguyen","zipcode":"22043","city":"Hamburg","homepage":""},{"firstname":"Ilknur Gamze","lastname":"Yildirim","zipcode":"22045","city":"Hamburg","homepage":""}]}/* BERATER_DATA_END */;

@@ -1,44 +1,105 @@
 {
   "as_of": "2026-04-27",
-  "data_collection_notes": "Trustpilot direct access blocked (403); switched to WebSearch. All 10 providers researched. Finanztip coverage limited to KFZ/core products, not all product categories.",
+  "sources": [
+    "Trustpilot",
+    "eKomi",
+    "Google Places",
+    "Finanztip"
+  ],
+  "methodology": {
+    "trustpilot": "Direct HTML crawl (urllib + Playwright fallback); JSON-LD ratingValue extraction",
+    "ekomi": "Direct HTML crawl; JSON-LD/Meta aggregateRating extraction",
+    "google": "Google Places API (findplacefromtext); requires GOOGLE_PLACES_API_KEY",
+    "finanztip": "HTML crawl; keyword-based verdict extraction (empfehlung/alternativ/nicht-empfohlen)",
+    "aggregate_weights": {
+      "trustpilot": 0.35,
+      "ekomi": 0.2,
+      "google": 0.15,
+      "finanztip": 0.3
+    }
+  },
   "by_brand": [
     {
       "key": "ergo",
       "name": "ERGO",
       "domain": "ergo.de",
       "trustpilot": {
-        "score": 3.0,
-        "count": 7990,
+        "score": null,
+        "count": null,
         "url": "https://de.trustpilot.com/review/ergo.de",
-        "note": "Source: WebSearch"
+        "note": "fetch failed"
       },
-      "finanztip": {
-        "verdict": "nicht-empfohlen",
-        "topics": [
-          "Bearbeitungsverzögerungen",
-          "Kundenservice-Erreichbarkeit"
-        ],
-        "url": "https://www.finanztip.de/erfahrungen/ergo/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": "https://www.ekomi.de/bewertungen-ergo-direkt-versicherungen-regulierung.html",
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.9,
+        "score": null,
         "count": null,
-        "source": "Google Business Ratings (Agenturen)",
-        "note": "Spitzenreiter bei Google-Bewertungen"
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "empfehlung",
+        "url": "https://www.finanztip.de/erfahrungen/ergo/",
+        "topics": [
+          "Produkte von  Ergo",
+          "Weitere Anbieter",
+          "* Was der Stern bedeutet:"
+        ]
       },
       "aggregate": {
-        "positiv": 59,
-        "neutral": 18,
-        "kritisch": 22
+        "positiv": 78,
+        "neutral": 10,
+        "kritisch": 12
       },
-      "topics_positive": [
-        "Online-App-Funktionalität",
-        "Schnelle digitale Abwicklung"
-      ],
-      "topics_negative": [
-        "Dokumentverluste",
-        "Schlecht erreichbare Berater",
-        "Verzögerte Schadensabwicklung"
+      "sources_count": 1,
+      "products": [
+        {
+          "name": "KFZ-Versicherung",
+          "score": null,
+          "count": 1,
+          "url": "https://www.ekomi.de/bewertungen-ergo-versicherung-service.html"
+        },
+        {
+          "name": "Krankenversicherung",
+          "score": null,
+          "count": 486,
+          "url": "https://www.ekomi.de/bewertungen-ergo-versicherungsgruppe.html"
+        },
+        {
+          "name": "Reiseversicherung",
+          "score": null,
+          "count": 1652,
+          "url": "https://www.ekomi.de/bewertungen-reiseversicherungde.html"
+        },
+        {
+          "name": "Rechtsschutz (DAS)",
+          "score": null,
+          "count": 46,
+          "url": "https://www.ekomi.de/bewertungen-das-rechtsschutzversicherung.html"
+        },
+        {
+          "name": "Schadenregulierung",
+          "score": null,
+          "count": 32835,
+          "url": "https://www.ekomi.de/bewertungen-ergo-direkt-versicherungen-regulierung.html"
+        },
+        {
+          "name": "Vermittler-Service",
+          "score": null,
+          "count": 404,
+          "url": "https://www.ekomi.de/bewertungen-ergo-versicherung.html"
+        },
+        {
+          "name": "Online-Abschluss",
+          "score": null,
+          "count": 1102,
+          "url": "https://www.ekomi.de/bewertungen-ergo-direkt-versicherungen-abschluss.html"
+        }
       ]
     },
     {
@@ -46,37 +107,76 @@
       "name": "Allianz",
       "domain": "allianz.de",
       "trustpilot": {
-        "score": 4.0,
-        "count": 14873,
-        "url": "https://www.trustpilot.com/review/www.allianz.de",
-        "note": "Source: WebSearch"
+        "score": 4.7,
+        "count": 14980,
+        "url": "https://de.trustpilot.com/review/allianz.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "nicht-empfohlen",
-        "topics": [
-          "Überdurchschnittlich hohe Preise",
-          "Unbegrenzte Deckung nur im Top-Paket"
-        ],
-        "url": "https://www.finanztip.de/erfahrungen/allianz/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": "https://www.ekomi.de/bewertungen-allianz-kfz-versicherung.html",
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.8,
-        "count": 15478,
-        "source": "eKomi (alternative Google ratings proxy)"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "empfehlung",
+        "url": "https://www.finanztip.de/erfahrungen/allianz/",
+        "topics": [
+          "Produkte von der Allianz",
+          "Weitere Anbieter",
+          "* Was der Stern bedeutet:"
+        ]
       },
       "aggregate": {
-        "positiv": 66,
-        "neutral": 15,
-        "kritisch": 19
+        "positiv": 79,
+        "neutral": 10,
+        "kritisch": 12
       },
-      "topics_positive": [
-        "Schnelle Schadensbearbeitung",
-        "Digitale Abwicklung"
-      ],
-      "topics_negative": [
-        "Hohe Prämien",
-        "Kundendienst-Erreichbarkeit",
-        "Begrenzte Versicherungsoptionen"
+      "sources_count": 2,
+      "products": [
+        {
+          "name": "KFZ-Versicherung",
+          "score": null,
+          "count": 500,
+          "url": "https://www.ekomi.de/bewertungen-allianz-kfz-versicherung.html"
+        },
+        {
+          "name": "Reiserücktritt",
+          "score": null,
+          "count": 100,
+          "url": "https://www.ekomi.de/bewertungen-allianz-reiseruecktrittsversicherung.html"
+        },
+        {
+          "name": "Reisekranken",
+          "score": null,
+          "count": 259,
+          "url": "https://www.ekomi.de/bewertungen-allianz-reisekrankenversicherung.html"
+        },
+        {
+          "name": "Unfallversicherung",
+          "score": null,
+          "count": 19,
+          "url": "https://www.ekomi.de/bewertungen-allianz-unfallversicherung.html"
+        },
+        {
+          "name": "Risikolebensversicherung",
+          "score": null,
+          "count": 40,
+          "url": "https://www.ekomi.de/bewertungen-allianz-risikolebensversicherung.html"
+        },
+        {
+          "name": "Haftpflicht",
+          "score": null,
+          "count": 505,
+          "url": "https://www.ekomi.de/bewertungen-allianz-privat-haftpflichtversicherung.html"
+        }
       ]
     },
     {
@@ -84,37 +184,57 @@
       "name": "AXA",
       "domain": "axa.de",
       "trustpilot": {
-        "score": 3.8,
-        "count": 1800,
-        "url": "https://www.trustpilot.com/review/www.axa.de",
-        "note": "Source: WebSearch"
+        "score": 1.4,
+        "count": 2961,
+        "url": "https://de.trustpilot.com/review/axa.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "alternativ",
-        "topics": [
-          "Gelegentlich günstige Angebote in Tests",
-          "Ersparnis möglich mit Werkstattbindung"
-        ],
-        "url": "https://www.finanztip.de/kfz-versicherung/axa-kfz-versicherung/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": "https://www.ekomi.de/bewertungen-axa-nps.html",
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.5,
-        "count": 15378,
-        "source": "eKomi (Schadenservice)"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "empfehlung",
+        "url": "https://www.finanztip.de/kfz-versicherung/axa-kfz-versicherung/",
+        "topics": [
+          "Beispiel-Fall für eine Autoversicherung bei Axa",
+          "Wo findest Du mehr zur Kfz-Versicherung?"
+        ]
       },
       "aggregate": {
-        "positiv": 70,
-        "neutral": 14,
-        "kritisch": 17
+        "positiv": 45,
+        "neutral": 25,
+        "kritisch": 30
       },
-      "topics_positive": [
-        "Gutes Preis-Leistungs-Verhältnis",
-        "Individualisierbare Deckungsoptionen"
-      ],
-      "topics_negative": [
-        "Langsame Email-Beantwortung",
-        "Lange Schadensregulierungsdauern",
-        "Verzögerte Kostenerstattung"
+      "sources_count": 2,
+      "products": [
+        {
+          "name": "Schadenservice",
+          "score": null,
+          "count": 16038,
+          "url": "https://www.ekomi.de/bewertungen-axa-nps.html"
+        },
+        {
+          "name": "Kundenservice (DBV)",
+          "score": null,
+          "count": 420,
+          "url": "https://www.ekomi.de/bewertungen-axa-konzern-ag-service.html"
+        },
+        {
+          "name": "Leistung (DBV)",
+          "score": null,
+          "count": 33560,
+          "url": "https://www.ekomi.de/bewertungen-axa-de-dbv-leistung.html"
+        }
       ]
     },
     {
@@ -122,155 +242,161 @@
       "name": "HUK-Coburg",
       "domain": "huk.de",
       "trustpilot": {
-        "score": 4.0,
-        "count": 30849,
-        "url": "https://www.trustpilot.com/review/www.huk.de",
-        "note": "Source: WebSearch"
+        "score": 3.9,
+        "count": 31225,
+        "url": "https://de.trustpilot.com/review/huk.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "topics": [
-          "Doppel-Vergleich-Strategie empfohlen",
-          "Huk24 (Online) günstiger als Hauptbrand"
-        ],
-        "url": "https://www.finanztip.de/kfz-versicherung/kfz-versicherung-der-huk-coburg/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": null,
+        "note": "kein Profil"
       },
       "google": {
-        "score": 3.6,
-        "count": 415,
-        "source": "Erfahrungen.com"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "alternativ",
+        "url": "https://www.finanztip.de/kfz-versicherung/kfz-versicherung-der-huk-coburg/",
+        "topics": [
+          "So viel kostet eine Autoversicherung bei der Huk und Huk24",
+          "Wo findest Du mehr zur Kfz-Versicherung?"
+        ]
       },
       "aggregate": {
-        "positiv": 74,
-        "neutral": 12,
-        "kritisch": 14
+        "positiv": 60,
+        "neutral": 18,
+        "kritisch": 22
       },
-      "topics_positive": [
-        "Unschlagbare Preise",
-        "Kompetente lokale Berater",
-        "Marten-Bisse versichert"
-      ],
-      "topics_negative": [
-        "Qualitätsverschlechterung bei Langzeitkunden",
-        "Langsame Schadensabwicklung",
-        "Erneute Anrufe nötig"
-      ]
+      "sources_count": 2,
+      "products": []
     },
     {
       "key": "generali",
       "name": "Generali",
       "domain": "generali.de",
       "trustpilot": {
-        "score": 1.7,
-        "count": 2200,
-        "url": "https://www.trustpilot.com/review/www.generali.de",
-        "note": "Source: WebSearch; sehr niedriges Score"
+        "score": 3.8,
+        "count": 2476,
+        "url": "https://de.trustpilot.com/review/generali.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "nicht-empfohlen",
-        "topics": [
-          "KFZ-Preise nicht wettbewerbsfähig",
-          "Cosmos Direkt manchmal günstiger"
-        ],
-        "url": "https://www.finanztip.de/kfz-versicherung/generali-kfz-versicherung/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": null,
+        "note": "kein Profil"
       },
       "google": {
-        "score": 3.2,
-        "count": 12,
-        "source": "WhoFinance"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "empfehlung",
+        "url": "https://www.finanztip.de/kfz-versicherung/generali-kfz-versicherung/",
+        "topics": [
+          "Beispiel-Fall für eine Autoversicherung beim Generali-Konzern",
+          "Den Kundenservice der Generali: &nbsp;",
+          "Wo findest Du mehr zur Kfz-Versicherung?"
+        ]
       },
       "aggregate": {
-        "positiv": 44,
-        "neutral": 25,
-        "kritisch": 31
+        "positiv": 70,
+        "neutral": 14,
+        "kritisch": 17
       },
-      "topics_positive": [
-        "Schnelle Schadensabwicklung",
-        "Kompetente Finanzberater"
-      ],
-      "topics_negative": [
-        "Hohe Prämien und Erhöhungen",
-        "Langwierige Schadensbearbeitung",
-        "Frustrierende Kommunikation",
-        "Komplexe Organisationsstruktur"
-      ]
+      "sources_count": 2,
+      "products": []
     },
     {
       "key": "signal-iduna",
       "name": "Signal Iduna",
       "domain": "signal-iduna.de",
       "trustpilot": {
-        "score": null,
-        "count": 4281,
-        "url": "https://www.trustpilot.com/review/www.signal-iduna.de",
-        "note": "Source blockiert; nur Reviewzahl verfügbar"
+        "score": 3.7,
+        "count": 4285,
+        "url": "https://de.trustpilot.com/review/signal-iduna.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "keine-klare-empfehlung",
-        "topics": [
-          "PKV und KFZ-Produkte",
-          "Positive Test-Institute-Bewertungen"
-        ],
-        "url": "https://www.finanztip.de/erfahrungen/signal-iduna/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": null,
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.1,
-        "count": 687,
-        "source": "CHECK24 (PKV)"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "empfehlung",
+        "url": "https://www.finanztip.de/erfahrungen/signal-iduna/",
+        "topics": [
+          "Produkte von der Signal Iduna",
+          "Weitere Anbieter",
+          "* Was der Stern bedeutet:"
+        ]
       },
       "aggregate": {
-        "positiv": 61,
-        "neutral": 18,
-        "kritisch": 22
+        "positiv": 69,
+        "neutral": 14,
+        "kritisch": 17
       },
-      "topics_positive": [
-        "Guter Service",
-        "Schnelle Bearbeitung",
-        "Lokales Netzwerk mit Beratern"
-      ],
-      "topics_negative": [
-        "Unbefugte Weiterlastung gekündigter Policen",
-        "Lange Schadensregulierung (bis 6 Monate)",
-        "Erhebliche Prämienerhöhungen"
-      ]
+      "sources_count": 2,
+      "products": []
     },
     {
       "key": "ruv",
       "name": "R+V",
       "domain": "ruv.de",
       "trustpilot": {
-        "score": null,
-        "count": 5654,
-        "url": "https://www.trustpilot.com/review/ruv.de",
-        "note": "Source blockiert; nur Reviewzahl verfügbar"
+        "score": 1.6,
+        "count": 5681,
+        "url": "https://de.trustpilot.com/review/ruv.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "keine-klare-empfehlung",
-        "topics": [
-          "PKV historisch top bewertet",
-          "Modernisierung bei Unisex-Tarifen ausstehend"
-        ],
-        "url": "https://www.finanztip.de/community/forum/thema/37103-efahrungen-mit-der-r-v-pkv/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": "https://www.ekomi.de/bewertungen-ruv.html",
+        "note": "kein Profil"
       },
       "google": {
-        "score": 3.3,
+        "score": null,
         "count": null,
-        "source": "Google Business + App Store aggregiert"
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": null,
+        "url": null,
+        "topics": []
       },
       "aggregate": {
-        "positiv": 56,
-        "neutral": 20,
-        "kritisch": 24
+        "positiv": 21,
+        "neutral": 39,
+        "kritisch": 40
       },
-      "topics_positive": [
-        "Kundenorientierte Abwicklung",
-        "Schnelle Schadensregulierung (z.B. Tierschäden)"
-      ],
-      "topics_negative": [
-        "Zahlungsverzögerungen",
-        "Schwierige Kontakterreichbarkeit",
-        "Fehlerhafte Schadensablehnung",
-        "Keine modernen Produkt-Features"
+      "sources_count": 1,
+      "products": [
+        {
+          "name": "Gesamt",
+          "score": null,
+          "count": null,
+          "url": "https://www.ekomi.de/bewertungen-ruv.html"
+        }
       ]
     },
     {
@@ -278,40 +404,44 @@
       "name": "DEVK",
       "domain": "devk.de",
       "trustpilot": {
-        "score": null,
-        "count": 2658,
-        "url": "https://www.trustpilot.com/review/www.devk.de",
-        "note": "Source blockiert; nur Reviewzahl verfügbar"
+        "score": 3.4,
+        "count": 2704,
+        "url": "https://de.trustpilot.com/review/devk.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "alternativ",
-        "topics": [
-          "50% teurer als günstigster Anbieter",
-          "Bahncard/ÖPNV-Rabatte verfügbar",
-          "Beschwerdequote unter Marktdurchschnitt"
-        ],
-        "url": "https://www.finanztip.de/kfz-versicherung/devk-kfz-versicherung/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": "https://www.ekomi.de/bewertungen-devk.html",
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.9,
-        "count": 288,
-        "source": "Google Business Listings"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "empfehlung",
+        "url": "https://www.finanztip.de/kfz-versicherung/devk-kfz-versicherung/",
+        "topics": [
+          "Wo findest Du mehr zur Kfz-Versicherung?"
+        ]
       },
       "aggregate": {
-        "positiv": 70,
-        "neutral": 13,
-        "kritisch": 16
+        "positiv": 66,
+        "neutral": 15,
+        "kritisch": 19
       },
-      "topics_positive": [
-        "Guter Kundendienst",
-        "Schnelle Schadensabwicklung",
-        "Spezialisierte Rabatte"
-      ],
-      "topics_negative": [
-        "Chat funktioniert nicht zuverlässig",
-        "Lange Wartezeiten",
-        "Verzögerte E-Mail-Antworten",
-        "Erhebliche Prämienerhöhungen"
+      "sources_count": 2,
+      "products": [
+        {
+          "name": "Gesamt",
+          "score": null,
+          "count": 422,
+          "url": "https://www.ekomi.de/bewertungen-devk.html"
+        }
       ]
     },
     {
@@ -320,37 +450,43 @@
       "domain": "hannoversche.de",
       "trustpilot": {
         "score": 4.5,
-        "count": 1214,
-        "url": "https://www.trustpilot.com/review/www.hannoversche.de",
-        "note": "Source: WebSearch"
+        "count": 1404,
+        "url": "https://de.trustpilot.com/review/hannoversche.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "topics": [
-          "Günstige Risikolebensversicherung",
-          "Gute Finanzstärke"
-        ],
-        "url": "https://www.finanztip.de/risikolebensversicherung/hannoversche-rlv/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": "https://www.ekomi.de/bewertungen-hannoversche-leben.html",
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.8,
-        "count": 76,
-        "source": "Erfahrungen.com"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "alternativ",
+        "url": "https://www.finanztip.de/risikolebensversicherung/hannoversche-rlv/",
+        "topics": [
+          "Community"
+        ]
       },
       "aggregate": {
-        "positiv": 80,
-        "neutral": 9,
-        "kritisch": 11
+        "positiv": 66,
+        "neutral": 15,
+        "kritisch": 19
       },
-      "topics_positive": [
-        "Günstige RLV-Tarife",
-        "Positive Finanzstärke-Ratings",
-        "Testsieger (Morgen & Morgen)"
-      ],
-      "topics_negative": [
-        "Schlechte Email-Kommunikation",
-        "Aggressives Telefon/SMS-Follow-up",
-        "Verzögerte Auszahlungen"
+      "sources_count": 2,
+      "products": [
+        {
+          "name": "Lebensversicherung",
+          "score": null,
+          "count": null,
+          "url": "https://www.ekomi.de/bewertungen-hannoversche-leben.html"
+        }
       ]
     },
     {
@@ -358,60 +494,40 @@
       "name": "Cosmos Direkt",
       "domain": "cosmosdirekt.de",
       "trustpilot": {
-        "score": 4.1,
-        "count": 6900,
-        "url": "https://www.trustpilot.com/review/cosmosdirekt.de",
-        "note": "Source: WebSearch"
+        "score": 4.0,
+        "count": 8810,
+        "url": "https://de.trustpilot.com/review/cosmosdirekt.de",
+        "note": "Browser-Crawl 2026-04-27"
       },
-      "finanztip": {
-        "verdict": "alternativ",
-        "topics": [
-          "Generali-Tochter",
-          "Manchmal günstig auf Vergleichsportalen",
-          "Runtergelagertes Kosten-Gebührenmodell"
-        ],
-        "url": "https://www.finanztip.de/erfahrungen/cosmosdirekt/"
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": null,
+        "note": "kein Profil"
       },
       "google": {
-        "score": 4.4,
-        "count": 1205,
-        "source": "CHECK24 (RLV Produktbewertung)"
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "no results"
+      },
+      "finanztip": {
+        "verdict": "nicht-empfohlen",
+        "url": "https://www.finanztip.de/erfahrungen/cosmosdirekt/",
+        "topics": [
+          "Produkte von der Cosmosdirekt",
+          "Weitere Anbieter",
+          "* Was der Stern bedeutet:"
+        ]
       },
       "aggregate": {
-        "positiv": 72,
-        "neutral": 13,
-        "kritisch": 15
+        "positiv": 50,
+        "neutral": 23,
+        "kritisch": 28
       },
-      "topics_positive": [
-        "Wettbewerbsfähige Preise",
-        "Freundlicher und hilfreicher Kundenservice",
-        "Unbürokratische Schadensregulierung",
-        "Über 500 Qualitäts-Awards"
-      ],
-      "topics_negative": [
-        "Lange Hotline-Wartezeiten",
-        "Unzuverlässige E-Mail-Kommunikation",
-        "Hohe Fondsgebühren (1.5% p.a.)"
-      ]
+      "sources_count": 2,
+      "products": []
     }
-  ],
-  "methodology": {
-    "trustpilot": "WebSearch (direct fetch blocked 403); reviews collected from search result summaries",
-    "finanztip": "WebSearch site:finanztip.de queries; coverage limited to main product categories (KFZ, KV, RLV, BU)",
-    "google": "WebSearch + proxy sources (eKomi, CHECK24, Finanzfluss, WhoFinance, Google Business Listings); direct Google ratings not always available",
-    "aggregate_weights": {
-      "trustpilot": 0.5,
-      "finanztip": 0.3,
-      "google": 0.2
-    },
-    "aggregate_calculation": "Weighted average sentiment conversion: 4.5-5.0 stars = 80-100% positiv; 3.5-4.4 = 50-79%; 2.5-3.4 = 20-49%; 1-2.4 = 0-19% positiv"
-  },
-  "limitations": [
-    "Trustpilot direct access blocked; WebSearch results may contain older or aggregated scores",
-    "Finanztip does not cover all insurance types uniformly; KFZ coverage most comprehensive",
-    "Google Business ratings often limited to agencies/branches, not corporate ratings",
-    "Sample sizes vary widely across platforms and providers",
-    "Aggregate scores are weighted estimates based on available data; full methodology documented",
-    "Some providers show null scores where sources were completely inaccessible"
   ]
 }

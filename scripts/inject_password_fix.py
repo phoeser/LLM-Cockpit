@@ -78,29 +78,61 @@ if head_close > 0:
 else:
     print("WARN: kein </head> gefunden")
 
-# JS-Inject: Passwort leeren + Remember setzen + ERGO-Header DOM einfuegen
-inject = """<script>function _ergoFix(){
-var p=document.getElementById("staticrypt-password");
-if(p && document.activeElement!==p){p.value="";p.setAttribute("autocomplete","new-password");p.setAttribute("placeholder","Passwort eingeben");}
-var c=document.getElementById("staticrypt-remember");
-if(c && !c.checked){c.checked=true;}
-var page=document.querySelector(".staticrypt-page");
-if(page && !document.getElementById("ergoBrandHeader")){
-  var hdr=document.createElement("div");
-  hdr.id="ergoBrandHeader";
-  hdr.className="ergo-brand-header";
-  hdr.innerHTML='<div class="ergo-brand-logo">ERGO</div><div class="ergo-brand-tagline">LLM-Sichtbarkeits-Cockpit</div>';
-  page.insertBefore(hdr, page.firstChild);
-}
-var btn=page?page.querySelector(".staticrypt-decrypt-button"):null;
-if(btn && btn.value==="DECRYPT"){btn.value="ANMELDEN";}
-if(btn && btn.textContent==="DECRYPT"){btn.textContent="ANMELDEN";}
-var form=page?page.querySelector(".staticrypt-form"):null;
-if(form){form.style.background="transparent";}
-}
-setTimeout(_ergoFix,150);
-setTimeout(_ergoFix,500);
-setTimeout(_ergoFix,1200);
+# JS-Inject: Autofill blockieren + Remember + ERGO-Header
+inject = """<script>
+(function(){
+  // Anti-Autofill: Feld sofort unsichtbar machen fuer Passwort-Manager
+  var style=document.createElement("style");
+  style.textContent="#staticrypt-password{-webkit-text-security:disc;}";
+  document.head.appendChild(style);
+
+  function _ergoFix(){
+    var p=document.getElementById("staticrypt-password");
+    if(p){
+      // Autofill blockieren: type temporaer auf text setzen, dann zurueck
+      if(!p.dataset.fixed){
+        p.dataset.fixed="1";
+        p.setAttribute("autocomplete","off");
+        p.setAttribute("name","ergo-pw-"+Date.now());
+        p.setAttribute("placeholder","Passwort eingeben");
+        // Feld leeren falls Browser was eingefuellt hat
+        p.value="";
+        // Nochmal nach kurzer Verzoegerung leeren (manche Browser fuellen spaeter)
+        setTimeout(function(){if(document.activeElement!==p){p.value="";}},300);
+        setTimeout(function(){if(document.activeElement!==p){p.value="";}},800);
+      }
+    }
+    // Remember-Checkbox aktivieren
+    var c=document.getElementById("staticrypt-remember");
+    if(c && !c.checked){c.checked=true;}
+    // ERGO-Header einfuegen
+    var page=document.querySelector(".staticrypt-page");
+    if(page && !document.getElementById("ergoBrandHeader")){
+      var hdr=document.createElement("div");
+      hdr.id="ergoBrandHeader";
+      hdr.className="ergo-brand-header";
+      hdr.innerHTML='<div class="ergo-brand-logo">ERGO</div><div class="ergo-brand-tagline">LLM-Sichtbarkeits-Cockpit</div>';
+      page.insertBefore(hdr, page.firstChild);
+    }
+    // Button umbenennen
+    var btn=page?page.querySelector(".staticrypt-decrypt-button"):null;
+    if(btn && btn.value==="DECRYPT"){btn.value="ANMELDEN";}
+    if(btn && btn.textContent==="DECRYPT"){btn.textContent="ANMELDEN";}
+    // Form-Hintergrund transparent
+    var form=page?page.querySelector(".staticrypt-form"):null;
+    if(form){form.style.background="transparent";}
+  }
+  // Mehrfach ausfuehren um Browser-Autofill zu ueberschreiben
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",_ergoFix);
+  } else {
+    _ergoFix();
+  }
+  setTimeout(_ergoFix,100);
+  setTimeout(_ergoFix,400);
+  setTimeout(_ergoFix,1000);
+  setTimeout(_ergoFix,2500);
+})();
 </script>"""
 
 idx = html.rfind("</body>")

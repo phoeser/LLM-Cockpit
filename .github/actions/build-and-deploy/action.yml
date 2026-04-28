@@ -34,7 +34,7 @@ runs:
         git add index.html
         git add -u dashboard_template.html 2>/dev/null || true
         for f in berater_data.json domain_footprint_data.json snapshot.json; do
-          if [ -f "$f" ]; then git add -f "$f"; fi
+          if [ -f "$f" ]; then git add "$f"; fi
         done
         if [ -d data ]; then git add data/ 2>/dev/null || true; fi
         if git diff --staged --quiet; then

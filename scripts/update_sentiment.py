@@ -325,57 +325,66 @@ def crawl_ekomi_products(products):
 
 # ── 3. GOOGLE PLACES ─────────────────────────────────────────────────────────
 def crawl_google_places(query, api_key):
-    """Google Places API (New): Text Search -> Rating + Count."""
+    """Google Places API: Legacy Text Search zuerst, dann New API als Fallback."""
     if not api_key:
         return {"score": None, "count": None, "error": "no API key"}
 
-    # Neue Places API (v1) - POST-Request
-    url = "https://places.googleapis.com/v1/places:searchText"
+    # 1) Legacy Places API (in den meisten Projekten standardmaessig aktiv)
+    encoded = urllib.parse.quote(query)
+    legacy_url = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
+                  "?query=%s&language=de&key=%s" % (encoded, api_key))
+    try:
+        legacy_data = fetch_json(legacy_url)
+        if legacy_data:
+            status = legacy_data.get("status", "")
+            if status == "OK":
+                results = legacy_data.get("results", [])
+                if results:
+                    best = max(results, key=lambda r: r.get("user_ratings_total", 0))
+                    if best.get("rating"):
+                        return {
+                            "score": round(best.get("rating", 0), 1),
+                            "count": best.get("user_ratings_total"),
+                            "place_id": best.get("place_id"),
+                            "matched_name": best.get("name"),
+                            "api": "legacy",
+                        }
+            elif status == "REQUEST_DENIED":
+                print("    [Google Legacy] REQUEST_DENIED: %s" % legacy_data.get("error_message", "")[:80])
+            else:
+                print("    [Google Legacy] Status: %s" % status)
+    except Exception as e:
+        print("    [Google Legacy] Exception: %s" % str(e)[:80])
+
+    # 2) Neue Places API (v1) als Fallback
+    new_url = "https://places.googleapis.com/v1/places:searchText"
     payload = json.dumps({
         "textQuery": query,
         "languageCode": "de",
         "maxResultCount": 3,
     }).encode("utf-8")
     try:
-        req = urllib.request.Request(url, data=payload, method="POST", headers={
+        req = urllib.request.Request(new_url, data=payload, method="POST", headers={
             "Content-Type": "application/json",
             "X-Goog-Api-Key": api_key,
             "X-Goog-FieldMask": "places.displayName,places.rating,places.userRatingCount,places.id",
         })
         with urllib.request.urlopen(req, timeout=15) as r:
             data = json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        # Fallback auf Legacy API
-        encoded = urllib.parse.quote(query)
-        url2 = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
-                "?query=%s&language=de&key=%s" % (encoded, api_key))
-        data = fetch_json(url2)
-        if not data:
-            return {"score": None, "count": None, "error": "API failed: " + str(e)[:50]}
-        results = data.get("results", [])
-        if not results:
-            return {"score": None, "count": None, "error": "no results (legacy fallback)"}
-        best = max(results, key=lambda r: r.get("user_ratings_total", 0))
-        return {
-            "score": round(best.get("rating", 0), 1) or None,
-            "count": best.get("user_ratings_total"),
-            "place_id": best.get("place_id"),
-            "matched_name": best.get("name"),
-        }
-
-    places = data.get("places", [])
-    if not places:
-        return {"score": None, "count": None, "error": "no results"}
-
-    # Nimm das Ergebnis mit den meisten Bewertungen
-    best = max(places, key=lambda p: p.get("userRatingCount", 0))
-    name = best.get("displayName", {})
-    return {
-        "score": round(best.get("rating", 0), 1) or None,
-        "count": best.get("userRatingCount"),
-        "place_id": best.get("id"),
-        "matched_name": name.get("text", "") if isinstance(name, dict) else str(name),
-    }
+        places = data.get("places", [])
+        if places:
+            best = max(places, key=lambda p: p.get("userRatingCount", 0))
+            name = best.get("displayName", {})
+            return {
+                "score": round(best.get("rating", 0), 1) or None,
+                "count": best.get("userRatingCount"),
+                "place_id": best.get("id"),
+                "matched_name": name.get("text", "") if isinstance(name, dict) else str(name),
+                "api": "new",
+            }
+        return {"score": None, "count": None, "error": "no results (new API)"}
+    except Exception as e2:
+        return {"score": None, "count": None, "error": "both APIs failed: %s" % str(e2)[:60]}
 
 
 # ── 4. FINANZTIP ─────────────────────────────────────────────────────────────
@@ -671,19 +680,4 @@ def main():
     if 'badge-sentiment-live' not in content:
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
-            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>\n'
-            '        <span class="badge badge-sentiment-live" style="background:#e8f5e9;color:#2e7d32;font-size:11px;padding:2px 8px;border-radius:4px;margin-left:8px;">'
-            'Live-Daten · Stand <span id="sentimentDate"></span></span>',
-        )
-
-    # NULL-byte-safe schreiben
-    template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-
-    success_count = sum(1 for e in results if e["sources_count"] >= 2)
-    print("\nPatched dashboard_template.html")
-    print("  %d/10 Brands mit >= 2 Quellen" % success_count)
-    print("  SENTIMENT_DATA: %d bytes" % len(new_block))
-
-
-if __name__ == "__main__":
-    main()
+            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-A

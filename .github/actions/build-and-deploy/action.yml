@@ -1,8 +1,8 @@
 name: Build & Deploy Cockpit
-description: StatiCrypt-Encrypt + inject_password_fix + robuster git push
+description: AES-256-GCM Encrypt + robuster git push
 inputs:
   dashboard-password:
-    description: StatiCrypt-Passwort
+    description: Dashboard-Passwort
     required: true
   commit-message:
     description: Commit-Message für die Auto-Commit
@@ -12,39 +12,16 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Verschluessele Dashboard mit StatiCrypt
+    - name: Verschluessele Dashboard
       shell: bash
       env:
         DASHBOARD_PASSWORD: ${{ inputs.dashboard-password }}
       run: |
         set -e
-        echo "=== Vor StatiCrypt ==="
-        cp dashboard_template.html dashboard_unencrypted.html
-        ls -la dashboard_unencrypted.html
-        echo "=== StatiCrypt-Aufruf (Passwort via stdin, kein CLI-Leak) ==="
-        echo "$DASHBOARD_PASSWORD" | staticrypt dashboard_unencrypted.html \
-          --password-file /dev/stdin \
-          --short \
-          --remember 30 \
-          --template-title "ERGO LLM-Cockpit" \
-          --template-instructions "Bitte Passwort eingeben." \
-          --template-button "Anmelden" \
-          --template-error "Falsches Passwort." \
-          -d ./out
-        if [ -f ./out/dashboard_unencrypted.html ]; then
-          mv ./out/dashboard_unencrypted.html index.html
-        elif [ -f ./encrypted/dashboard_unencrypted.html ]; then
-          mv ./encrypted/dashboard_unencrypted.html index.html
-        elif [ -f dashboard_unencrypted_encrypted.html ]; then
-          mv dashboard_unencrypted_encrypted.html index.html
-        else
-          echo "FEHLER: kein StatiCrypt-Output"
-          exit 1
-        fi
-        rm -rf ./out ./encrypted dashboard_unencrypted.html
-        echo "=== Patche index.html ==="
-        python scripts/inject_password_fix.py
-        echo "=== Final ==="
+        echo "=== Dashboard verschluesseln (AES-256-GCM) ==="
+        ls -la dashboard_template.html
+        python scripts/encrypt_dashboard.py
+        echo "=== Fertig ==="
         ls -la index.html
 
     - name: Commit und Push (mit pull --rebase + retry)

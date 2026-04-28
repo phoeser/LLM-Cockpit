@@ -677,7 +677,23 @@ def main():
     )
 
     # Live-Badge einfuegen (falls nicht schon vorhanden)
+    # Live-Badge einfuegen (falls nicht schon vorhanden)
     if 'badge-sentiment-live' not in content:
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
-            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-A
+            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>\n'
+            '        <span class="badge badge-sentiment-live" style="background:#e8f5e9;color:#2e7d32;font-size:11px;padding:2px 8px;border-radius:4px;margin-left:8px;">'
+            'Live-Daten · Stand <span id="sentimentDate"></span></span>',
+        )
+
+    # NULL-byte-safe schreiben
+    template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
+
+    success_count = sum(1 for e in results if e["sources_count"] >= 2)
+    print("\nPatched dashboard_template.html")
+    print("  %d/10 Brands mit >= 2 Quellen" % success_count)
+    print("  SENTIMENT_DATA: %d bytes" % len(new_block))
+
+
+if __name__ == "__main__":
+    main()

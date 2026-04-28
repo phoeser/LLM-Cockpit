@@ -27,10 +27,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Install StatiCrypt
-        run: npm install -g staticrypt@^3.5.4
-
-      - name: Install Playwright fuer Trustpilot-Fallback
+- name: Install Playwright fuer Trustpilot-Fallback
         run: |
           pip install playwright
           playwright install chromium --with-deps
@@ -57,4 +54,6 @@ jobs:
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy
-   
+        with:
+          dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
+          commit-message: "chore: nightly dashboard update"

@@ -47,12 +47,14 @@ jobs:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: python scripts/update_sentiment.py
 
+      - name: Aktualisiere Presse-Daten (Google News RSS)
+        run: python scripts/update_press.py
+        continue-on-error: true
+
       - name: Aktualisiere Domain-Footprint (Subdomain-Crawl)
         run: python scripts/update_domain_footprint.py
         continue-on-error: true
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy
-        with:
-          dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
-          commit-message: "chore: nightly dashboard update"
+   

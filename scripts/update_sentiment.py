@@ -683,3 +683,7 @@ def main():
     print("\nPatched dashboard_template.html")
     print("  %d/10 Brands mit >= 2 Quellen" % success_count)
     print("  SENTIMENT_DATA: %d bytes" % len(new_block))
+
+
+if __name__ == "__main__":
+    main()

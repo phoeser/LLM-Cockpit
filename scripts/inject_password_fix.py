@@ -48,9 +48,16 @@ if(page && !document.getElementById("ergoBrandHeader")){
   hdr.innerHTML='<div class="ergo-brand-logo">ERGO</div><div class="ergo-brand-tagline">LLM-Cockpit</div>';
   page.insertBefore(hdr, page.firstChild);
 }
-if(p && !document.getElementById("ergoPassHint")){
-  var hint=document.createElement("div");
-  hint.id="ergoPassHint";
-  hint.style.cssText="text-align:center;margin:6px 0 2px;font-size:12px;color:#999;";
-  hint.innerHTML='Passwort: <span style="color:#DC0028;font-weight:600;letter-spacing:0.5px">LLM2026</span>';
-  p.parentNode.insertBefore
+}
+setTimeout(_ergoFix,150);
+setTimeout(_ergoFix,500);
+setTimeout(_ergoFix,1200);
+</script>"""
+
+idx = html.rfind("</body>")
+if idx == -1:
+    print("FEHLER: kein </body>")
+    sys.exit(1)
+html = html[:idx] + inject + html[idx:]
+html_path.write_text(html, encoding="utf-8")
+print("Patch+Branding eingefuegt, neue Groesse:", len(html), "chars")

@@ -1,10 +1,11 @@
-"""Sammelt ECHTE Sentiment-Daten fuer 10 Versicherer aus 4 Quellen und patcht dashboard_template.html.
+"""Sammelt ECHTE Sentiment-Daten fuer 10 Versicherer aus 5 Quellen und patcht dashboard_template.html.
 
 Quellen:
 1. Trustpilot    (urllib + Playwright-Fallback)  — Score + Count
 2. eKomi         (HTML-Scrape)                   — Score + Count
 3. Google Places (API, braucht GOOGLE_PLACES_API_KEY) — Score + Count
-4. Finanztip     (HTML-Scrape)                   — Verdict + Topics
+4. Check24       (JSON-LD-Scrape, produktspezifisch)  — Score + Count
+5. Franke & Bornberg (AJAX-API, produktspezifisch)    — Ratingklasse + Schulnote
 
 Workflow: laeuft in github-deployment/ als CWD
 Output:
@@ -30,10 +31,8 @@ BRANDS = [
         "ekomi_slugs": ["ergo-direkt-versicherungen-regulierung", "ergo-versicherungsgruppe"],
         "ekomi_multi": None,
         "google_query": "ERGO Group AG Düsseldorf Versicherung",
-        "finanztip_urls": [
-            "https://www.finanztip.de/erfahrungen/ergo/",
-            "https://www.finanztip.de/kfz-versicherung/ergo-kfz-versicherung/",
-        ],
+        "check24_slug": "ergo",
+        "fb_keywords": ["ERGO"],
         "products": [
             {"name": "KFZ-Versicherung", "ekomi": "ergo-versicherung-service"},
             {"name": "Krankenversicherung", "ekomi": "ergo-versicherungsgruppe"},
@@ -49,10 +48,8 @@ BRANDS = [
         "ekomi_slugs": ["allianz-kfz-versicherung"],
         "ekomi_multi": "allianz-kundenbewertungen",
         "google_query": "Allianz Versicherung München Deutschland",
-        "finanztip_urls": [
-            "https://www.finanztip.de/erfahrungen/allianz/",
-            "https://www.finanztip.de/kfz-versicherung/allianz-kfz-versicherung/",
-        ],
+        "check24_slug": "allianz",
+        "fb_keywords": ["Allianz"],
         "products": [
             {"name": "KFZ-Versicherung", "ekomi": "allianz-kfz-versicherung"},
             {"name": "Reiserücktritt", "ekomi": "allianz-reiseruecktrittsversicherung"},
@@ -67,9 +64,8 @@ BRANDS = [
         "ekomi_slugs": ["axa-nps", "axa-konzern-ag-service"],
         "ekomi_multi": None,
         "google_query": "AXA Versicherung Deutschland Köln",
-        "finanztip_urls": [
-            "https://www.finanztip.de/kfz-versicherung/axa-kfz-versicherung/",
-        ],
+        "check24_slug": "axa",
+        "fb_keywords": ["AXA"],
         "products": [
             {"name": "Schadenservice", "ekomi": "axa-nps"},
             {"name": "Kundenservice (DBV)", "ekomi": "axa-konzern-ag-service"},
@@ -81,9 +77,8 @@ BRANDS = [
         "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "HUK-Coburg Versicherung Coburg",
-        "finanztip_urls": [
-            "https://www.finanztip.de/kfz-versicherung/kfz-versicherung-der-huk-coburg/",
-        ],
+        "check24_slug": "huk-coburg",
+        "fb_keywords": ["HUK-COBURG", "HUK"],
         "products": [],
     },
     {
@@ -91,9 +86,8 @@ BRANDS = [
         "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "Generali Deutschland Versicherung München",
-        "finanztip_urls": [
-            "https://www.finanztip.de/kfz-versicherung/generali-kfz-versicherung/",
-        ],
+        "check24_slug": "generali",
+        "fb_keywords": ["Generali"],
         "products": [],
     },
     {
@@ -101,9 +95,8 @@ BRANDS = [
         "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "Signal Iduna Versicherung Dortmund",
-        "finanztip_urls": [
-            "https://www.finanztip.de/erfahrungen/signal-iduna/",
-        ],
+        "check24_slug": "signal-iduna",
+        "fb_keywords": ["SIGNAL IDUNA", "Signal Iduna"],
         "products": [],
     },
     {
@@ -111,7 +104,8 @@ BRANDS = [
         "ekomi_slugs": ["ruv"],
         "ekomi_multi": None,
         "google_query": "R+V Versicherung Wiesbaden",
-        "finanztip_urls": [],
+        "check24_slug": "r-und-v",
+        "fb_keywords": ["R+V", "R + V", "Condor"],
         "products": [
             {"name": "Gesamt", "ekomi": "ruv"},
         ],
@@ -121,9 +115,8 @@ BRANDS = [
         "ekomi_slugs": ["devk"],
         "ekomi_multi": None,
         "google_query": "DEVK Versicherungen Köln",
-        "finanztip_urls": [
-            "https://www.finanztip.de/kfz-versicherung/devk-kfz-versicherung/",
-        ],
+        "check24_slug": "devk",
+        "fb_keywords": ["DEVK"],
         "products": [
             {"name": "Gesamt", "ekomi": "devk"},
         ],
@@ -133,9 +126,8 @@ BRANDS = [
         "ekomi_slugs": ["hannoversche-leben"],
         "ekomi_multi": None,
         "google_query": "Hannoversche Lebensversicherung Hannover",
-        "finanztip_urls": [
-            "https://www.finanztip.de/risikolebensversicherung/hannoversche-rlv/",
-        ],
+        "check24_slug": "hannoversche",
+        "fb_keywords": ["Hannoversche"],
         "products": [
             {"name": "Lebensversicherung", "ekomi": "hannoversche-leben"},
         ],
@@ -145,15 +137,33 @@ BRANDS = [
         "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "CosmosDirekt Versicherung Saarbrücken",
-        "finanztip_urls": [
-            "https://www.finanztip.de/erfahrungen/cosmosdirekt/",
-        ],
+        "check24_slug": "cosmosdirekt",
+        "fb_keywords": ["CosmosDirekt", "Cosmos"],
         "products": [],
     },
 ]
 
-
-# ── HTTP-Helper
+# ── Produktkategorien fuer produktspezifische Tabellen ────────────────────────
+PRODUCT_CATEGORIES = [
+    {
+        "key": "zahnzusatz",
+        "name": "Zahnzusatzversicherung",
+        "check24_path": "zahnzusatzversicherung",
+        "fb_rating_id": "gkvzahn_neu",
+    },
+    {
+        "key": "sterbegeld",
+        "name": "Sterbegeldversicherung",
+        "check24_path": None,
+        "fb_rating_id": None,
+    },
+    {
+        "key": "risikoleben",
+        "name": "Risikolebensversicherung",
+        "check24_path": "risikolebensversicherung",
+        "fb_rating_id": "hbs_rlv",
+    },
+]
 
 
 # ── HTTP-Helper ──────────────────────────────────────────────────────────────
@@ -185,22 +195,80 @@ def fetch_json(url, timeout=15):
         return None
 
 
+def post_json(url, data_dict, timeout=15):
+    """POST-Request mit Form-Daten, gibt JSON zurueck."""
+    try:
+        body = urllib.parse.urlencode(data_dict).encode("utf-8")
+        req = urllib.request.Request(url, data=body, method="POST", headers={
+            "User-Agent": UA,
+            "Content-Type": "application/x-www-form-urlencoded",
+        })
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        return None
+
+
 # ── 1. TRUSTPILOT ────────────────────────────────────────────────────────────
 def crawl_trustpilot(domain):
-    """Trustpilot-Score via urllib (JSON-LD aus HTML)."""
+    """Trustpilot-Score via urllib (JSON-LD aus HTML) + neueste Reviews."""
     url = "https://de.trustpilot.com/review/" + domain
     html = fetch_html(url)
     if not html:
-        return {"score": None, "count": None, "url": url, "error": "fetch failed"}
+        return {"score": None, "count": None, "url": url, "recent_reviews": [], "error": "fetch failed"}
     m_score = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
     m_count = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
+
+    # Neueste Reviews aus JSON-LD extrahieren
+    recent = []
+    try:
+        ld_blocks = re.findall(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.DOTALL)
+        for block in ld_blocks:
+            try:
+                data = json.loads(block)
+                reviews_list = None
+                if isinstance(data, dict) and "review" in data:
+                    reviews_list = data["review"]
+                elif isinstance(data, dict) and "@graph" in data:
+                    for item in data["@graph"]:
+                        if isinstance(item, dict) and "review" in item:
+                            reviews_list = item["review"]
+                            break
+                if reviews_list and isinstance(reviews_list, list):
+                    for rv in reviews_list[:8]:
+                        r_title = rv.get("name", rv.get("headline", ""))
+                        r_body = rv.get("reviewBody", "")
+                        r_rating = None
+                        if "reviewRating" in rv and isinstance(rv["reviewRating"], dict):
+                            try:
+                                r_rating = float(rv["reviewRating"].get("ratingValue", 0))
+                            except (ValueError, TypeError):
+                                pass
+                        r_date = rv.get("datePublished", "")[:10]
+                        r_author = ""
+                        if "author" in rv and isinstance(rv["author"], dict):
+                            r_author = rv["author"].get("name", "")
+                        if r_title or r_body:
+                            recent.append({
+                                "title": r_title[:120],
+                                "text": r_body[:200],
+                                "score": r_rating,
+                                "date": r_date,
+                                "author": r_author,
+                            })
+            except (json.JSONDecodeError, KeyError, TypeError):
+                continue
+    except Exception:
+        pass
+
     if m_score:
         return {
             "score": round(float(m_score.group(1)), 1),
             "count": int(m_count.group(1)) if m_count else None,
             "url": url,
+            "recent_reviews": recent,
         }
-    return {"score": None, "count": None, "url": url, "error": "no ratingValue found"}
+    return {"score": None, "count": None, "url": url, "recent_reviews": [], "error": "no ratingValue found"}
 
 
 def crawl_trustpilot_browser(brands_data):
@@ -262,27 +330,21 @@ def crawl_ekomi(slugs, multi_id=None):
         html = fetch_html(url)
         if not html:
             continue
-        # eKomi-Format: "Bewertung: 4.5 Sterne von 32835 Bewertungen"
         m_title = re.search(r'Bewertung:\s*([\d.,]+)\s*Sterne\s*von\s*([\d.]+)\s*Bewertungen', html)
         if m_title:
-            m_score = m_title
-            m_count = m_title
             score_val = float(m_title.group(1).replace(",", "."))
             count_val = int(m_title.group(2).replace(".", ""))
             if count_val >= best["count"]:
                 best = {"score": round(score_val, 1), "count": count_val, "url": url}
             continue
-        # Fallback: JSON-LD aggregateRating
         m_score = re.search(r'"ratingValue"[:\s]*"?([\d.]+)"?', html)
         m_count = re.search(r'"ratingCount"[:\s]*"?(\d+)"?', html)
         if not m_count:
             m_count = re.search(r'"reviewCount"[:\s]*"?(\d+)"?', html)
-        # Fallback: Score/5 Pattern
         if not m_score:
             m_score = re.search(r'(\d[.,]\d)\s*/\s*5', html)
         if not m_count:
             m_count = re.search(r'von\s+(\d[\d.]*)\s+Bewertungen', html)
-
         if m_score:
             score = float(m_score.group(1).replace(",", "."))
             count_val = m_count.group(1).replace(".", "") if m_count else "0"
@@ -293,7 +355,6 @@ def crawl_ekomi(slugs, multi_id=None):
     if best["score"] is not None:
         return best
     return {"score": None, "count": None, "url": urls_to_try[0] if urls_to_try else None}
-
 
 
 def crawl_ekomi_products(products):
@@ -308,7 +369,6 @@ def crawl_ekomi_products(products):
         if not html:
             results.append({"name": prod["name"], "score": None, "count": None, "url": url})
             continue
-        # eKomi-Format: "Bewertung: X.X Sterne von NNNNN Bewertungen"
         m_title = re.search(r'Bewertung:\s*([\d.,]+)\s*Sterne\s*von\s*([\d.]+)\s*Bewertungen', html)
         if m_title:
             score = round(float(m_title.group(1).replace(",", ".")), 1)
@@ -329,7 +389,6 @@ def crawl_google_places(query, api_key):
     if not api_key:
         return {"score": None, "count": None, "error": "no API key"}
 
-    # 1) Legacy Places API (in den meisten Projekten standardmaessig aktiv)
     encoded = urllib.parse.quote(query)
     legacy_url = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
                   "?query=%s&language=de&key=%s" % (encoded, api_key))
@@ -356,7 +415,6 @@ def crawl_google_places(query, api_key):
     except Exception as e:
         print("    [Google Legacy] Exception: %s" % str(e)[:80])
 
-    # 2) Neue Places API (v1) als Fallback
     new_url = "https://places.googleapis.com/v1/places:searchText"
     payload = json.dumps({
         "textQuery": query,
@@ -387,80 +445,205 @@ def crawl_google_places(query, api_key):
         return {"score": None, "count": None, "error": "both APIs failed: %s" % str(e2)[:60]}
 
 
-# ── 4. FINANZTIP ─────────────────────────────────────────────────────────────
-FINANZTIP_VERDICTS = {
-    "empfehlung": ["finanztip empfehlung", "finanztip-empfehlung", "empfohlen von finanztip",
-                    "unser tipp", "unsere empfehlung", "finanztip empfiehlt"],
-    "alternativ": ["alternative", "günstige alternative", "kann eine option sein",
-                    "unter bestimmten voraussetzungen"],
-    "nicht-empfohlen": ["nicht empfohlen", "nicht empfehlung", "raten wir ab",
-                         "können wir nicht empfehlen", "nicht zu empfehlen"],
+# ── 4. CHECK24 ───────────────────────────────────────────────────────────────
+def crawl_check24(slug, product_path):
+    """Check24-Bewertung aus JSON-LD der Produkt-Versicherer-Seite extrahieren.
+
+    URL-Muster: https://www.check24.de/{product_path}/{slug}/
+    Liefert score (1-5) und count. Filtert Portal-Ratings raus.
+    """
+    if not product_path or not slug:
+        return {"score": None, "count": None, "url": None}
+
+    url = "https://www.check24.de/%s/%s/" % (product_path, slug)
+    html = fetch_html(url, timeout=12)
+    if not html:
+        return {"score": None, "count": None, "url": url, "error": "fetch failed"}
+
+    # JSON-LD aggregateRating suchen
+    for m in re.finditer(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.DOTALL):
+        try:
+            d = json.loads(m.group(1))
+            if isinstance(d, dict) and d.get("aggregateRating"):
+                ar = d["aggregateRating"]
+                raw_score = ar.get("ratingValue")
+                raw_count = ar.get("ratingCount") or ar.get("reviewCount")
+                if raw_score is not None:
+                    score = float(str(raw_score).replace(",", "."))
+                    count = int(str(raw_count).replace(".", "")) if raw_count else None
+                    return {
+                        "score": round(score, 1),
+                        "count": count,
+                        "url": url,
+                        "item": ar.get("itemReviewed", ""),
+                    }
+        except (json.JSONDecodeError, ValueError, TypeError):
+            continue
+
+    # Fallback: ratingValue direkt im HTML
+    m_score = re.search(r'"ratingValue"[:\s]*"?([\d.,]+)"?', html)
+    if m_score:
+        score = float(m_score.group(1).replace(",", "."))
+        m_count = re.search(r'"ratingCount"[:\s]*"?(\d+)"?', html)
+        count = int(m_count.group(1)) if m_count else None
+        return {"score": round(score, 1), "count": count, "url": url}
+
+    return {"score": None, "count": None, "url": url, "error": "no rating found"}
+
+
+def crawl_check24_all_brands(brands, product_path):
+    """Check24-Ratings fuer alle Brands eines Produkts holen + Portal-Ratings rausfiltern."""
+    raw = {}
+    for brand in brands:
+        slug = brand.get("check24_slug", "")
+        result = crawl_check24(slug, product_path)
+        raw[brand["key"]] = result
+
+    # Portal-Rating-Filter: wenn >= 4 Brands exakt gleichen Count haben, ist es das Portal-Rating
+    count_freq = {}
+    for key, r in raw.items():
+        c = r.get("count")
+        if c and c > 1000:
+            count_freq[c] = count_freq.get(c, 0) + 1
+
+    portal_counts = {c for c, freq in count_freq.items() if freq >= 4}
+
+    filtered = {}
+    for key, r in raw.items():
+        if r.get("count") in portal_counts:
+            filtered[key] = {"score": None, "count": None, "url": r.get("url"), "error": "portal-level rating filtered"}
+        else:
+            filtered[key] = r
+    return filtered
+
+
+# ── 5. FRANKE & BORNBERG ─────────────────────────────────────────────────────
+FB_RATING_CLASSES = {
+    "FFF+": 0.5, "FFF": 1.0, "FF+": 2.0, "FF": 3.0,
+    "F+": 4.0, "F": 5.0, "F-": 6.0,
 }
 
-def crawl_finanztip(urls):
-    """Finanztip-Verdict aus HTML extrahieren."""
-    if not urls:
-        return {"verdict": None, "url": None, "topics": []}
 
-    for url in urls:
-        html = fetch_html(url)
-        if not html:
-            continue
-        text_lower = html.lower()
+def fb_grade_to_stars(grade):
+    """Konvertiert F&B Schulnote (0.5-6.0) in 5-Sterne-Skala."""
+    if grade is None:
+        return None
+    return round(1.0 + (6.0 - grade) / 5.5 * 4.0, 1)
 
-        # Verdict erkennen (Prioritaet: empfehlung > nicht-empfohlen > alternativ)
-        verdict = None
-        for v_key in ["empfehlung", "nicht-empfohlen", "alternativ"]:
-            for phrase in FINANZTIP_VERDICTS[v_key]:
-                if phrase in text_lower:
-                    # "nicht empfohlen" darf nicht "empfehlung" ueberschreiben wenn beides vorkommt
-                    if v_key == "empfehlung" and any(neg in text_lower for neg in FINANZTIP_VERDICTS["nicht-empfohlen"]):
-                        verdict = "nicht-empfohlen"
-                    else:
-                        verdict = v_key
-                    break
-            if verdict:
-                break
 
-        # Topics: <h2> und <h3> als Themen-Hinweise
-        topics = []
-        for m in re.finditer(r'<h[23][^>]*>(.*?)</h[23]>', html, re.IGNORECASE):
-            t = re.sub(r'<[^>]+>', '', m.group(1)).strip()
-            if 5 < len(t) < 80 and not any(skip in t.lower() for skip in ["cookie", "newsletter", "inhalt", "navigation"]):
-                topics.append(t)
+def crawl_franke_bornberg(rating_id, brands):
+    """Franke-und-Bornberg-Ratings per AJAX-API abrufen und best-per-Brand zuordnen.
 
-        if verdict:
-            return {"verdict": verdict, "url": url, "topics": topics[:5]}
+    Fuer jeden Brand wird der Tarif mit der besten (niedrigsten) Schulnote genommen.
+    """
+    if not rating_id:
+        return {b["key"]: None for b in brands}
 
-    return {"verdict": "keine-klare-empfehlung", "url": urls[0], "topics": []}
+    url = "https://www.franke-bornberg.de/page/rating/getrating.php"
+    data = post_json(url + "?" + urllib.parse.urlencode({"ratingid": rating_id}), {"ratingid": rating_id})
+    if not data or not isinstance(data, list):
+        # Retry with body-only POST
+        try:
+            body = urllib.parse.urlencode({"ratingid": rating_id}).encode("utf-8")
+            req = urllib.request.Request(url, data=body, method="POST", headers={
+                "User-Agent": UA,
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
+            with urllib.request.urlopen(req, timeout=15) as r:
+                data = json.loads(r.read().decode("utf-8"))
+        except Exception:
+            data = None
+
+    if not data or not isinstance(data, list):
+        print("    [F&B] API-Fehler fuer rating_id=%s" % rating_id)
+        return {b["key"]: None for b in brands}
+
+    print("    [F&B] %d Tarife geladen fuer %s" % (len(data), rating_id))
+
+    # Pro Brand: besten Tarif (niedrigste Schulnote) finden
+    result = {}
+    for brand in brands:
+        keywords = brand.get("fb_keywords", [brand["name"]])
+        best_grade = None
+        best_class = None
+        best_tariff = None
+
+        for entry in data:
+            name_html = entry.get("name", "")
+            # Gesellschaft aus <div class="gsl">...</div> extrahieren
+            gsl_match = re.search(r'<div class="gsl">(.*?)</div>', name_html)
+            gsl = gsl_match.group(1) if gsl_match else name_html
+            tarif_match = re.search(r'<div class="tarif">(.*?)</div>', name_html)
+            tarif = tarif_match.group(1) if tarif_match else ""
+
+            # Keyword-Matching
+            gsl_upper = gsl.upper()
+            matched = any(kw.upper() in gsl_upper for kw in keywords)
+            if not matched:
+                continue
+
+            # Schulnote extrahieren
+            grade_sort = entry.get("Rat02_sort")
+            if grade_sort is not None:
+                try:
+                    grade = float(str(grade_sort).replace(",", "."))
+                except (ValueError, TypeError):
+                    grade = None
+            else:
+                # Aus Display-Feld
+                grade_display = entry.get("Rat02_display", "")
+                m = re.search(r'(\d[.,]\d)', grade_display)
+                grade = float(m.group(1).replace(",", ".")) if m else None
+
+            # Ratingklasse extrahieren
+            class_display = entry.get("Rat01_display", "")
+            cm = re.search(r'class="ratingNote">(.*?)</span>', class_display)
+            rating_class = cm.group(1).strip() if cm else None
+
+            if grade is not None and (best_grade is None or grade < best_grade):
+                best_grade = grade
+                best_class = rating_class
+                best_tariff = tarif
+
+        if best_grade is not None:
+            result[brand["key"]] = {
+                "grade": best_grade,
+                "class": best_class,
+                "stars": fb_grade_to_stars(best_grade),
+                "tariff": best_tariff,
+            }
+        else:
+            result[brand["key"]] = None
+
+    return result
 
 
 # ── AGGREGATION ──────────────────────────────────────────────────────────────
-def aggregate(tp_score, ekomi_score, google_score, ft_verdict):
-    """Sentiment-Verteilung aus 4 Quellen gewichtet berechnen.
+def aggregate(tp_score, ekomi_score, google_score, check24_score=None, fb_stars=None):
+    """Sentiment-Verteilung aus bis zu 5 Quellen gewichtet berechnen.
 
     Gewichte (normiert auf verfuegbare Quellen):
-    - Trustpilot:  0.35
-    - eKomi:       0.20
-    - Google:      0.15
-    - Finanztip:   0.30
+    - Trustpilot:       0.25
+    - eKomi:            0.15
+    - Google:           0.10
+    - Check24:          0.25
+    - Franke&Bornberg:  0.25
     """
     scores = []  # (positiv-%, gewicht)
 
-    # Sterne -> Positiv-% Mapping: 1.0=10%, 2.0=25%, 3.0=45%, 4.0=65%, 5.0=85%
     def stars_to_pos(s):
         return max(10, min(90, 10 + (s - 1) * 18.75))
 
     if tp_score is not None:
-        scores.append((stars_to_pos(tp_score), 0.35))
+        scores.append((stars_to_pos(tp_score), 0.25))
     if ekomi_score is not None:
-        scores.append((stars_to_pos(ekomi_score), 0.20))
+        scores.append((stars_to_pos(ekomi_score), 0.15))
     if google_score is not None:
-        scores.append((stars_to_pos(google_score), 0.15))
-
-    ft_map = {"empfehlung": 78, "alternativ": 55, "nicht-empfohlen": 30, "keine-klare-empfehlung": 45}
-    if ft_verdict in ft_map:
-        scores.append((ft_map[ft_verdict], 0.30))
+        scores.append((stars_to_pos(google_score), 0.10))
+    if check24_score is not None:
+        scores.append((stars_to_pos(check24_score), 0.25))
+    if fb_stars is not None:
+        scores.append((stars_to_pos(fb_stars), 0.25))
 
     if not scores:
         return {"positiv": 50, "neutral": 25, "kritisch": 25}
@@ -488,12 +671,13 @@ def main():
         print("WARN: GOOGLE_PLACES_API_KEY nicht gesetzt — Google-Quelle wird uebersprungen")
 
     print("=" * 60)
-    print("Sentiment-Crawl %s  |  4 Quellen  |  10 Brands" % today)
+    print("Sentiment-Crawl %s  |  5 Quellen  |  10 Brands" % today)
     print("=" * 60)
 
     results = []
-    tp_missing_keys = []  # Fuer Playwright-Fallback
+    tp_missing_keys = []
 
+    # ── Phase 1: Brand-Level Crawling (Trustpilot, eKomi, Google) ──
     for brand in BRANDS:
         key = brand["key"]
         name = brand["name"]
@@ -528,21 +712,6 @@ def main():
         else:
             print("  [Google]      MISS — %s" % gp.get("error", "kein Key"))
 
-        # 4) Finanztip
-        ft = crawl_finanztip(brand.get("finanztip_urls", []))
-        if ft.get("verdict"):
-            print("  [Finanztip]   %s" % ft["verdict"])
-        else:
-            print("  [Finanztip]   MISS — keine Seite gefunden")
-
-        # Aggregate
-        agg = aggregate(tp.get("score"), ek.get("score"), gp.get("score"), ft.get("verdict"))
-        print("  => Aggregate: positiv=%d%% neutral=%d%% kritisch=%d%%" % (agg["positiv"], agg["neutral"], agg["kritisch"]))
-
-        # Quellen-Zaehler
-        sources_count = sum(1 for s in [tp.get("score"), ek.get("score"), gp.get("score"), ft.get("verdict")] if s)
-        print("  => %d/4 Quellen erfolgreich" % sources_count)
-
         results.append({
             "key": key,
             "name": name,
@@ -566,13 +735,6 @@ def main():
                 "matched_name": gp.get("matched_name"),
                 "note": "Google Places API " + today if gp.get("score") else gp.get("error", "nicht verfuegbar"),
             },
-            "finanztip": {
-                "verdict": ft.get("verdict"),
-                "url": ft.get("url"),
-                "topics": ft.get("topics", []),
-            },
-            "aggregate": agg,
-            "sources_count": sources_count,
             "products": products_data,
         })
 
@@ -587,32 +749,187 @@ def main():
                 entry["trustpilot"]["count"] = br.get("count") or entry["trustpilot"].get("count")
                 entry["trustpilot"]["url"] = br["url"]
                 entry["trustpilot"]["note"] = "Browser-Crawl " + today
-                # Re-aggregate mit neuem TP-Score
-                entry["aggregate"] = aggregate(
-                    br["score"],
-                    entry["ekomi"]["score"],
-                    entry["google"]["score"],
-                    entry["finanztip"]["verdict"],
-                )
-                entry["sources_count"] = sum(1 for s in [
-                    br["score"], entry["ekomi"]["score"],
-                    entry["google"]["score"], entry["finanztip"]["verdict"]
-                ] if s)
-                print("  [TP-Browser] %s -> %.1f (re-aggregated)" % (entry["name"], br["score"]))
+
+    # ── Phase 2: Produktspezifisches Crawling (Check24 + Franke & Bornberg) ──
+    print("\n" + "=" * 60)
+    print("Phase 2: Produktspezifische Daten")
+    print("=" * 60)
+
+    product_results = {}
+
+    for cat in PRODUCT_CATEGORIES:
+        cat_key = cat["key"]
+        cat_name = cat["name"]
+        print("\n=== %s ===" % cat_name)
+        product_results[cat_key] = {"name": cat_name, "brands": {}}
+
+        # Check24 fuer dieses Produkt
+        if cat.get("check24_path"):
+            print("  Crawle Check24 %s..." % cat["check24_path"])
+            c24_data = crawl_check24_all_brands(BRANDS, cat["check24_path"])
+            for brand in BRANDS:
+                c24 = c24_data.get(brand["key"], {})
+                if c24 and c24.get("score"):
+                    print("    [C24] %s: %.1f (%s)" % (brand["name"], c24["score"], c24.get("count", "?")))
+                product_results[cat_key]["brands"].setdefault(brand["key"], {})["check24"] = c24 or {"score": None, "count": None}
+        else:
+            print("  Check24: nicht verfuegbar fuer %s" % cat_name)
+            for brand in BRANDS:
+                product_results[cat_key]["brands"].setdefault(brand["key"], {})["check24"] = {"score": None, "count": None}
+
+        # Franke & Bornberg fuer dieses Produkt
+        if cat.get("fb_rating_id"):
+            print("  Crawle Franke & Bornberg (%s)..." % cat["fb_rating_id"])
+            fb_data = crawl_franke_bornberg(cat["fb_rating_id"], BRANDS)
+            for brand in BRANDS:
+                fb = fb_data.get(brand["key"])
+                if fb:
+                    print("    [F&B] %s: %s (Note %.1f -> %.1f*)" % (brand["name"], fb["class"], fb["grade"], fb["stars"]))
+                product_results[cat_key]["brands"].setdefault(brand["key"], {})["fb"] = fb
+        else:
+            print("  Franke & Bornberg: nicht verfuegbar fuer %s" % cat_name)
+            for brand in BRANDS:
+                product_results[cat_key]["brands"].setdefault(brand["key"], {})["fb"] = None
+
+    # ── Phase 3: Aggregation ──────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("Phase 3: Aggregation")
+    print("=" * 60)
+
+    for entry in results:
+        key = entry["key"]
+        name = entry["name"]
+
+        # Fuer den Gesamt-Score: Durchschnitt der produktspezifischen Check24/FB-Scores
+        c24_scores = []
+        fb_scores = []
+        for cat in PRODUCT_CATEGORIES:
+            brand_prod = product_results.get(cat["key"], {}).get("brands", {}).get(key, {})
+            c24 = brand_prod.get("check24", {})
+            if c24 and c24.get("score"):
+                c24_scores.append(c24["score"])
+            fb = brand_prod.get("fb")
+            if fb and fb.get("stars"):
+                fb_scores.append(fb["stars"])
+
+        avg_c24 = round(sum(c24_scores) / len(c24_scores), 1) if c24_scores else None
+        avg_fb = round(sum(fb_scores) / len(fb_scores), 1) if fb_scores else None
+
+        entry["check24"] = {
+            "score": avg_c24,
+            "count": None,
+            "note": "Durchschnitt aus %d Produkten" % len(c24_scores) if c24_scores else "keine Daten",
+        }
+        entry["fb"] = {
+            "score": avg_fb,
+            "note": "Durchschnitt aus %d Produkten (Sterne-Aequivalent)" % len(fb_scores) if fb_scores else "keine Daten",
+        }
+
+        # Aggregate
+        agg = aggregate(
+            entry["trustpilot"]["score"],
+            entry["ekomi"]["score"],
+            entry["google"]["score"],
+            avg_c24,
+            avg_fb,
+        )
+        entry["aggregate"] = agg
+
+        sources_count = sum(1 for s in [
+            entry["trustpilot"]["score"], entry["ekomi"]["score"],
+            entry["google"]["score"], avg_c24, avg_fb,
+        ] if s)
+        entry["sources_count"] = sources_count
+
+        print("  %s: positiv=%d%% neutral=%d%% kritisch=%d%% (%d/5 Quellen)" % (
+            name, agg["positiv"], agg["neutral"], agg["kritisch"], sources_count))
+
+    # ── Phase 4: Produkt-Tabellen aggregieren ─────────────────────────────
+    print("\n" + "=" * 60)
+    print("Phase 4: Produkt-Tabellen")
+    print("=" * 60)
+
+    for cat in PRODUCT_CATEGORIES:
+        cat_key = cat["key"]
+        cat_data = product_results[cat_key]
+        print("\n--- %s ---" % cat_data["name"])
+
+        for brand in BRANDS:
+            key = brand["key"]
+            brand_result = next(r for r in results if r["key"] == key)
+            prod_brand = cat_data["brands"].get(key, {})
+
+            c24 = prod_brand.get("check24", {})
+            fb = prod_brand.get("fb")
+
+            # Produkt-Level Aggregate
+            prod_agg = aggregate(
+                brand_result["trustpilot"]["score"],
+                brand_result["ekomi"]["score"],
+                brand_result["google"]["score"],
+                c24.get("score") if c24 else None,
+                fb["stars"] if fb else None,
+            )
+
+            prod_brand["aggregate"] = prod_agg
+            prod_brand["trustpilot_score"] = brand_result["trustpilot"]["score"]
+            prod_brand["ekomi_score"] = brand_result["ekomi"]["score"]
+            prod_brand["google_score"] = brand_result["google"]["score"]
+
+            c24_str = "%.1f" % c24["score"] if c24 and c24.get("score") else "-"
+            fb_str = "%s(%.1f)" % (fb["class"], fb["grade"]) if fb else "-"
+            print("  %s: TP=%.1f eK=%.1f G=%.1f C24=%s F&B=%s -> pos=%d%%" % (
+                brand["name"],
+                brand_result["trustpilot"]["score"] or 0,
+                brand_result["ekomi"]["score"] or 0,
+                brand_result["google"]["score"] or 0,
+                c24_str, fb_str,
+                prod_agg["positiv"],
+            ))
 
     # ── JSON speichern ────────────────────────────────────────────────────
     out_data = {
         "as_of": today,
-        "sources": ["Trustpilot", "eKomi", "Google Places", "Finanztip"],
+        "sources": ["Trustpilot", "eKomi", "Google Places", "Check24", "Franke & Bornberg"],
         "methodology": {
             "trustpilot": "Direct HTML crawl (urllib + Playwright fallback); JSON-LD ratingValue extraction",
             "ekomi": "Direct HTML crawl; JSON-LD/Meta aggregateRating extraction",
             "google": "Google Places API (findplacefromtext); requires GOOGLE_PLACES_API_KEY",
-            "finanztip": "HTML crawl; keyword-based verdict extraction (empfehlung/alternativ/nicht-empfohlen)",
-            "aggregate_weights": {"trustpilot": 0.35, "ekomi": 0.20, "google": 0.15, "finanztip": 0.30},
+            "check24": "JSON-LD aggregateRating from product/insurer pages; portal-level ratings filtered",
+            "franke_bornberg": "AJAX POST API; best tariff per brand (lowest school grade = best rating)",
+            "aggregate_weights": {"trustpilot": 0.25, "ekomi": 0.15, "google": 0.10, "check24": 0.25, "franke_bornberg": 0.25},
         },
         "by_brand": results,
+        "by_product": {},
     }
+
+    for cat in PRODUCT_CATEGORIES:
+        cat_key = cat["key"]
+        cat_data = product_results[cat_key]
+        out_data["by_product"][cat_key] = {
+            "name": cat_data["name"],
+            "check24_available": cat.get("check24_path") is not None,
+            "fb_available": cat.get("fb_rating_id") is not None,
+            "fb_rating_id": cat.get("fb_rating_id"),
+            "brands": {},
+        }
+        for brand in BRANDS:
+            key = brand["key"]
+            pb = cat_data["brands"].get(key, {})
+            brand_result = next(r for r in results if r["key"] == key)
+            out_data["by_product"][cat_key]["brands"][key] = {
+                "name": brand["name"],
+                "trustpilot": brand_result["trustpilot"]["score"],
+                "ekomi": brand_result["ekomi"]["score"],
+                "google": brand_result["google"]["score"],
+                "check24": pb.get("check24", {}).get("score") if pb.get("check24") else None,
+                "check24_count": pb.get("check24", {}).get("count") if pb.get("check24") else None,
+                "fb_class": pb["fb"]["class"] if pb.get("fb") else None,
+                "fb_grade": pb["fb"]["grade"] if pb.get("fb") else None,
+                "fb_stars": pb["fb"]["stars"] if pb.get("fb") else None,
+                "fb_tariff": pb["fb"]["tariff"] if pb.get("fb") else None,
+                "aggregate": pb.get("aggregate", {"positiv": 50, "neutral": 25, "kritisch": 25}),
+            }
 
     json_path = Path("data/sentiment_data.json")
     if not json_path.parent.exists():
@@ -632,9 +949,10 @@ def main():
     sd = {
         "is_demo": False,
         "as_of": today,
-        "sources": ["Trustpilot", "eKomi", "Google Places", "Finanztip"],
+        "sources": ["Trustpilot", "eKomi", "Google Places", "Check24", "Franke & Bornberg"],
         "by_brand": [],
         "by_source": {},
+        "by_product": {},
     }
     for e in results:
         agg = e["aggregate"]
@@ -644,22 +962,99 @@ def main():
             "neutral": agg["neutral"],
             "kritisch": agg["kritisch"],
         })
+        # Top-Themen aus eKomi-Produkten ableiten
+        positive_topics = []
+        negative_topics = []
+        for p in e.get("products", []):
+            pname = p.get("name", "")
+            pscore = p.get("score")
+            pcount = p.get("count", 0)
+            if pscore is not None and pcount and pcount >= 10:
+                if pscore >= 4.5:
+                    positive_topics.append("%s (%.1f★, %d Bewertungen)" % (pname, pscore, pcount))
+                elif pscore < 3.0:
+                    negative_topics.append("%s (%.1f★, %d Bewertungen)" % (pname, pscore, pcount))
+        # Allgemeine Insights aus Quellen
+        if e["trustpilot"]["score"] and e["trustpilot"]["score"] >= 4.0:
+            positive_topics.insert(0, "Starke Trustpilot-Präsenz (%.1f★)" % e["trustpilot"]["score"])
+        elif e["trustpilot"]["score"] and e["trustpilot"]["score"] < 3.0:
+            negative_topics.insert(0, "Schwache Trustpilot-Bewertung (%.1f★)" % e["trustpilot"]["score"])
+        if e["check24"]["score"] and e["check24"]["score"] >= 4.0:
+            positive_topics.append("Gute Check24-Bewertung (%.1f★)" % e["check24"]["score"])
+        if e["fb"]["score"] and e["fb"]["score"] >= 4.0:
+            positive_topics.append("Franke & Bornberg Bestnote (%.1f)" % e["fb"]["score"])
+        elif e["fb"]["score"] and e["fb"]["score"] < 3.0:
+            negative_topics.append("Schwache Franke & Bornberg Note (%.1f)" % e["fb"]["score"])
+
         sd["by_source"][e["key"]] = {
             "name": e["name"],
             "trustpilot": {"score": e["trustpilot"]["score"], "count": e["trustpilot"]["count"], "url": e["trustpilot"]["url"]},
             "ekomi": {"score": e["ekomi"]["score"], "count": e["ekomi"]["count"], "url": e["ekomi"]["url"]},
             "google": {"score": e["google"]["score"], "count": e["google"]["count"]},
-            "finanztip": {"verdict": e["finanztip"]["verdict"], "url": e["finanztip"]["url"]},
+            "check24": {"score": e["check24"]["score"], "note": e["check24"]["note"]},
+            "fb": {"score": e["fb"]["score"], "note": e["fb"]["note"]},
             "sources_count": e["sources_count"],
             "products": e.get("products", []),
+            "positive": positive_topics[:6],
+            "negative": negative_topics[:6],
         }
+
+    # Produktspezifische Daten fuer Dashboard
+    for cat in PRODUCT_CATEGORIES:
+        cat_key = cat["key"]
+        cat_data = product_results[cat_key]
+        sd["by_product"][cat_key] = {
+            "name": cat_data["name"],
+            "brands": [],
+        }
+        for brand in BRANDS:
+            key = brand["key"]
+            pb = cat_data["brands"].get(key, {})
+            brand_result = next(r for r in results if r["key"] == key)
+            c24 = pb.get("check24", {})
+            fb = pb.get("fb")
+            prod_agg = pb.get("aggregate", {"positiv": 50, "neutral": 25, "kritisch": 25})
+
+            sd["by_product"][cat_key]["brands"].append({
+                "key": key,
+                "name": brand["name"],
+                "trustpilot": brand_result["trustpilot"]["score"],
+                "ekomi": brand_result["ekomi"]["score"],
+                "google": brand_result["google"]["score"],
+                "check24": c24.get("score") if c24 else None,
+                "check24_count": c24.get("count") if c24 else None,
+                "fb_class": fb["class"] if fb else None,
+                "fb_grade": fb["grade"] if fb else None,
+                "fb_stars": fb["stars"] if fb else None,
+                "positiv": prod_agg["positiv"],
+                "neutral": prod_agg["neutral"],
+                "kritisch": prod_agg["kritisch"],
+            })
+
+    # Neueste Reviews aus allen Brands zusammenfuehren
+    all_reviews = []
+    for e in results:
+        brand_key = e["key"]
+        for rv in e["trustpilot"].get("recent_reviews", []):
+            all_reviews.append({
+                "brand": brand_key,
+                "source": "Trustpilot",
+                "title": rv.get("title", ""),
+                "text": rv.get("text", ""),
+                "score": rv.get("score"),
+                "date": rv.get("date", ""),
+                "author": rv.get("author", ""),
+            })
+    # Nach Datum sortieren (neueste zuerst), max 50
+    all_reviews.sort(key=lambda x: x.get("date", ""), reverse=True)
+    sd["recent_reviews"] = all_reviews[:50]
 
     new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"
 
     # Alten Kommentar + Block ersetzen
     content = re.sub(
-        r'// Sentiment-Demo-Daten[^\n]*\n',
-        '// Sentiment-Daten (Live-Crawl aus 4 Quellen: Trustpilot, eKomi, Google, Finanztip)\n',
+        r'// Sentiment-(?:Demo-)?[Dd]aten[^\n]*\n',
+        '// Sentiment-Daten (Live-Crawl aus 5 Quellen: Trustpilot, eKomi, Google, Check24, Franke & Bornberg)\n',
         content, count=1
     )
     pattern = re.compile(r"const SENTIMENT_DATA\s*=\s*\{.*?\};", re.DOTALL)
@@ -676,7 +1071,6 @@ def main():
         content, count=1
     )
 
-    # Live-Badge einfuegen (falls nicht schon vorhanden)
     # Live-Badge einfuegen (falls nicht schon vorhanden)
     if 'badge-sentiment-live' not in content:
         content = content.replace(

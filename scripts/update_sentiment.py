@@ -937,6 +937,53 @@ def main():
     json_path.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
     print("\nSaved: %s (%d bytes)" % (json_path, json_path.stat().st_size))
 
+    # ── Review-History: persistente JSON-Datei mit allen Reviews ──────────
+    history_path = Path("data/review_history.json")
+    existing_reviews = []
+    if history_path.exists():
+        try:
+            existing_reviews = json.loads(history_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, IOError):
+            existing_reviews = []
+
+    # Deduplizierungs-Set: (brand, source, date, title_prefix)
+    existing_keys = set()
+    for rv in existing_reviews:
+        k = (rv.get("brand", ""), rv.get("source", ""), rv.get("date", ""), rv.get("title", "")[:50])
+        existing_keys.add(k)
+
+    new_count = 0
+    for entry in results:
+        brand_key = entry["key"]
+        brand_name = entry["name"]
+        # Trustpilot Reviews
+        for rv in entry["trustpilot"].get("recent_reviews", []):
+            dedup_key = (brand_key, "Trustpilot", rv.get("date", ""), rv.get("title", "")[:50])
+            if dedup_key not in existing_keys:
+                existing_reviews.append({
+                    "brand": brand_key,
+                    "brand_name": brand_name,
+                    "source": "Trustpilot",
+                    "title": rv.get("title", ""),
+                    "text": rv.get("text", ""),
+                    "score": rv.get("score"),
+                    "date": rv.get("date", ""),
+                    "author": rv.get("author", ""),
+                    "crawl_date": today,
+                })
+                existing_keys.add(dedup_key)
+                new_count += 1
+
+    # Nach Datum sortieren (neueste zuerst)
+    existing_reviews.sort(key=lambda x: x.get("date", ""), reverse=True)
+
+    # Max 500 Reviews behalten (aelteste raus)
+    if len(existing_reviews) > 500:
+        existing_reviews = existing_reviews[:500]
+
+    history_path.write_text(json.dumps(existing_reviews, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("Review-History: %d neue Reviews, %d total" % (new_count, len(existing_reviews)))
+
     # ── Dashboard-Template patchen ────────────────────────────────────────
     template = Path("dashboard_template.html")
     if not template.exists():
@@ -962,29 +1009,62 @@ def main():
             "neutral": agg["neutral"],
             "kritisch": agg["kritisch"],
         })
-        # Top-Themen aus eKomi-Produkten ableiten
+        # Top-Themen aus echten Daten ableiten
         positive_topics = []
         negative_topics = []
+
+        # Aus eKomi-Produkten
         for p in e.get("products", []):
             pname = p.get("name", "")
             pscore = p.get("score")
             pcount = p.get("count", 0)
-            if pscore is not None and pcount and pcount >= 10:
+            if pscore is not None and pcount and pcount >= 5:
                 if pscore >= 4.5:
                     positive_topics.append("%s (%.1f★, %d Bewertungen)" % (pname, pscore, pcount))
-                elif pscore < 3.0:
+                elif pscore < 3.5:
                     negative_topics.append("%s (%.1f★, %d Bewertungen)" % (pname, pscore, pcount))
-        # Allgemeine Insights aus Quellen
+
+        # Trustpilot
         if e["trustpilot"]["score"] and e["trustpilot"]["score"] >= 4.0:
-            positive_topics.insert(0, "Starke Trustpilot-Präsenz (%.1f★)" % e["trustpilot"]["score"])
-        elif e["trustpilot"]["score"] and e["trustpilot"]["score"] < 3.0:
+            positive_topics.insert(0, "Starke Trustpilot-Bewertung (%.1f★, %s Reviews)" % (
+                e["trustpilot"]["score"], e["trustpilot"].get("count") or "?"))
+        elif e["trustpilot"]["score"] and e["trustpilot"]["score"] < 3.5:
             negative_topics.insert(0, "Schwache Trustpilot-Bewertung (%.1f★)" % e["trustpilot"]["score"])
+        elif not e["trustpilot"]["score"]:
+            negative_topics.append("Kein Trustpilot-Profil gefunden")
+
+        # eKomi
+        if e["ekomi"]["score"] and e["ekomi"]["score"] >= 4.5:
+            positive_topics.append("Sehr gute eKomi-Bewertung (%.1f★, %s Reviews)" % (
+                e["ekomi"]["score"], e["ekomi"].get("count") or "?"))
+        elif not e["ekomi"]["score"]:
+            negative_topics.append("Keine eKomi-Bewertungen vorhanden")
+
+        # Google
+        if e["google"]["score"] and e["google"]["score"] >= 4.0:
+            positive_topics.append("Gute Google-Bewertung (%.1f★)" % e["google"]["score"])
+        elif e["google"]["score"] and e["google"]["score"] < 3.5:
+            negative_topics.append("Schwache Google-Bewertung (%.1f★)" % e["google"]["score"])
+        elif not e["google"]["score"]:
+            negative_topics.append("Keine Google Places Bewertung")
+
+        # Check24
         if e["check24"]["score"] and e["check24"]["score"] >= 4.0:
             positive_topics.append("Gute Check24-Bewertung (%.1f★)" % e["check24"]["score"])
+        elif e["check24"]["score"] and e["check24"]["score"] < 3.5:
+            negative_topics.append("Schwache Check24-Bewertung (%.1f★)" % e["check24"]["score"])
+
+        # Franke & Bornberg
         if e["fb"]["score"] and e["fb"]["score"] >= 4.0:
             positive_topics.append("Franke & Bornberg Bestnote (%.1f)" % e["fb"]["score"])
         elif e["fb"]["score"] and e["fb"]["score"] < 3.0:
             negative_topics.append("Schwache Franke & Bornberg Note (%.1f)" % e["fb"]["score"])
+
+        # Quellen-Abdeckung
+        if e["sources_count"] >= 4:
+            positive_topics.append("Breite Präsenz: %d von 5 Quellen" % e["sources_count"])
+        elif e["sources_count"] <= 2:
+            negative_topics.append("Schwache Präsenz: nur %d von 5 Quellen" % e["sources_count"])
 
         sd["by_source"][e["key"]] = {
             "name": e["name"],
@@ -1031,23 +1111,27 @@ def main():
                 "kritisch": prod_agg["kritisch"],
             })
 
-    # Neueste Reviews aus allen Brands zusammenfuehren
-    all_reviews = []
-    for e in results:
-        brand_key = e["key"]
-        for rv in e["trustpilot"].get("recent_reviews", []):
-            all_reviews.append({
-                "brand": brand_key,
-                "source": "Trustpilot",
-                "title": rv.get("title", ""),
-                "text": rv.get("text", ""),
-                "score": rv.get("score"),
-                "date": rv.get("date", ""),
-                "author": rv.get("author", ""),
-            })
-    # Nach Datum sortieren (neueste zuerst), max 50
-    all_reviews.sort(key=lambda x: x.get("date", ""), reverse=True)
-    sd["recent_reviews"] = all_reviews[:50]
+    # Review-History aus persistenter Datei laden (max 100 fuer Dashboard)
+    history_for_dash = []
+    if history_path.exists():
+        try:
+            all_hist = json.loads(history_path.read_text(encoding="utf-8"))
+            # Nur Felder die das Dashboard braucht, max 100
+            for rv in all_hist[:100]:
+                history_for_dash.append({
+                    "brand": rv.get("brand", ""),
+                    "brand_name": rv.get("brand_name", ""),
+                    "source": rv.get("source", "Trustpilot"),
+                    "title": rv.get("title", ""),
+                    "text": rv.get("text", ""),
+                    "score": rv.get("score"),
+                    "date": rv.get("date", ""),
+                    "author": rv.get("author", ""),
+                    "crawl_date": rv.get("crawl_date", ""),
+                })
+        except (json.JSONDecodeError, IOError):
+            pass
+    sd["recent_reviews"] = history_for_dash
 
     new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"
 

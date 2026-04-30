@@ -1,48 +1,50 @@
 {
-  "as_of": "2026-04-27",
+  "as_of": "2026-04-30",
   "sources": [
     "Trustpilot",
     "eKomi",
     "Google Places",
-    "Finanztip"
+    "Check24",
+    "Franke & Bornberg"
   ],
+  "methodology": {
+    "trustpilot": "Direct HTML crawl (urllib + Playwright fallback); JSON-LD ratingValue extraction",
+    "ekomi": "Direct HTML crawl; JSON-LD/Meta aggregateRating extraction",
+    "google": "Google Places API (findplacefromtext); requires GOOGLE_PLACES_API_KEY",
+    "check24": "JSON-LD aggregateRating from product/insurer pages; portal-level ratings filtered",
+    "franke_bornberg": "AJAX POST API; best tariff per brand (lowest school grade = best rating)",
+    "aggregate_weights": {
+      "trustpilot": 0.25,
+      "ekomi": 0.15,
+      "google": 0.1,
+      "check24": 0.25,
+      "franke_bornberg": 0.25
+    }
+  },
   "by_brand": [
     {
       "key": "ergo",
       "name": "ERGO",
       "domain": "ergo.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 3.6,
+        "count": 8018,
         "url": "https://de.trustpilot.com/review/ergo.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": 4.5,
-        "count": 32835,
+        "count": 33200,
         "url": "https://www.ekomi.de/bewertungen-ergo-direkt-versicherungen-regulierung.html",
-        "note": "Live-Crawl 2026-04-27"
+        "note": "Live-Crawl 2026-04-30"
       },
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "url": "https://www.finanztip.de/erfahrungen/ergo/",
-        "topics": [
-          "Produkte von  Ergo",
-          "Weitere Anbieter",
-          "* Was der Stern bedeutet:"
-        ]
-      },
-      "aggregate": {
-        "positiv": 77,
-        "neutral": 10,
-        "kritisch": 13
-      },
-      "sources_count": 2,
       "products": [
         {
           "name": "KFZ-Versicherung",
@@ -53,94 +55,96 @@
         {
           "name": "Krankenversicherung",
           "score": 4.9,
-          "count": 486,
+          "count": 490,
           "url": "https://www.ekomi.de/bewertungen-ergo-versicherungsgruppe.html"
         },
         {
           "name": "Reiseversicherung",
           "score": 4.7,
-          "count": 1652,
+          "count": 1659,
           "url": "https://www.ekomi.de/bewertungen-reiseversicherungde.html"
         },
         {
           "name": "Rechtsschutz (DAS)",
           "score": 4.9,
-          "count": 46,
+          "count": 48,
           "url": "https://www.ekomi.de/bewertungen-das-rechtsschutzversicherung.html"
         },
         {
           "name": "Schadenregulierung",
           "score": 4.5,
-          "count": 32835,
+          "count": 33200,
           "url": "https://www.ekomi.de/bewertungen-ergo-direkt-versicherungen-regulierung.html"
         },
         {
           "name": "Vermittler-Service",
           "score": 4.9,
-          "count": 404,
+          "count": 406,
           "url": "https://www.ekomi.de/bewertungen-ergo-versicherung.html"
         },
         {
           "name": "Online-Abschluss",
           "score": 4.1,
-          "count": 1102,
+          "count": 1116,
           "url": "https://www.ekomi.de/bewertungen-ergo-direkt-versicherungen-abschluss.html"
         }
-      ]
+      ],
+      "check24": {
+        "score": 4.0,
+        "count": null,
+        "note": "Durchschnitt aus 2 Produkten"
+      },
+      "fb": {
+        "score": 5.0,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
+      },
+      "aggregate": {
+        "positiv": 71,
+        "neutral": 13,
+        "kritisch": 16
+      },
+      "sources_count": 4
     },
     {
       "key": "allianz",
       "name": "Allianz",
       "domain": "allianz.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 4.7,
+        "count": 15074,
         "url": "https://de.trustpilot.com/review/allianz.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": 4.8,
-        "count": 15615,
+        "count": 15656,
         "url": "https://www.ekomi.de/certificate_multi.php?id=allianz-kundenbewertungen",
-        "note": "Live-Crawl 2026-04-27"
+        "note": "Live-Crawl 2026-04-30"
       },
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "url": "https://www.finanztip.de/erfahrungen/allianz/",
-        "topics": [
-          "Produkte von der Allianz",
-          "Weitere Anbieter",
-          "* Was der Stern bedeutet:"
-        ]
-      },
-      "aggregate": {
-        "positiv": 79,
-        "neutral": 9,
-        "kritisch": 11
-      },
-      "sources_count": 2,
       "products": [
         {
           "name": "KFZ-Versicherung",
           "score": 4.8,
-          "count": 500,
+          "count": 502,
           "url": "https://www.ekomi.de/bewertungen-allianz-kfz-versicherung.html"
         },
         {
           "name": "Reiserücktritt",
           "score": 4.8,
-          "count": 100,
+          "count": 102,
           "url": "https://www.ekomi.de/bewertungen-allianz-reiseruecktrittsversicherung.html"
         },
         {
           "name": "Reisekranken",
           "score": 4.8,
-          "count": 259,
+          "count": 261,
           "url": "https://www.ekomi.de/bewertungen-allianz-reisekrankenversicherung.html"
         },
         {
@@ -158,113 +162,134 @@
         {
           "name": "Haftpflicht",
           "score": 4.8,
-          "count": 505,
+          "count": 509,
           "url": "https://www.ekomi.de/bewertungen-allianz-privat-haftpflichtversicherung.html"
         }
-      ]
+      ],
+      "check24": {
+        "score": 4.5,
+        "count": null,
+        "note": "Durchschnitt aus 2 Produkten"
+      },
+      "fb": {
+        "score": 5.0,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
+      },
+      "aggregate": {
+        "positiv": 80,
+        "neutral": 9,
+        "kritisch": 11
+      },
+      "sources_count": 4
     },
     {
       "key": "axa",
       "name": "AXA",
       "domain": "axa.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 1.4,
+        "count": 2964,
         "url": "https://de.trustpilot.com/review/axa.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": 4.5,
-        "count": 16038,
+        "count": 16198,
         "url": "https://www.ekomi.de/bewertungen-axa-nps.html",
-        "note": "Live-Crawl 2026-04-27"
+        "note": "Live-Crawl 2026-04-30"
       },
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "url": "https://www.finanztip.de/kfz-versicherung/axa-kfz-versicherung/",
-        "topics": [
-          "Beispiel-Fall für eine Autoversicherung bei Axa",
-          "Wo findest Du mehr zur Kfz-Versicherung?"
-        ]
-      },
-      "aggregate": {
-        "positiv": 77,
-        "neutral": 10,
-        "kritisch": 13
-      },
-      "sources_count": 2,
       "products": [
         {
           "name": "Schadenservice",
           "score": 4.5,
-          "count": 16038,
+          "count": 16198,
           "url": "https://www.ekomi.de/bewertungen-axa-nps.html"
         },
         {
           "name": "Kundenservice (DBV)",
           "score": 4.3,
-          "count": 420,
+          "count": 422,
           "url": "https://www.ekomi.de/bewertungen-axa-konzern-ag-service.html"
         },
         {
           "name": "Leistung (DBV)",
           "score": 4.4,
-          "count": 33560,
+          "count": 33680,
           "url": "https://www.ekomi.de/bewertungen-axa-de-dbv-leistung.html"
         }
-      ]
-    },
-    {
-      "key": "huk",
-      "name": "HUK-Coburg",
-      "domain": "huk.de",
-      "trustpilot": {
-        "score": null,
+      ],
+      "check24": {
+        "score": 3.8,
         "count": null,
-        "url": "https://de.trustpilot.com/review/huk.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Durchschnitt aus 1 Produkten"
       },
-      "ekomi": {
-        "score": null,
-        "count": null,
-        "url": null,
-        "note": "kein Profil"
-      },
-      "google": {
-        "score": null,
-        "count": null,
-        "note": "Places API (New) muss aktiviert werden"
-      },
-      "finanztip": {
-        "verdict": "alternativ",
-        "url": "https://www.finanztip.de/kfz-versicherung/kfz-versicherung-der-huk-coburg/",
-        "topics": [
-          "So viel kostet eine Autoversicherung bei der Huk und Huk24",
-          "Wo findest Du mehr zur Kfz-Versicherung?"
-        ]
+      "fb": {
+        "score": 4.3,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
       },
       "aggregate": {
         "positiv": 55,
         "neutral": 20,
         "kritisch": 25
       },
-      "sources_count": 1,
-      "products": []
+      "sources_count": 4
+    },
+    {
+      "key": "huk",
+      "name": "HUK-Coburg",
+      "domain": "huk.de",
+      "trustpilot": {
+        "score": 3.9,
+        "count": 31296,
+        "url": "https://de.trustpilot.com/review/huk.de",
+        "note": "Browser-Crawl 2026-04-30"
+      },
+      "ekomi": {
+        "score": null,
+        "count": null,
+        "url": null,
+        "note": "kein Profil"
+      },
+      "google": {
+        "score": null,
+        "count": null,
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
+      },
+      "products": [],
+      "check24": {
+        "score": null,
+        "count": null,
+        "note": "keine Daten"
+      },
+      "fb": {
+        "score": 5.0,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
+      },
+      "aggregate": {
+        "positiv": 75,
+        "neutral": 11,
+        "kritisch": 14
+      },
+      "sources_count": 2
     },
     {
       "key": "generali",
       "name": "Generali",
       "domain": "generali.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 3.8,
+        "count": 2483,
         "url": "https://de.trustpilot.com/review/generali.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": null,
@@ -275,34 +300,36 @@
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "url": "https://www.finanztip.de/kfz-versicherung/generali-kfz-versicherung/",
-        "topics": [
-          "Beispiel-Fall für eine Autoversicherung beim Generali-Konzern",
-          "Den Kundenservice der Generali: &nbsp;",
-          "Wo findest Du mehr zur Kfz-Versicherung?"
-        ]
+      "products": [],
+      "check24": {
+        "score": null,
+        "count": null,
+        "note": "keine Daten"
+      },
+      "fb": {
+        "score": 4.1,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
       },
       "aggregate": {
-        "positiv": 78,
-        "neutral": 10,
-        "kritisch": 12
+        "positiv": 65,
+        "neutral": 16,
+        "kritisch": 19
       },
-      "sources_count": 1,
-      "products": []
+      "sources_count": 2
     },
     {
       "key": "signal-iduna",
       "name": "Signal Iduna",
       "domain": "signal-iduna.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 3.7,
+        "count": 4291,
         "url": "https://de.trustpilot.com/review/signal-iduna.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": null,
@@ -313,34 +340,36 @@
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "url": "https://www.finanztip.de/erfahrungen/signal-iduna/",
-        "topics": [
-          "Produkte von der Signal Iduna",
-          "Weitere Anbieter",
-          "* Was der Stern bedeutet:"
-        ]
+      "products": [],
+      "check24": {
+        "score": 3.9,
+        "count": null,
+        "note": "Durchschnitt aus 1 Produkten"
+      },
+      "fb": {
+        "score": 5.0,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
       },
       "aggregate": {
-        "positiv": 78,
-        "neutral": 10,
-        "kritisch": 12
+        "positiv": 70,
+        "neutral": 14,
+        "kritisch": 16
       },
-      "sources_count": 1,
-      "products": []
+      "sources_count": 3
     },
     {
       "key": "ruv",
       "name": "R+V",
       "domain": "ruv.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 1.7,
+        "count": 5682,
         "url": "https://de.trustpilot.com/review/ruv.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": null,
@@ -351,19 +380,10 @@
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": null,
-        "url": null,
-        "topics": []
-      },
-      "aggregate": {
-        "positiv": 50,
-        "neutral": 25,
-        "kritisch": 25
-      },
-      "sources_count": 0,
       "products": [
         {
           "name": "Gesamt",
@@ -371,60 +391,79 @@
           "count": null,
           "url": "https://www.ekomi.de/bewertungen-ruv.html"
         }
-      ]
+      ],
+      "check24": {
+        "score": null,
+        "count": null,
+        "note": "keine Daten"
+      },
+      "fb": {
+        "score": 3.9,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
+      },
+      "aggregate": {
+        "positiv": 44,
+        "neutral": 25,
+        "kritisch": 31
+      },
+      "sources_count": 2
     },
     {
       "key": "devk",
       "name": "DEVK",
       "domain": "devk.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 3.4,
+        "count": 2725,
         "url": "https://de.trustpilot.com/review/devk.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": 4.3,
-        "count": 422,
+        "count": 428,
         "url": "https://www.ekomi.de/bewertungen-devk.html",
-        "note": "Live-Crawl 2026-04-27"
+        "note": "Live-Crawl 2026-04-30"
       },
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "empfehlung",
-        "url": "https://www.finanztip.de/kfz-versicherung/devk-kfz-versicherung/",
-        "topics": [
-          "Wo findest Du mehr zur Kfz-Versicherung?"
-        ]
-      },
-      "aggregate": {
-        "positiv": 76,
-        "neutral": 11,
-        "kritisch": 13
-      },
-      "sources_count": 2,
       "products": [
         {
           "name": "Gesamt",
           "score": 4.3,
-          "count": 422,
+          "count": 428,
           "url": "https://www.ekomi.de/bewertungen-devk.html"
         }
-      ]
+      ],
+      "check24": {
+        "score": null,
+        "count": null,
+        "note": "keine Daten"
+      },
+      "fb": {
+        "score": 4.2,
+        "note": "Durchschnitt aus 2 Produkten (Sterne-Aequivalent)"
+      },
+      "aggregate": {
+        "positiv": 65,
+        "neutral": 16,
+        "kritisch": 19
+      },
+      "sources_count": 3
     },
     {
       "key": "hannoversche",
       "name": "Hannoversche",
       "domain": "hannoversche.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 4.5,
+        "count": 1407,
         "url": "https://de.trustpilot.com/review/hannoversche.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": null,
@@ -435,21 +474,10 @@
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "alternativ",
-        "url": "https://www.finanztip.de/risikolebensversicherung/hannoversche-rlv/",
-        "topics": [
-          "Community"
-        ]
-      },
-      "aggregate": {
-        "positiv": 55,
-        "neutral": 20,
-        "kritisch": 25
-      },
-      "sources_count": 1,
       "products": [
         {
           "name": "Lebensversicherung",
@@ -457,17 +485,32 @@
           "count": null,
           "url": "https://www.ekomi.de/bewertungen-hannoversche-leben.html"
         }
-      ]
+      ],
+      "check24": {
+        "score": 4.4,
+        "count": null,
+        "note": "Durchschnitt aus 1 Produkten"
+      },
+      "fb": {
+        "score": 5.0,
+        "note": "Durchschnitt aus 1 Produkten (Sterne-Aequivalent)"
+      },
+      "aggregate": {
+        "positiv": 78,
+        "neutral": 10,
+        "kritisch": 12
+      },
+      "sources_count": 3
     },
     {
       "key": "cosmosdirekt",
       "name": "Cosmos Direkt",
       "domain": "cosmosdirekt.de",
       "trustpilot": {
-        "score": null,
-        "count": null,
+        "score": 4.1,
+        "count": 9086,
         "url": "https://de.trustpilot.com/review/cosmosdirekt.de",
-        "note": "Playwright in GitHub Actions"
+        "note": "Browser-Crawl 2026-04-30"
       },
       "ekomi": {
         "score": null,
@@ -478,24 +521,562 @@
       "google": {
         "score": null,
         "count": null,
-        "note": "Places API (New) muss aktiviert werden"
+        "place_id": null,
+        "matched_name": null,
+        "note": "nicht verfuegbar"
       },
-      "finanztip": {
-        "verdict": "nicht-empfohlen",
-        "url": "https://www.finanztip.de/erfahrungen/cosmosdirekt/",
-        "topics": [
-          "Produkte von der Cosmosdirekt",
-          "Weitere Anbieter",
-          "* Was der Stern bedeutet:"
-        ]
+      "products": [],
+      "check24": {
+        "score": null,
+        "count": null,
+        "note": "keine Daten"
+      },
+      "fb": {
+        "score": 5.0,
+        "note": "Durchschnitt aus 1 Produkten (Sterne-Aequivalent)"
       },
       "aggregate": {
-        "positiv": 30,
-        "neutral": 32,
-        "kritisch": 38
+        "positiv": 77,
+        "neutral": 11,
+        "kritisch": 13
       },
-      "sources_count": 1,
-      "products": []
+      "sources_count": 2
     }
-  ]
+  ],
+  "by_product": {
+    "zahnzusatz": {
+      "name": "Zahnzusatzversicherung",
+      "check24_available": true,
+      "fb_available": true,
+      "fb_rating_id": "gkvzahn_neu",
+      "brands": {
+        "ergo": {
+          "name": "ERGO",
+          "trustpilot": 3.6,
+          "ekomi": 4.5,
+          "google": null,
+          "check24": 3.8,
+          "check24_count": 777,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "KFO Stand 04.2020",
+          "aggregate": {
+            "positiv": 70,
+            "neutral": 14,
+            "kritisch": 17
+          }
+        },
+        "allianz": {
+          "name": "Allianz",
+          "trustpilot": 4.7,
+          "ekomi": 4.8,
+          "google": null,
+          "check24": 4.5,
+          "check24_count": 3029,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "MeinZahnschutz 100 (ZS100) Stand 10.2025",
+          "aggregate": {
+            "positiv": 80,
+            "neutral": 9,
+            "kritisch": 11
+          }
+        },
+        "axa": {
+          "name": "AXA",
+          "trustpilot": 1.4,
+          "ekomi": 4.5,
+          "google": null,
+          "check24": 3.8,
+          "check24_count": 40,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "Zahn Premium Stand 04.2026",
+          "aggregate": {
+            "positiv": 58,
+            "neutral": 19,
+            "kritisch": 23
+          }
+        },
+        "huk": {
+          "name": "HUK-Coburg",
+          "trustpilot": 3.9,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "ZZ Pro100 Stand 06.2024",
+          "aggregate": {
+            "positiv": 75,
+            "neutral": 11,
+            "kritisch": 14
+          }
+        },
+        "generali": {
+          "name": "Generali",
+          "trustpilot": 3.8,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FFF",
+          "fb_grade": 0.9,
+          "fb_stars": 4.7,
+          "fb_tariff": "Plan1 Stand 12.2022",
+          "aggregate": {
+            "positiv": 71,
+            "neutral": 13,
+            "kritisch": 16
+          }
+        },
+        "signal-iduna": {
+          "name": "Signal Iduna",
+          "trustpilot": 3.7,
+          "ekomi": null,
+          "google": null,
+          "check24": 3.9,
+          "check24_count": 66,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "ZahnEXKLUSIV Stand 10.2025",
+          "aggregate": {
+            "positiv": 70,
+            "neutral": 14,
+            "kritisch": 16
+          }
+        },
+        "ruv": {
+          "name": "R+V",
+          "trustpilot": 1.7,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FF+",
+          "fb_grade": 1.6,
+          "fb_stars": 4.2,
+          "fb_tariff": "Zahn comfort (Z2U) Stand 01.2026<br>ZV Stand 01.2026",
+          "aggregate": {
+            "positiv": 47,
+            "neutral": 24,
+            "kritisch": 29
+          }
+        },
+        "devk": {
+          "name": "DEVK",
+          "trustpilot": 3.4,
+          "ekomi": 4.3,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FF+",
+          "fb_grade": 1.6,
+          "fb_stars": 4.2,
+          "fb_tariff": "ET-G Stand 07.2024<br>D-G2 Stand 07.2024<br>Z-G Stand 07.2024",
+          "aggregate": {
+            "positiv": 65,
+            "neutral": 16,
+            "kritisch": 19
+          }
+        },
+        "hannoversche": {
+          "name": "Hannoversche",
+          "trustpilot": 4.5,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 76,
+            "neutral": 11,
+            "kritisch": 13
+          }
+        },
+        "cosmosdirekt": {
+          "name": "Cosmos Direkt",
+          "trustpilot": 4.1,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 68,
+            "neutral": 14,
+            "kritisch": 18
+          }
+        }
+      }
+    },
+    "sterbegeld": {
+      "name": "Sterbegeldversicherung",
+      "check24_available": false,
+      "fb_available": false,
+      "fb_rating_id": null,
+      "brands": {
+        "ergo": {
+          "name": "ERGO",
+          "trustpilot": 3.6,
+          "ekomi": 4.5,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 65,
+            "neutral": 16,
+            "kritisch": 19
+          }
+        },
+        "allianz": {
+          "name": "Allianz",
+          "trustpilot": 4.7,
+          "ekomi": 4.8,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 80,
+            "neutral": 9,
+            "kritisch": 11
+          }
+        },
+        "axa": {
+          "name": "AXA",
+          "trustpilot": 1.4,
+          "ekomi": 4.5,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 39,
+            "neutral": 27,
+            "kritisch": 33
+          }
+        },
+        "huk": {
+          "name": "HUK-Coburg",
+          "trustpilot": 3.9,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 64,
+            "neutral": 16,
+            "kritisch": 20
+          }
+        },
+        "generali": {
+          "name": "Generali",
+          "trustpilot": 3.8,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 62,
+            "neutral": 17,
+            "kritisch": 21
+          }
+        },
+        "signal-iduna": {
+          "name": "Signal Iduna",
+          "trustpilot": 3.7,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 61,
+            "neutral": 18,
+            "kritisch": 22
+          }
+        },
+        "ruv": {
+          "name": "R+V",
+          "trustpilot": 1.7,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 23,
+            "neutral": 37,
+            "kritisch": 40
+          }
+        },
+        "devk": {
+          "name": "DEVK",
+          "trustpilot": 3.4,
+          "ekomi": 4.3,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 61,
+            "neutral": 17,
+            "kritisch": 21
+          }
+        },
+        "hannoversche": {
+          "name": "Hannoversche",
+          "trustpilot": 4.5,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 76,
+            "neutral": 11,
+            "kritisch": 13
+          }
+        },
+        "cosmosdirekt": {
+          "name": "Cosmos Direkt",
+          "trustpilot": 4.1,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": null,
+          "fb_grade": null,
+          "fb_stars": null,
+          "fb_tariff": null,
+          "aggregate": {
+            "positiv": 68,
+            "neutral": 14,
+            "kritisch": 18
+          }
+        }
+      }
+    },
+    "risikoleben": {
+      "name": "Risikolebensversicherung",
+      "check24_available": true,
+      "fb_available": true,
+      "fb_rating_id": "hbs_rlv",
+      "brands": {
+        "ergo": {
+          "name": "ERGO",
+          "trustpilot": 3.6,
+          "ekomi": 4.5,
+          "google": null,
+          "check24": 4.2,
+          "check24_count": 152,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "ERGO Risikolebensversicherung Premium Stand 12.2025",
+          "aggregate": {
+            "positiv": 72,
+            "neutral": 13,
+            "kritisch": 15
+          }
+        },
+        "allianz": {
+          "name": "Allianz",
+          "trustpilot": 4.7,
+          "ekomi": 4.8,
+          "google": null,
+          "check24": 4.5,
+          "check24_count": 782,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "RLV Plus (E307) Tarif LC0 Stand 12.2025",
+          "aggregate": {
+            "positiv": 80,
+            "neutral": 9,
+            "kritisch": 11
+          }
+        },
+        "axa": {
+          "name": "AXA",
+          "trustpilot": 1.4,
+          "ekomi": 4.5,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FF+",
+          "fb_grade": 2.3,
+          "fb_stars": 3.7,
+          "fb_tariff": "RLV Stand 12.2025",
+          "aggregate": {
+            "positiv": 48,
+            "neutral": 24,
+            "kritisch": 29
+          }
+        },
+        "huk": {
+          "name": "HUK-Coburg",
+          "trustpilot": 3.9,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "RLV Premium Plus Stand 12.2023",
+          "aggregate": {
+            "positiv": 75,
+            "neutral": 11,
+            "kritisch": 14
+          }
+        },
+        "generali": {
+          "name": "Generali",
+          "trustpilot": 3.8,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FF",
+          "fb_grade": 2.6,
+          "fb_stars": 3.5,
+          "fb_tariff": "RLV SICHERHEITSPOLICE Stand 07.2020",
+          "aggregate": {
+            "positiv": 60,
+            "neutral": 18,
+            "kritisch": 22
+          }
+        },
+        "signal-iduna": {
+          "name": "Signal Iduna",
+          "trustpilot": 3.7,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FFF",
+          "fb_grade": 0.7,
+          "fb_stars": 4.9,
+          "fb_tariff": "SI RisikofreiLeben-PLUS Stand 01.2026",
+          "aggregate": {
+            "positiv": 72,
+            "neutral": 13,
+            "kritisch": 15
+          }
+        },
+        "ruv": {
+          "name": "R+V",
+          "trustpilot": 1.7,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FF+",
+          "fb_grade": 2.5,
+          "fb_stars": 3.5,
+          "fb_tariff": "RLV premium Stand 07.2025",
+          "aggregate": {
+            "positiv": 40,
+            "neutral": 27,
+            "kritisch": 33
+          }
+        },
+        "devk": {
+          "name": "DEVK",
+          "trustpilot": 3.4,
+          "ekomi": 4.3,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FF+",
+          "fb_grade": 1.8,
+          "fb_stars": 4.1,
+          "fb_tariff": "Risiko-Plus Stand 01.2026<br>Baustein UZV",
+          "aggregate": {
+            "positiv": 64,
+            "neutral": 16,
+            "kritisch": 20
+          }
+        },
+        "hannoversche": {
+          "name": "Hannoversche",
+          "trustpilot": 4.5,
+          "ekomi": null,
+          "google": null,
+          "check24": 4.4,
+          "check24_count": 9403,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "RLV Plus (Tarif T1N-Plus/Tarife T1R-Plus) Stand 09.2025",
+          "aggregate": {
+            "positiv": 78,
+            "neutral": 10,
+            "kritisch": 12
+          }
+        },
+        "cosmosdirekt": {
+          "name": "Cosmos Direkt",
+          "trustpilot": 4.1,
+          "ekomi": null,
+          "google": null,
+          "check24": null,
+          "check24_count": null,
+          "fb_class": "FFF+",
+          "fb_grade": 0.5,
+          "fb_stars": 5.0,
+          "fb_tariff": "RLV Premium Schutz Stand 10.2025",
+          "aggregate": {
+            "positiv": 77,
+            "neutral": 11,
+            "kritisch": 13
+          }
+        }
+      }
+    }
+  }
 }

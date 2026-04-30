@@ -2,7 +2,9 @@ name: Nightly Dashboard Update
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    # 01:00 UTC (03:00 MESZ) - VOR dem GEO-Workflow (03:00 UTC),
+    # damit events.jsonl fuer Korrelation bereitsteht.
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -52,18 +54,15 @@ jobs:
         run: python scripts/update_domain_footprint.py
         continue-on-error: true
 
-      - name: Review-History zurueck in main committen
+      - name: Daten-Dateien zurueck in main committen
         run: |
-          if [ -f data/review_history.json ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data/review_history.json
-            git diff --cached --quiet || git commit -m "data: update review_history.json"
-            git push origin main
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Review-History + Events-Timeline committen
+          git add data/review_history.json 2>/dev/null || true
+          git add shared/events.jsonl 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: update review_history + events"
+          git push origin main
 
       - name: Build und Deploy
-        uses: ./.github/actions/build-and-deploy
-        with:
-          dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
-          commit-message: "chore: nightly dashboard update"
+     

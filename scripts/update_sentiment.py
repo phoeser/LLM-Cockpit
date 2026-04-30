@@ -23,6 +23,15 @@ import urllib.error
 from pathlib import Path
 from datetime import datetime, timezone
 
+
+# Event-Emitter für Korrelations-Engine
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+try:
+    from shared.event_emitter import emit_event, load_previous_data, save_for_comparison
+    HAS_EVENTS = True
+except ImportError:
+    HAS_EVENTS = False
+
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 # ── Brand-Konfiguration ──────────────────────────────────────────────────────
@@ -1161,6 +1170,116 @@ def main():
         except (json.JSONDecodeError, IOError):
             pass
     sd["recent_reviews"] = history_for_dash
+
+
+    # ── Event-Emission für Korrelations-Engine ───────────────────────────
+    if HAS_EVENTS:
+        print("\n--- Event-Emission ---")
+        prev_path = Path("data/sentiment_data.json")
+        prev_data = load_previous_data(prev_path)
+        prev_brands = prev_data.get("by_brand", {})
+        event_count = 0
+        
+        for entry in results:
+            brand_key = entry["brand"]
+            brand_name = entry["name"]
+            curr_sources = entry.get("sources", {})
+            prev_entry = prev_brands.get(brand_key, {})
+            
+            # Google Places: Rating-Veränderung
+            curr_google = curr_sources.get("google", {})
+            prev_google = prev_entry.get("sources", {}).get("google", {}) if isinstance(prev_entry.get("sources"), dict) else {}
+            if curr_google.get("score") and prev_google.get("score"):
+                delta = curr_google["score"] - prev_google["score"]
+                if abs(delta) >= 0.05:
+                    emit_event(
+                        event_type="review_change",
+                        brand=brand_name,
+                        source="google_places",
+                        crawler="update_sentiment",
+                        magnitude=min(abs(delta) * 5, 2.0),
+                        detail={
+                            "metric": "average_rating",
+                            "old_value": prev_google["score"],
+                            "new_value": curr_google["score"],
+                            "change": round(delta, 2),
+                        },
+                    )
+                    event_count += 1
+            
+            # Google: Review-Volumen
+            curr_count = curr_google.get("count", 0)
+            prev_count = prev_google.get("count", 0)
+            if curr_count and prev_count and (curr_count - prev_count) >= 3:
+                emit_event(
+                    event_type="review_volume",
+                    brand=brand_name,
+                    source="google_places",
+                    crawler="update_sentiment",
+                    magnitude=min((curr_count - prev_count) / 10, 2.0),
+                    detail={
+                        "old_count": prev_count,
+                        "new_count": curr_count,
+                        "delta": curr_count - prev_count,
+                    },
+                )
+                event_count += 1
+            
+            # Trustpilot: Rating-Veränderung
+            curr_tp = curr_sources.get("trustpilot", {})
+            prev_tp = prev_entry.get("sources", {}).get("trustpilot", {}) if isinstance(prev_entry.get("sources"), dict) else {}
+            if curr_tp.get("score") and prev_tp.get("score"):
+                delta = curr_tp["score"] - prev_tp["score"]
+                if abs(delta) >= 0.05:
+                    emit_event(
+                        event_type="review_change",
+                        brand=brand_name,
+                        source="trustpilot",
+                        crawler="update_sentiment",
+                        magnitude=min(abs(delta) * 5, 2.0),
+                        detail={
+                            "metric": "average_rating",
+                            "old_value": prev_tp["score"],
+                            "new_value": curr_tp["score"],
+                            "change": round(delta, 2),
+                        },
+                    )
+                    event_count += 1
+            
+            # Franke & Bornberg: Rating-Änderung (produktspezifisch)
+            curr_fb = curr_sources.get("fb", {})
+            prev_fb = prev_entry.get("sources", {}).get("fb", {}) if isinstance(prev_entry.get("sources"), dict) else {}
+            if isinstance(curr_fb, dict) and isinstance(prev_fb, dict):
+                for product_key in ["zahnzusatz", "sterbegeld", "risikoleben"]:
+                    curr_rating = None
+                    prev_rating = None
+                    # F&B Daten sind verschachtelt - prüfe verschiedene Strukturen
+                    for fb_data in [curr_fb]:
+                        if isinstance(fb_data.get(product_key), dict):
+                            curr_rating = fb_data[product_key].get("note")
+                    for fb_data in [prev_fb]:
+                        if isinstance(fb_data.get(product_key), dict):
+                            prev_rating = fb_data[product_key].get("note")
+                    
+                    if curr_rating and prev_rating and curr_rating != prev_rating:
+                        emit_event(
+                            event_type="rating_update",
+                            brand=brand_name,
+                            source="franke_bornberg",
+                            crawler="update_sentiment",
+                            product=product_key,
+                            magnitude=min(abs(curr_rating - prev_rating) * 2, 2.0),
+                            detail={
+                                "metric": "schulnote",
+                                "old_value": prev_rating,
+                                "new_value": curr_rating,
+                            },
+                        )
+                        event_count += 1
+        
+        # Aktuelle Daten für nächsten Vergleich sichern
+        save_for_comparison(prev_path)
+        print("  %d Events emittiert" % event_count)
 
     new_block = "const SENTIMENT_DATA = " + json.dumps(sd, ensure_ascii=False, separators=(",", ": ")) + ";"
 

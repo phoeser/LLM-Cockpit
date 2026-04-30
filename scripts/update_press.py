@@ -23,6 +23,14 @@ from datetime import datetime, timezone, timedelta
 from collections import Counter
 import time
 
+# Event-Emitter für Korrelations-Engine
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+try:
+    from shared.event_emitter import emit_event, load_previous_data, save_for_comparison
+    HAS_EVENTS = True
+except ImportError:
+    HAS_EVENTS = False
+
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 # ── Brand-Konfiguration ──────────────────────────────────────────────────────
@@ -310,6 +318,68 @@ def main():
         json_path.parent.mkdir(parents=True)
     json_path.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
     print("\nSaved: %s (%d bytes)" % (json_path, json_path.stat().st_size))
+
+
+    # ── Event-Emission für Korrelations-Engine ───────────────────────────
+    if HAS_EVENTS:
+        print("\n--- Event-Emission ---")
+        prev_data = load_previous_data(json_path)
+        prev_articles = prev_data.get("articles", {})
+        event_count = 0
+        
+        for brand in BRANDS:
+            key = brand["key"]
+            name = brand["name"]
+            current_articles = all_brands.get(key, [])
+            previous_articles = prev_articles.get(key, [])
+            
+            # Vorherige Titel sammeln für Vergleich
+            prev_titles = set()
+            for a in previous_articles:
+                norm = re.sub(r'[^a-zäöü0-9]', '', a.get("title", "").lower())[:60]
+                prev_titles.add(norm)
+            
+            # Neue Artikel finden (nicht in vorherigem Crawl)
+            new_articles = []
+            for a in current_articles:
+                norm = re.sub(r'[^a-zäöü0-9]', '', a.get("title", "").lower())[:60]
+                if norm not in prev_titles and a.get("date"):
+                    new_articles.append(a)
+            
+            if new_articles:
+                for article in new_articles[:10]:  # Max 10 Events pro Brand
+                    # Sentiment grob aus Themen ableiten
+                    topics = article.get("topics", [])
+                    sent = "neutral"
+                    if any(t in topics for t in ["Schaden & Leistung"]):
+                        sent = "negative"
+                    elif any(t in topics for t in ["Produkt & Innovation", "Unternehmen & Strategie"]):
+                        sent = "positive"
+                    
+                    evt_type = "press_mention" if article.get("type") == "own" else "news_mention"
+                    emit_event(
+                        event_type=evt_type,
+                        brand=name,
+                        source="google_news_rss",
+                        crawler="update_press",
+                        magnitude=1.0,
+                        url=article.get("url", ""),
+                        sentiment=sent,
+                        detail={
+                            "title": article.get("title", "")[:120],
+                            "date": article.get("date", ""),
+                            "media_source": article.get("source", ""),
+                            "topics": topics,
+                            "article_type": article.get("type", "media"),
+                        },
+                    )
+                    event_count += 1
+                    
+                print("  %s: %d neue Artikel → %d Events" % (name, len(new_articles), min(len(new_articles), 10)))
+        
+        # Aktuelle Daten für nächsten Vergleich sichern
+        save_for_comparison(json_path)
+        print("  Gesamt: %d Events emittiert" % event_count)
 
     # ── Dashboard-Template patchen ────────────────────────────────────────
     template = Path("dashboard_template.html")

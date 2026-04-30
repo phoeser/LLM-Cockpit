@@ -11,6 +11,14 @@ import re
 import random
 import sys
 import time
+
+# Event-Emitter für Korrelations-Engine
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+try:
+    from shared.event_emitter import emit_event, load_previous_data, save_for_comparison
+    HAS_EVENTS = True
+except ImportError:
+    HAS_EVENTS = False
 import urllib.request
 import urllib.error
 from html.parser import HTMLParser
@@ -557,6 +565,59 @@ def main():
         typology = run_typology(rows)
         if typology:
             agg["typology"] = typology
+
+    # ── Event-Emission für Korrelations-Engine ───────────────────────────
+    if HAS_EVENTS:
+        print("\n--- Event-Emission ---")
+        prev_data = load_previous_data(out_path)
+        event_count = 0
+        
+        # Berater-Anzahl-Veränderung
+        prev_total = prev_data.get("totals", {}).get("vermittler", 0)
+        curr_total = t["vermittler"]
+        if prev_total and abs(curr_total - prev_total) >= 5:
+            emit_event(
+                event_type="berater_shift",
+                brand="ERGO",
+                source="ergo_berater_api",
+                crawler="update_berater",
+                magnitude=min(abs(curr_total - prev_total) / 20, 2.0),
+                detail={
+                    "metric": "vermittler_count",
+                    "old_value": prev_total,
+                    "new_value": curr_total,
+                    "delta": curr_total - prev_total,
+                },
+            )
+            event_count += 1
+        
+        # Typologie-Shifts (wenn vorhanden)
+        if "typology" in agg and "typology" in prev_data:
+            curr_types = agg["typology"].get("type_distribution", {})
+            prev_types = prev_data["typology"].get("type_distribution", {})
+            for type_name in ["individuell", "angepasst", "produktkatalog", "minimal"]:
+                curr_pct = curr_types.get(type_name, {}).get("percent", 0)
+                prev_pct = prev_types.get(type_name, {}).get("percent", 0)
+                if abs(curr_pct - prev_pct) > 2:  # >2% Shift
+                    emit_event(
+                        event_type="berater_shift",
+                        brand="ERGO",
+                        source="ergo_berater_api",
+                        crawler="update_berater",
+                        magnitude=min(abs(curr_pct - prev_pct) / 5, 2.0),
+                        detail={
+                            "metric": "type_distribution_" + type_name,
+                            "old_pct": prev_pct,
+                            "new_pct": curr_pct,
+                            "delta_pct": round(curr_pct - prev_pct, 1),
+                        },
+                    )
+                    event_count += 1
+        
+        # Daten für nächsten Vergleich sichern
+        save_for_comparison(out_path)
+        print("  %d Events emittiert" % event_count)
+
     payload = dict(agg)
     payload["vermittler"] = rows
     out_path = out_dir / "berater_data.json"

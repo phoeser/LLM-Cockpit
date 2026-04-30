@@ -385,36 +385,13 @@ def crawl_ekomi_products(products):
 
 # ── 3. GOOGLE PLACES ─────────────────────────────────────────────────────────
 def crawl_google_places(query, api_key):
-    """Google Places API: Legacy Text Search zuerst, dann New API als Fallback."""
+    """Google Places API: New API (Text Search) zuerst, dann Legacy als Fallback."""
     if not api_key:
         return {"score": None, "count": None, "error": "no API key"}
 
-    encoded = urllib.parse.quote(query)
-    legacy_url = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
-                  "?query=%s&language=de&key=%s" % (encoded, api_key))
-    try:
-        legacy_data = fetch_json(legacy_url)
-        if legacy_data:
-            status = legacy_data.get("status", "")
-            if status == "OK":
-                results = legacy_data.get("results", [])
-                if results:
-                    best = max(results, key=lambda r: r.get("user_ratings_total", 0))
-                    if best.get("rating"):
-                        return {
-                            "score": round(best.get("rating", 0), 1),
-                            "count": best.get("user_ratings_total"),
-                            "place_id": best.get("place_id"),
-                            "matched_name": best.get("name"),
-                            "api": "legacy",
-                        }
-            elif status == "REQUEST_DENIED":
-                print("    [Google Legacy] REQUEST_DENIED: %s" % legacy_data.get("error_message", "")[:80])
-            else:
-                print("    [Google Legacy] Status: %s" % status)
-    except Exception as e:
-        print("    [Google Legacy] Exception: %s" % str(e)[:80])
+    print("    [Google] API-Key vorhanden (%s...%s), Query: %s" % (api_key[:4], api_key[-4:], query[:40]))
 
+    # ── Versuch 1: New Places API (Text Search) ──
     new_url = "https://places.googleapis.com/v1/places:searchText"
     payload = json.dumps({
         "textQuery": query,
@@ -428,21 +405,72 @@ def crawl_google_places(query, api_key):
             "X-Goog-FieldMask": "places.displayName,places.rating,places.userRatingCount,places.id",
         })
         with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode("utf-8"))
+            resp_body = r.read().decode("utf-8")
+            data = json.loads(resp_body)
         places = data.get("places", [])
         if places:
             best = max(places, key=lambda p: p.get("userRatingCount", 0))
-            name = best.get("displayName", {})
-            return {
-                "score": round(best.get("rating", 0), 1) or None,
-                "count": best.get("userRatingCount"),
-                "place_id": best.get("id"),
-                "matched_name": name.get("text", "") if isinstance(name, dict) else str(name),
-                "api": "new",
-            }
-        return {"score": None, "count": None, "error": "no results (new API)"}
-    except Exception as e2:
-        return {"score": None, "count": None, "error": "both APIs failed: %s" % str(e2)[:60]}
+            name_obj = best.get("displayName", {})
+            matched = name_obj.get("text", "") if isinstance(name_obj, dict) else str(name_obj)
+            score = best.get("rating")
+            if score:
+                return {
+                    "score": round(score, 1),
+                    "count": best.get("userRatingCount"),
+                    "place_id": best.get("id"),
+                    "matched_name": matched,
+                    "api": "new",
+                }
+            print("    [Google New] Treffer '%s' aber kein Rating" % matched)
+        else:
+            print("    [Google New] Keine Ergebnisse fuer: %s" % query[:50])
+    except urllib.error.HTTPError as he:
+        err_body = ""
+        try:
+            err_body = he.read().decode("utf-8", errors="ignore")[:200]
+        except Exception:
+            pass
+        print("    [Google New] HTTP %d: %s" % (he.code, err_body))
+    except Exception as e:
+        print("    [Google New] Exception: %s" % str(e)[:120])
+
+    # ── Versuch 2: Legacy Text Search API ──
+    encoded = urllib.parse.quote(query)
+    legacy_url = ("https://maps.googleapis.com/maps/api/place/textsearch/json"
+                  "?query=%s&language=de&key=%s" % (encoded, api_key))
+    try:
+        req = urllib.request.Request(legacy_url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            legacy_data = json.loads(r.read().decode("utf-8"))
+        status = legacy_data.get("status", "")
+        if status == "OK":
+            results_list = legacy_data.get("results", [])
+            if results_list:
+                best = max(results_list, key=lambda r: r.get("user_ratings_total", 0))
+                if best.get("rating"):
+                    return {
+                        "score": round(best.get("rating", 0), 1),
+                        "count": best.get("user_ratings_total"),
+                        "place_id": best.get("place_id"),
+                        "matched_name": best.get("name"),
+                        "api": "legacy",
+                    }
+                print("    [Google Legacy] Treffer '%s' aber kein Rating" % best.get("name", "?"))
+        elif status == "REQUEST_DENIED":
+            print("    [Google Legacy] REQUEST_DENIED: %s" % legacy_data.get("error_message", "")[:120])
+        else:
+            print("    [Google Legacy] Status: %s — %s" % (status, legacy_data.get("error_message", "")[:80]))
+    except urllib.error.HTTPError as he:
+        err_body = ""
+        try:
+            err_body = he.read().decode("utf-8", errors="ignore")[:200]
+        except Exception:
+            pass
+        print("    [Google Legacy] HTTP %d: %s" % (he.code, err_body))
+    except Exception as e:
+        print("    [Google Legacy] Exception: %s" % str(e)[:120])
+
+    return {"score": None, "count": None, "error": "both APIs failed"}
 
 
 # ── 4. CHECK24 ───────────────────────────────────────────────────────────────

@@ -2,26 +2,28 @@
 
 API: GET https://www.ergo.de/ergode/handlers/agentsearchhandler.ashx
      ?zip={plz}&radius={km}&page={n}
+
+Zusaetzlich: Stichproben-Crawl der Berater-Homepages fuer Seiten-Typologisierung.
 """
 import json
 import os
+import re
+import random
 import sys
 import time
 import urllib.request
 import urllib.error
+from html.parser import HTMLParser
 from pathlib import Path
 
 # DE-flaechendeckend: ~200 PLZ-Seeds fuer maximale Abdeckung
-# Mehrere Seeds pro 2-stelligem Bereich + Zwischenpunkte fuer lueckenlose Abdeckung
 SEED_PLZ = [
-    # 0xxxx - Sachsen, Brandenburg, Thueringen
     ("01067", "Dresden"), ("01587", "Riesa"), ("02625", "Bautzen"),
     ("02763", "Zittau"), ("03046", "Cottbus"), ("03238", "Finsterwalde"),
     ("04109", "Leipzig"), ("04600", "Altenburg"), ("04838", "Eilenburg"),
     ("06108", "Halle"), ("06484", "Quedlinburg"), ("06844", "Dessau"),
     ("07743", "Jena"), ("07545", "Gera"), ("08056", "Zwickau"),
     ("08523", "Plauen"), ("09111", "Chemnitz"), ("09599", "Freiberg"),
-    # 1xxxx - Berlin, Brandenburg, Mecklenburg-Vorpommern
     ("10115", "Berlin-Mitte"), ("10783", "Berlin-Schoeneberg"),
     ("12099", "Berlin-Tempelhof"), ("12555", "Berlin-Koepenick"),
     ("13347", "Berlin-Wedding"), ("13585", "Berlin-Spandau"),
@@ -31,7 +33,6 @@ SEED_PLZ = [
     ("17033", "Neubrandenburg"), ("17489", "Greifswald"),
     ("18055", "Rostock"), ("18435", "Stralsund"),
     ("19053", "Schwerin"), ("19348", "Perleberg"),
-    # 2xxxx - Hamburg, Schleswig-Holstein, Niedersachsen-Nord
     ("20095", "Hamburg-Mitte"), ("21073", "Hamburg-Harburg"),
     ("21335", "Lueneburg"), ("22043", "Hamburg-Wandsbek"),
     ("22846", "Norderstedt"), ("23552", "Luebeck"),
@@ -42,7 +43,6 @@ SEED_PLZ = [
     ("27568", "Bremerhaven"), ("27749", "Delmenhorst"),
     ("28195", "Bremen"), ("29221", "Celle"),
     ("29439", "Luechow"),
-    # 3xxxx - Niedersachsen, NRW-Nord, Hessen-Nord
     ("30159", "Hannover"), ("30880", "Laatzen"),
     ("31134", "Hildesheim"), ("31582", "Nienburg"),
     ("32257", "Buende"), ("32756", "Detmold"),
@@ -53,7 +53,6 @@ SEED_PLZ = [
     ("37154", "Northeim"), ("38100", "Braunschweig"),
     ("38440", "Wolfsburg"), ("38820", "Halberstadt"),
     ("39104", "Magdeburg"), ("39576", "Stendal"),
-    # 4xxxx - NRW (Rheinland, Ruhrgebiet)
     ("40213", "Duesseldorf"), ("40699", "Erkrath"),
     ("41061", "Moenchengladbach"), ("41462", "Neuss"),
     ("42103", "Wuppertal"), ("42651", "Solingen"),
@@ -64,7 +63,6 @@ SEED_PLZ = [
     ("47441", "Moers"), ("47798", "Krefeld"),
     ("48143", "Muenster"), ("48431", "Rheine"),
     ("49074", "Osnabrueck"), ("49477", "Ibbenbueren"),
-    # 5xxxx - NRW-Sued, Rheinland-Pfalz-Nord
     ("50667", "Koeln"), ("51063", "Koeln-Muelheim"),
     ("51373", "Leverkusen"), ("52062", "Aachen"),
     ("52349", "Dueren"), ("53111", "Bonn"),
@@ -74,7 +72,6 @@ SEED_PLZ = [
     ("57072", "Siegen"), ("57462", "Olpe"),
     ("58095", "Hagen"), ("58636", "Iserlohn"),
     ("59065", "Hamm"), ("59494", "Soest"),
-    # 6xxxx - Hessen, Rheinland-Pfalz-Sued, Saarland
     ("60311", "Frankfurt-Main"), ("60488", "Frankfurt-West"),
     ("61169", "Friedberg"), ("63065", "Offenbach"),
     ("63450", "Hanau"), ("64283", "Darmstadt"),
@@ -83,7 +80,6 @@ SEED_PLZ = [
     ("67059", "Ludwigshafen"), ("67433", "Neustadt-Weinstr"),
     ("67655", "Kaiserslautern"), ("68159", "Mannheim"),
     ("69115", "Heidelberg"), ("69412", "Eberbach"),
-    # 7xxxx - Baden-Wuerttemberg
     ("70173", "Stuttgart"), ("70806", "Kornwestheim"),
     ("71032", "Boeblingen"), ("71638", "Ludwigsburg"),
     ("72072", "Tuebingen"), ("72764", "Reutlingen"),
@@ -93,7 +89,6 @@ SEED_PLZ = [
     ("76646", "Bruchsal"), ("77652", "Offenburg"),
     ("78050", "Villingen"), ("78462", "Konstanz"),
     ("79098", "Freiburg"), ("79539", "Loerrach"),
-    # 8xxxx - Bayern-Sued
     ("80331", "Muenchen-Mitte"), ("81369", "Muenchen-Sued"),
     ("81925", "Muenchen-Bogenhausen"), ("82041", "Furth"),
     ("82362", "Weilheim"), ("83022", "Rosenheim"),
@@ -103,7 +98,6 @@ SEED_PLZ = [
     ("86720", "Noerdlingen"), ("87435", "Kempten"),
     ("88045", "Friedrichshafen"), ("89073", "Ulm"),
     ("89312", "Guenzburg"),
-    # 9xxxx - Bayern-Nord, Thueringen-Sued
     ("90402", "Nuernberg"), ("90762", "Fuerth"),
     ("91054", "Erlangen"), ("91522", "Ansbach"),
     ("92224", "Amberg"), ("92637", "Weiden"),
@@ -125,10 +119,10 @@ HEADERS = {
     "Referer": "https://www.ergo.de/de/Vermittlersuche",
     "Accept": "application/json, text/javascript, */*; q=0.01",
 }
-RADIUS_KM = 80       # 80km Radius fuer lueckenlose Abdeckung
-PAGE_LIMIT = 100     # max 100 Seiten pro PLZ (= 1000 Agenten)
-SLEEP_BETWEEN = 0.2  # etwas langsamer fuer Stabilitaet
-MAX_RETRIES = 2      # Retry bei Fehlern
+RADIUS_KM = 80
+PAGE_LIMIT = 100
+SLEEP_BETWEEN = 0.2
+MAX_RETRIES = 2
 
 
 def fetch_page(plz, page):
@@ -141,7 +135,7 @@ def fetch_page(plz, page):
         except Exception as e:
             sys.stderr.write("  WARN %s p%d attempt %d: %s: %s\n" % (plz, page, attempt, type(e).__name__, e))
             if attempt < MAX_RETRIES:
-                time.sleep(1.0)  # 1s Pause vor Retry
+                time.sleep(1.0)
     return None
 
 
@@ -179,6 +173,318 @@ def normalize(a):
         "functions": list(a.get("function") or []),
         "social": a.get("social") or {},
     }
+
+
+# ---------------------------------------------------------------------------
+# Seiten-Typologisierung: Stichproben-Crawl der Berater-Homepages
+# ---------------------------------------------------------------------------
+
+class SimpleHTMLAnalyzer(HTMLParser):
+    """Leichtgewichtiger HTML-Parser ohne externe Abhaengigkeiten."""
+    def __init__(self):
+        super().__init__()
+        self.title = ""
+        self.meta_desc = ""
+        self.meta_robots = ""
+        self.canonical = ""
+        self.h1_texts = []
+        self.link_count = 0
+        self.internal_links = 0
+        self.external_links = 0
+        self.has_schema_org = False
+        self.has_contact_form = False
+        self.has_calculator = False
+        self.has_blog = False
+        self.has_termin = False
+        self.has_bewertungen = False
+        self.has_team = False
+        self.has_video = False
+        self.has_faq = False
+        self.has_google_maps = False
+        self.img_count = 0
+        self.product_keywords = []
+        self._in_title = False
+        self._in_h1 = False
+        self._current_text = ""
+        self._raw_html = ""
+
+    def feed_full(self, html):
+        self._raw_html = html.lower()
+        self.has_schema_org = "schema.org" in self._raw_html
+        self.has_contact_form = any(k in self._raw_html for k in
+            ['type="submit"', "kontaktformular", "nachricht senden", "anfrage senden"])
+        self.has_calculator = any(k in self._raw_html for k in
+            ["jetzt berechnen", "beitrag berechnen", "tarifrechner", "onlinerechner"])
+        self.has_blog = any(k in self._raw_html for k in
+            ["/blog", "aktuelles", "neuigkeiten", "ratgeber"])
+        self.has_termin = any(k in self._raw_html for k in
+            ["termin vereinbaren", "terminvereinbarung", "beratungstermin",
+             "jetzt termin", "callback", "rueckruf"])
+        self.has_bewertungen = any(k in self._raw_html for k in
+            ["bewertung", "kundenmeinung", "erfahrung", "rezension", "trustpilot",
+             "provenexpert", "google-bewertung"])
+        self.has_team = any(k in self._raw_html for k in
+            ["unser team", "team vorstellen", "mitarbeiter", "ihre ansprechpartner"])
+        self.has_video = any(k in self._raw_html for k in
+            ["youtube.com/embed", "vimeo.com", "<video", "video-container"])
+        self.has_faq = any(k in self._raw_html for k in
+            ["faq", "haeufige fragen", "h\xc3\xa4ufige fragen", "fragen und antworten"])
+        self.has_google_maps = any(k in self._raw_html for k in
+            ["maps.google", "google.com/maps", "maps.googleapis"])
+        prod_kw = {
+            "zahnzusatz": ["zahnzusatz", "zahnversicherung"],
+            "rechtsschutz": ["rechtsschutz"],
+            "haftpflicht": ["haftpflicht", "privathaftpflicht"],
+            "kfz": ["kfz-versicherung", "autoversicherung", "kfz versicherung"],
+            "hausrat": ["hausrat"],
+            "berufsunfaehigkeit": ["berufsunf", "bu-versicherung"],
+            "sterbegeld": ["sterbegeld"],
+            "risikoleben": ["risikoleben", "risiko-leben"],
+            "pflege": ["pflegeversicherung", "pflege-"],
+            "reise": ["reiseversicherung", "reisekranken"],
+        }
+        for prod, kws in prod_kw.items():
+            if any(kw in self._raw_html for kw in kws):
+                self.product_keywords.append(prod)
+        try:
+            self.feed(html)
+        except Exception:
+            pass
+
+    def handle_starttag(self, tag, attrs):
+        d = dict(attrs)
+        if tag == "title":
+            self._in_title = True
+            self._current_text = ""
+        elif tag == "h1":
+            self._in_h1 = True
+            self._current_text = ""
+        elif tag == "meta":
+            name = (d.get("name") or "").lower()
+            if name == "description":
+                self.meta_desc = d.get("content", "")
+            elif name == "robots":
+                self.meta_robots = d.get("content", "")
+        elif tag == "link":
+            if (d.get("rel") or "").lower() == "canonical":
+                self.canonical = d.get("href", "")
+        elif tag == "a":
+            self.link_count += 1
+            href = d.get("href", "")
+            if href.startswith("http") and "ergo.de" not in href:
+                self.external_links += 1
+            else:
+                self.internal_links += 1
+        elif tag == "img":
+            self.img_count += 1
+
+    def handle_endtag(self, tag):
+        if tag == "title" and self._in_title:
+            self._in_title = False
+            self.title = self._current_text.strip()
+        elif tag == "h1" and self._in_h1:
+            self._in_h1 = False
+            self.h1_texts.append(self._current_text.strip())
+
+    def handle_data(self, data):
+        if self._in_title or self._in_h1:
+            self._current_text += data
+
+
+def classify_page_type(analysis):
+    """Klassifiziert eine Berater-Seite in einen Typ."""
+    features = []
+    if analysis["has_team"]:
+        features.append("agentur")
+    if analysis["has_blog"]:
+        features.append("blog")
+    if analysis["has_bewertungen"]:
+        features.append("bewertungen")
+    if analysis["has_video"]:
+        features.append("video")
+    if analysis["has_faq"]:
+        features.append("faq")
+    if analysis["has_google_maps"]:
+        features.append("maps")
+    if analysis["has_termin"]:
+        features.append("termin")
+    if analysis["has_contact_form"]:
+        features.append("kontakt")
+    individual_score = len(features)
+    prod_count = len(analysis.get("product_keywords", []))
+    if individual_score >= 4:
+        page_type = "individuell"
+        desc = "Stark individualisiert"
+    elif individual_score >= 2:
+        page_type = "angepasst"
+        desc = "Teilweise angepasst"
+    elif prod_count >= 5:
+        page_type = "produktkatalog"
+        desc = "Reiner Produktkatalog"
+    else:
+        page_type = "minimal"
+        desc = "Minimal/Standard-Template"
+    return {
+        "type": page_type,
+        "type_label": desc,
+        "individual_score": individual_score,
+        "features": features,
+    }
+
+
+def crawl_homepage(homepage):
+    """Crawlt eine Berater-Homepage und analysiert den Inhalt."""
+    url = "https://%s" % homepage
+    req = urllib.request.Request(url, headers={
+        "User-Agent": HEADERS["User-Agent"],
+        "Accept": "text/html,application/xhtml+xml,*/*;q=0.9",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            raw = r.read(500000)
+            ct = r.headers.get("Content-Type", "")
+            enc = "utf-8"
+            if "charset=" in ct:
+                enc = ct.split("charset=")[-1].split(";")[0].strip()
+            try:
+                html = raw.decode(enc, errors="replace")
+            except (LookupError, UnicodeDecodeError):
+                html = raw.decode("utf-8", errors="replace")
+        analyzer = SimpleHTMLAnalyzer()
+        analyzer.feed_full(html)
+        result = {
+            "homepage": homepage,
+            "status": "ok",
+            "title": analyzer.title[:200],
+            "meta_desc": analyzer.meta_desc[:300],
+            "meta_robots": analyzer.meta_robots,
+            "canonical": analyzer.canonical,
+            "h1": analyzer.h1_texts[:3],
+            "link_count": analyzer.link_count,
+            "internal_links": analyzer.internal_links,
+            "external_links": analyzer.external_links,
+            "img_count": analyzer.img_count,
+            "has_schema_org": analyzer.has_schema_org,
+            "has_contact_form": analyzer.has_contact_form,
+            "has_calculator": analyzer.has_calculator,
+            "has_blog": analyzer.has_blog,
+            "has_termin": analyzer.has_termin,
+            "has_bewertungen": analyzer.has_bewertungen,
+            "has_team": analyzer.has_team,
+            "has_video": analyzer.has_video,
+            "has_faq": analyzer.has_faq,
+            "has_google_maps": analyzer.has_google_maps,
+            "product_keywords": analyzer.product_keywords,
+            "page_size_kb": round(len(raw) / 1024, 1),
+        }
+        classification = classify_page_type(result)
+        result.update(classification)
+        return result
+    except urllib.error.HTTPError as e:
+        return {"homepage": homepage, "status": "http_%d" % e.code, "type": "error"}
+    except Exception as e:
+        return {"homepage": homepage, "status": "error", "error": str(e)[:200], "type": "error"}
+
+
+def run_typology(rows, sample_size=80):
+    """Stichproben-Crawl und Typologisierung der Berater-Seiten."""
+    with_hp = [r for r in rows if r["homepage"] and ".ergo.de" in r["homepage"]]
+    if not with_hp:
+        print("  Keine Berater mit ergo.de-Homepage gefunden")
+        return None
+    rd = [r for r in with_hp if r["homepage"].startswith("rd-")]
+    dkv = [r for r in with_hp if "-dkv." in r["homepage"] or "dkv-" in r["homepage"]]
+    std = [r for r in with_hp if r not in rd and r not in dkv]
+    random.seed(42)
+    sample = []
+    for group, name, quota in [(rd, "rd", 15), (dkv, "dkv", 15), (std, "standard", 50)]:
+        n = min(quota, len(group))
+        sample.extend(random.sample(group, n))
+    print("\n=== Seiten-Typologisierung: %d Seiten crawlen ===" % len(sample))
+    print("  RD: %d, DKV: %d, Standard: %d" % (
+        sum(1 for s in sample if s["homepage"].startswith("rd-")),
+        sum(1 for s in sample if "-dkv." in s["homepage"] or "dkv-" in s["homepage"]),
+        sum(1 for s in sample if not s["homepage"].startswith("rd-") and "-dkv." not in s["homepage"] and "dkv-" not in s["homepage"]),
+    ))
+    results = []
+    for i, r in enumerate(sample):
+        hp = r["homepage"]
+        if not hp.startswith("http"):
+            hp_full = hp if "." in hp else hp + ".ergo.de"
+        else:
+            hp_full = hp
+        sys.stdout.write("  [%d/%d] %s ... " % (i + 1, len(sample), hp_full))
+        sys.stdout.flush()
+        res = crawl_homepage(hp_full)
+        results.append(res)
+        print(res.get("type", "?") + " (%s)" % res.get("status", "?"))
+        time.sleep(0.5)
+    ok = [r for r in results if r["status"] == "ok"]
+    errors = [r for r in results if r["status"] != "ok"]
+    type_counts = {}
+    feature_counts = {}
+    product_counts = {}
+    seo_stats = {
+        "with_meta_desc": 0, "with_schema_org": 0, "with_canonical": 0,
+        "robots_index": 0, "robots_noindex": 0, "robots_unset": 0,
+    }
+    avg_links = 0
+    avg_images = 0
+    avg_page_size = 0
+    for r in ok:
+        t = r.get("type", "unknown")
+        type_counts[t] = type_counts.get(t, 0) + 1
+        for f in r.get("features", []):
+            feature_counts[f] = feature_counts.get(f, 0) + 1
+        for p in r.get("product_keywords", []):
+            product_counts[p] = product_counts.get(p, 0) + 1
+        if r.get("meta_desc"):
+            seo_stats["with_meta_desc"] += 1
+        if r.get("has_schema_org"):
+            seo_stats["with_schema_org"] += 1
+        if r.get("canonical"):
+            seo_stats["with_canonical"] += 1
+        robots = (r.get("meta_robots") or "").lower()
+        if "noindex" in robots:
+            seo_stats["robots_noindex"] += 1
+        elif robots:
+            seo_stats["robots_index"] += 1
+        else:
+            seo_stats["robots_unset"] += 1
+        avg_links += r.get("link_count", 0)
+        avg_images += r.get("img_count", 0)
+        avg_page_size += r.get("page_size_kb", 0)
+    n_ok = max(len(ok), 1)
+    typology = {
+        "sample_size": len(sample),
+        "crawled_ok": len(ok),
+        "crawled_errors": len(errors),
+        "type_distribution": dict(sorted(type_counts.items(), key=lambda kv: -kv[1])),
+        "feature_frequency": dict(sorted(feature_counts.items(), key=lambda kv: -kv[1])),
+        "product_keyword_frequency": dict(sorted(product_counts.items(), key=lambda kv: -kv[1])),
+        "seo_stats": seo_stats,
+        "avg_links": round(avg_links / n_ok, 1),
+        "avg_images": round(avg_images / n_ok, 1),
+        "avg_page_size_kb": round(avg_page_size / n_ok, 1),
+        "individual_score_avg": round(sum(r.get("individual_score", 0) for r in ok) / n_ok, 2),
+        "pages": [{
+            "homepage": r["homepage"],
+            "type": r.get("type", "?"),
+            "type_label": r.get("type_label", "?"),
+            "features": r.get("features", []),
+            "product_keywords": r.get("product_keywords", []),
+            "has_calculator": r.get("has_calculator", False),
+            "meta_robots": r.get("meta_robots", ""),
+            "individual_score": r.get("individual_score", 0),
+            "page_size_kb": r.get("page_size_kb", 0),
+        } for r in ok],
+    }
+    print("\n=== Typologisierung Ergebnis ===")
+    print("  Gecrawlt: %d ok, %d Fehler" % (len(ok), len(errors)))
+    print("  Typen: %s" % type_counts)
+    print("  Features: %s" % feature_counts)
+    print("  SEO: %s" % seo_stats)
+    return typology
 
 
 def aggregate(rows):
@@ -246,6 +552,11 @@ def main():
     elapsed = time.time() - t0
     print("\n=== Crawl fertig: %d raw, %d unique (%.1fs) ===" % (raw_count, len(rows), elapsed))
     agg = aggregate(rows)
+    # Seiten-Typologisierung (kann mit SKIP_TYPOLOGY=1 uebersprungen werden)
+    if os.environ.get("SKIP_TYPOLOGY") != "1":
+        typology = run_typology(rows)
+        if typology:
+            agg["typology"] = typology
     payload = dict(agg)
     payload["vermittler"] = rows
     out_path = out_dir / "berater_data.json"
@@ -256,7 +567,7 @@ def main():
     print("   Mit Subdomain: %d" % t["with_subdomain"])
     print("   Mit Foto: %d" % t["with_image"])
     print("   Mit Social: %d" % t["with_social"])
-    # Patch dashboard_template.html: BERATER_DATA Block austauschen (nur Aggregate + 50er-Sample-Fallback)
+    # Patch dashboard_template.html
     template = out_dir / "dashboard_template.html"
     if template.exists():
         import re as _re
@@ -264,6 +575,10 @@ def main():
         compact = dict(agg)
         sample_keys = ("firstname", "lastname", "zipcode", "city", "homepage", "image")
         compact["vermittler"] = [{k: v.get(k, "") for k in sample_keys} for v in rows[:50]]
+        if "typology" in compact:
+            typo_compact = dict(compact["typology"])
+            typo_compact.pop("pages", None)
+            compact["typology"] = typo_compact
         block = json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
         new_marker = "/* BERATER_DATA_START */" + block + "/* BERATER_DATA_END */"
         pat = _re.compile(r"/\*\s*BERATER_DATA_START\s*\*/[\s\S]*?/\*\s*BERATER_DATA_END\s*\*/")

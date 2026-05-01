@@ -1292,14 +1292,22 @@ def main():
         print("\n--- Event-Emission ---")
         prev_path = Path("data/sentiment_data.json")
         prev_data = load_previous_data(prev_path)
-        prev_brands = prev_data.get("by_brand", {})
+        # Handle both formats: flat dict {brand_key: data} or nested {by_brand: [...]}
+        if "by_brand" in prev_data:
+            by_brand = prev_data["by_brand"]
+            if isinstance(by_brand, dict):
+                prev_brands = by_brand
+            else:
+                prev_brands = {}  # by_brand list has no per-source data
+        else:
+            prev_brands = prev_data  # flat format: prev_data IS the brand dict
         event_count = 0
-        
+
         for entry in results:
             brand_key = entry["key"]
             brand_name = entry["name"]
             # Quellen liegen direkt im Entry (nicht unter "sources")
-            prev_entry = prev_brands.get(brand_key, {})
+            prev_entry = prev_brands.get(brand_key, {}) if isinstance(prev_brands, dict) else {}
 
             # Google Places: Rating-Veränderung
             curr_google = entry.get("google", {})
@@ -1425,7 +1433,7 @@ def main():
                       '        <span class="badge badge-sentiment-live" '
                       'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
                       'padding:2px 8px;border-radius:4px;margin-left:8px;">'
-                      'Live-Daten \xc2\xb7 Stand '
+                      'Live-Daten \u00b7 Stand '
                       '<span id="sentimentDate"></span></span>')
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',

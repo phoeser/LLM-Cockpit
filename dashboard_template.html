@@ -1773,10 +1773,11 @@ function buildPressTab() {
   const chartDiv = document.getElementById('pressTimelineChart');
   const filterDiv = document.getElementById('pressTimelineBrandFilter');
   if (chartDiv && PD.timeline) {
-    // Collect all months
+    // Collect all months — nur die letzten 12 Monate anzeigen
     const allMonths = new Set();
     brandKeys.forEach(k => (PD.timeline[k]||[]).forEach(x => allMonths.add(x.m)));
-    const months = Array.from(allMonths).sort();
+    const allSorted = Array.from(allMonths).sort();
+    const months = allSorted.slice(-12);
     if (months.length === 0) { chartDiv.innerHTML = '<p class="text-gray-500 text-sm">Keine Timeline-Daten</p>'; return; }
 
     const colors = {'ergo':'#DC0028','allianz':'#003781','axa':'#00008f','huk':'#006633','generali':'#c8102e',
@@ -2825,5 +2826,4 @@ window.BERATER_DATA = /* BERATER_DATA_START */{"generated_at":"2026-04-26T23:34:
     typeEl=document.getElementById('berTypeFilter');
     searchEl.addEventListener('input', debounce(applyFilters, 150));
     stateEl.addEventListener('change', applyFilters);
-    typeEl.addEventListener('change', applyFilters);
-    listEl.addEventListener('scroll', fun
+    typeEl.a

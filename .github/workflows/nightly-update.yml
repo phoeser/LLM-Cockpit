@@ -44,6 +44,7 @@ jobs:
       - name: Aktualisiere Sentiment-Daten (4 Quellen)
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/update_sentiment.py
 
       - name: Aktualisiere Presse-Daten (Google News RSS)
@@ -69,4 +70,4 @@ jobs:
         uses: ./.github/actions/build-and-deploy
         with:
           dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
-          commit-message: "chore: nightly dashboard update"
+    

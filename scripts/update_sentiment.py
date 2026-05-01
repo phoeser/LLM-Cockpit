@@ -394,10 +394,43 @@ def crawl_ekomi_products(products):
 
 
 # ── 3. GOOGLE PLACES ─────────────────────────────────────────────────────────
+def _fetch_google_reviews(place_id, api_key):
+    """Holt einzelne Reviews fuer einen Place via Place Details (New API)."""
+    if not place_id or not api_key:
+        return []
+    details_url = "https://places.googleapis.com/v1/%s" % place_id
+    try:
+        req = urllib.request.Request(details_url, headers={
+            "X-Goog-Api-Key": api_key,
+            "X-Goog-FieldMask": "reviews",
+        })
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        reviews = data.get("reviews", [])
+        result = []
+        for rv in reviews[:10]:
+            text_obj = rv.get("text", {})
+            text = text_obj.get("text", "") if isinstance(text_obj, dict) else str(text_obj)
+            author_obj = rv.get("authorAttribution", {})
+            author = author_obj.get("displayName", "") if isinstance(author_obj, dict) else ""
+            result.append({
+                "text": text[:500],
+                "score": rv.get("rating"),
+                "date": rv.get("publishTime", "")[:10],
+                "author": author,
+            })
+        print("    [Google Reviews] %d Reviews geholt" % len(result))
+        return result
+    except Exception as e:
+        print("    [Google Reviews] Fehler: %s" % str(e)[:120])
+        return []
+
+
 def crawl_google_places(query, api_key):
-    """Google Places API: New API (Text Search) zuerst, dann Legacy als Fallback."""
+    """Google Places API: New API (Text Search) zuerst, dann Legacy als Fallback.
+    Bei Erfolg werden zusaetzlich einzelne Reviews per Place Details geholt."""
     if not api_key:
-        return {"score": None, "count": None, "error": "no API key"}
+        return {"score": None, "count": None, "recent_reviews": [], "error": "no API key"}
 
     print("    [Google] API-Key vorhanden (%s...%s), Query: %s" % (api_key[:4], api_key[-4:], query[:40]))
 
@@ -412,7 +445,7 @@ def crawl_google_places(query, api_key):
         req = urllib.request.Request(new_url, data=payload, method="POST", headers={
             "Content-Type": "application/json",
             "X-Goog-Api-Key": api_key,
-            "X-Goog-FieldMask": "places.displayName,places.rating,places.userRatingCount,places.id",
+            "X-Goog-FieldMask": "places.displayName,places.rating,places.userRatingCount,places.id,places.reviews",
         })
         with urllib.request.urlopen(req, timeout=15) as r:
             resp_body = r.read().decode("utf-8")
@@ -424,12 +457,35 @@ def crawl_google_places(query, api_key):
             matched = name_obj.get("text", "") if isinstance(name_obj, dict) else str(name_obj)
             score = best.get("rating")
             if score:
+                # Reviews direkt aus searchText oder per Details-Call
+                reviews_raw = best.get("reviews", [])
+                reviews = []
+                if reviews_raw:
+                    for rv in reviews_raw[:10]:
+                        text_obj = rv.get("text", {})
+                        text = text_obj.get("text", "") if isinstance(text_obj, dict) else str(text_obj)
+                        author_obj = rv.get("authorAttribution", {})
+                        author = author_obj.get("displayName", "") if isinstance(author_obj, dict) else ""
+                        reviews.append({
+                            "text": text[:500],
+                            "score": rv.get("rating"),
+                            "date": rv.get("publishTime", "")[:10],
+                            "author": author,
+                        })
+                    print("    [Google New] %d Reviews inline erhalten" % len(reviews))
+                else:
+                    # Fallback: Reviews per Place Details holen
+                    place_id = best.get("id")
+                    if place_id:
+                        reviews = _fetch_google_reviews(place_id, api_key)
+
                 return {
                     "score": round(score, 1),
                     "count": best.get("userRatingCount"),
                     "place_id": best.get("id"),
                     "matched_name": matched,
                     "api": "new",
+                    "recent_reviews": reviews,
                 }
             print("    [Google New] Treffer '%s' aber kein Rating" % matched)
         else:
@@ -458,12 +514,43 @@ def crawl_google_places(query, api_key):
             if results_list:
                 best = max(results_list, key=lambda r: r.get("user_ratings_total", 0))
                 if best.get("rating"):
+                    # Legacy liefert keine Reviews inline — per Details nachladen
+                    reviews = []
+                    place_id = best.get("place_id")
+                    if place_id:
+                        # Legacy Place Details fuer Reviews
+                        det_url = ("https://maps.googleapis.com/maps/api/place/details/json"
+                                   "?place_id=%s&fields=reviews&language=de&key=%s" % (place_id, api_key))
+                        try:
+                            det_req = urllib.request.Request(det_url, headers={"User-Agent": UA})
+                            with urllib.request.urlopen(det_req, timeout=15) as dr:
+                                det_data = json.loads(dr.read().decode("utf-8"))
+                            for rv in det_data.get("result", {}).get("reviews", [])[:10]:
+                                reviews.append({
+                                    "text": rv.get("text", "")[:500],
+                                    "score": rv.get("rating"),
+                                    "date": rv.get("time", ""),
+                                    "author": rv.get("author_name", ""),
+                                })
+                            # Legacy date ist Unix-Timestamp, umwandeln
+                            for rv in reviews:
+                                if rv["date"] and isinstance(rv["date"], (int, float)):
+                                    try:
+                                        from datetime import datetime as dt
+                                        rv["date"] = dt.utcfromtimestamp(rv["date"]).strftime("%Y-%m-%d")
+                                    except Exception:
+                                        rv["date"] = ""
+                            print("    [Google Legacy Details] %d Reviews geholt" % len(reviews))
+                        except Exception as de:
+                            print("    [Google Legacy Details] Fehler: %s" % str(de)[:120])
+
                     return {
                         "score": round(best.get("rating", 0), 1),
                         "count": best.get("user_ratings_total"),
-                        "place_id": best.get("place_id"),
+                        "place_id": place_id,
                         "matched_name": best.get("name"),
                         "api": "legacy",
+                        "recent_reviews": reviews,
                     }
                 print("    [Google Legacy] Treffer '%s' aber kein Rating" % best.get("name", "?"))
         elif status == "REQUEST_DENIED":
@@ -480,7 +567,7 @@ def crawl_google_places(query, api_key):
     except Exception as e:
         print("    [Google Legacy] Exception: %s" % str(e)[:120])
 
-    return {"score": None, "count": None, "error": "both APIs failed"}
+    return {"score": None, "count": None, "recent_reviews": [], "error": "both APIs failed"}
 
 
 # ── 4. CHECK24 ───────────────────────────────────────────────────────────────
@@ -772,6 +859,7 @@ def main():
                 "place_id": gp.get("place_id"),
                 "matched_name": gp.get("matched_name"),
                 "note": "Google Places API " + today if gp.get("score") else gp.get("error", "nicht verfuegbar"),
+                "recent_reviews": gp.get("recent_reviews", []),
             },
             "products": products_data,
         })
@@ -1012,6 +1100,25 @@ def main():
                 existing_keys.add(dedup_key)
                 new_count += 1
 
+        # Google Places Reviews
+        for rv in entry["google"].get("recent_reviews", []):
+            rv_text = rv.get("text", "")[:50] if rv.get("text") else ""
+            dedup_key = (brand_key, "Google", rv.get("date", ""), rv_text)
+            if dedup_key not in existing_keys:
+                existing_reviews.append({
+                    "brand": brand_key,
+                    "brand_name": brand_name,
+                    "source": "Google",
+                    "title": "",
+                    "text": rv.get("text", ""),
+                    "score": rv.get("score"),
+                    "date": rv.get("date", ""),
+                    "author": rv.get("author", ""),
+                    "crawl_date": today,
+                })
+                existing_keys.add(dedup_key)
+                new_count += 1
+
     # Nach Datum sortieren (neueste zuerst)
     existing_reviews.sort(key=lambda x: x.get("date", ""), reverse=True)
 
@@ -1108,7 +1215,7 @@ def main():
             "name": e["name"],
             "trustpilot": {"score": e["trustpilot"]["score"], "count": e["trustpilot"]["count"], "url": e["trustpilot"]["url"]},
             "ekomi": {"score": e["ekomi"]["score"], "count": e["ekomi"]["count"], "url": e["ekomi"]["url"]},
-            "google": {"score": e["google"]["score"], "count": e["google"]["count"]},
+            "google": {"score": e["google"]["score"], "count": e["google"]["count"], "place_id": e["google"].get("place_id"), "matched_name": e["google"].get("matched_name")},
             "check24": {"score": e["check24"]["score"], "note": e["check24"]["note"]},
             "fb": {"score": e["fb"]["score"], "note": e["fb"]["note"]},
             "sources_count": e["sources_count"],
@@ -1181,14 +1288,14 @@ def main():
         event_count = 0
         
         for entry in results:
-            brand_key = entry["brand"]
+            brand_key = entry["key"]
             brand_name = entry["name"]
-            curr_sources = entry.get("sources", {})
+            # Quellen liegen direkt im Entry (nicht unter "sources")
             prev_entry = prev_brands.get(brand_key, {})
-            
+
             # Google Places: Rating-Veränderung
-            curr_google = curr_sources.get("google", {})
-            prev_google = prev_entry.get("sources", {}).get("google", {}) if isinstance(prev_entry.get("sources"), dict) else {}
+            curr_google = entry.get("google", {})
+            prev_google = prev_entry.get("google", {}) if isinstance(prev_entry, dict) else {}
             if curr_google.get("score") and prev_google.get("score"):
                 delta = curr_google["score"] - prev_google["score"]
                 if abs(delta) >= 0.05:
@@ -1206,7 +1313,7 @@ def main():
                         },
                     )
                     event_count += 1
-            
+
             # Google: Review-Volumen
             curr_count = curr_google.get("count", 0)
             prev_count = prev_google.get("count", 0)
@@ -1224,10 +1331,10 @@ def main():
                     },
                 )
                 event_count += 1
-            
+
             # Trustpilot: Rating-Veränderung
-            curr_tp = curr_sources.get("trustpilot", {})
-            prev_tp = prev_entry.get("sources", {}).get("trustpilot", {}) if isinstance(prev_entry.get("sources"), dict) else {}
+            curr_tp = entry.get("trustpilot", {})
+            prev_tp = prev_entry.get("trustpilot", {}) if isinstance(prev_entry, dict) else {}
             if curr_tp.get("score") and prev_tp.get("score"):
                 delta = curr_tp["score"] - prev_tp["score"]
                 if abs(delta) >= 0.05:
@@ -1247,8 +1354,8 @@ def main():
                     event_count += 1
             
             # Franke & Bornberg: Rating-Änderung (produktspezifisch)
-            curr_fb = curr_sources.get("fb", {})
-            prev_fb = prev_entry.get("sources", {}).get("fb", {}) if isinstance(prev_entry.get("sources"), dict) else {}
+            curr_fb = entry.get("fb", {})
+            prev_fb = prev_entry.get("fb", {}) if isinstance(prev_entry, dict) else {}
             if isinstance(curr_fb, dict) and isinstance(prev_fb, dict):
                 for product_key in ["zahnzusatz", "sterbegeld", "risikoleben"]:
                     curr_rating = None

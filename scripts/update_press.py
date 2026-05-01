@@ -319,6 +319,58 @@ def main():
     json_path.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
     print("\nSaved: %s (%d bytes)" % (json_path, json_path.stat().st_size))
 
+    # ── Presse-History: persistente JSON-Datei mit allen Artikeln ─────────
+    history_path = Path("data/press_history.json")
+    existing_articles = []
+    if history_path.exists():
+        try:
+            existing_articles = json.loads(history_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, IOError):
+            existing_articles = []
+
+    # Deduplizierungs-Set: (brand, normalized_title_prefix)
+    existing_keys = set()
+    for art in existing_articles:
+        norm = re.sub(r'[^a-z0-9]', '', art.get("title", "").lower())[:60]
+        k = (art.get("brand", ""), norm)
+        existing_keys.add(k)
+
+    new_count = 0
+    for brand in BRANDS:
+        key = brand["key"]
+        name = brand["name"]
+        for a in all_brands.get(key, []):
+            norm = re.sub(r'[^a-z0-9]', '', a.get("title", "").lower())[:60]
+            dedup_key = (key, norm)
+            if dedup_key not in existing_keys:
+                existing_articles.append({
+                    "brand": key,
+                    "brand_name": name,
+                    "title": a.get("title", ""),
+                    "url": a.get("url", ""),
+                    "date": a.get("date", ""),
+                    "source": a.get("source", ""),
+                    "type": a.get("type", "media"),
+                    "topics": a.get("topics", []),
+                    "crawl_date": today,
+                })
+                existing_keys.add(dedup_key)
+                new_count += 1
+
+    # Nach Datum sortieren (neueste zuerst)
+    existing_articles.sort(key=lambda x: x.get("date", ""), reverse=True)
+
+    # Max 6 Monate Retention
+    cutoff_6m = (datetime.now(timezone.utc) - timedelta(days=180)).strftime("%Y-%m-%d")
+    existing_articles = [a for a in existing_articles if a.get("date", "9999") >= cutoff_6m]
+
+    # Max 2000 Artikel insgesamt
+    if len(existing_articles) > 2000:
+        existing_articles = existing_articles[:2000]
+
+    history_path.write_text(json.dumps(existing_articles, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("Presse-History: %d neue Artikel, %d total (max 6 Monate)" % (new_count, len(existing_articles)))
+
 
     # ── Event-Emission für Korrelations-Engine ───────────────────────────
     if HAS_EVENTS:
@@ -432,59 +484,4 @@ def main():
         topic_counts = Counter()
         for a in all_brands[key]:
             for t in a.get("topics", []):
-                topic_counts[t] += 1
-        pd["topic_matrix"][key] = [{"t": t, "c": c} for t, c in topic_counts.most_common(10)]
-
-        # Letzte 15 Artikel fuer die Liste
-        pd["recent"][key] = [
-            {
-                "title": a["title"][:120],
-                "date": a["date"],
-                "source": a["source"],
-                "type": a.get("type", "media"),
-                "topics": a["topics"],
-            }
-            for a in all_brands[key][:15]
-        ]
-
-    new_block = "const PRESS_DATA = " + json.dumps(pd, ensure_ascii=False, separators=(",", ": ")) + ";"
-
-    # Pruefen ob PRESS_DATA schon existiert
-    pattern = re.compile(r"const PRESS_DATA\s*=\s*\{.*?\};", re.DOTALL)
-    if pattern.search(content):
-        content = pattern.sub(new_block, content, count=1)
-        print("PRESS_DATA-Block aktualisiert")
-    else:
-        # Neuen Block nach SENTIMENT_DATA einfuegen
-        sentinel = re.search(r"(const SENTIMENT_DATA\s*=\s*\{.*?\};)", content, re.DOTALL)
-        if sentinel:
-            insert_pos = sentinel.end()
-            content = content[:insert_pos] + "\n\n// Presse-Daten (Live-Crawl: eigene PMs + Medienberichte via Google News RSS)\n" + new_block + "\n" + content[insert_pos:]
-            print("PRESS_DATA-Block neu eingefuegt (nach SENTIMENT_DATA)")
-        else:
-            print("WARN: Konnte PRESS_DATA nicht einfuegen — kein SENTIMENT_DATA gefunden")
-            return
-
-    # NULL-byte-safe schreiben (kein rstrip — kann lange Datenzeilen abschneiden!)
-    clean = content.encode("utf-8").replace(b"\x00", b"")
-    if not clean.endswith(b"\n"):
-        clean += b"\n"
-    template.write_bytes(clean)
-
-    print("Patched dashboard_template.html")
-    print("  PRESS_DATA: %d bytes" % len(new_block))
-
-    # Zusammenfassung
-    print("\n" + "=" * 60)
-    print("ZUSAMMENFASSUNG")
-    print("=" * 60)
-    for key in all_brands:
-        s = stats[key]
-        print("  %-15s %3d total (%2d eigen, %3d medien) | 30d: %2d | 90d: %2d | newest: %s" % (
-            brand_meta[key]["name"], s["total"], s["own"], s["media"],
-            s["last_30d"], s["last_90d"], s["newest"] or "?"
-        ))
-
-
-if __name__ == "__main__":
-    main()
+                topic_co

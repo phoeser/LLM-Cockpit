@@ -1130,9 +1130,14 @@ def main():
     # Nach Datum sortieren (neueste zuerst)
     existing_reviews.sort(key=lambda x: x.get("date", ""), reverse=True)
 
-    # Max 500 Reviews behalten (aelteste raus)
-    if len(existing_reviews) > 500:
-        existing_reviews = existing_reviews[:500]
+    # Max 6 Monate Retention
+    from datetime import timedelta
+    cutoff_6m = (datetime.now(timezone.utc) - timedelta(days=180)).strftime("%Y-%m-%d")
+    existing_reviews = [r for r in existing_reviews if r.get("date", "9999") >= cutoff_6m or r.get("crawl_date", "9999") >= cutoff_6m]
+
+    # Max 1000 Reviews behalten
+    if len(existing_reviews) > 1000:
+        existing_reviews = existing_reviews[:1000]
 
     history_path.write_text(json.dumps(existing_reviews, indent=2, ensure_ascii=False), encoding="utf-8")
     print("Review-History: %d neue Reviews, %d total" % (new_count, len(existing_reviews)))
@@ -1412,42 +1417,41 @@ def main():
         '// Sentiment-Daten (Live-Crawl aus 5 Quellen: Trustpilot, eKomi, Google, Check24, Franke & Bornberg)\n',
         content, count=1
     )
-    pattern = re.compile(r"const SENTIMENT_DATA\s*=\s*\{.*?\};", re.DOTALL)
-    if pattern.search(content):
-        content = pattern.sub(new_block, content, count=1)
+    # Balanced-Bracket-Suche statt Regex (Regex bricht bei }; in Review-Texten)
+    marker = re.search(r"const SENTIMENT_DATA\s*=\s*\{", content)
+    if marker:
+        brace_start = marker.end() - 1  # Position der oeffnenden {
+        depth = 0
+        in_string = False
+        escape_next = False
+        end_pos = brace_start
+        for i in range(brace_start, len(content)):
+            ch = content[i]
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == '\\' and in_string:
+                escape_next = True
+                continue
+            if ch == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    end_pos = i + 1
+                    break
+        # Semikolon nach } ueberspringen
+        if end_pos < len(content) and content[end_pos] == ';':
+            end_pos += 1
+        content = content[:marker.start()] + new_block + content[end_pos:]
     else:
         print("WARN: SENTIMENT_DATA-Pattern nicht gefunden")
         return
 
     # Demo-Badge entfernen
-    content = re.sub(
-        r'\s*<span class="badge badge-yellow">Demo-Daten[^<]*</span>',
-        '',
-        content, count=1
-    )
-
-    # Live-Badge einfuegen (falls nicht schon vorhanden)
-    if 'badge-sentiment-live' not in content:
-        live_badge = ('<h3 class="text-lg font-bold text-ergo-dark">'
-                      'Sentiment-Analyse je Anbieter</h3>\n'
-                      '        <span class="badge badge-sentiment-live" '
-                      'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
-                      'padding:2px 8px;border-radius:4px;margin-left:8px;">'
-                      'Live-Daten \u00b7 Stand '
-                      '<span id="sentimentDate"></span></span>')
-        content = content.replace(
-            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
-            live_badge,
-        )
-
-    # NULL-byte-safe schreiben
-    template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-
-    success_count = sum(1 for e in results if e["sources_count"] >= 2)
-    print("\nPatched dashboard_template.html")
-    print("  %d/10 Brands mit >= 2 Quellen" % success_count)
-    print("  SENTIMENT_DATA: %d bytes" % len(new_block))
-
-
-if __name__ == "__main__":
-    main()
+ 

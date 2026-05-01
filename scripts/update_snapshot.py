@@ -82,7 +82,7 @@ def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) ->
     html = template_path.read_text(encoding="utf-8")
     new_line = "const GEO_SNAPSHOT = " + json.dumps(snapshot, ensure_ascii=False) + ";"
     pattern = re.compile(r"const GEO_SNAPSHOT\s*=\s*\{.*?\};", re.DOTALL)
-    new_html, n = pattern.subn(new_line, html, count=1)
+    new_html, n = pattern.subn(lambda m: new_line, html, count=1)
     if n != 1:
         sys.exit("FEHLER: GEO_SNAPSHOT-Zeile im Template nicht gefunden.")
     # Patch IN-PLACE (NULL-byte safe)
@@ -112,4 +112,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+ 

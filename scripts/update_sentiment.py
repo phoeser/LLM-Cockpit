@@ -831,7 +831,15 @@ def main():
             print("  [eKomi Prod]  %d/%d Produkte mit Score" % (ok_count, len(products_data)))
 
         # 3) Google Places
-        gp = crawl_google_places(brand["google_query"], google_key) if google_key else {"score": None, "count": None}
+        try:
+            gp = crawl_google_places(brand["google_query"], google_key) if google_key else {"score": None, "count": None, "recent_reviews": []}
+        except Exception as gex:
+            print("  [Google]      CRASH — %s: %s" % (type(gex).__name__, str(gex)[:200]))
+            gp = {"score": None, "count": None, "recent_reviews": [], "error": str(gex)[:200]}
+        if not isinstance(gp, dict):
+            gp = {"score": None, "count": None, "recent_reviews": [], "error": "unexpected return type"}
+        if "recent_reviews" not in gp:
+            gp["recent_reviews"] = []
         if gp.get("score"):
             print("  [Google]      %.1f / 5  (%s Reviews)  [%s]" % (gp["score"], gp.get("count", "?"), gp.get("matched_name", "")))
         else:
@@ -1412,11 +1420,16 @@ def main():
 
     # Live-Badge einfuegen (falls nicht schon vorhanden)
     if 'badge-sentiment-live' not in content:
+        live_badge = ('<h3 class="text-lg font-bold text-ergo-dark">'
+                      'Sentiment-Analyse je Anbieter</h3>\n'
+                      '        <span class="badge badge-sentiment-live" '
+                      'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
+                      'padding:2px 8px;border-radius:4px;margin-left:8px;">'
+                      'Live-Daten \xc2\xb7 Stand '
+                      '<span id="sentimentDate"></span></span>')
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
-            '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>\n'
-            '        <span class="badge badge-sentiment-live" style="background:#e8f5e9;color:#2e7d32;font-size:11px;padding:2px 8px;border-radius:4px;margin-left:8px;">'
-            'Live-Daten \xc2\xb7 Stand <span id="sentimentDate"></span></span>',
+            live_badge,
         )
 
     # NULL-byte-safe schreiben

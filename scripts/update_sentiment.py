@@ -788,6 +788,165 @@ def aggregate(tp_score, ekomi_score, google_score, check24_score=None, fb_stars=
     }
 
 
+# ── THEMEN-EXTRAKTION AUS REVIEW-TEXTEN ─────────────────────────────────────
+
+# Keyword-Woerterbuch: Thema -> (Keywords, Sentiment)
+TOPIC_KEYWORDS = {
+    # Positive Themen
+    "Schnelle Schadenbearbeitung": (["schnell bearbeit", "schnelle bearbeitung", "schnelle abwicklung", "schnell reguliert", "zuegig bearbeit", "zuegig reguliert", "schnelle regulierung", "unkomplizierte abwicklung", "schnell ausgezahlt", "schnelle auszahlung"], "positive"),
+    "Freundlicher Kundenservice": (["freundlich", "nett", "hilfsbereit", "zuvorkommend", "hoeflich", "kompetente beratung", "guter service", "toller service", "super service", "klasse service", "erstklassiger service"], "positive"),
+    "Gutes Preis-Leistungs-Verhaeltnis": (["preis-leistung", "preis leistung", "guenstig", "fairer preis", "guter preis", "preislich", "gute konditionen", "preiswert"], "positive"),
+    "Kompetente Beratung": (["kompetent", "fachkundig", "professionell", "gut beraten", "ausfuehrlich erklaert", "ausfuehrliche beratung", "individuelle beratung"], "positive"),
+    "Einfacher Online-Abschluss": (["online abschluss", "einfach abgeschlossen", "unkompliziert", "schnell abgeschlossen", "problemlos", "einfache abwicklung", "digital", "app"], "positive"),
+    "Gute Erreichbarkeit": (["gut erreichbar", "schnell erreichbar", "sofort jemand", "kurze wartezeit", "schnell durchgekommen", "schnell geantwortet"], "positive"),
+    "Zuverlaessige Leistung": (["zuverlaessig", "verlaesslich", "kann ich empfehlen", "sehr empfehlenswert", "empfehle ich", "bin zufrieden", "sehr zufrieden", "absolut zufrieden", "rundum zufrieden", "top versicherung"], "positive"),
+
+    # Negative Themen
+    "Schlechter Kundenservice": (["schlechter service", "schlechter kundenservice", "unfreundlich", "nicht ernst genommen", "ignoriert", "kein rueckruf", "keine antwort", "nie erreichbar", "katastrophaler service"], "negative"),
+    "Lange Wartezeiten": (["lange wartezeit", "wochen gewartet", "monate gewartet", "ewig gewartet", "seit wochen", "seit monaten", "keine reaktion", "nicht reagiert", "ueber 4 wochen"], "negative"),
+    "Beitragserhöhungen": (["beitragserhoehung", "beitraege erhoeh", "beitraege hoch", "teurer geworden", "preis gestiegen", "erhoehung", "beitrag gestiegen", "beitraege steigen"], "negative"),
+    "Leistungsablehnung": (["abgelehnt", "ablehnung", "nicht gezahlt", "nicht uebernommen", "verweigert", "nicht reguliert", "nicht erstattet", "nicht bezahlt", "keine leistung", "leistung verweigert"], "negative"),
+    "Probleme bei Kuendigung": (["kuendigung", "gekuendigt", "nicht kuendigen", "kuendigungsfrist", "ruecktritt", "widerruf"], "negative"),
+    "Intransparente Kommunikation": (["intransparent", "nicht nachvollziehbar", "keine information", "keine transparenz", "unklar", "nicht erklaert", "nicht informiert", "versteckte kosten", "kleingedruckt"], "negative"),
+    "Schlechte Schadenregulierung": (["schaden nicht reguliert", "schadenregulierung mangelhaft", "spart am kundenservice", "nicht kulant", "kein entgegenkommen", "hingehalten", "abgewimmelt", "verzoegert"], "negative"),
+}
+
+
+# ── Gemini-basierte Review-Analyse ──────────────────────────────────────────
+def analyze_reviews_with_gemini(review_texts, brand_name):
+    """Analysiert Review-Texte mit Gemini Flash und extrahiert Top-Themen.
+
+    Returns: (positive_topics: list[str], negative_topics: list[str]) oder (None, None) bei Fehler.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return None, None
+
+    # Maximal 50 Reviews, je max 300 Zeichen (Gemini Flash Free-Tier-freundlich)
+    trimmed = []
+    for t in review_texts[:50]:
+        text = t.get("text", "").strip()
+        score = t.get("score", "?")
+        if text:
+            trimmed.append("%s Sterne: %s" % (score, text[:300]))
+
+    if len(trimmed) < 3:
+        return None, None
+
+    reviews_block = "\n---\n".join(trimmed)
+
+    prompt = (
+        "Du bist ein Versicherungs-Marktanalyst. Analysiere die folgenden echten Kundenbewertungen "
+        "fuer %s und extrahiere die wichtigsten Themen.\n\n"
+        "BEWERTUNGEN:\n%s\n\n"
+        "Antworte NUR mit exakt diesem JSON-Format, keine weiteren Erklaerungen:\n"
+        '{"positive": ["Thema 1 (X Nennungen)", "Thema 2 (X Nennungen)", ...], '
+        '"negative": ["Thema 1 (X Nennungen)", "Thema 2 (X Nennungen)", ...]}\n\n'
+        "Regeln:\n"
+        "- Maximal 5 positive und 5 negative Themen\n"
+        "- Zaehle wie oft ein Thema vorkommt und gib es in Klammern an\n"
+        "- Themen muessen konkret und versicherungsspezifisch sein (z.B. 'Schnelle Schadenregulierung', nicht 'Gut')\n"
+        "- Nur Themen die mindestens 2x vorkommen\n"
+        "- Deutsche Themennamen\n"
+    ) % (brand_name, reviews_block)
+
+    try:
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s" % api_key
+        payload = json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 500,
+                "responseMimeType": "application/json",
+            }
+        }).encode("utf-8")
+
+        req = urllib.request.Request(url, data=payload, headers={
+            "Content-Type": "application/json",
+        })
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+
+        # Gemini-Antwort parsen
+        text_resp = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        # JSON aus der Antwort extrahieren
+        text_resp = text_resp.strip()
+        if text_resp.startswith("```"):
+            # Code-Block entfernen
+            text_resp = re.sub(r"^```(?:json)?\s*", "", text_resp)
+            text_resp = re.sub(r"\s*```$", "", text_resp)
+
+        parsed = json.loads(text_resp)
+        pos = parsed.get("positive", [])[:5]
+        neg = parsed.get("negative", [])[:5]
+
+        # Validierung: nur Strings erlaubt
+        pos = [str(t) for t in pos if isinstance(t, str) and len(t) > 3]
+        neg = [str(t) for t in neg if isinstance(t, str) and len(t) > 3]
+
+        return pos, neg
+
+    except Exception as exc:
+        print("  [Gemini] Fehler fuer %s: %s" % (brand_name, str(exc)[:120]))
+        return None, None
+
+
+def extract_review_topics(reviews, brand_key, brand_name="", days=14):
+    """Extrahiert haeufige positive und negative Themen aus Review-Texten.
+
+    Strategie: Zuerst Gemini Flash (wenn GEMINI_API_KEY vorhanden), dann Keyword-Fallback.
+    """
+    from datetime import timedelta as td
+    cutoff = (datetime.now(timezone.utc) - td(days=days)).strftime("%Y-%m-%d")
+
+    # Reviews fuer diese Brand filtern
+    brand_reviews = [r for r in reviews if r.get("brand") == brand_key or r.get("key") == brand_key]
+    recent = [r for r in brand_reviews if r.get("date", "") >= cutoff and r.get("text", "").strip()]
+
+    # Fallback: wenn keine Reviews der letzten 14 Tage, alle mit Text nehmen
+    if len(recent) < 3:
+        recent = [r for r in brand_reviews if r.get("text", "").strip()]
+
+    if not recent:
+        return [], []
+
+    # === Versuch 1: Gemini Flash API ===
+    gemini_pos, gemini_neg = analyze_reviews_with_gemini(recent, brand_name or brand_key)
+    if gemini_pos is not None or gemini_neg is not None:
+        print("  [Topics] %s: Gemini-Analyse — %d positive, %d negative" % (
+            brand_name or brand_key, len(gemini_pos or []), len(gemini_neg or [])))
+        return gemini_pos or [], gemini_neg or []
+
+    # === Versuch 2: Keyword-Matching Fallback ===
+    print("  [Topics] %s: Keyword-Fallback (kein Gemini API Key)" % (brand_name or brand_key))
+    positive_counts = {}
+    negative_counts = {}
+
+    for rv in recent:
+        text = rv.get("text", "").lower()
+        # Umlaute normalisieren fuer Keyword-Matching
+        text_norm = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+        score = rv.get("score")
+
+        for topic, (keywords, sentiment) in TOPIC_KEYWORDS.items():
+            for kw in keywords:
+                kw_norm = kw.lower()
+                if kw_norm in text or kw_norm in text_norm:
+                    if sentiment == "positive" and (score is None or score >= 3):
+                        positive_counts[topic] = positive_counts.get(topic, 0) + 1
+                    elif sentiment == "negative" and (score is None or score <= 3):
+                        negative_counts[topic] = negative_counts.get(topic, 0) + 1
+                    break
+
+    pos_sorted = sorted(positive_counts.items(), key=lambda x: -x[1])
+    neg_sorted = sorted(negative_counts.items(), key=lambda x: -x[1])
+
+    pos_topics = ["%s (%d Nennungen)" % (t, c) for t, c in pos_sorted[:5]]
+    neg_topics = ["%s (%d Nennungen)" % (t, c) for t, c in neg_sorted[:5]]
+
+    return pos_topics, neg_topics
+
+
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -1080,11 +1239,33 @@ def main():
         except (json.JSONDecodeError, IOError):
             existing_reviews = []
 
-    # Deduplizierungs-Set: (brand, source, date, title_prefix)
+    # ── Doubletten-Bereinigung: robuster Dedup-Key ──────────────────────
+    def _dedup_key(rv):
+        """Erzeugt einen robusten Deduplizierungs-Schluessel fuer eine Review."""
+        brand = rv.get("brand", "")
+        source = rv.get("source", "")
+        date = rv.get("date", "")
+        # Primaer: Text-Anfang (zuverlaessiger als Titel)
+        text_prefix = rv.get("text", "").strip()[:80].lower()
+        title_prefix = rv.get("title", "").strip()[:50].lower()
+        author = rv.get("author", "").strip().lower()
+        # Kombination aus allen verfuegbaren Feldern
+        return (brand, source, date, text_prefix or title_prefix, author)
+
+    # Bestehende Reviews deduplizieren (einmalige Bereinigung)
+    deduped = []
     existing_keys = set()
+    dupes_removed = 0
     for rv in existing_reviews:
-        k = (rv.get("brand", ""), rv.get("source", ""), rv.get("date", ""), rv.get("title", "")[:50])
-        existing_keys.add(k)
+        k = _dedup_key(rv)
+        if k not in existing_keys:
+            deduped.append(rv)
+            existing_keys.add(k)
+        else:
+            dupes_removed += 1
+    if dupes_removed > 0:
+        print("  [Dedup] %d Doubletten aus Review-History entfernt" % dupes_removed)
+    existing_reviews = deduped
 
     new_count = 0
     for entry in results:
@@ -1092,38 +1273,39 @@ def main():
         brand_name = entry["name"]
         # Trustpilot Reviews
         for rv in entry["trustpilot"].get("recent_reviews", []):
-            dedup_key = (brand_key, "Trustpilot", rv.get("date", ""), rv.get("title", "")[:50])
+            new_rv = {
+                "brand": brand_key,
+                "brand_name": brand_name,
+                "source": "Trustpilot",
+                "title": rv.get("title", ""),
+                "text": rv.get("text", ""),
+                "score": rv.get("score"),
+                "date": rv.get("date", ""),
+                "author": rv.get("author", ""),
+                "crawl_date": today,
+            }
+            dedup_key = _dedup_key(new_rv)
             if dedup_key not in existing_keys:
-                existing_reviews.append({
-                    "brand": brand_key,
-                    "brand_name": brand_name,
-                    "source": "Trustpilot",
-                    "title": rv.get("title", ""),
-                    "text": rv.get("text", ""),
-                    "score": rv.get("score"),
-                    "date": rv.get("date", ""),
-                    "author": rv.get("author", ""),
-                    "crawl_date": today,
-                })
+                existing_reviews.append(new_rv)
                 existing_keys.add(dedup_key)
                 new_count += 1
 
         # Google Places Reviews
         for rv in entry["google"].get("recent_reviews", []):
-            rv_text = rv.get("text", "")[:50] if rv.get("text") else ""
-            dedup_key = (brand_key, "Google", rv.get("date", ""), rv_text)
+            new_rv = {
+                "brand": brand_key,
+                "brand_name": brand_name,
+                "source": "Google",
+                "title": "",
+                "text": rv.get("text", ""),
+                "score": rv.get("score"),
+                "date": rv.get("date", ""),
+                "author": rv.get("author", ""),
+                "crawl_date": today,
+            }
+            dedup_key = _dedup_key(new_rv)
             if dedup_key not in existing_keys:
-                existing_reviews.append({
-                    "brand": brand_key,
-                    "brand_name": brand_name,
-                    "source": "Google",
-                    "title": "",
-                    "text": rv.get("text", ""),
-                    "score": rv.get("score"),
-                    "date": rv.get("date", ""),
-                    "author": rv.get("author", ""),
-                    "crawl_date": today,
-                })
+                existing_reviews.append(new_rv)
                 existing_keys.add(dedup_key)
                 new_count += 1
 
@@ -1167,62 +1349,33 @@ def main():
             "neutral": agg["neutral"],
             "kritisch": agg["kritisch"],
         })
-        # Top-Themen aus echten Daten ableiten
-        positive_topics = []
-        negative_topics = []
+        # Top-Themen: zuerst aus Review-Texten (14 Tage), dann Score-Fallback
+        text_pos, text_neg = extract_review_topics(existing_reviews, e["key"], brand_name=e["name"], days=14)
 
-        # Aus eKomi-Produkten
-        for p in e.get("products", []):
-            pname = p.get("name", "")
-            pscore = p.get("score")
-            pcount = p.get("count", 0)
-            if pscore is not None and pcount and pcount >= 5:
-                if pscore >= 4.5:
-                    positive_topics.append("%s (%.1f★, %d Bewertungen)" % (pname, pscore, pcount))
-                elif pscore < 3.5:
-                    negative_topics.append("%s (%.1f★, %d Bewertungen)" % (pname, pscore, pcount))
-
-        # Trustpilot
-        if e["trustpilot"]["score"] and e["trustpilot"]["score"] >= 4.0:
-            positive_topics.insert(0, "Starke Trustpilot-Bewertung (%.1f★, %s Reviews)" % (
-                e["trustpilot"]["score"], e["trustpilot"].get("count") or "?"))
-        elif e["trustpilot"]["score"] and e["trustpilot"]["score"] < 3.5:
-            negative_topics.insert(0, "Schwache Trustpilot-Bewertung (%.1f★)" % e["trustpilot"]["score"])
-        elif not e["trustpilot"]["score"]:
-            negative_topics.append("Kein Trustpilot-Profil gefunden")
-
-        # eKomi
-        if e["ekomi"]["score"] and e["ekomi"]["score"] >= 4.5:
-            positive_topics.append("Sehr gute eKomi-Bewertung (%.1f★, %s Reviews)" % (
-                e["ekomi"]["score"], e["ekomi"].get("count") or "?"))
-        elif not e["ekomi"]["score"]:
-            negative_topics.append("Keine eKomi-Bewertungen vorhanden")
-
-        # Google
-        if e["google"]["score"] and e["google"]["score"] >= 4.0:
-            positive_topics.append("Gute Google-Bewertung (%.1f★)" % e["google"]["score"])
-        elif e["google"]["score"] and e["google"]["score"] < 3.5:
-            negative_topics.append("Schwache Google-Bewertung (%.1f★)" % e["google"]["score"])
-        elif not e["google"]["score"]:
-            negative_topics.append("Keine Google Places Bewertung")
-
-        # Check24
-        if e["check24"]["score"] and e["check24"]["score"] >= 4.0:
-            positive_topics.append("Gute Check24-Bewertung (%.1f★)" % e["check24"]["score"])
-        elif e["check24"]["score"] and e["check24"]["score"] < 3.5:
-            negative_topics.append("Schwache Check24-Bewertung (%.1f★)" % e["check24"]["score"])
-
-        # Franke & Bornberg
-        if e["fb"]["score"] and e["fb"]["score"] >= 4.0:
-            positive_topics.append("Franke & Bornberg Bestnote (%.1f)" % e["fb"]["score"])
-        elif e["fb"]["score"] and e["fb"]["score"] < 3.0:
-            negative_topics.append("Schwache Franke & Bornberg Note (%.1f)" % e["fb"]["score"])
-
-        # Quellen-Abdeckung
-        if e["sources_count"] >= 4:
-            positive_topics.append("Breite Präsenz: %d von 5 Quellen" % e["sources_count"])
-        elif e["sources_count"] <= 2:
-            negative_topics.append("Schwache Präsenz: nur %d von 5 Quellen" % e["sources_count"])
+        if text_pos or text_neg:
+            # Textbasierte Themen gefunden
+            positive_topics = text_pos
+            negative_topics = text_neg
+            print("  [Topics] %s: %d positive, %d negative aus Reviews" % (e["name"], len(text_pos), len(text_neg)))
+        else:
+            # Fallback: Score-basierte Zusammenfassung
+            positive_topics = []
+            negative_topics = []
+            if e["trustpilot"]["score"] and e["trustpilot"]["score"] >= 4.0:
+                positive_topics.append("Starke Trustpilot-Bewertung (%.1f★)" % e["trustpilot"]["score"])
+            elif not e["trustpilot"]["score"]:
+                negative_topics.append("Kein Trustpilot-Profil gefunden")
+            if e["ekomi"]["score"] and e["ekomi"]["score"] >= 4.5:
+                positive_topics.append("Sehr gute eKomi-Bewertung (%.1f★)" % e["ekomi"]["score"])
+            if e["google"]["score"] and e["google"]["score"] >= 4.0:
+                positive_topics.append("Gute Google-Bewertung (%.1f★)" % e["google"]["score"])
+            elif e["google"]["score"] and e["google"]["score"] < 3.5:
+                negative_topics.append("Schwache Google-Bewertung (%.1f★)" % e["google"]["score"])
+            if e["sources_count"] >= 4:
+                positive_topics.append("Breite Praesenz: %d von 5 Quellen" % e["sources_count"])
+            elif e["sources_count"] <= 2:
+                negative_topics.append("Schwache Praesenz: nur %d von 5 Quellen" % e["sources_count"])
+            print("  [Topics] %s: Fallback (Score-basiert)" % e["name"])
 
         sd["by_source"][e["key"]] = {
             "name": e["name"],
@@ -1269,14 +1422,14 @@ def main():
                 "kritisch": prod_agg["kritisch"],
             })
 
-    # Review-History aus persistenter Datei laden (max 100 fuer Dashboard)
+    # Review-History aus persistenter Datei laden (max 100 fuer Dashboard, dedupliziert)
     history_for_dash = []
+    dash_keys = set()
     if history_path.exists():
         try:
             all_hist = json.loads(history_path.read_text(encoding="utf-8"))
-            # Nur Felder die das Dashboard braucht, max 100
-            for rv in all_hist[:100]:
-                history_for_dash.append({
+            for rv in all_hist:
+                entry = {
                     "brand": rv.get("brand", ""),
                     "brand_name": rv.get("brand_name", ""),
                     "source": rv.get("source", "Trustpilot"),
@@ -1286,7 +1439,13 @@ def main():
                     "date": rv.get("date", ""),
                     "author": rv.get("author", ""),
                     "crawl_date": rv.get("crawl_date", ""),
-                })
+                }
+                dk = _dedup_key(entry)
+                if dk not in dash_keys:
+                    history_for_dash.append(entry)
+                    dash_keys.add(dk)
+                if len(history_for_dash) >= 100:
+                    break
         except (json.JSONDecodeError, IOError):
             pass
     sd["recent_reviews"] = history_for_dash
@@ -1473,6 +1632,28 @@ def main():
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
             live_badge,
         )
+
+    # ── CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren ──────
+    events_file = Path("shared/events.jsonl")
+    if events_file.exists():
+        try:
+            from shared.event_emitter import load_events
+            all_events = load_events(events_file, max_age_days=90)
+            if all_events:
+                events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
+                events_block = "window.CORRELATION_EVENTS = %s;" % events_json
+                # Vor der Zeile "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];" einfuegen
+                corr_marker = "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];"
+                if corr_marker in content:
+                    content = content.replace(
+                        corr_marker,
+                        events_block + "\n  " + corr_marker
+                    )
+                    print("  CORRELATION_EVENTS: %d Events injiziert" % len(all_events))
+                else:
+                    print("  WARN: CORRELATION_EVENTS-Marker nicht gefunden")
+        except Exception as exc:
+            print("  WARN: Events-Injection fehlgeschlagen: %s" % str(exc)[:100])
 
     # NULL-byte-safe schreiben
     template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")

@@ -32,8 +32,8 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
     Token ist optional — fuer oeffentliche Repos nicht noetig.
     Falls Token ungueltig (401/403), wird ohne Token nochmal versucht."""
     paths = [
-        f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json",
         f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
+        f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json",
     ]
     # Versuch 1: mit Token (falls gesetzt)
     for url in paths:

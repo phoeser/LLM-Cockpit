@@ -747,12 +747,12 @@ def crawl_franke_bornberg(rating_id, brands):
 def aggregate(tp_score, ekomi_score, google_score, check24_score=None, fb_stars=None):
     """Sentiment-Verteilung aus bis zu 5 Quellen gewichtet berechnen.
 
-    Gewichte (normiert auf verfuegbare Quellen):
-    - Trustpilot:       0.25
-    - eKomi:            0.15
-    - Google:           0.10
-    - Check24:          0.25
-    - Franke&Bornberg:  0.25
+    Gewichte (gleichmaessig auf verfuegbare Quellen):
+    - Trustpilot:       0.20
+    - eKomi:            0.20
+    - Google:           0.20
+    - Check24:          0.20
+    - Franke&Bornberg:  0.20
     """
     scores = []  # (positiv-%, gewicht)
 
@@ -760,15 +760,15 @@ def aggregate(tp_score, ekomi_score, google_score, check24_score=None, fb_stars=
         return max(10, min(90, 10 + (s - 1) * 18.75))
 
     if tp_score is not None:
-        scores.append((stars_to_pos(tp_score), 0.25))
+        scores.append((stars_to_pos(tp_score), 0.20))
     if ekomi_score is not None:
-        scores.append((stars_to_pos(ekomi_score), 0.15))
+        scores.append((stars_to_pos(ekomi_score), 0.20))
     if google_score is not None:
-        scores.append((stars_to_pos(google_score), 0.10))
+        scores.append((stars_to_pos(google_score), 0.20))
     if check24_score is not None:
-        scores.append((stars_to_pos(check24_score), 0.25))
+        scores.append((stars_to_pos(check24_score), 0.20))
     if fb_stars is not None:
-        scores.append((stars_to_pos(fb_stars), 0.25))
+        scores.append((stars_to_pos(fb_stars), 0.20))
 
     if not scores:
         return {"positiv": 50, "neutral": 25, "kritisch": 25}
@@ -1190,7 +1190,7 @@ def main():
             "google": "Google Places API (findplacefromtext); requires GOOGLE_PLACES_API_KEY",
             "check24": "JSON-LD aggregateRating from product/insurer pages; portal-level ratings filtered",
             "franke_bornberg": "AJAX POST API; best tariff per brand (lowest school grade = best rating)",
-            "aggregate_weights": {"trustpilot": 0.25, "ekomi": 0.15, "google": 0.10, "check24": 0.25, "franke_bornberg": 0.25},
+            "aggregate_weights": {"trustpilot": 0.20, "ekomi": 0.20, "google": 0.20, "check24": 0.20, "franke_bornberg": 0.20},
         },
         "by_brand": results,
         "by_product": {},
@@ -1665,4 +1665,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    ma

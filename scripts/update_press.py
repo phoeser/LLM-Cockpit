@@ -484,4 +484,120 @@ def main():
         topic_counts = Counter()
         for a in all_brands[key]:
             for t in a.get("topics", []):
-                topic_co
+                topic_counts[t] += 1
+        pd["topic_matrix"][key] = [{"t": t, "c": c} for t, c in topic_counts.most_common(10)]
+
+        # Letzte 20 Artikel fuer die Liste (mit URL fuer klickbare Links)
+        pd["recent"][key] = [
+            {
+                "title": a["title"][:120],
+                "url": a.get("url", ""),
+                "date": a["date"],
+                "source": a["source"],
+                "type": a.get("type", "media"),
+                "topics": a["topics"],
+            }
+            for a in all_brands[key][:20]
+        ]
+
+    # Presse-History ins Dashboard einbetten (kompakt: nur title, url, date, source, type)
+    press_hist_path = Path("data/press_history.json")
+    if press_hist_path.exists():
+        try:
+            all_hist = json.loads(press_hist_path.read_text(encoding="utf-8"))
+            # Nach Brand gruppieren, max 50 pro Brand
+            hist_by_brand = {}
+            for art in all_hist:
+                bk = art.get("brand", "")
+                if bk not in hist_by_brand:
+                    hist_by_brand[bk] = []
+                if len(hist_by_brand[bk]) < 50:
+                    hist_by_brand[bk].append({
+                        "title": art.get("title", "")[:120],
+                        "url": art.get("url", ""),
+                        "date": art.get("date", ""),
+                        "source": art.get("source", ""),
+                        "type": art.get("type", "media"),
+                    })
+            pd["press_history"] = hist_by_brand
+        except (json.JSONDecodeError, IOError):
+            pd["press_history"] = {}
+    else:
+        pd["press_history"] = {}
+
+    new_block = "const PRESS_DATA = " + json.dumps(pd, ensure_ascii=False, separators=(",", ": ")) + ";"
+
+    def find_js_const_block(text, var_name):
+        """Finde 'const VAR = {...};' mit Balanced-Bracket-Matching."""
+        marker = re.search(r"const " + var_name + r"\s*=\s*\{", text)
+        if not marker:
+            return None
+        brace_start = marker.end() - 1
+        depth = 0
+        in_string = False
+        escape_next = False
+        end_pos = brace_start
+        for i in range(brace_start, len(text)):
+            ch = text[i]
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == '\\' and in_string:
+                escape_next = True
+                continue
+            if ch == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    end_pos = i + 1
+                    break
+        if end_pos < len(text) and text[end_pos] == ';':
+            end_pos += 1
+        return (marker.start(), end_pos)
+
+    # Pruefen ob PRESS_DATA schon existiert
+    block_range = find_js_const_block(content, "PRESS_DATA")
+    if block_range:
+        start, end = block_range
+        content = content[:start] + new_block + content[end:]
+        print("PRESS_DATA-Block aktualisiert")
+    else:
+        # Neuen Block nach SENTIMENT_DATA einfuegen
+        sentinel_range = find_js_const_block(content, "SENTIMENT_DATA")
+        if sentinel_range:
+            insert_pos = sentinel_range[1]
+            content = content[:insert_pos] + "\n\n// Presse-Daten (Live-Crawl: eigene PMs + Medienberichte via Google News RSS)\n" + new_block + "\n" + content[insert_pos:]
+            print("PRESS_DATA-Block neu eingefuegt (nach SENTIMENT_DATA)")
+        else:
+            print("WARN: Konnte PRESS_DATA nicht einfuegen -- kein SENTIMENT_DATA gefunden")
+            return
+
+    # NULL-byte-safe schreiben (kein rstrip -- kann lange Datenzeilen abschneiden!)
+    clean = content.encode("utf-8").replace(b"\x00", b"")
+    if not clean.endswith(b"\n"):
+        clean += b"\n"
+    template.write_bytes(clean)
+
+    print("Patched dashboard_template.html")
+    print("  PRESS_DATA: %d bytes" % len(new_block))
+
+    # Zusammenfassung
+    print("\n" + "=" * 60)
+    print("ZUSAMMENFASSUNG")
+    print("=" * 60)
+    for key in all_brands:
+        s = stats[key]
+        print("  %-15s %3d total (%2d eigen, %3d medien) | 30d: %2d | 90d: %2d | newest: %s" % (
+            brand_meta[key]["name"], s["total"], s["own"], s["media"],
+            s["last_30d"], s["last_90d"], s["newest"] or "?"
+        ))
+
+
+if __name__ == "__main__":
+    main()

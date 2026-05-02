@@ -44,7 +44,6 @@ jobs:
       - name: Aktualisiere Sentiment-Daten (4 Quellen)
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/update_sentiment.py
 
       - name: Aktualisiere Presse-Daten (Google News RSS)
@@ -59,11 +58,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Review-History + Presse-History + Events-Timeline committen
+          # Review-History + Events-Timeline committen
           git add data/review_history.json 2>/dev/null || true
-          git add data/press_history.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: update review_history + press_history + events"
+          git diff --cached --quiet || git commit -m "data: update review_history + events"
           git push origin main
 
       - name: Build und Deploy

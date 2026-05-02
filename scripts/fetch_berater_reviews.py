@@ -61,7 +61,7 @@ def places_text_search(query):
 
 def places_get_reviews(place_id):
     """Google Places API (New) — Place Details für Reviews."""
-    url = f"https://places.googleapis.com/v1/{place_id}"
+    url = f"https://places.googleapis.com/v1/places/{place_id}"
     headers = {
         "X-Goog-Api-Key": API_KEY,
         "X-Goog-FieldMask": "reviews,rating,userRatingCount"
@@ -124,7 +124,7 @@ def main():
         key = key.replace(" ", "_").lower()
         
         # Skip wenn bereits vorhanden
-        if key in reviews_data:
+        if key in reviews_data and (reviews_data[key].get("reviews") or not reviews_data[key].get("place_id")):
             stats["skipped"] += 1
             continue
         

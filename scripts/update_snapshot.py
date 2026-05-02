@@ -15,51 +15,35 @@ import urllib.request
 from pathlib import Path
 
 
-def _build_headers(token: str = None) -> dict:
-    """Baut GitHub-API-Headers, optional mit Auth-Token."""
-    h = {
-        "Accept": "application/vnd.github.v3.raw",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "LLM-Cockpit-Updater",
-    }
-    if token:
-        h["Authorization"] = f"Bearer {token}"
-    return h
-
-
-def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
-    """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API.
-    Token ist optional -- fuer oeffentliche Repos nicht noetig.
-    Falls Token ungueltig (401/403), wird ohne Token nochmal versucht."""
-    paths = [
-        f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
-        f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json",
-    ]
-    # Versuch 1: mit Token (falls gesetzt)
-    for url in paths:
-        try:
-            req = urllib.request.Request(url, headers=_build_headers(token))
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except urllib.error.HTTPError as he:
-            if he.code in (401, 403) and token:
-                print(f"   Token-Fehler ({he.code}) -- versuche ohne Token...")
-                break  # ohne Token nochmal
-            continue  # naechster Pfad
-        except Exception:
-            continue
-
-    # Versuch 2: ohne Token (public repo)
-    for url in paths:
-        try:
-            req = urllib.request.Request(url, headers=_build_headers(None))
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except Exception as exc:
-            print(f"   Fehler bei {url}: {exc}")
-            continue
-
-    sys.exit("FEHLER: latest.json konnte nicht geladen werden (alle Pfade/Token fehlgeschlagen).")
+def fetch_latest_geo_snapshot(repo: str, token: str) -> dict:
+    """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API."""
+    url = f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github.v3.raw",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "LLM-Cockpit-Updater",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception as exc:
+        # Fallback: vielleicht liegt latest.json direkt in /data/runs/
+        url2 = f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json"
+        req2 = urllib.request.Request(
+            url2,
+            headers={
+                "Accept": "application/vnd.github.v3.raw",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "LLM-Cockpit-Updater",
+            },
+        )
+        with urllib.request.urlopen(req2, timeout=30) as r:
+            return json.loads(r.read().decode("utf-8"))
 
 
 def transform_to_dashboard_format(geo: dict) -> dict:
@@ -98,7 +82,7 @@ def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) ->
     html = template_path.read_text(encoding="utf-8")
     new_line = "const GEO_SNAPSHOT = " + json.dumps(snapshot, ensure_ascii=False) + ";"
     pattern = re.compile(r"const GEO_SNAPSHOT\s*=\s*\{.*?\};", re.DOTALL)
-    new_html, n = pattern.subn(lambda m: new_line, html, count=1)
+    new_html, n = pattern.subn(new_line, html, count=1)
     if n != 1:
         sys.exit("FEHLER: GEO_SNAPSHOT-Zeile im Template nicht gefunden.")
     # Patch IN-PLACE (NULL-byte safe)
@@ -107,10 +91,10 @@ def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) ->
 
 
 def main():
-    token = os.environ.get("GITHUB_TOKEN", "")
-    repo = os.environ.get("GEO_REPO", "phoeser/geo-visibility-tool")
+    token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GEO_REPO", "phoeser/Geo")
     if not token:
-        print("WARN: GITHUB_TOKEN nicht gesetzt -- versuche ohne Token (ok fuer public Repos)")
+        sys.exit("FEHLER: GITHUB_TOKEN fehlt (Repo-Secret GEO_REPO_TOKEN).")
 
     print(f"-> Hole latest.json aus {repo} ...")
     geo = fetch_latest_geo_snapshot(repo, token)

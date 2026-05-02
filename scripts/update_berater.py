@@ -11,6 +11,7 @@ import re
 import random
 import sys
 import time
+from pathlib import Path
 
 # Event-Emitter für Korrelations-Engine
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -22,7 +23,6 @@ except ImportError:
 import urllib.request
 import urllib.error
 from html.parser import HTMLParser
-from pathlib import Path
 
 # DE-flaechendeckend: ~200 PLZ-Seeds fuer maximale Abdeckung
 SEED_PLZ = [

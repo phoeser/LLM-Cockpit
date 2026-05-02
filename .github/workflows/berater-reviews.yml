@@ -1,0 +1,31 @@
+name: Berater Google Reviews (einmalig)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-reviews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python Setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Google Places Reviews abrufen
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+        run: python scripts/fetch_berater_reviews.py
+
+      - name: Ergebnisse committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          git add data/berater_reviews.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: berater google reviews (einmalig)"
+          git push origin main

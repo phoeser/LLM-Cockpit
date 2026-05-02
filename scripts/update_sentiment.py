@@ -32,7 +32,7 @@ try:
 except ImportError:
     HAS_EVENTS = False
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 
 # ── Brand-Konfiguration ──────────────────────────────────────────────────────
 BRANDS = [
@@ -220,10 +220,49 @@ def post_json(url, data_dict, timeout=15):
 
 
 # ── 1. TRUSTPILOT ────────────────────────────────────────────────────────────
+def fetch_trustpilot_html(domain, timeout=20):
+    """Spezieller Fetch fuer Trustpilot mit realistischen Browser-Headers."""
+    url = "https://de.trustpilot.com/review/" + domain
+    headers = {
+        "User-Agent": UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+        "Cache-Control": "max-age=0",
+        "Sec-Ch-Ua": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+    }
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = r.read()
+                if data[:2] == b"\x1f\x8b":
+                    data = gzip.decompress(data)
+                html = data.decode("utf-8", errors="ignore")
+                if '"ratingValue"' in html or '"reviewCount"' in html:
+                    return html
+                # Trustpilot hat evtl. eine Captcha-/JS-Challenge-Seite geschickt
+                if attempt < 2:
+                    import time as _time
+                    _time.sleep(2 + attempt * 2)
+        except Exception as e:
+            if attempt < 2:
+                import time as _time
+                _time.sleep(2 + attempt * 2)
+    return None
+
 def crawl_trustpilot(domain):
     """Trustpilot-Score via urllib (JSON-LD aus HTML) + neueste Reviews."""
     url = "https://de.trustpilot.com/review/" + domain
-    html = fetch_html(url)
+    html = fetch_trustpilot_html(domain)
     if not html:
         return {"score": None, "count": None, "url": url, "recent_reviews": [], "error": "fetch failed"}
     m_score = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
@@ -293,33 +332,85 @@ def crawl_trustpilot_browser(brands_data):
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-blink-features=AutomationControlled", "--disable-dev-shm-usage"],
+            args=["--no-sandbox", "--disable-blink-features=AutomationControlled",
+                   "--disable-dev-shm-usage", "--disable-infobars",
+                   "--window-size=1280,800"],
         )
         ctx = browser.new_context(
             user_agent=UA, locale="de-DE", timezone_id="Europe/Berlin",
             viewport={"width": 1280, "height": 800},
+            extra_http_headers={
+                "Sec-Ch-Ua": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": '"Windows"',
+            },
         )
-        ctx.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});")
+        ctx.add_init_script("""
+            Object.defineProperty(navigator,'webdriver',{get:()=>undefined});
+            Object.defineProperty(navigator,'plugins',{get:()=>[{name:'Chrome PDF Plugin'},{name:'Chrome PDF Viewer'},{name:'Native Client'}]});
+            Object.defineProperty(navigator,'languages',{get:()=>['de-DE','de','en-US','en']});
+            window.chrome = { runtime: {} };
+        """)
         page = ctx.new_page()
         for entry in brands_data:
             key = entry["key"]
             domain = entry["domain"]
             url = "https://de.trustpilot.com/review/" + domain
             try:
-                page.goto(url, wait_until="domcontentloaded", timeout=20000)
-                time.sleep(2)
+                page.goto(url, wait_until="networkidle", timeout=30000)
+                time.sleep(3)
+                # Cookie-Banner wegklicken falls vorhanden
+                try:
+                    reject_btn = page.locator('button:has-text("Alle ablehnen"), button:has-text("ablehnen")')
+                    if reject_btn.count() > 0:
+                        reject_btn.first.click()
+                        time.sleep(1)
+                except Exception:
+                    pass
                 html = page.content()
                 m_s = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
                 m_c = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
                 if m_s:
+                    # Reviews extrahieren
+                    recent = []
+                    try:
+                        ld_blocks = re.findall(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.DOTALL)
+                        for block in ld_blocks:
+                            try:
+                                data = json.loads(block)
+                                rvs = None
+                                if isinstance(data, dict) and "review" in data:
+                                    rvs = data["review"]
+                                elif isinstance(data, dict) and "@graph" in data:
+                                    for item in data["@graph"]:
+                                        if isinstance(item, dict) and "review" in item:
+                                            rvs = item["review"]
+                                            break
+                                if rvs and isinstance(rvs, list):
+                                    for rv in rvs[:8]:
+                                        r_title = rv.get("name", rv.get("headline", ""))
+                                        r_body = rv.get("reviewBody", "")
+                                        r_rating = None
+                                        if "reviewRating" in rv and isinstance(rv["reviewRating"], dict):
+                                            try: r_rating = float(rv["reviewRating"].get("ratingValue", 0))
+                                            except: pass
+                                        r_date = rv.get("datePublished", "")[:10]
+                                        r_author = rv.get("author", {}).get("name", "") if isinstance(rv.get("author"), dict) else ""
+                                        if r_title or r_body:
+                                            recent.append({"title": r_title[:120], "text": r_body[:200], "score": r_rating, "date": r_date, "author": r_author})
+                            except: continue
+                    except: pass
                     results[key] = {
                         "score": round(float(m_s.group(1)), 1),
                         "count": int(m_c.group(1)) if m_c else None,
                         "url": url,
+                        "recent_reviews": recent,
                     }
                     print("  [TP-Browser] %s -> %.1f (%s)" % (entry["name"], results[key]["score"], results[key]["count"]))
+                else:
+                    print("  [TP-Browser] %s -> kein ratingValue gefunden" % entry["name"])
             except Exception as e:
-                print("  [TP-Browser] %s error: %s" % (entry["name"], str(e)[:60]))
+                print("  [TP-Browser] %s error: %s" % (entry["name"], str(e)[:80]))
             time.sleep(2)
         browser.close()
     return results
@@ -1013,6 +1104,7 @@ def main():
                 "count": tp.get("count"),
                 "url": tp.get("url", "https://de.trustpilot.com/review/" + brand["domain"]),
                 "note": "Live-Crawl " + today if tp.get("score") else tp.get("error", "nicht verfuegbar"),
+                "recent_reviews": tp.get("recent_reviews", []),
             },
             "ekomi": {
                 "score": ek.get("score"),
@@ -1042,6 +1134,8 @@ def main():
                 entry["trustpilot"]["count"] = br.get("count") or entry["trustpilot"].get("count")
                 entry["trustpilot"]["url"] = br["url"]
                 entry["trustpilot"]["note"] = "Browser-Crawl " + today
+                if br.get("recent_reviews"):
+                    entry["trustpilot"]["recent_reviews"] = br["recent_reviews"]
 
     # ── Phase 2: Produktspezifisches Crawling (Check24 + Franke & Bornberg) ──
     print("\n" + "=" * 60)
@@ -1626,14 +1720,14 @@ def main():
                       '        <span class="badge badge-sentiment-live" '
                       'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
                       'padding:2px 8px;border-radius:4px;margin-left:8px;">'
-                      'Live-Daten \u00b7 Stand '
+                      'Live-Daten \xc2\xb7 Stand '
                       '<span id="sentimentDate"></span></span>')
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
             live_badge,
         )
 
-    # ── CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren ──────
+    # \xe2\x94\x80\xe2\x94\x80 CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren
     events_file = Path("shared/events.jsonl")
     if events_file.exists():
         try:
@@ -1642,7 +1736,6 @@ def main():
             if all_events:
                 events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
                 events_block = "window.CORRELATION_EVENTS = %s;" % events_json
-                # Vor der Zeile "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];" einfuegen
                 corr_marker = "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];"
                 if corr_marker in content:
                     content = content.replace(
@@ -1666,4 +1759,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

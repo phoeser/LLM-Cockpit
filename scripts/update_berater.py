@@ -127,7 +127,7 @@ HEADERS = {
     "Referer": "https://www.ergo.de/de/Vermittlersuche",
     "Accept": "application/json, text/javascript, */*; q=0.01",
 }
-RADIUS_KM = 80
+RADIUS_KM = 200
 PAGE_LIMIT = 100
 SLEEP_BETWEEN = 0.2
 MAX_RETRIES = 2

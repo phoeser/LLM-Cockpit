@@ -62,6 +62,7 @@ jobs:
           git add data/review_history.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
           git diff --cached --quiet || git commit -m "data: update review_history + events"
+          git pull --rebase origin main || true
           git push origin main
 
       - name: Build und Deploy

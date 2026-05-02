@@ -29,7 +29,7 @@ def _build_headers(token: str = None) -> dict:
 
 def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
     """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API.
-    Token ist optional — fuer oeffentliche Repos nicht noetig.
+    Token ist optional -- fuer oeffentliche Repos nicht noetig.
     Falls Token ungueltig (401/403), wird ohne Token nochmal versucht."""
     paths = [
         f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
@@ -43,7 +43,7 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
                 return json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as he:
             if he.code in (401, 403) and token:
-                print(f"   Token-Fehler ({he.code}) — versuche ohne Token...")
+                print(f"   Token-Fehler ({he.code}) -- versuche ohne Token...")
                 break  # ohne Token nochmal
             continue  # naechster Pfad
         except Exception:
@@ -110,4 +110,22 @@ def main():
     token = os.environ.get("GITHUB_TOKEN", "")
     repo = os.environ.get("GEO_REPO", "phoeser/geo-visibility-tool")
     if not token:
-        print("WARN: GITHUB_TOKEN ni
+        print("WARN: GITHUB_TOKEN nicht gesetzt -- versuche ohne Token (ok fuer public Repos)")
+
+    print(f"-> Hole latest.json aus {repo} ...")
+    geo = fetch_latest_geo_snapshot(repo, token)
+    print(f"   Run-ID: {geo.get('run_id')}, dry_run={geo.get('dry_run')}")
+
+    snapshot = transform_to_dashboard_format(geo)
+
+    template = Path("dashboard_template.html")
+    if not template.exists():
+        sys.exit("FEHLER: dashboard_template.html fehlt im Repo-Root.")
+
+    # Patch in-place (template = dashboard_template.html)
+    inject_into_template(template, snapshot, template)
+    print(f"   Patched: {template} ({template.stat().st_size:,} Bytes)")
+
+
+if __name__ == "__main__":
+    main()

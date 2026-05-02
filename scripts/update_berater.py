@@ -538,6 +538,7 @@ def aggregate(rows):
 
 def main():
     out_dir = Path(__file__).parent.parent
+    out_path = out_dir / "berater_data.json"
     seen = {}
     raw_count = 0
     plz_limit = os.environ.get("BERATER_PLZ_LIMIT")
@@ -620,7 +621,6 @@ def main():
 
     payload = dict(agg)
     payload["vermittler"] = rows
-    out_path = out_dir / "berater_data.json"
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK Geschrieben: %s (%d bytes)" % (out_path, out_path.stat().st_size))
     t = agg["totals"]

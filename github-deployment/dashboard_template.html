@@ -301,7 +301,7 @@
   </div>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Subdomain-Pattern-Verteilung</h3><div id="berPattern" class="text-sm text-gray-700 space-y-2">--</div></div>
-    <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Top 10 Vermittler-Funktionen</h3><div id="berFunctions" class="text-xs text-gray-700">--</div></div>
+    </div>
   </div>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-bold text-ergo-dark mb-3">Top 20 Staedte</h3><div id="berCities" class="text-xs text-gray-700" style="max-height:280px;overflow-y:auto">--</div></div>
@@ -401,7 +401,24 @@
 
   <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
     <div class="p-4 border-b bg-gray-50 flex flex-wrap items-center gap-3">
-      <h3 class="text-lg font-bold text-ergo-dark mr-auto">Alle Berater (DE-flaechendeckend)</h3>
+      <div class="bg-white rounded-xl p-6 shadow mb-6">
+<h3 class="text-lg font-bold text-ergo-dark mb-3">Berater-Sitemap: Unterseiten-Analyse</h3>
+<p class="text-sm text-gray-500 mb-4">Crawl der Berater-Subdomains mit Unterseiten-Erkennung</p>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4" id="berSitemapStats">
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-ergo-red" id="bsmTotal">—</div><div class="text-xs text-gray-500">Berater gecrawlt</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-blue-600" id="bsmUrls">—</div><div class="text-xs text-gray-500">URLs entdeckt</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-green-600" id="bsmAvg">—</div><div class="text-xs text-gray-500">&Oslash; Seiten/Berater</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-purple-600" id="bsmMax">—</div><div class="text-xs text-gray-500">Max. Seiten</div></div>
+</div>
+<div class="flex flex-wrap gap-3">
+<a href="sitemaps/berater_sitemap.html" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 bg-ergo-red text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition">
+&#x1F5FA; Interaktive Berater-Sitemap &ouml;ffnen &rarr;
+</a>
+<span class="text-xs text-gray-400 self-center">Durchsuchbar mit Unterseiten-Baum pro Berater</span>
+</div>
+</div>
+
+<h3 class="text-lg font-bold text-ergo-dark mr-auto">Alle Berater (DE-flaechendeckend)</h3>
       <div class="text-sm text-gray-500"><span id="berListVisible">0</span> / <span id="berListTotal">0</span></div>
       <input id="berSearch" type="search" placeholder="Suche: Name, Stadt, PLZ, Webseite..." class="px-3 py-2 border rounded text-sm w-64">
       <select id="berStateFilter" class="px-3 py-2 border rounded text-sm"><option value="">Alle Bundeslaender</option></select>
@@ -770,7 +787,7 @@ const SITEMAPS = {
 const PROVIDERS = {
   ergo: {
     name: "ERGO", url: "ergo.de + ergo.com", color: "#DC0028",
-    total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: 308, glossar: 0, b2b: 150, video: null, service: 161,
+    total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: 308, glossar: 0, b2b: 150, video: null, service: 161, produktseiten: 400, sonstige: 391,
     strategy: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis + großer Konzern-Newsroom",
     strengths: ["FAQ-Marktführer mit 158 Seiten", "Größte Sitemap aller Anbieter (2.064 URLs)", "Breite Produktabdeckung über alle Kernsparten", "Eigener Rechtsportal-Bereich (944 URLs)", "Konzern-Newsroom auf ergo.com/de mit 308 Presse-URLs", "161 Service-URLs (Datenschutz, AGB, Schadenmeldung)"],
     weaknesses: ["Kein systematisches Glossar/Lexikon", "Nur 7 Rechner/Tools (Allianz: 42)", "Service-Subseiten sind primär Datenschutz/Rechtliches, weniger Self-Service", "Sparten Tier (10) und Rechtsschutz (8) untergewichtet"],
@@ -780,7 +797,7 @@ const PROVIDERS = {
   },
   allianz: {
     name: "Allianz (konsolidiert)", url: "allianz.de + allianzdirect.de + markt-und-kunde.de", color: "#003781",
-    total: 2278, ratgeber: 275, faq: 64, rechner: 47, presse: 258, glossar: 0, b2b: 164, video: null, service: 79,
+    total: 2278, ratgeber: 275, faq: 64, rechner: 47, presse: 258, glossar: 0, b2b: 164, video: null, service: 79, produktseiten: 900, sonstige: 491,
     strategy: "Multi-Entitäten-Strategie (Konzern + Direct + B2B)",
     strengths: ["Best-in-Class Rechner-Portfolio (47 Tools)", "Eigene Direktmarke allianzdirect.de mit 438 URLs (180 Ratgeber, 50 FAQ)", "B2B-Plattform markt-und-kunde.de (89 URLs, Yoast-SEO)", "Dominanter Pressebereich (258 URLs)"],
     weaknesses: ["Content fragmentiert über 3 Domains – schwächt zentrale Markenwahrnehmung", "FAQ-Volumen 64 deutlich unter ERGO (158)", "Kein zentrales Versicherungs-Glossar", "Kein einheitlicher Magazin-Hub"],
@@ -790,7 +807,7 @@ const PROVIDERS = {
   },
   huk: {
     name: "HUK-Coburg", url: "huk.de", color: "#FFD500",
-    total: 1028, ratgeber: 693, faq: 7, rechner: 0, presse: 39, glossar: 0, b2b: 3, video: 73, service: 44,
+    total: 1028, ratgeber: 693, faq: 7, rechner: 0, presse: 39, glossar: 0, b2b: 3, video: 73, service: 44, produktseiten: 80, sonstige: 89,
     strategy: "SEO-First: Ratgeber-Maschine",
     strengths: ["Best-in-Class Ratgeber-Volumen (693, 83%)", "Eigene Video-Sitemap (73 Videos)", "Klarer Kranken+KFZ-Fokus (478+428 URLs)", "Massiver organischer Traffic-Treiber"],
     weaknesses: ["Keine Rechner indexiert", "Nur 7 FAQ-Seiten", "Schwache Service-Seiten", "Kein Glossar"],
@@ -800,7 +817,7 @@ const PROVIDERS = {
   },
   axa: {
     name: "AXA", url: "axa.de", color: "#00008F",
-    total: 782, ratgeber: 21, faq: null, rechner: 2, presse: 96, glossar: 24, b2b: null, video: null, service: 26,
+    total: 782, ratgeber: 21, faq: null, rechner: 2, presse: 96, glossar: 24, b2b: null, video: null, service: 26, produktseiten: 200, sonstige: 413,
     strategy: "Brand/News-First mit Glossar-Differenzierung",
     strengths: ["Einziger Anbieter mit Glossar (24 URLs)", "Starker Newsroom (96 Presse-URLs, 12%)", "Haftpflicht-Tiefe (106 URLs)"],
     weaknesses: ["Sehr wenig Ratgeber (21 URLs, nur 3%)", "77% der Sitemap sind Admin-Seiten", "Schwache Service-Präsenz", "Insgesamt SEO-schwach"],
@@ -810,7 +827,7 @@ const PROVIDERS = {
   },
   generali: {
     name: "Generali", url: "generali.de", color: "#C8102E",
-    total: 1379, ratgeber: 75, faq: 29, rechner: 1, presse: 16, glossar: 0, b2b: 3, video: null, service: 152,
+    total: 1379, ratgeber: 75, faq: 29, rechner: 1, presse: 16, glossar: 0, b2b: 3, video: null, service: 152, produktseiten: 700, sonstige: 403,
     strategy: "UX-First: Service- und FAQ-orientiert",
     strengths: ["Größte FAQ-Datenbank nach ERGO (29)", "Top-Service-Hub (152 URLs)", "Aktives Magazin (75 URLs)", "Ausgewogene Sparten-Verteilung"],
     weaknesses: ["Nur 1 Rechner indexiert", "Kein Glossar", "Kleines Ratgeber-Volumen", "Wenig Presse"],
@@ -820,7 +837,7 @@ const PROVIDERS = {
   },
   signal: {
     name: "Signal Iduna", url: "signal-iduna.de", color: "#005CA9",
-    total: 576, ratgeber: 182, faq: 1, rechner: 0, presse: 10, glossar: 0, b2b: null, video: null, service: 54,
+    total: 576, ratgeber: 182, faq: 1, rechner: 0, presse: 10, glossar: 0, b2b: null, video: null, service: 54, produktseiten: 200, sonstige: 129,
     strategy: "Balanced Hybrid: Ratgeber + Service",
     strengths: ["Solide Ratgeber-Quote (32%)", "Nischen-Produkte (Pedelec, Krankenvoll)", "Strukturierte Service-Navigation"],
     weaknesses: ["Kleines Gesamtvolumen (576)", "Keine Rechner indexiert", "Minimal Presse", "Keine FAQ erkennbar"],
@@ -830,7 +847,7 @@ const PROVIDERS = {
   },
   ruv: {
     name: "R+V", url: "ruv.de", color: "#FFCD00",
-    total: 1350, ratgeber: 215, faq: null, rechner: 3, presse: 122, glossar: 0, b2b: null, video: null, service: 154,
+    total: 1350, ratgeber: 215, faq: null, rechner: 3, presse: 122, glossar: 0, b2b: null, video: null, service: 154, produktseiten: 500, sonstige: 356,
     strategy: "Hybrid mit Altersvorsorge-Fokus & Rechner-Vorteil",
     strengths: ["Einziger mit indexierten Rechnern (KFZ, Hausrat, Rentenlücke)", "Altersvorsorge-Hub als USP", "Aktiver Newsroom + Blog 'bunte Seiten'", "Studie 'Ängste der Deutschen' als Authority-Signal"],
     weaknesses: ["Keine offizielle Sitemap (HTTP 401)", "Daten nur via Stichprobe (~80% Coverage)", "Kein Glossar", "FAQ schwer messbar"],
@@ -840,7 +857,7 @@ const PROVIDERS = {
   },
   devk: {
     name: "DEVK", url: "devk.de", color: "#009A3D",
-    total: 314, ratgeber: 36, faq: 0, rechner: 13, presse: 78, glossar: 0, b2b: 1, video: null, service: 28,
+    total: 314, ratgeber: 36, faq: 0, rechner: 13, presse: 78, glossar: 0, b2b: 1, video: null, service: 28, produktseiten: 80, sonstige: 78,
     strategy: "Kompakter Privatkunden-Vollsortimenter mit Newsroom-Fokus",
     strengths: ["KFZ-stark (49 URLs, Eisenbahner-DNA)", "13 Tarif-Rechner (mehr als ERGO mit 7)", "Aktiver Newsroom mit 78 Pressemitteilungen", "Haftpflicht (29) + Hausrat (22) strukturell dichter als ERGO"],
     weaknesses: ["Nur 314 URLs - kompakteste Sitemap aller Wettbewerber", "0 FAQ-Seiten indexiert", "0 Glossar/Lexikon", "Praktisch kein B2B-Bereich (1 URL)", "Nur 5 Standortseiten - Local-SEO ungenutzt"],
@@ -850,7 +867,7 @@ const PROVIDERS = {
   },
   hannoversche: {
     name: "Hannoversche", url: "hannoversche.de", color: "#005CA9",
-    total: 366, ratgeber: 56, faq: 10, rechner: 11, presse: 7, glossar: 0, b2b: null, video: null, service: 33,
+    total: 366, ratgeber: 56, faq: 10, rechner: 11, presse: 7, glossar: 0, b2b: null, video: null, service: 33, produktseiten: 150, sonstige: 99,
     strategy: "Lebensversicherungs-Spezialist mit Beratungsfokus",
     strengths: ["56 Ratgeber-Artikel (15% der Sitemap) trotz Spezialisierung", "11 Rechner indexiert", "Klarer Leben-Fokus (72 URLs)"],
     weaknesses: ["Nur 366 URLs gesamt – sehr klein", "Eingeschränktes Sparten-Spektrum (kein KFZ-Schwerpunkt)", "Wenig Presse-Content"],
@@ -860,7 +877,7 @@ const PROVIDERS = {
   },
   cosmosdirekt: {
     name: "Cosmos Direkt", url: "cosmosdirekt.de", color: "#FF6600",
-    total: 694, ratgeber: 105, faq: null, rechner: 3, presse: 3, glossar: 0, b2b: null, video: null, service: 32,
+    total: 694, ratgeber: 105, faq: null, rechner: 3, presse: 3, glossar: 0, b2b: null, video: null, service: 32, produktseiten: 421, sonstige: 130,
     strategy: "Direktversicherer mit starker Produkt-Fokussierung",
     strengths: ["421 Produktseiten (61% der Sitemap)", "105 Ratgeber-Artikel", "Breites Sparten-Portfolio (Leben, KFZ, Hausrat, Haftpflicht, Kranken)"],
     weaknesses: ["Nur 3 Rechner indexiert", "Wenig Presse-Content", "Kein Glossar"],
@@ -1667,7 +1684,9 @@ function buildOverviewCharts() {
         { label: 'FAQ', data: allKeys.map(k=>PROVIDERS[k].faq||0), backgroundColor: '#003781' },
         { label: 'Rechner', data: allKeys.map(k=>PROVIDERS[k].rechner||0), backgroundColor: '#FFD500' },
         { label: 'Presse', data: allKeys.map(k=>PROVIDERS[k].presse||0), backgroundColor: '#00BFA5' },
-        { label: 'Service', data: allKeys.map(k=>PROVIDERS[k].service||0), backgroundColor: '#9333EA' }
+        { label: 'Service', data: allKeys.map(k=>PROVIDERS[k].service||0), backgroundColor: '#9333EA' },
+        { label: 'Produktseiten', data: allKeys.map(k=>PROVIDERS[k].produktseiten||0), backgroundColor: '#F97316' },
+        { label: 'Sonstige', data: allKeys.map(k=>PROVIDERS[k].sonstige||0), backgroundColor: '#94A3B8' }
       ]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } }
@@ -1682,11 +1701,11 @@ function buildProviderCharts() {
     const dataMap = {
       'Ratgeber': p.ratgeber, 'FAQ': p.faq, 'Rechner': p.rechner,
       'Presse': p.presse, 'Glossar': p.glossar, 'Service': p.service,
-      'Video': p.video, 'B2B': p.b2b
+      'Video': p.video, 'B2B': p.b2b, 'Produktseiten': p.produktseiten, 'Sonstige': p.sonstige
     };
     const labels = Object.entries(dataMap).filter(([_,v])=>v!=null && v>0).map(([k,_])=>k);
     const values = Object.entries(dataMap).filter(([_,v])=>v!=null && v>0).map(([_,v])=>v);
-    const colors = ['#DC0028','#003781','#FFD500','#00BFA5','#9333EA','#F97316','#0EA5E9','#8B5CF6'];
+    const colors = ['#DC0028','#003781','#FFD500','#00BFA5','#9333EA','#F97316','#0EA5E9','#8B5CF6','#F59E0B','#94A3B8'];
     new Chart(el, {
       type: 'doughnut',
       data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
@@ -2218,6 +2237,23 @@ window.BERATER_DATA = /* BERATER_DATA_START */{"generated_at":"2026-04-26T23:34:
   }
   if(document.readyState !== 'loading') init();
   else document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+
+<script>
+(function(){
+  // Load berater sitemap stats
+  fetch('data/berater_sitemap_data.json').then(function(r){ return r.json(); }).then(function(d){
+    var s = d.summary || {};
+    var el = function(id){ return document.getElementById(id); };
+    if(el('bsmTotal')) el('bsmTotal').textContent = d.crawled || '—';
+    if(el('bsmUrls')) el('bsmUrls').textContent = (s.total_unique_urls||0).toLocaleString('de-DE');
+    if(el('bsmAvg')) el('bsmAvg').textContent = s.avg_pages || '—';
+    if(el('bsmMax')) el('bsmMax').textContent = s.max_pages || '—';
+  }).catch(function(){
+    var el = document.getElementById('berSitemapStats');
+    if(el) el.innerHTML = '<p class="text-sm text-gray-400 col-span-4">Sitemap-Daten noch nicht verf&uuml;gbar. Bitte Berater-Update Workflow ausf&uuml;hren.</p>';
+  });
 })();
 </script>
 </body>

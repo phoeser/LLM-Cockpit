@@ -1727,7 +1727,7 @@ def main():
             live_badge,
         )
 
-    # \xe2\x94\x80\xe2\x94\x80 CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren
+    # CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren
     events_file = Path("shared/events.jsonl")
     if events_file.exists():
         try:

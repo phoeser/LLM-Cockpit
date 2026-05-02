@@ -15,9 +15,7 @@ import urllib.request
 from pathlib import Path
 
 
-def fetch_latest_geo_snapshot(repo: str, token: str) -> dict:
-    """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API."""
-    url = f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json"
+def _fetch_json(url: str, token: str) -> dict:
     req = urllib.request.Request(
         url,
         headers={
@@ -27,23 +25,25 @@ def fetch_latest_geo_snapshot(repo: str, token: str) -> dict:
             "User-Agent": "LLM-Cockpit-Updater",
         },
     )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read().decode("utf-8"))
-    except Exception as exc:
-        # Fallback: vielleicht liegt latest.json direkt in /data/runs/
-        url2 = f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json"
-        req2 = urllib.request.Request(
-            url2,
-            headers={
-                "Accept": "application/vnd.github.v3.raw",
-                "Authorization": f"Bearer {token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "LLM-Cockpit-Updater",
-            },
-        )
-        with urllib.request.urlopen(req2, timeout=30) as r:
-            return json.loads(r.read().decode("utf-8"))
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def fetch_latest_geo_snapshot(repo: str, token: str) -> dict:
+    """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API.
+    Probiert zuerst data/runs/ (neue Struktur), dann Geo/data/runs/ (alt)."""
+    paths = [
+        f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
+        f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json",
+    ]
+    for url in paths:
+        try:
+            data = _fetch_json(url, token)
+            print(f"   Gefunden unter: {url.split('/contents/')[-1]}")
+            return data
+        except Exception:
+            continue
+    sys.exit(f"FEHLER: latest.json weder unter data/runs/ noch Geo/data/runs/ in {repo} gefunden.")
 
 
 def transform_to_dashboard_format(geo: dict) -> dict:

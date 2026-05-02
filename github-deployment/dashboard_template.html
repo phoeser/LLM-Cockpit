@@ -418,6 +418,24 @@
 </div>
 </div>
 
+</div>
+
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+<h3 class="text-lg font-bold text-ergo-dark mb-3">Google-Bewertungen der ERGO Berater</h3>
+<p class="text-sm text-gray-500 mb-4">Einmalige Abfrage via Google Places API</p>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4" id="berReviewStats">
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-ergo-red" id="brvTotal">—</div><div class="text-xs text-gray-500">Agenturen gefunden</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-yellow-500" id="brvAvgRating">—</div><div class="text-xs text-gray-500">&Oslash; Bewertung</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-blue-600" id="brvTotalReviews">—</div><div class="text-xs text-gray-500">Bewertungen gesamt</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-green-600" id="brvTop">—</div><div class="text-xs text-gray-500">5-Sterne Agenturen</div></div>
+<div class="bg-gray-50 rounded-lg p-3 text-center"><div class="text-2xl font-bold text-red-500" id="brvLow">—</div><div class="text-xs text-gray-500">Unter 4.0 Sterne</div></div>
+</div>
+<div id="brvTopList" class="mb-4"></div>
+<div id="brvReviewTexts" class="max-h-64 overflow-y-auto border rounded-lg p-3 bg-gray-50 text-sm" style="display:none"></div>
+</div>
+
+  <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
+    <div class="p-4 border-b bg-gray-50 flex flex-wrap items-center gap-3">
 <h3 class="text-lg font-bold text-ergo-dark mr-auto">Alle Berater (DE-flaechendeckend)</h3>
       <div class="text-sm text-gray-500"><span id="berListVisible">0</span> / <span id="berListTotal">0</span></div>
       <input id="berSearch" type="search" placeholder="Suche: Name, Stadt, PLZ, Webseite..." class="px-3 py-2 border rounded text-sm w-64">
@@ -2255,6 +2273,61 @@ window.BERATER_DATA = /* BERATER_DATA_START */{"generated_at":"2026-04-26T23:34:
     if(el) el.innerHTML = '<p class="text-sm text-gray-400 col-span-4">Sitemap-Daten noch nicht verf&uuml;gbar. Bitte Berater-Update Workflow ausf&uuml;hren.</p>';
   });
 })();
+</script>
+
+<script>
+  fetch('data/berater_reviews.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(function(d){
+    var reviews = d.reviews || [];
+    var found = reviews.filter(function(r){return r.found;});
+    var rated = found.filter(function(r){return r.rating > 0;});
+    var avgR = rated.length ? (rated.reduce(function(s,r){return s+r.rating;},0)/rated.length) : 0;
+    var totalRevs = found.reduce(function(s,r){return s+(r.review_count||0);},0);
+    var fiveStar = rated.filter(function(r){return r.rating >= 4.9;}).length;
+    var lowStar = rated.filter(function(r){return r.rating < 4.0;}).length;
+    
+    document.getElementById('brvTotal').textContent = found.length;
+    document.getElementById('brvAvgRating').textContent = avgR.toFixed(2) + '\u2605';
+    document.getElementById('brvTotalReviews').textContent = totalRevs.toLocaleString('de-DE');
+    document.getElementById('brvTop').textContent = fiveStar;
+    document.getElementById('brvLow').textContent = lowStar;
+    
+    // Top 10 best-reviewed agencies
+    var top10 = found.filter(function(r){return r.review_count >= 5;}).sort(function(a,b){return (b.rating||0)-(a.rating||0)||(b.review_count||0)-(a.review_count||0);}).slice(0,10);
+    var html = '<h4 class="text-sm font-bold text-gray-700 mb-2">Top 10 bestbewertete Berater (mind. 5 Bewertungen)</h4>';
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">';
+    top10.forEach(function(r){
+      html += '<div class="flex items-center gap-2 bg-white border rounded p-2 text-sm">';
+      html += '<span class="text-yellow-500 font-bold">' + (r.rating||0).toFixed(1) + '\u2605</span>';
+      html += '<span class="font-semibold">' + r.name + '</span>';
+      html += '<span class="text-gray-400">' + r.city + '</span>';
+      html += '<span class="text-xs text-gray-400">(' + (r.review_count||0) + ')</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    document.getElementById('brvTopList').innerHTML = html;
+    
+    // Show review texts if available
+    var withTexts = found.filter(function(r){return r.reviews && r.reviews.length > 0;});
+    if(withTexts.length > 0){
+      var el = document.getElementById('brvReviewTexts');
+      el.style.display = 'block';
+      var rhtml = '<h4 class="font-bold text-gray-700 mb-2">Neueste Google-Reviews</h4>';
+      withTexts.forEach(function(agency){
+        agency.reviews.forEach(function(rev){
+          if(rev.text){
+            rhtml += '<div class="border-b pb-2 mb-2">';
+            rhtml += '<div class="flex items-center gap-2 mb-1"><span class="text-yellow-500">' + '\u2605'.repeat(rev.rating||0) + '</span>';
+            rhtml += '<span class="text-xs text-gray-400">' + rev.author + '</span>';
+            rhtml += '<span class="text-xs text-gray-300">' + (rev.time||'').substring(0,10) + '</span></div>';
+            rhtml += '<div class="text-gray-600 text-xs">' + rev.text.substring(0,200) + (rev.text.length>200?'...':'') + '</div>';
+            rhtml += '<div class="text-xs text-gray-400 mt-1">— ' + agency.name + ', ' + agency.city + '</div>';
+            rhtml += '</div>';
+          }
+        });
+      });
+      el.innerHTML = rhtml;
+    }
+  }).catch(function(e){ console.log('Reviews not loaded:', e); });
 </script>
 </body>
 </html>

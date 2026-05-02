@@ -1720,14 +1720,14 @@ def main():
                       '        <span class="badge badge-sentiment-live" '
                       'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
                       'padding:2px 8px;border-radius:4px;margin-left:8px;">'
-                      'Live-Daten \xc2\xb7 Stand '
+                      'Live-Daten \u00b7 Stand '
                       '<span id="sentimentDate"></span></span>')
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
             live_badge,
         )
 
-    # CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren
+    # ── CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren ──────
     events_file = Path("shared/events.jsonl")
     if events_file.exists():
         try:
@@ -1736,6 +1736,7 @@ def main():
             if all_events:
                 events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
                 events_block = "window.CORRELATION_EVENTS = %s;" % events_json
+                # Vor der Zeile "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];" einfuegen
                 corr_marker = "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];"
                 if corr_marker in content:
                     content = content.replace(

@@ -575,7 +575,7 @@ def main():
         
         # Berater-Anzahl-Veränderung
         prev_total = prev_data.get("totals", {}).get("vermittler", 0)
-        curr_total = t["vermittler"]
+        curr_total = agg["totals"]["vermittler"]
         if prev_total and abs(curr_total - prev_total) >= 5:
             emit_event(
                 event_type="berater_shift",

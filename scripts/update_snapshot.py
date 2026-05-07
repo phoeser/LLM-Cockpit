@@ -14,36 +14,58 @@ import sys
 import urllib.request
 from pathlib import Path
 
-
-def _fetch_json(url: str, token: str) -> dict:
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/vnd.github.v3.raw",
-            "Authorization": f"Bearer {token}",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "LLM-Cockpit-Updater",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode("utf-8"))
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from shared.event_emitter import emit_event, load_previous_data, save_for_comparison
+except ImportError:
+    emit_event = None
 
 
-def fetch_latest_geo_snapshot(repo: str, token: str) -> dict:
+def _build_headers(token: str = None) -> dict:
+    """Baut GitHub-API-Headers, optional mit Auth-Token."""
+    h = {
+        "Accept": "application/vnd.github.v3.raw",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "LLM-Cockpit-Updater",
+    }
+    if token:
+        h["Authorization"] = f"Bearer {token}"
+    return h
+
+
+def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
     """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API.
-    Probiert zuerst data/runs/ (neue Struktur), dann Geo/data/runs/ (alt)."""
+    Token ist optional -- fuer oeffentliche Repos nicht noetig.
+    Falls Token ungueltig (401/403), wird ohne Token nochmal versucht."""
     paths = [
         f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
         f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json",
     ]
+    # Versuch 1: mit Token (falls gesetzt)
     for url in paths:
         try:
-            data = _fetch_json(url, token)
-            print(f"   Gefunden unter: {url.split('/contents/')[-1]}")
-            return data
+            req = urllib.request.Request(url, headers=_build_headers(token))
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as he:
+            if he.code in (401, 403) and token:
+                print(f"   Token-Fehler ({he.code}) -- versuche ohne Token...")
+                break  # ohne Token nochmal
+            continue  # naechster Pfad
         except Exception:
             continue
-    sys.exit(f"FEHLER: latest.json weder unter data/runs/ noch Geo/data/runs/ in {repo} gefunden.")
+
+    # Versuch 2: ohne Token (public repo)
+    for url in paths:
+        try:
+            req = urllib.request.Request(url, headers=_build_headers(None))
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except Exception as exc:
+            print(f"   Fehler bei {url}: {exc}")
+            continue
+
+    sys.exit("FEHLER: latest.json konnte nicht geladen werden (alle Pfade/Token fehlgeschlagen).")
 
 
 def transform_to_dashboard_format(geo: dict) -> dict:
@@ -91,10 +113,10 @@ def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) ->
 
 
 def main():
-    token = os.environ.get("GITHUB_TOKEN")
-    repo = os.environ.get("GEO_REPO", "phoeser/Geo")
+    token = os.environ.get("GITHUB_TOKEN", "")
+    repo = os.environ.get("GEO_REPO", "phoeser/geo-visibility-tool")
     if not token:
-        sys.exit("FEHLER: GITHUB_TOKEN fehlt (Repo-Secret GEO_REPO_TOKEN).")
+        print("WARN: GITHUB_TOKEN nicht gesetzt -- versuche ohne Token (ok fuer public Repos)")
 
     print(f"-> Hole latest.json aus {repo} ...")
     geo = fetch_latest_geo_snapshot(repo, token)
@@ -106,10 +128,4 @@ def main():
     if not template.exists():
         sys.exit("FEHLER: dashboard_template.html fehlt im Repo-Root.")
 
-    # Patch in-place (template = dashboard_template.html)
-    inject_into_template(template, snapshot, template)
-    print(f"   Patched: {template} ({template.stat().st_size:,} Bytes)")
-
-
-if __name__ == "__main__":
-    main()
+    # Patch in-place 

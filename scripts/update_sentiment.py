@@ -1555,8 +1555,11 @@ def main():
             by_brand = prev_data["by_brand"]
             if isinstance(by_brand, dict):
                 prev_brands = by_brand
+            elif isinstance(by_brand, list):
+                # Liste zu Dict konvertieren: [{key: "ergo", ...}, ...] -> {"ergo": {...}, ...}
+                prev_brands = {item["key"]: item for item in by_brand if isinstance(item, dict) and "key" in item}
             else:
-                prev_brands = {}  # by_brand list has no per-source data
+                prev_brands = {}
         else:
             prev_brands = prev_data  # flat format: prev_data IS the brand dict
         event_count = 0

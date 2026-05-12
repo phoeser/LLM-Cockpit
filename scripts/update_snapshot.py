@@ -128,4 +128,120 @@ def main():
     if not template.exists():
         sys.exit("FEHLER: dashboard_template.html fehlt im Repo-Root.")
 
-    # Patch in-place 
+    # Patch in-place (template = dashboard_template.html)
+    inject_into_template(template, snapshot, template)
+    print(f"   Patched: {template} ({template.stat().st_size:,} Bytes)")
+
+    # --- Event-Emitter: sov_change Events ---
+    if emit_event:
+        _emit_sov_events(snapshot)
+
+
+def _emit_sov_events(snapshot: dict) -> None:
+    """Vergleicht GEO-Snapshot mit vorherigem und emittiert sov_change Events."""
+    prev_path = Path("data/geo_snapshot.previous.json")
+    curr_path = Path("data/geo_snapshot.json")
+
+    # Aktuellen Snapshot speichern fuer naechsten Vergleich
+    curr_path.parent.mkdir(parents=True, exist_ok=True)
+    if curr_path.exists():
+        save_for_comparison(curr_path)
+    curr_path.write_text(json.dumps(snapshot, ensure_ascii=False), encoding="utf-8")
+
+    prev = load_previous_data(curr_path)
+    if not prev:
+        print("   Kein vorheriger GEO-Snapshot -- ueberspringe Event-Emission")
+        return
+
+    event_count = 0
+
+    # 1. Gesamt-Ranking Veraenderungen
+    curr_ranking = {r["brand"]: r for r in snapshot.get("totals_ranking", [])}
+    prev_ranking = {r["brand"]: r for r in prev.get("totals_ranking", [])}
+
+    for brand, curr_r in curr_ranking.items():
+        prev_r = prev_ranking.get(brand)
+        if not prev_r:
+            continue
+
+        curr_rank = curr_r.get("rank", 0)
+        prev_rank = prev_r.get("rank", 0)
+        if curr_rank and prev_rank and curr_rank != prev_rank:
+            delta = prev_rank - curr_rank  # positiv = Verbesserung
+            emit_event(
+                event_type="sov_change",
+                brand=brand,
+                source="geo_snapshot",
+                crawler="update_snapshot",
+                magnitude=min(abs(delta) * 0.5, 2.0),
+                detail={
+                    "metric": "overall_rank",
+                    "old_rank": prev_rank,
+                    "new_rank": curr_rank,
+                    "direction": "up" if delta > 0 else "down",
+                },
+            )
+            event_count += 1
+
+        # Share-of-Voice Prozent
+        curr_pct = curr_r.get("mention_pct", curr_r.get("pct", 0))
+        prev_pct = prev_r.get("mention_pct", prev_r.get("pct", 0))
+        if curr_pct and prev_pct and abs(curr_pct - prev_pct) >= 1.0:
+            emit_event(
+                event_type="sov_change",
+                brand=brand,
+                source="geo_snapshot",
+                crawler="update_snapshot",
+                magnitude=min(abs(curr_pct - prev_pct) / 5, 2.0),
+                detail={
+                    "metric": "share_of_voice_pct",
+                    "old_pct": round(prev_pct, 1),
+                    "new_pct": round(curr_pct, 1),
+                },
+            )
+            event_count += 1
+
+    # 2. Produkt-spezifische Veraenderungen
+    for pid, pdata in snapshot.get("products", {}).items():
+        prev_pdata = prev.get("products", {}).get(pid, {})
+        if not prev_pdata:
+            continue
+
+        for llm, curr_s in pdata.get("summary_by_llm", {}).items():
+            prev_s = prev_pdata.get("summary_by_llm", {}).get(llm, {})
+            if not prev_s:
+                continue
+
+            # Ranking-Veraenderungen pro LLM+Produkt
+            curr_brands = {b["brand"]: b for b in curr_s.get("brands", [])}
+            prev_brands = {b["brand"]: b for b in prev_s.get("brands", [])}
+
+            for brand, cb in curr_brands.items():
+                pb = prev_brands.get(brand)
+                if not pb:
+                    continue
+                curr_mentions = cb.get("mentions", 0)
+                prev_mentions = pb.get("mentions", 0)
+                if curr_mentions != prev_mentions and abs(curr_mentions - prev_mentions) >= 2:
+                    emit_event(
+                        event_type="sov_change",
+                        brand=brand,
+                        source="geo_snapshot",
+                        crawler="update_snapshot",
+                        product=pid,
+                        magnitude=min(abs(curr_mentions - prev_mentions) / 5, 2.0),
+                        detail={
+                            "metric": "mentions",
+                            "llm": llm,
+                            "product": pid,
+                            "old_mentions": prev_mentions,
+                            "new_mentions": curr_mentions,
+                        },
+                    )
+                    event_count += 1
+
+    print(f"   {event_count} sov_change Events emittiert")
+
+
+if __name__ == "__main__":
+    main()

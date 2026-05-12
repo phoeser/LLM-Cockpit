@@ -297,9 +297,6 @@ def main():
         "articles": {},
     }
 
-    cutoff_6m = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
-    pd["press_history"] = {}
-
     for key in all_brands:
         s = stats[key]
         out_data["stats"][key] = {
@@ -401,9 +398,6 @@ def main():
         "recent": {},
     }
 
-    cutoff_6m = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
-    pd["press_history"] = {}
-
     for key in all_brands:
         s = stats[key]
         pd["stats"][key] = {
@@ -452,21 +446,6 @@ def main():
             }
             for a in all_brands[key][:15]
         ]
-
-        # Presse-Archiv: ALLE Artikel der letzten 6 Monate (fuer scrollbares Archiv)
-        ph_list = [
-            {
-                "title": a["title"][:150],
-                "date": a["date"],
-                "source": a["source"],
-                "url": a.get("url", ""),
-                "type": a.get("type", "media"),
-            }
-            for a in all_brands[key]
-            if a.get("date", "") >= cutoff_6m
-        ]
-        pd["press_history"][key] = ph_list
-
 
     new_block = "const PRESS_DATA = " + json.dumps(pd, ensure_ascii=False, separators=(",", ": ")) + ";"
 

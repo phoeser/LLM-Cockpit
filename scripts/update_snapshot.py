@@ -163,16 +163,24 @@ def _emit_sov_events(snapshot: dict) -> None:
     event_count = 0
 
     # 1. Gesamt-Ranking Veraenderungen
-    curr_ranking = {r["brand"]: r for r in snapshot.get("totals_ranking", [])}
-    prev_ranking = {r["brand"]: r for r in prev.get("totals_ranking", [])}
+    # GEO-Daten nutzen "name" statt "brand" als Key
+    curr_ranking_list = snapshot.get("totals_ranking", [])
+    prev_ranking_list = prev.get("totals_ranking", [])
+    curr_ranking = {r.get("name", r.get("brand", "")): r for r in curr_ranking_list}
+    prev_ranking = {r.get("name", r.get("brand", "")): r for r in prev_ranking_list}
+    # Rank aus Position im Array ableiten (1-basiert)
+    curr_rank_pos = {r.get("name", r.get("brand", "")): i + 1 for i, r in enumerate(curr_ranking_list)}
+    prev_rank_pos = {r.get("name", r.get("brand", "")): i + 1 for i, r in enumerate(prev_ranking_list)}
 
     for brand, curr_r in curr_ranking.items():
+        if not brand:
+            continue
         prev_r = prev_ranking.get(brand)
         if not prev_r:
             continue
 
-        curr_rank = curr_r.get("rank", 0)
-        prev_rank = prev_r.get("rank", 0)
+        curr_rank = curr_rank_pos.get(brand, 0)
+        prev_rank = prev_rank_pos.get(brand, 0)
         if curr_rank and prev_rank and curr_rank != prev_rank:
             delta = prev_rank - curr_rank  # positiv = Verbesserung
             emit_event(
@@ -190,9 +198,14 @@ def _emit_sov_events(snapshot: dict) -> None:
             )
             event_count += 1
 
-        # Share-of-Voice Prozent
-        curr_pct = curr_r.get("mention_pct", curr_r.get("pct", 0))
-        prev_pct = prev_r.get("mention_pct", prev_r.get("pct", 0))
+        # Share-of-Voice Prozent (Feld heisst "share_of_voice" in GEO-Daten)
+        curr_pct = curr_r.get("share_of_voice", curr_r.get("mention_pct", curr_r.get("pct", 0)))
+        prev_pct = prev_r.get("share_of_voice", prev_r.get("mention_pct", prev_r.get("pct", 0)))
+        # share_of_voice ist 0-1 Ratio, umrechnen in Prozent fuer Vergleich
+        if curr_pct and curr_pct <= 1:
+            curr_pct = curr_pct * 100
+        if prev_pct and prev_pct <= 1:
+            prev_pct = prev_pct * 100
         if curr_pct and prev_pct and abs(curr_pct - prev_pct) >= 1.0:
             emit_event(
                 event_type="sov_change",
@@ -220,8 +233,8 @@ def _emit_sov_events(snapshot: dict) -> None:
                 continue
 
             # Ranking-Veraenderungen pro LLM+Produkt
-            curr_brands = {b["brand"]: b for b in curr_s.get("brands", [])}
-            prev_brands = {b["brand"]: b for b in prev_s.get("brands", [])}
+            curr_brands = {b.get("name", b.get("brand", "")): b for b in curr_s.get("brands", [])}
+            prev_brands = {b.get("name", b.get("brand", "")): b for b in prev_s.get("brands", [])}
 
             for brand, cb in curr_brands.items():
                 pb = prev_brands.get(brand)

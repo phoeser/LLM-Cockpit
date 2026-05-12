@@ -98,9 +98,7 @@ def transform_to_dashboard_format(geo: dict) -> dict:
     # damit der JSON-String in JS-Code eingebettet werden kann
     if isinstance(es, str):
         es = es.replace("\r\n", " ").replace("\n", " ").replace("\r", " ").replace("\t", " ")
-        # Mehrfach-Leerzeichen zusammenfassen
-        import re as _re
-        es = _re.sub(r"  +", " ", es).strip()[:2000]
+        es = re.sub(r"  +", " ", es).strip()[:2000]
     else:
         es = str(es)[:2000]
     out["executive_summary"] = es
@@ -111,8 +109,6 @@ def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) ->
     """Patcht GEO_SNAPSHOT IN-PLACE in dashboard_template.html.
     Nutzt out_path NUR fuer Backwards-Compat (falls Workflow sie erwartet)."""
     html = template_path.read_text(encoding="utf-8")
-    # ensure_ascii=True damit Sonderzeichen escaped werden und
-    # keine raw-Newlines o.ae. im JS-String landen
     new_line = "const GEO_SNAPSHOT = " + json.dumps(snapshot, ensure_ascii=True) + ";"
     pattern = re.compile(r"const GEO_SNAPSHOT\s*=\s*\{.*?\};", re.DOTALL)
     new_html, n = pattern.subn(lambda m: new_line, html, count=1)
@@ -240,4 +236,19 @@ def _emit_sov_events(snapshot: dict) -> None:
                         source="geo_snapshot",
                         crawler="update_snapshot",
                         product=pid,
-                        magnitude=min(abs(curr_mentions - pre
+                        magnitude=min(abs(curr_mentions - prev_mentions) / 5, 2.0),
+                        detail={
+                            "metric": "mentions",
+                            "llm": llm,
+                            "product": pid,
+                            "old_mentions": prev_mentions,
+                            "new_mentions": curr_mentions,
+                        },
+                    )
+                    event_count += 1
+
+    print(f"   {event_count} sov_change Events emittiert")
+
+
+if __name__ == "__main__":
+    main()

@@ -11,7 +11,6 @@ import re
 import random
 import sys
 import time
-from pathlib import Path
 
 # Event-Emitter für Korrelations-Engine
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -23,6 +22,7 @@ except ImportError:
 import urllib.request
 import urllib.error
 from html.parser import HTMLParser
+from pathlib import Path
 
 # DE-flaechendeckend: ~200 PLZ-Seeds fuer maximale Abdeckung
 SEED_PLZ = [
@@ -538,7 +538,6 @@ def aggregate(rows):
 
 def main():
     out_dir = Path(__file__).parent.parent
-    out_path = out_dir / "berater_data.json"
     seen = {}
     raw_count = 0
     plz_limit = os.environ.get("BERATER_PLZ_LIMIT")
@@ -575,7 +574,7 @@ def main():
         
         # Berater-Anzahl-Veränderung
         prev_total = prev_data.get("totals", {}).get("vermittler", 0)
-        curr_total = agg["totals"]["vermittler"]
+        curr_total = t["vermittler"]
         if prev_total and abs(curr_total - prev_total) >= 5:
             emit_event(
                 event_type="berater_shift",
@@ -621,6 +620,7 @@ def main():
 
     payload = dict(agg)
     payload["vermittler"] = rows
+    out_path = out_dir / "berater_data.json"
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK Geschrieben: %s (%d bytes)" % (out_path, out_path.stat().st_size))
     t = agg["totals"]

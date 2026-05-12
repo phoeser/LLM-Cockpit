@@ -61,7 +61,9 @@ jobs:
           # Review-History + Events-Timeline committen
           git add data/review_history.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: update review_history + events"
+          git add data/geo_page_events.last_run_id.txt 2>/dev/null || true
+          git add data/*.previous.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: update review_history + events + page tracking"
           git push origin main
 
       - name: Build und Deploy

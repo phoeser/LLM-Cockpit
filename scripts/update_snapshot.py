@@ -142,6 +142,115 @@ def main():
     # --- Event-Emitter: sov_change Events ---
     if emit_event:
         _emit_sov_events(snapshot)
+        _emit_page_events(geo, token, repo)
+
+
+
+def _emit_page_events(geo: dict, token: str = None, repo: str = None) -> None:
+    """Liest Page-Tracking-Events aus dem GEO latest.json und emittiert
+    page_change / page_new Events in shared/events.jsonl.
+
+    Das GEO-Tool trackt ~1600 Seiten und speichert Aenderungen in
+    data/pages/<brand>/<hash>/events.jsonl. Die Zusammenfassung pro Run
+    liegt in latest.json unter page_tracking.events_this_run.
+    """
+    # Deduplizierung: merke uns welche Events wir schon emittiert haben
+    dedup_path = Path("data/geo_page_events.last_run_id.txt")
+    dedup_path.parent.mkdir(parents=True, exist_ok=True)
+    last_run_id = ""
+    if dedup_path.exists():
+        last_run_id = dedup_path.read_text(encoding="utf-8").strip()
+
+    current_run_id = geo.get("run_id", "")
+    if current_run_id and current_run_id == last_run_id:
+        print("   Page-Events: Run-ID identisch mit letztem Lauf -- ueberspringe")
+        return
+
+    pt = geo.get("page_tracking", {})
+    all_events = pt.get("events_this_run", [])
+    if not all_events:
+        print("   Page-Events: Keine page_tracking.events_this_run in latest.json")
+        return
+
+    # Nur echte Aenderungen (changed=True oder first_seen=True)
+    changed = [e for e in all_events if e.get("changed")]
+    first_seen = [e for e in all_events if e.get("first_seen")]
+
+    event_count = 0
+
+    # page_change Events
+    for pe in changed:
+        brand = pe.get("brand", "")
+        url = pe.get("url", "")
+        if not brand or not url:
+            continue
+        products = pe.get("product_ids", [])
+        similarity = pe.get("similarity", 1.0)
+        added = pe.get("added_lines", [])
+        removed = pe.get("removed_lines", [])
+        classification = pe.get("classification")
+
+        # Magnitude: je groesser die Aenderung, desto hoeher
+        # similarity 0.95 = moderate Aenderung, 0.80 = grosse Aenderung
+        magnitude = min(max((1.0 - similarity) * 10, 0.3), 2.0)
+
+        detail = {
+            "similarity": similarity,
+            "added_lines": len(added),
+            "removed_lines": len(removed),
+            "url": url[:200],
+        }
+        if products:
+            detail["products"] = products
+        if classification and not classification.get("error"):
+            detail["classification"] = classification
+
+        # Kuerze added/removed fuer das Event-Detail (nur Stichprobe)
+        if added:
+            detail["added_sample"] = [a[:100] for a in added[:3]]
+        if removed:
+            detail["removed_sample"] = [r[:100] for r in removed[:3]]
+
+        emit_event(
+            event_type="page_change",
+            brand=brand,
+            source="geo_page_tracker",
+            crawler="update_snapshot",
+            magnitude=magnitude,
+            product=products[0] if products else None,
+            url=url,
+            detail=detail,
+        )
+        event_count += 1
+
+    # page_new Events (erstmalig erfasste Seiten)
+    for pe in first_seen:
+        brand = pe.get("brand", "")
+        url = pe.get("url", "")
+        if not brand or not url:
+            continue
+        products = pe.get("product_ids", [])
+
+        emit_event(
+            event_type="page_new",
+            brand=brand,
+            source="geo_page_tracker",
+            crawler="update_snapshot",
+            magnitude=0.5,
+            product=products[0] if products else None,
+            url=url,
+            detail={
+                "url": url[:200],
+                "products": products,
+            },
+        )
+        event_count += 1
+
+    # Run-ID speichern fuer Deduplizierung
+    if current_run_id:
+        dedup_path.write_text(current_run_id, encoding="utf-8")
+
+    print(f"   {event_count} Page-Events emittiert ({len(changed)} changes, {len(first_seen)} new)")
 
 
 def _emit_sov_events(snapshot: dict) -> None:

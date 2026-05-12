@@ -1,9 +1,6 @@
-name: Berater Update
+name: Berater Update (manuell)
 
 on:
-  schedule:
-    # Jeden Montag 02:00 UTC (04:00 MESZ)
-    - cron: '0 2 * * 1'
   workflow_dispatch:
 
 concurrency:
@@ -12,9 +9,6 @@ concurrency:
 
 permissions:
   contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   update:
@@ -31,24 +25,8 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Aktualisiere Berater-Daten (ERGO Vermittler-API, DE-flaechendeckend)
+      - name: Aktualisiere Berater-Daten (ERGO Vermittler-API)
         run: python scripts/update_berater.py
-
-      - name: Erstelle Berater-Sitemap (Top 200 Berater-Subdomains)
-        run: python scripts/crawl_berater_sitemap.py
-        continue-on-error: true
-
-      - name: Commit Berater-Daten + Sitemap
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add berater_data.json 2>/dev/null || true
-          git add berater_data.previous.json 2>/dev/null || true
-          git add sitemaps/ 2>/dev/null || true
-          git add shared/events.jsonl 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: berater update + sitemap + events"
-          git pull --rebase origin main || true
-          git push origin main
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy

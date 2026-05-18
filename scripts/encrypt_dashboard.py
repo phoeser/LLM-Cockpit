@@ -1,8 +1,7 @@
 """
-Verschluesselt dashboard_template.html mit AES-256-GCM und erzeugt eine
-ERGO-branded Login-Seite als index.html.
-
-Ersetzt StatiCrypt + inject_password_fix.py komplett.
+Verschluesselt dashboard_template.html mit AES-256-GCM und erzeugt:
+  - index.html  (~5 KB Login-Seite)
+  - data.enc    (~35 MB verschluesselte Daten, wird per fetch() nachgeladen)
 
 Verwendung:
     python scripts/encrypt_dashboard.py <passwort>
@@ -26,18 +25,16 @@ def encrypt_aes_gcm(plaintext_bytes: bytes, password: str) -> dict:
     # PBKDF2 Key-Ableitung — gleicher Algorithmus wie Web Crypto API
     key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000, dklen=32)
 
-    # AES-256-GCM via PyCryptodome ODER openssl-Fallback
+    # AES-256-GCM via PyCryptodome ODER cryptography-Fallback
     try:
         from Crypto.Cipher import AES
         cipher = AES.new(key, AES.MODE_GCM, nonce=iv)
         ciphertext, tag = cipher.encrypt_and_digest(plaintext_bytes)
     except ImportError:
-        # Fallback: cryptography-Paket
         try:
             from cryptography.hazmat.primitives.ciphers.aead import AESGCM
             aesgcm = AESGCM(key)
             ct_with_tag = aesgcm.encrypt(iv, plaintext_bytes, None)
-            # cryptography haengt den Tag an den Ciphertext an (letzte 16 Bytes)
             ciphertext = ct_with_tag[:-16]
             tag = ct_with_tag[-16:]
         except ImportError:
@@ -53,10 +50,8 @@ def encrypt_aes_gcm(plaintext_bytes: bytes, password: str) -> dict:
     }
 
 
-def build_login_page(encrypted_data: dict) -> str:
-    """Baut die komplette Login-Seite mit ERGO-Branding."""
-
-    enc_json = json.dumps(encrypted_data)
+def build_login_page(salt: str, iv: str, tag: str) -> str:
+    """Baut die Login-Seite OHNE eingebettete Daten — fetch() laedt data.enc nach."""
 
     return f'''<!DOCTYPE html>
 <html lang="de">
@@ -141,6 +136,19 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
   vertical-align: middle; margin-right: 8px;
 }}
 @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+.progress-container {{
+  display: none; margin-top: 16px;
+}}
+.progress-bar {{
+  width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;
+}}
+.progress-fill {{
+  height: 100%; width: 0%; background: linear-gradient(90deg, #DC0028, #ff4d6a);
+  border-radius: 3px; transition: width 0.3s ease;
+}}
+.progress-text {{
+  color: #6b7280; font-size: 12px; text-align: center; margin-top: 6px;
+}}
 @media (max-width: 480px) {{
   .login-card {{ padding: 32px 24px 28px; border-radius: 16px; }}
   .brand-logo {{ font-size: 22px; padding: 8px 18px; }}
@@ -165,6 +173,10 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
     </div>
     <button type="submit" id="btn">Anmelden</button>
   </form>
+  <div class="progress-container" id="progress">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">Lade Daten...</div>
+  </div>
   <div class="error-msg" id="errMsg">Falsches Passwort.</div>
 </div>
 
@@ -172,9 +184,10 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
 (function() {{
   "use strict";
 
-  var ENC = {enc_json};
+  var SALT = "{salt}";
+  var IV = "{iv}";
+  var TAG = "{tag}";
 
-  // --- Crypto-Helfer (Web Crypto API) ---
   function b64ToBytes(b64) {{
     return Uint8Array.from(atob(b64), function(c) {{ return c.charCodeAt(0); }});
   }}
@@ -193,18 +206,37 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
     );
   }}
 
-  async function decrypt(password) {{
+  async function fetchEncryptedData(onProgress) {{
+    var resp = await fetch("data.enc");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    var total = parseInt(resp.headers.get("Content-Length") || "0");
+    var reader = resp.body.getReader();
+    var chunks = [];
+    var loaded = 0;
+    while (true) {{
+      var result = await reader.read();
+      if (result.done) break;
+      chunks.push(result.value);
+      loaded += result.value.length;
+      if (total > 0 && onProgress) onProgress(loaded, total);
+    }}
+    var allBytes = new Uint8Array(loaded);
+    var offset = 0;
+    for (var i = 0; i < chunks.length; i++) {{
+      allBytes.set(chunks[i], offset);
+      offset += chunks[i].length;
+    }}
+    return allBytes;
+  }}
+
+  async function decrypt(password, ctBytes) {{
     try {{
-      var key = await deriveKey(password, ENC.salt);
-      var iv = b64ToBytes(ENC.iv);
-      var ct = b64ToBytes(ENC.ct);
-      var tag = b64ToBytes(ENC.tag);
-
-      // Web Crypto erwartet ciphertext+tag zusammen
-      var combined = new Uint8Array(ct.length + tag.length);
-      combined.set(ct);
-      combined.set(tag, ct.length);
-
+      var key = await deriveKey(password, SALT);
+      var iv = b64ToBytes(IV);
+      var tag = b64ToBytes(TAG);
+      var combined = new Uint8Array(ctBytes.length + tag.length);
+      combined.set(ctBytes);
+      combined.set(tag, ctBytes.length);
       var plainBuf = await crypto.subtle.decrypt(
         {{ name: "AES-GCM", iv: iv }}, key, combined
       );
@@ -214,7 +246,6 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
     }}
   }}
 
-  // --- Remember-Me ---
   var STORAGE_KEY = "ergo_cockpit_pw";
   var STORAGE_EXP = "ergo_cockpit_exp";
 
@@ -242,43 +273,81 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
     }} catch(e) {{}}
   }}
 
-  // --- Seite ersetzen ---
   function replaceContent(html) {{
     document.open();
     document.write(html);
     document.close();
   }}
 
-  // --- Login-Handler ---
+  function showProgress() {{
+    var el = document.getElementById("progress");
+    if (el) el.style.display = "block";
+  }}
+
+  function updateProgress(loaded, total) {{
+    var pct = Math.round((loaded / total) * 100);
+    var fill = document.getElementById("progressFill");
+    var text = document.getElementById("progressText");
+    if (fill) fill.style.width = pct + "%";
+    var mb = (loaded / 1024 / 1024).toFixed(1);
+    var totalMb = (total / 1024 / 1024).toFixed(0);
+    if (text) text.textContent = "Lade Daten: " + mb + " / " + totalMb + " MB (" + pct + "%)";
+  }}
+
+  function hideProgress() {{
+    var el = document.getElementById("progress");
+    if (el) el.style.display = "none";
+  }}
+
   async function handleLogin(pw, fromRemember) {{
     var btn = document.getElementById("btn");
     var errMsg = document.getElementById("errMsg");
     if (btn) {{
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Entschluessle...';
+      btn.innerHTML = '<span class="spinner"></span>Lade Daten...';
     }}
     if (errMsg) errMsg.style.display = "none";
+    showProgress();
 
-    var result = await decrypt(pw);
+    try {{
+      var ctBytes = await fetchEncryptedData(updateProgress);
 
-    if (result) {{
-      // Passwort merken?
-      var cb = document.getElementById("remember");
-      if (cb && cb.checked) {{ savePw(pw); }}
-      replaceContent(result);
-    }} else {{
-      if (fromRemember) {{ clearPw(); }}
+      if (btn) btn.innerHTML = '<span class="spinner"></span>Entschluessle...';
+      var fill = document.getElementById("progressFill");
+      var text = document.getElementById("progressText");
+      if (fill) fill.style.width = "100%";
+      if (text) text.textContent = "Entschluessele Dashboard...";
+
+      var result = await decrypt(pw, ctBytes);
+
+      if (result) {{
+        var cb = document.getElementById("remember");
+        if (cb && cb.checked) {{ savePw(pw); }}
+        replaceContent(result);
+      }} else {{
+        if (fromRemember) {{ clearPw(); }}
+        hideProgress();
+        if (btn) {{
+          btn.disabled = false;
+          btn.textContent = "ANMELDEN";
+        }}
+        if (errMsg) errMsg.style.display = "block";
+        var pwField = document.getElementById("pw");
+        if (pwField) {{ pwField.value = ""; pwField.focus(); }}
+      }}
+    }} catch (e) {{
+      hideProgress();
       if (btn) {{
         btn.disabled = false;
         btn.textContent = "ANMELDEN";
       }}
-      if (errMsg) errMsg.style.display = "block";
-      var pwField = document.getElementById("pw");
-      if (pwField) {{ pwField.value = ""; pwField.focus(); }}
+      if (errMsg) {{
+        errMsg.textContent = "Fehler beim Laden: " + e.message;
+        errMsg.style.display = "block";
+      }}
     }}
   }}
 
-  // --- Form ---
   var form = document.getElementById("loginForm");
   if (form) {{
     form.addEventListener("submit", function(e) {{
@@ -288,7 +357,6 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
     }});
   }}
 
-  // --- Auto-Login bei gespeichertem Passwort ---
   var saved = loadPw();
   if (saved) {{
     handleLogin(saved, true);
@@ -300,7 +368,6 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
 
 
 def main():
-    # Passwort aus Argument oder Umgebungsvariable
     password = None
     if len(sys.argv) > 1:
         password = sys.argv[1]
@@ -313,7 +380,6 @@ def main():
         print("  Oder:       DASHBOARD_PASSWORD=xxx python encrypt_dashboard.py")
         sys.exit(1)
 
-    # Dashboard-Template lesen
     template_path = Path("dashboard_template.html")
     if not template_path.exists():
         print("FEHLER: dashboard_template.html nicht gefunden")
@@ -323,19 +389,21 @@ def main():
     html_content = template_path.read_text(encoding="utf-8")
     print(f"  {len(html_content)} Zeichen gelesen")
 
-    # Verschluesseln
     print(f"Verschluessele mit AES-256-GCM (PBKDF2, 100k Iterationen) ...")
     encrypted = encrypt_aes_gcm(html_content.encode("utf-8"), password)
     print(f"  Salt: {encrypted['salt'][:16]}...")
     print(f"  Ciphertext: {len(encrypted['ct'])} Base64-Zeichen")
 
-    # Login-Seite erzeugen
-    login_html = build_login_page(encrypted)
+    ct_bytes = base64.b64decode(encrypted["ct"])
+    data_enc_path = Path("data.enc")
+    data_enc_path.write_bytes(ct_bytes)
+    print(f"data.enc geschrieben: {len(ct_bytes):,} Bytes ({len(ct_bytes)/1024/1024:.1f} MB)")
 
-    # Schreiben
+    login_html = build_login_page(encrypted["salt"], encrypted["iv"], encrypted["tag"])
+
     out_path = Path("index.html")
     out_path.write_text(login_html, encoding="utf-8")
-    print(f"index.html geschrieben: {len(login_html)} Zeichen")
+    print(f"index.html geschrieben: {len(login_html):,} Zeichen ({len(login_html)/1024:.1f} KB)")
     print("Fertig!")
 
 

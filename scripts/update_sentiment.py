@@ -1761,4 +1761,13 @@ def main():
             print("  WARN: Events-Injection fehlgeschlagen: %s" % str(exc)[:100])
 
     # NULL-byte-safe schreiben
-    template
+    template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
+
+    success_count = sum(1 for e in results if e["sources_count"] >= 2)
+    print("\nPatched dashboard_template.html")
+    print("  %d/10 Brands mit >= 2 Quellen" % success_count)
+    print("  SENTIMENT_DATA: %d bytes" % len(new_block))
+
+
+if __name__ == "__main__":
+    main()

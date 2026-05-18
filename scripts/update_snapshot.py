@@ -72,7 +72,9 @@ def transform_to_dashboard_format(geo: dict) -> dict:
             },
         }
     es = geo.get("impact", {}).get("executive_summary", "")
-    out["executive_summary"] = es if isinstance(es, str) else str(es)[:2000]
+    # Newlines in executive_summary bereinigen (verhindert JS-SyntaxError im Dashboard)
+    es_clean = (es if isinstance(es, str) else str(es)[:2000]).replace('\n', ' ').replace('\r', '')
+    out["executive_summary"] = es_clean
     return out
 
 
@@ -80,7 +82,12 @@ def inject_into_template(template_path: Path, snapshot: dict, out_path: Path) ->
     """Patcht GEO_SNAPSHOT IN-PLACE in dashboard_template.html.
     Nutzt out_path NUR fuer Backwards-Compat (falls Workflow sie erwartet)."""
     html = template_path.read_text(encoding="utf-8")
-    new_line = "const GEO_SNAPSHOT = " + json.dumps(snapshot, ensure_ascii=False) + ";"
+    json_str = json.dumps(snapshot, ensure_ascii=False)
+    # Belt-and-suspenders: keine Raw-Newlines in der JS-Zeile erlauben
+    if '\n' in json_str or '\r' in json_str:
+        print("WARNUNG: Raw-Newlines in JSON gefunden, werden escaped!")
+        json_str = json_str.replace('\n', '\\n').replace('\r', '')
+    new_line = "const GEO_SNAPSHOT = " + json_str + ";"
     pattern = re.compile(r"const GEO_SNAPSHOT\s*=\s*\{.*?\};", re.DOTALL)
     new_html, n = pattern.subn(new_line, html, count=1)
     if n != 1:

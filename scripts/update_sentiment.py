@@ -1555,8 +1555,11 @@ def main():
             by_brand = prev_data["by_brand"]
             if isinstance(by_brand, dict):
                 prev_brands = by_brand
+            elif isinstance(by_brand, list):
+                # Liste zu Dict konvertieren: [{key: "ergo", ...}, ...] -> {"ergo": {...}, ...}
+                prev_brands = {item["key"]: item for item in by_brand if isinstance(item, dict) and "key" in item}
             else:
-                prev_brands = {}  # by_brand list has no per-source data
+                prev_brands = {}
         else:
             prev_brands = prev_data  # flat format: prev_data IS the brand dict
         event_count = 0
@@ -1720,14 +1723,14 @@ def main():
                       '        <span class="badge badge-sentiment-live" '
                       'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
                       'padding:2px 8px;border-radius:4px;margin-left:8px;">'
-                      'Live-Daten \xc2\xb7 Stand '
+                      'Live-Daten \u00b7 Stand '
                       '<span id="sentimentDate"></span></span>')
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
             live_badge,
         )
 
-    # CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren
+    # ── CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren ──────
     events_file = Path("shared/events.jsonl")
     if events_file.exists():
         try:
@@ -1735,27 +1738,27 @@ def main():
             all_events = load_events(events_file, max_age_days=90)
             if all_events:
                 events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
-                events_block = "window.CORRELATION_EVENTS = %s;" % events_json
+                events_block = "  window.CORRELATION_EVENTS = %s;" % events_json
                 corr_marker = "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];"
                 if corr_marker in content:
+                    # Alte injizierte CORRELATION_EVENTS-Zeilen entfernen (Duplikat-Bug-Fix)
+                    import re
+                    content = re.sub(
+                        r'^\s*window\.CORRELATION_EVENTS\s*=\s*\[.*?\];\s*\n',
+                        '',
+                        content,
+                        flags=re.MULTILINE
+                    )
+                    # Frisch einfuegen: genau 1x vor dem Marker
                     content = content.replace(
                         corr_marker,
                         events_block + "\n  " + corr_marker
                     )
-                    print("  CORRELATION_EVENTS: %d Events injiziert" % len(all_events))
+                    print("  CORRELATION_EVENTS: %d Events injiziert (alte Duplikate entfernt)" % len(all_events))
                 else:
                     print("  WARN: CORRELATION_EVENTS-Marker nicht gefunden")
         except Exception as exc:
             print("  WARN: Events-Injection fehlgeschlagen: %s" % str(exc)[:100])
 
     # NULL-byte-safe schreiben
-    template.write_bytes(content.encode("utf-8").replace(b"\x00", b"").rstrip() + b"\n")
-
-    success_count = sum(1 for e in results if e["sources_count"] >= 2)
-    print("\nPatched dashboard_template.html")
-    print("  %d/10 Brands mit >= 2 Quellen" % success_count)
-    print("  SENTIMENT_DATA: %d bytes" % len(new_block))
-
-
-if __name__ == "__main__":
-    main()
+    template

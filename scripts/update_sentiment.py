@@ -1742,7 +1742,6 @@ def main():
                 corr_marker = "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];"
                 if corr_marker in content:
                     # Alte injizierte CORRELATION_EVENTS-Zeilen entfernen (Duplikat-Bug-Fix)
-                    import re
                     content = re.sub(
                         r'^\s*window\.CORRELATION_EVENTS\s*=\s*\[.*?\];\s*\n',
                         '',

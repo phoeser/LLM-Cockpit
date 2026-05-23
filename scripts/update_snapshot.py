@@ -265,8 +265,9 @@ def _emit_sov_events(snapshot: dict) -> None:
                     )
                     print(f"  EVENT: sov_change {brand} {llm}/{pid} mentions {prev_mentions}->{curr_mentions}")
 
-    print(f"  Events emittiert fuer {len(curr_by_brand)} Brands")
+    print(f"  Events emittiert fuer {len(curr_ranking)} Brands")
 
 
 if __name__ == "__main__":
     main()
+ 

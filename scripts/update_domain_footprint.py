@@ -12,6 +12,12 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from shared.event_emitter import emit_event, load_previous_data, save_for_comparison
+except ImportError:
+    emit_event = None
+
 # Marke -> primaere Domain
 BRANDS = [
     ("ergo", "ERGO", "ergo.de", ["ergo.de", "ergo.com", "ergodirekt.de"]),
@@ -99,6 +105,7 @@ def main():
             "total_unique_subdomains": len(unique),
             "domain_count": len(all_domains),
             "domains": all_domains,
+            "all_subdomains": unique,  # vollstaendige Liste fuer Vergleich
             "per_domain": per_domain,
             "categories": cats,
             "examples": examples,
@@ -113,8 +120,17 @@ def main():
 
     out_dir = Path(__file__).parent.parent
     json_path = out_dir / "domain_footprint_data.json"
+
+    # Vorherige Daten sichern fuer Vergleich
+    if emit_event and json_path.exists():
+        save_for_comparison(json_path)
+
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK", json_path, "(" + str(json_path.stat().st_size) + " bytes)")
+
+    # --- Event-Emitter: domain_change Events ---
+    if emit_event:
+        _emit_domain_events(json_path, payload)
 
     # Patch dashboard_template.html
     template = out_dir / "dashboard_template.html"
@@ -131,6 +147,106 @@ def main():
         else:
             print("WARN: DOMAIN_FOOTPRINT marker nicht im Template gefunden")
     return 0
+
+
+def _emit_domain_events(json_path: Path, payload: dict) -> None:
+    """Vergleicht Domain-Footprint mit vorherigem und emittiert domain_change Events."""
+    prev = load_previous_data(json_path)
+    if not prev:
+        print("   Kein vorheriger Domain-Footprint -- ueberspringe Event-Emission")
+        return
+
+    prev_brands = {b["key"]: b for b in prev.get("brands", [])}
+    curr_brands = {b["key"]: b for b in payload.get("brands", [])}
+    event_count = 0
+
+    for key, curr in curr_brands.items():
+        prev_b = prev_brands.get(key)
+        if not prev_b:
+            continue
+
+        brand_name = curr["name"]
+        curr_total = curr.get("total_unique_subdomains", 0)
+        prev_total = prev_b.get("total_unique_subdomains", 0)
+
+        # Gesamtzahl Subdomains veraendert (Schwelle: 1)
+        if curr_total and prev_total and curr_total != prev_total:
+            delta = curr_total - prev_total
+            emit_event(
+                event_type="domain_change",
+                brand=brand_name,
+                source="hackertarget_hostsearch",
+                crawler="update_domain_footprint",
+                magnitude=min(abs(delta) / 5, 2.0),
+                detail={
+                    "metric": "total_subdomains",
+                    "old_count": prev_total,
+                    "new_count": curr_total,
+                    "direction": "growth" if delta > 0 else "shrink",
+                },
+            )
+            event_count += 1
+
+        # Kategorie-Shifts (vermittler, service, newsroom, tech, other)
+        curr_cats = curr.get("categories", {})
+        prev_cats = prev_b.get("categories", {})
+        for cat in ["vermittler", "service", "newsroom", "tech", "other"]:
+            c_val = curr_cats.get(cat, 0)
+            p_val = prev_cats.get(cat, 0)
+            if c_val != p_val:
+                emit_event(
+                    event_type="domain_change",
+                    brand=brand_name,
+                    source="hackertarget_hostsearch",
+                    crawler="update_domain_footprint",
+                    magnitude=min(abs(c_val - p_val) / 3, 2.0),
+                    detail={
+                        "metric": "category_" + cat,
+                        "old_count": p_val,
+                        "new_count": c_val,
+                    },
+                )
+                event_count += 1
+
+        # Neue Subdomains entdeckt -> page_new Events
+        curr_subs = set(curr.get("all_subdomains", []))
+        prev_subs = set(prev_b.get("all_subdomains", []))
+        new_subs = curr_subs - prev_subs
+        removed_subs = prev_subs - curr_subs
+        if new_subs:
+            for sub in sorted(new_subs):
+                emit_event(
+                    event_type="page_new",
+                    brand=brand_name,
+                    source="hackertarget_hostsearch",
+                    crawler="update_domain_footprint",
+                    magnitude=0.8,
+                    detail={
+                        "metric": "new_subdomain",
+                        "subdomain": sub,
+                        "url": "https://" + sub,
+                    },
+                )
+                event_count += 1
+            print(f"    {brand_name}: {len(new_subs)} neue Subdomains entdeckt")
+        if removed_subs:
+            for sub in sorted(removed_subs):
+                emit_event(
+                    event_type="page_change",
+                    brand=brand_name,
+                    source="hackertarget_hostsearch",
+                    crawler="update_domain_footprint",
+                    magnitude=0.5,
+                    detail={
+                        "metric": "subdomain_removed",
+                        "subdomain": sub,
+                        "url": "https://" + sub,
+                    },
+                )
+                event_count += 1
+            print(f"    {brand_name}: {len(removed_subs)} Subdomains nicht mehr erreichbar")
+
+    print("   " + str(event_count) + " domain_change/page_new/page_change Events emittiert")
 
 
 if __name__ == "__main__":

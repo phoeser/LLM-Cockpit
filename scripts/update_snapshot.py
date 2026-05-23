@@ -270,4 +270,3 @@ def _emit_sov_events(snapshot: dict) -> None:
 
 if __name__ == "__main__":
     main()
- 

@@ -211,13 +211,15 @@ def _emit_sov_events(snapshot: dict) -> None:
             curr_pct = curr_pct * 100
         if prev_pct and prev_pct <= 1:
             prev_pct = prev_pct * 100
-        if curr_pct and prev_pct and abs(curr_pct - prev_pct) >= 1.0:
+        # Immer ein Event schreiben wenn beide Werte vorhanden sind (auch bei Delta 0)
+        # damit das SoV-Chart im Dashboard fuer jeden Run vollstaendig ist
+        if curr_pct is not None and prev_pct is not None:
             emit_event(
                 event_type="sov_change",
                 brand=brand,
                 source="geo_snapshot",
                 crawler="update_snapshot",
-                magnitude=min(abs(curr_pct - prev_pct) / 5, 2.0),
+                magnitude=min(abs(curr_pct - prev_pct) / 5, 2.0) if abs(curr_pct - prev_pct) > 0 else 0,
                 detail={
                     "metric": "share_of_voice_pct",
                     "old_pct": round(prev_pct, 1),

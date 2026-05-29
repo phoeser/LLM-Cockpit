@@ -65,6 +65,10 @@ jobs:
         run: python scripts/merge_geo_page_events.py
         continue-on-error: true
 
+      - name: Externe Ratings aktualisieren (Finanztip + manuelle Quellen)
+        run: python scripts/update_ratings.py
+        continue-on-error: true
+
       - name: Daten-Dateien zurueck in main committen
         run: |
           git config user.name "github-actions[bot]"
@@ -80,6 +84,4 @@ jobs:
           git add data/geo_snapshot.previous.json 2>/dev/null || true
           git add domain_footprint_data.json 2>/dev/null || true
           git add domain_footprint_data.previous.json 2>/dev/null || true
-          git add shared/events.jsonl 2>/dev/null || true
-          git add data/geo_page_changes.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: nightl
+          git add shared/events.jso

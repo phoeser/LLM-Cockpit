@@ -631,12 +631,7 @@
     </div>
   </div>
 
-  <!-- Timeline-Chart -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-xl font-bold text-ergo-dark mb-4">Timeline: Presseaktivität pro Monat</h3>
-    <div class="flex flex-wrap gap-2 mb-4" id="pressTimelineBrandFilter"></div>
-    <div id="pressTimelineChart" style="min-height:960px;position:relative;overflow-x:auto;padding-bottom:12px;"></div>
-  </div>
+
 
   <!-- Themen-Heatmap -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
@@ -1795,83 +1790,6 @@ function buildPressTab() {
     }).join('');
   }
 
-  // 2) Timeline Chart (Canvas-basiert)
-  const chartDiv = document.getElementById('pressTimelineChart');
-  const filterDiv = document.getElementById('pressTimelineBrandFilter');
-  if (chartDiv && PD.timeline) {
-    // Collect all months — letzte 24 Monate anzeigen
-    const allMonths = new Set();
-    brandKeys.forEach(k => (PD.timeline[k]||[]).forEach(x => allMonths.add(x.m)));
-    const allSorted = Array.from(allMonths).sort();
-    const months = allSorted.slice(-24);
-    if (months.length === 0) { chartDiv.innerHTML = '<p class="text-gray-500 text-sm">Keine Timeline-Daten</p>'; return; }
-
-    const colors = {'ergo':'#DC0028','allianz':'#003781','axa':'#00008f','huk':'#006633','generali':'#c8102e',
-      'signal-iduna':'#003399','ruv':'#009640','devk':'#e30613','hannoversche':'#0066b3','cosmos':'#ff6600'};
-
-    // Brand filter buttons
-    let activeBrands = new Set(['ergo','allianz','axa','huk']);
-    function renderTimeline() {
-      filterDiv.innerHTML = brandKeys.map(k =>
-        '<button onclick="togglePressBrand(\''+k+'\')" class="px-3 py-1.5 text-sm rounded border ' +
-        (activeBrands.has(k) ? 'text-white border-transparent' : 'text-gray-600 border-gray-300 bg-white') +
-        '" style="' + (activeBrands.has(k) ? 'background:'+colors[k] : '') + '">' + stats[k].name + '</button>'
-      ).join('');
-
-      // SVG bar chart — GROSS und gut lesbar
-      const abArr = brandKeys.filter(k=>activeBrands.has(k));
-      const barW = Math.max(80, Math.floor(2000 / (months.length * Math.max(1,abArr.length))) - 4);
-      const maxVal = Math.max(1, ...abArr.flatMap(k=>
-        (PD.timeline[k]||[]).map(x=>x.total)
-      ));
-      const chartH = 800;
-      const groupW = barW * abArr.length + 30;
-      const svgW = Math.max(1600, 120 + months.length * groupW);
-      const svgTotalH = chartH + 160;
-      // SVG mit fixer Pixelgröße (nicht skalierend), Container scrollt horizontal
-      let svg = '<svg viewBox="0 0 '+svgW+' '+svgTotalH+'" width="'+svgW+'" height="'+svgTotalH+'" style="display:block;min-height:'+svgTotalH+'px" xmlns="http://www.w3.org/2000/svg">';
-      svg += '<rect width="'+svgW+'" height="'+svgTotalH+'" fill="white" rx="8"/>';
-      // Y-axis gridlines + labels
-      for (let i=0; i<=5; i++) {
-        const y = 30 + chartH - (i/5)*chartH;
-        const val = Math.round(maxVal * i/5);
-        svg += '<line x1="80" y1="'+y+'" x2="'+(svgW-20)+'" y2="'+y+'" stroke="#e5e7eb" stroke-width="1"/>';
-        svg += '<text x="72" y="'+(y+6)+'" text-anchor="end" fill="#6b7280" font-size="15" font-weight="500">'+val+'</text>';
-      }
-      // Bars per month
-      months.forEach((m, mi) => {
-        const x0 = 100 + mi * groupW;
-        abArr.forEach((k, ki) => {
-          const entry = (PD.timeline[k]||[]).find(x=>x.m===m);
-          const val = entry ? entry.total : 0;
-          const h = Math.max(val > 0 ? 25 : 0, (val / maxVal) * chartH);
-          const x = x0 + ki * barW;
-          const y = 30 + chartH - h;
-          svg += '<rect x="'+x+'" y="'+y+'" width="'+(barW-4)+'" height="'+h+'" fill="'+colors[k]+'" opacity="0.9" rx="4">';
-          svg += '<title>'+stats[k].name+' '+m+': '+val+' Artikel</title></rect>';
-          if (val > 0) svg += '<text x="'+(x+(barW-4)/2)+'" y="'+(y-10)+'" text-anchor="middle" fill="'+colors[k]+'" font-size="16" font-weight="700">'+val+'</text>';
-        });
-        // Month label
-        const lx = x0 + abArr.length*barW/2;
-        const ly = 30 + chartH + 35;
-        svg += '<text x="'+lx+'" y="'+ly+'" text-anchor="middle" fill="#374151" font-size="15" font-weight="600" transform="rotate(-35,'+lx+','+ly+')">'+m+'</text>';
-      });
-      // Legend at bottom
-      abArr.forEach((k, i) => {
-        const lx = 100 + i * 180;
-        const ly = svgTotalH - 20;
-        svg += '<rect x="'+lx+'" y="'+(ly-16)+'" width="20" height="20" fill="'+colors[k]+'" rx="4"/>';
-        svg += '<text x="'+(lx+26)+'" y="'+ly+'" fill="#374151" font-size="15" font-weight="600">'+stats[k].name+'</text>';
-      });
-      svg += '</svg>';
-      chartDiv.innerHTML = svg;
-    }
-    window.togglePressBrand = function(k) {
-      if (activeBrands.has(k)) activeBrands.delete(k); else activeBrands.add(k);
-      renderTimeline();
-    };
-    renderTimeline();
-  }
 
   // 3) Themen-Matrix
   const matrixHead = document.getElementById('pressTopicMatrixHead');
@@ -2340,11 +2258,12 @@ function buildGeoTab() {
   const ergo = data.totals_ranking.find(r => r.name === 'ERGO');
   const top = data.totals_ranking[0];
   const ergoRank = data.totals_ranking.findIndex(r => r.name === 'ERGO') + 1;
+  if (!ergo) { document.getElementById('geoKpiRow').innerHTML = '<p class="text-red-500 col-span-4">ERGO nicht im Ranking gefunden</p>'; return; }
   const kpis = [
-    { val: (ergo.share_of_voice * 100).toFixed(1) + '%', label: 'Share of Voice ERGO', color: '#DC0028' },
-    { val: ergo.avg_rank.toFixed(2), label: 'Ø Rang in LLM-Antworten', color: '#003C78' },
+    { val: ((ergo.share_of_voice || 0) * 100).toFixed(1) + '%', label: 'Share of Voice ERGO', color: '#DC0028' },
+    { val: ergo.avg_rank != null ? ergo.avg_rank.toFixed(2) : 'n/a', label: 'Ø Rang in LLM-Antworten', color: '#003C78' },
     { val: '#' + ergoRank, label: 'Position ERGO im Ranking', color: ergoRank <= 1 ? '#10B981' : (ergoRank <= 3 ? '#F0AD4E' : '#DC0028') },
-    { val: (ergo.citation_rate * 100).toFixed(0) + '%', label: 'ergo.de als Quelle zitiert', color: '#00BFA5' }
+    { val: ergo.citation_rate != null ? ((ergo.citation_rate * 100).toFixed(0) + '%') : 'n/a', label: 'ergo.de als Quelle zitiert', color: '#00BFA5' }
   ];
   const kRow = document.getElementById('geoKpiRow');
   if (kRow) kRow.innerHTML = kpis.map(k => `
@@ -2362,10 +2281,10 @@ function buildGeoTab() {
       h += `<tr class="border-b hover:bg-gray-50 ${rowCls}">
         <td class="px-3 py-2">${i+1}</td>
         <td class="px-3 py-2"><span style="color:${GEO_BRAND_COLORS[r.name] || '#666'};font-weight:bold">${r.name}</span></td>
-        <td class="text-right px-3 py-2">${r.mentions}</td>
-        <td class="text-right px-3 py-2">${(r.share_of_voice*100).toFixed(1)}%</td>
-        <td class="text-right px-3 py-2">${r.avg_rank.toFixed(2)}</td>
-        <td class="text-right px-3 py-2">${(r.citation_rate*100).toFixed(0)}%</td>
+        <td class="text-right px-3 py-2">${r.mentions || 0}</td>
+        <td class="text-right px-3 py-2">${((r.share_of_voice||0)*100).toFixed(1)}%</td>
+        <td class="text-right px-3 py-2">${r.avg_rank != null ? r.avg_rank.toFixed(2) : 'n/a'}</td>
+        <td class="text-right px-3 py-2">${r.citation_rate != null ? ((r.citation_rate*100).toFixed(0)+'%') : 'n/a'}</td>
       </tr>`;
     });
     h += '</tbody>';
@@ -2435,7 +2354,7 @@ function buildGeoTab() {
       const ergoRank = data.totals_ranking.findIndex(r => r.name === 'ERGO') + 1;
       const totalBrands = data.totals_ranking.length;
       const ergoSoV = (ergo.share_of_voice * 100).toFixed(1);
-      const ergoRankAvg = ergo.avg_rank.toFixed(1);
+      const ergoRankAvg = ergo.avg_rank != null ? ergo.avg_rank.toFixed(1) : 'n/a';
       const topName = top.name;
       const topSoV = (top.share_of_voice * 100).toFixed(1);
       const products = Object.keys(data.products || {}).length;
@@ -2444,7 +2363,7 @@ function buildGeoTab() {
       msg += `\n• Position: ERGO liegt auf Rang ${ergoRank} von ${totalBrands} Anbietern`;
       msg += `\n• Share of Voice: ${ergoSoV}% (Marktführer ${topName}: ${topSoV}%)`;
       msg += `\n• Durchschnittlicher Rang in Antworten: ${ergoRankAvg}`;
-      msg += `\n• Citation-Rate (ergo.de als Quelle): ${(ergo.citation_rate*100).toFixed(0)}%`;
+      msg += `\n• Citation-Rate (ergo.de als Quelle): ${ergo.citation_rate != null ? ((ergo.citation_rate*100).toFixed(0)+'%') : 'n/a'}`;
       msg += `\n\nProdukt-Highlights:`;
       Object.entries(data.products || {}).forEach(([pid, p]) => {
         // Aggregiere LLMs

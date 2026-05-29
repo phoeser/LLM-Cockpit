@@ -2,8 +2,9 @@
 Holt GEO Page-Tracker Events aus dem GEO-Repo via GitHub API
 und fuegt sie als page_change / page_new Events in shared/events.jsonl ein.
 
-So fliessen die feingranularen Seiten-Aenderungen (450+ URLs, taeglicher
-Text-Vergleich) aus dem GEO-Visibility-Tool in die Cockpit-Korrelationsanalyse.
+Zusaetzlich wird data/geo_page_changes.json mit vollen Diff-Details erzeugt
+und als GEO_PAGE_CHANGES in dashboard_template.html injiziert (fuer den
+Content-GEO Tab).
 
 Ablauf:
 1. GitHub Trees API: hole rekursiven Dateibaum des GEO-Repos
@@ -12,6 +13,8 @@ Ablauf:
 4. Parse Events, mappe Typen (change -> page_change, first_seen -> page_new)
 5. Dedupliziere gegen bestehende shared/events.jsonl
 6. Haenge neue Events an
+7. Schreibe data/geo_page_changes.json mit vollen Diff-Details
+8. Injiziere GEO_PAGE_CHANGES in dashboard_template.html
 """
 import base64
 import json
@@ -28,10 +31,15 @@ from pathlib import Path
 GEO_REPO = os.environ.get("GEO_REPO", "phoeser/geo-visibility-tool")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 EVENTS_FILE = Path(os.environ.get("EVENTS_FILE", "shared/events.jsonl"))
+PAGE_CHANGES_FILE = Path("data/geo_page_changes.json")
+TEMPLATE_FILE = Path("dashboard_template.html")
 
-# Nur Events der letzten N Tage importieren (aeltere sind fuer Korrelation
-# nicht mehr relevant und wuerden die Datei unnoetig aufblaehen)
+# Nur Events der letzten N Tage importieren
 MAX_AGE_DAYS = 180
+# Fuer den Dashboard-Tab: nur letzte 90 Tage mit vollen Details
+DETAIL_AGE_DAYS = 90
+# Max Diff-Zeilen pro Event (verhindert Datei-Explosion)
+MAX_DIFF_LINES = 50
 
 # Rauschfilter: identisch zum GEO page_tracker
 NOISE_SIMILARITY = 0.97
@@ -97,17 +105,28 @@ def _canonicalize_brand(raw: str) -> str:
     """Wandelt Brand-String in kanonischen Cockpit-Namen um."""
     if not raw:
         return "Unknown"
-    # Direkt-Match?
     if raw in BRAND_CANONICALIZE.values():
         return raw
-    # Slug-Match?
     slug = re.sub(r"[^a-z0-9]+", "_", raw.lower()).strip("_")
     return BRAND_CANONICALIZE.get(slug, raw)
 
 
+def _is_noise(ev: dict) -> bool:
+    """Rauschfilter: identisch zum GEO page_tracker."""
+    if ev.get("event_type") != "change":
+        return False
+    sim = ev.get("similarity")
+    added = ev.get("added_lines_count") or len(ev.get("added_lines") or [])
+    removed = ev.get("removed_lines_count") or len(ev.get("removed_lines") or [])
+    return (
+        isinstance(sim, (int, float))
+        and sim >= NOISE_SIMILARITY
+        and (added + removed) <= NOISE_MAX_LINES
+    )
+
+
 def load_existing_keys(events_file: Path) -> set:
-    """Laedt existierende Event-Keys fuer Deduplizierung.
-    Key = timestamp|url|event_type — genuegt fuer Eindeutigkeit."""
+    """Laedt existierende Event-Keys fuer Deduplizierung."""
     keys = set()
     if not events_file.exists():
         return keys
@@ -117,7 +136,6 @@ def load_existing_keys(events_file: Path) -> set:
             continue
         try:
             ev = json.loads(line)
-            # Cockpit-Events: url ist top-level oder in detail
             url = ev.get("url") or (ev.get("detail") or {}).get("url") or ""
             key = f"{ev.get('timestamp', '')}|{url}|{ev.get('event_type', '')}"
             keys.add(key)
@@ -130,7 +148,6 @@ def fetch_geo_page_events() -> list:
     """Holt alle Page-Events aus dem GEO-Repo via GitHub API."""
     print(f"[merge_geo] Hole Dateibaum von {GEO_REPO} ...")
 
-    # 1. Rekursiven Tree holen
     tree_url = f"https://api.github.com/repos/{GEO_REPO}/git/trees/main?recursive=1"
     try:
         tree = _api(tree_url)
@@ -138,7 +155,6 @@ def fetch_geo_page_events() -> list:
         print(f"[merge_geo] FEHLER beim Laden des Trees: {e}")
         return []
 
-    # 2. events.jsonl Dateien filtern
     event_files = []
     for item in tree.get("tree", []):
         path = item.get("path", "")
@@ -153,12 +169,10 @@ def fetch_geo_page_events() -> list:
     if not event_files:
         return []
 
-    # 3. Cutoff berechnen
     cutoff = (datetime.now(timezone.utc) - timedelta(days=MAX_AGE_DAYS)).strftime(
         "%Y-%m-%dT"
     )
 
-    # 4. Jede events.jsonl laden und parsen
     all_events = []
     errors = 0
     for item in event_files:
@@ -191,30 +205,19 @@ def fetch_geo_page_events() -> list:
 
 
 def convert_to_cockpit_format(geo_events: list) -> list:
-    """Konvertiert GEO Page-Events ins Cockpit event_emitter Format."""
+    """Konvertiert GEO Page-Events ins Cockpit event_emitter Format (fuer events.jsonl)."""
     converted = []
     for ev in geo_events:
         etype = ev.get("event_type")
         if etype not in ("change", "first_seen"):
             continue
-
-        # Rauschfilter (identisch zum GEO page_tracker)
-        if etype == "change":
-            sim = ev.get("similarity")
-            added = ev.get("added_lines_count") or 0
-            removed = ev.get("removed_lines_count") or 0
-            if (
-                isinstance(sim, (int, float))
-                and sim >= NOISE_SIMILARITY
-                and (added + removed) <= NOISE_MAX_LINES
-            ):
-                continue
+        if _is_noise(ev):
+            continue
 
         brand = _canonicalize_brand(ev.get("brand", ""))
         cockpit_type = "page_change" if etype == "change" else "page_new"
         url = ev.get("url", "")
 
-        # Magnitude: bei change basierend auf Aenderungsstaerke
         if etype == "change":
             sim = ev.get("similarity") or 0.0
             magnitude = round(min(max(1.0 - sim, 0.1), 2.0), 3)
@@ -233,76 +236,66 @@ def convert_to_cockpit_format(geo_events: list) -> list:
             "detail": {
                 "url": url,
                 "similarity": ev.get("similarity"),
-                "added_lines": ev.get("added_lines_count") or 0,
-                "removed_lines": ev.get("removed_lines_count") or 0,
+                "added_lines": ev.get("added_lines_count") or len(ev.get("added_lines") or []),
+                "removed_lines": ev.get("removed_lines_count") or len(ev.get("removed_lines") or []),
                 "classification": ev.get("classification"),
                 "summary": ev.get("summary"),
             },
         }
         if url:
             cockpit_event["url"] = url
-
         converted.append(cockpit_event)
     return converted
 
 
-def main():
-    print("=" * 60)
-    print("[merge_geo] GEO Page-Events -> Cockpit events.jsonl")
-    print("=" * 60)
+def build_detailed_changes(geo_events: list) -> list:
+    """Baut detaillierte Aenderungsliste MIT vollen Diff-Zeilen fuer den Dashboard-Tab."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=DETAIL_AGE_DAYS)).strftime(
+        "%Y-%m-%dT"
+    )
+    changes = []
+    for ev in geo_events:
+        etype = ev.get("event_type")
+        if etype not in ("change", "first_seen"):
+            continue
+        ts = ev.get("timestamp", "")
+        if ts < cutoff:
+            continue
+        if _is_noise(ev):
+            continue
 
-    if not GITHUB_TOKEN:
-        print("[merge_geo] WARNUNG: Kein GITHUB_TOKEN — nur public repos moeglich")
+        brand = _canonicalize_brand(ev.get("brand", ""))
 
-    # 1. GEO Events holen
-    geo_events = fetch_geo_page_events()
-    if not geo_events:
-        print("[merge_geo] Keine Events gefunden — fertig.")
-        return
+        # Diff-Zeilen mit Limit
+        added = (ev.get("added_lines") or [])[:MAX_DIFF_LINES]
+        removed = (ev.get("removed_lines") or [])[:MAX_DIFF_LINES]
+        total_added = ev.get("added_lines_count") or len(ev.get("added_lines") or [])
+        total_removed = ev.get("removed_lines_count") or len(ev.get("removed_lines") or [])
 
-    # 2. Ins Cockpit-Format konvertieren
-    cockpit_events = convert_to_cockpit_format(geo_events)
-    print(f"[merge_geo] {len(cockpit_events)} Events nach Rauschfilter")
+        changes.append({
+            "ts": ts,
+            "t": "page_change" if etype == "change" else "page_new",
+            "b": brand,
+            "u": ev.get("url", ""),
+            "sim": ev.get("similarity"),
+            "al": added,
+            "rl": removed,
+            "ac": total_added,
+            "rc": total_removed,
+            "s": ev.get("summary"),
+            "cl": ev.get("classification"),
+            "p": ev.get("product_ids"),
+        })
 
-    # 3. Deduplizieren
-    existing_keys = load_existing_keys(EVENTS_FILE)
-    new_events = []
-    for ev in cockpit_events:
-        url = ev.get("url") or (ev.get("detail") or {}).get("url") or ""
-        key = f"{ev['timestamp']}|{url}|{ev['event_type']}"
-        if key not in existing_keys:
-            new_events.append(ev)
-            existing_keys.add(key)
-
-    print(f"[merge_geo] {len(new_events)} neue Events (nach Deduplizierung)")
-
-    if not new_events:
-        print("[merge_geo] Alles bereits vorhanden — fertig.")
-        return
-
-    # 4. An events.jsonl anhaengen
-    EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(EVENTS_FILE, "a", encoding="utf-8") as f:
-        for ev in sorted(new_events, key=lambda e: e.get("timestamp", "")):
-            f.write(json.dumps(ev, ensure_ascii=False) + "\n")
-
-    print(f"[merge_geo] {len(new_events)} Events angehaengt an {EVENTS_FILE}")
-
-    # Stats
-    brands = {}
-    for ev in new_events:
-        b = ev.get("brand", "?")
-        brands[b] = brands.get(b, 0) + 1
-    for b, c in sorted(brands.items(), key=lambda x: -x[1]):
-        print(f"  {b}: {c} Events")
-
-    types = {}
-    for ev in new_events:
-        t = ev.get("event_type", "?")
-        types[t] = types.get(t, 0) + 1
-    for t, c in sorted(types.items()):
-        print(f"  {t}: {c}")
+    changes.sort(key=lambda e: e.get("ts", ""), reverse=True)
+    return changes
 
 
-if __name__ == "__main__":
-    main()
+def inject_into_dashboard(changes: list):
+    """Injiziert GEO_PAGE_CHANGES in dashboard_template.html."""
+    if not TEMPLATE_FILE.exists():
+        print("[merge_geo] dashboard_template.html nicht gefunden — ueberspringe Injection")
+        return False
+
+    content = TEMPLATE_FILE.read_text(encoding="utf-8")
+    marker = "const GEO_PAGE_CHANGES 

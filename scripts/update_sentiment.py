@@ -165,7 +165,7 @@ PRODUCT_CATEGORIES = [
         "key": "sterbegeld",
         "name": "Sterbegeldversicherung",
         "check24_path": None,
-        "fb_rating_id": None,
+        "fb_rating_id": "hbs_stg",
     },
     {
         "key": "risikoleben",
@@ -1770,4 +1770,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    ma

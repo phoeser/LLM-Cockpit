@@ -2,6 +2,8 @@ name: Nightly Dashboard Update
 
 on:
   schedule:
+    # 01:00 UTC (03:00 MESZ) - VOR dem GEO-Workflow (03:00 UTC),
+    # damit events.jsonl fuer Korrelation bereitsteht.
     - cron: '0 1 * * *'
   workflow_dispatch:
 
@@ -12,18 +14,12 @@ concurrency:
 permissions:
   contents: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout LLM-Cockpit-Repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,7 +44,6 @@ jobs:
       - name: Aktualisiere Sentiment-Daten (4 Quellen)
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/update_sentiment.py
 
       - name: Aktualisiere Presse-Daten (Google News RSS)
@@ -59,28 +54,15 @@ jobs:
         run: python scripts/update_domain_footprint.py
         continue-on-error: true
 
-      - name: GEO Page-Events importieren (max 3 Min)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
-          GEO_REPO: phoeser/geo-visibility-tool
-        run: timeout 180 python scripts/merge_geo_page_events.py || echo "GEO-Import Timeout"
-        continue-on-error: true
-
-      - name: Externe Ratings aktualisieren (Finanztip)
-        run: python scripts/update_ratings.py
-        continue-on-error: true
-
-      - name: Daten-Dateien committen und pushen
+      - name: Daten-Dateien zurueck in main committen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A data/ shared/ domain_footprint_data* dashboard_template.html 2>/dev/null || true
-          git diff --cached --quiet && echo "Keine Aenderungen" && exit 0
-          git commit -m "data: nightly update $(date +%Y-%m-%d)"
-          # Robuster Push: fetch + rebase + push, bei Conflict force
-          git fetch origin main
-          git rebase origin/main || (git rebase --abort && git push origin main --force-with-lease)
-          git push origin main || git push origin main --force-with-lease
+          # Review-History + Events-Timeline committen
+          git add data/review_history.json 2>/dev/null || true
+          git add shared/events.jsonl 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: update review_history + events"
+          git push origin main
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy

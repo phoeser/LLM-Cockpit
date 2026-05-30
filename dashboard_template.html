@@ -97,6 +97,7 @@
       <button data-tab="presse" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Pressemitteilungen</button>
       <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
       <button data-tab="content-geo" class="tab-btn">Content (GEO)</button>
+      <button data-tab="preisvergleich" class="tab-btn">Preisvergleich</button>
     </div>
   </div>
 </nav>
@@ -843,6 +844,20 @@
       </div>
       <div id="cgKpiRow" class="kpi-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
       <div id="cgEventsContainer"></div>
+    </div>
+
+  
+    <!-- ============ PREISVERGLEICH TAB ============ -->
+    <div id="tab-preisvergleich" class="tab-pane" style="display:none;">
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h2 style="margin:0 0 .5rem">Preisvergleich (Check24)</h2>
+        <p class="hint">Guenstigste Monatsbeitraege pro Versicherer aus dem Check24 Vergleichsrechner.
+          3 Altersprofile (30, 50, 65 Jahre). ERGO ist farblich hervorgehoben. Sortiert nach Preis-Leistung.</p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.8rem;">
+          <label>Produkt: <select id="pvProductFilter"></select></label>
+        </div>
+      </div>
+      <div id="pvContent"></div>
     </div>
 
   </main>
@@ -2457,6 +2472,8 @@ function buildGeoTab() {
   const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];
   // GEO Page-Changes (volle Diff-Details fuer Content-Tab)
   const GEO_PAGE_CHANGES = window.GEO_PAGE_CHANGES || [];
+  // Preisvergleich-Daten (Check24, 3 Produkte x 3 Altersprofile)
+  const PRICE_DATA = window.PRICE_DATA || {};
 
   
     // === Drilldown Modal für Event-Kategorien ===
@@ -3223,6 +3240,118 @@ function buildContentGeoTab() {
   }
   bf.addEventListener('change',render);
   document.getElementById('cgTypeFilter').addEventListener('change',render);
+  render();
+}
+
+
+
+// ==================== PREISVERGLEICH TAB ====================
+function buildPreisvergleichTab() {
+  var PD = (typeof PRICE_DATA !== 'undefined') ? PRICE_DATA : {};
+  var products = PD.products || {};
+  var keys = Object.keys(products);
+  if (!keys.length) {
+    document.getElementById('pvContent').innerHTML = '<div class="card"><p class="hint">Keine Preisdaten vorhanden. Werden beim naechsten Nightly-Run geladen.</p></div>';
+    return;
+  }
+  var sel = document.getElementById('pvProductFilter');
+  keys.forEach(function(k) { var o = document.createElement('option'); o.value = k; o.text = products[k].name; sel.appendChild(o); });
+
+  function render() {
+    var pk = sel.value;
+    var prod = products[pk];
+    if (!prod) return;
+    var profiles = prod.profiles || {};
+    var profileKeys = Object.keys(profiles);
+    var html = '';
+
+    // Sammle alle Brands ueber alle Profile
+    var allBrands = {};
+    profileKeys.forEach(function(pkey) {
+      var brands = profiles[pkey].brands || {};
+      Object.keys(brands).forEach(function(bk) {
+        if (bk.startsWith('_other_')) return;
+        allBrands[bk] = brands[bk].c24_name || bk;
+      });
+    });
+    var brandKeys = Object.keys(allBrands);
+
+    // Tabelle bauen
+    html += '<div class="card" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.9rem;">';
+    html += '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">';
+    html += '<th style="text-align:left;padding:.6rem;">Versicherer</th>';
+    profileKeys.forEach(function(pkey) {
+      var p = profiles[pkey];
+      html += '<th style="text-align:right;padding:.6rem;">' + (p.label || pkey) + '</th>';
+    });
+    html += '<th style="text-align:center;padding:.6rem;">Bewertung</th>';
+    html += '<th style="text-align:center;padding:.6rem;">Preis-Leistung</th>';
+    html += '</tr></thead><tbody>';
+
+    // Zeilen sortiert nach Durchschnittspreis
+    var rows = [];
+    brandKeys.forEach(function(bk) {
+      var prices = [];
+      var grade = null, gradeLabel = null, custScore = null, custCount = null;
+      profileKeys.forEach(function(pkey) {
+        var b = (profiles[pkey].brands || {})[bk];
+        if (b) {
+          prices.push(b.price);
+          if (b.grade) { grade = b.grade; gradeLabel = b.grade_label; }
+          if (b.customer_score) { custScore = b.customer_score; custCount = b.customer_count; }
+        } else {
+          prices.push(null);
+        }
+      });
+      var avg = prices.filter(function(p){return p!==null;});
+      var avgPrice = avg.length ? avg.reduce(function(a,b){return a+b;},0) / avg.length : 999;
+      // Preis-Leistung Score (0-100): niedrigerer Preis + hoehere Bewertung = besser
+      var plScore = grade ? Math.round(Math.max(0, 100 - avgPrice * 0.5 + (grade - 5) * 5)) : null;
+      rows.push({bk: bk, name: allBrands[bk], prices: prices, grade: grade, gradeLabel: gradeLabel,
+        custScore: custScore, custCount: custCount, avgPrice: avgPrice, plScore: plScore});
+    });
+    rows.sort(function(a,b) { return (b.plScore||0) - (a.plScore||0); });
+
+    rows.forEach(function(r, idx) {
+      var isErgo = r.bk === 'ergo';
+      var bg = isErgo ? 'background:#fef2f2;font-weight:600;' : (idx%2===0 ? '' : 'background:#f8fafc;');
+      html += '<tr style="border-bottom:1px solid #e2e8f0;' + bg + '">';
+      html += '<td style="padding:.5rem .6rem;' + (isErgo?'color:#dc2626;':'') + '">' + r.name + (isErgo?' ●':'') + '</td>';
+      r.prices.forEach(function(p) {
+        if (p !== null) {
+          html += '<td style="text-align:right;padding:.5rem .6rem;">' + p.toFixed(2).replace('.',',') + ' €</td>';
+        } else {
+          html += '<td style="text-align:right;padding:.5rem;color:#d1d5db;">—</td>';
+        }
+      });
+      // Bewertung
+      if (r.grade) {
+        var gc = r.grade >= 9 ? '#059669' : (r.grade >= 7 ? '#2563eb' : (r.grade >= 5 ? '#d97706' : '#dc2626'));
+        html += '<td style="text-align:center;padding:.5rem;"><span style="background:' + gc + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:.8rem;font-weight:700;">' + r.grade.toFixed(1) + '</span>';
+        html += ' <span style="font-size:.75rem;color:#6b7280;">' + (r.gradeLabel||'') + '</span></td>';
+      } else {
+        html += '<td style="text-align:center;color:#d1d5db;">—</td>';
+      }
+      // Preis-Leistung
+      if (r.plScore !== null) {
+        var plc = r.plScore >= 70 ? '#059669' : (r.plScore >= 50 ? '#2563eb' : (r.plScore >= 30 ? '#d97706' : '#dc2626'));
+        html += '<td style="text-align:center;padding:.5rem;"><div style="background:#f1f5f9;border-radius:4px;overflow:hidden;height:20px;position:relative;">';
+        html += '<div style="background:' + plc + ';height:100%;width:' + r.plScore + '%;"></div>';
+        html += '<span style="position:absolute;top:1px;left:50%;transform:translateX(-50%);font-size:.7rem;font-weight:700;color:#334155;">' + r.plScore + '</span></div></td>';
+      } else {
+        html += '<td style="text-align:center;color:#d1d5db;">—</td>';
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // Stand
+    html += '<p class="hint" style="margin-top:.5rem;">Stand: ' + (PD.as_of || '?') + ' | Quelle: Check24 Vergleichsrechner</p>';
+
+    document.getElementById('pvContent').innerHTML = html;
+  }
+
+  sel.addEventListener('change', render);
   render();
 }
 

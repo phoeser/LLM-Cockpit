@@ -18,6 +18,7 @@ env:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout LLM-Cockpit-Repo
         uses: actions/checkout@v4
@@ -60,15 +61,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
           GEO_REPO: phoeser/geo-visibility-tool
-        run: python scripts/merge_geo_page_events.py
+        run: timeout 180 python scripts/merge_geo_page_events.py || echo "GEO-Import Timeout (3 min) - uebersprungen"
         continue-on-error: true
 
       - name: Externe Ratings aktualisieren (Finanztip + manuelle Quellen)
         run: python scripts/update_ratings.py
-        continue-on-error: true
-
-      - name: Preisvergleich crawlen (Check24, 3 Produkte x 3 Altersprofile)
-        run: python scripts/update_prices.py
         continue-on-error: true
 
       - name: Daten-Dateien zurueck in main committen

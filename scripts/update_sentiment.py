@@ -1265,9 +1265,22 @@ def main():
                     print("    [C24] %s: %.1f (%s)" % (brand["name"], c24["score"], c24.get("count", "?")))
                 product_results[cat_key]["brands"].setdefault(brand["key"], {})["check24"] = c24 or {"score": None, "count": None}
         else:
-            print("  Check24: nicht verfuegbar fuer %s" % cat_name)
+            print("  Check24: keine Einzelseiten fuer %s" % cat_name)
             for brand in BRANDS:
                 product_results[cat_key]["brands"].setdefault(brand["key"], {})["check24"] = {"score": None, "count": None}
+
+        # Check24 Comparison: Kundenbewertungen aus dem Vergleichsrechner (Playwright)
+        c24_comp_sub = cat.get("check24_comparison")
+        if c24_comp_sub:
+            print("  Crawle Check24 Vergleichsrechner (%s)..." % c24_comp_sub)
+            c24_comp = crawl_check24_comparison(c24_comp_sub)
+            for brand in BRANDS:
+                bk = brand["key"]
+                existing = product_results[cat_key]["brands"].get(bk, {}).get("check24", {})
+                comp = c24_comp.get(bk, {})
+                if comp.get("score") and (not existing.get("score") or existing.get("error")):
+                    product_results[cat_key]["brands"].setdefault(bk, {})["check24"] = comp
+                    print("    [C24 Comp] %s: %.1f/5 (%d Reviews)" % (brand["name"], comp["score"], comp["count"]))
 
         # Franke & Bornberg fuer dieses Produkt
         if cat.get("fb_rating_id"):

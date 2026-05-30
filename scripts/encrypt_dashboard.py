@@ -314,9 +314,13 @@ def main():
         sys.exit(1)
 
     # Dashboard-Template lesen
-    template_path = Path("dashboard_template.html")
+    # v3: bevorzugt das statische, fetch()-basierte dashboard_v3.html.
+    # Fallback auf das alte (injizierte) dashboard_template.html, falls v3 fehlt.
+    template_path = Path("dashboard_v3.html")
     if not template_path.exists():
-        print("FEHLER: dashboard_template.html nicht gefunden")
+        template_path = Path("dashboard_template.html")
+    if not template_path.exists():
+        print("FEHLER: weder dashboard_v3.html noch dashboard_template.html gefunden")
         sys.exit(1)
 
     print(f"Lese {template_path} ...")

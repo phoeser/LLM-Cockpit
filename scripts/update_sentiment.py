@@ -2024,6 +2024,22 @@ def main():
         try:
             from shared.event_emitter import load_events
             all_events = load_events(events_file, max_age_days=90)
+            # Events fuer Dashboard limitieren: max 50 pro Typ (sonst wird Template zu gross)
+            MAX_PER_TYPE = 50
+            by_type = {}
+            for ev in all_events:
+                t = ev.get("event_type", "?")
+                if t not in by_type:
+                    by_type[t] = []
+                by_type[t].append(ev)
+            limited = []
+            for t, evs in by_type.items():
+                # Neueste zuerst, dann limitieren
+                evs.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+                limited.extend(evs[:MAX_PER_TYPE])
+            limited.sort(key=lambda e: e.get("timestamp", ""))
+            all_events = limited
+            print("  Events limitiert: %d -> %d (max %d/Typ)" % (sum(len(v) for v in by_type.values()), len(limited), MAX_PER_TYPE))
             if all_events:
                 events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
                 events_block = "  window.CORRELATION_EVENTS = %s;" % events_json

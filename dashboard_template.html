@@ -679,7 +679,7 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h2 class="text-2xl font-bold text-ergo-dark mb-2">🔗 Korrelation: Events × LLM-Sichtbarkeit</h2>
-    <p class="text-sm text-gray-600 mb-4">Analyse der letzten 14 Tage: Welche Veränderungen beeinflussen die LLM-Sichtbarkeit?</p>
+    <p class="text-sm text-gray-600 mb-4">Analyse aller verfuegbaren Daten: Welche Veränderungen beeinflussen die LLM-Sichtbarkeit?</p>
     <div id="corrKPIs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
   </div>
 
@@ -2623,6 +2623,10 @@ function buildGeoTab() {
     const brands = [...new Set(events14.map(e => e.brand))].sort((a,b) => a==='ERGO'?-1:b==='ERGO'?1:a.localeCompare(b));
     const activeTypes = [...new Set(nonSov.map(e => e.event_type))].sort();
 
+    // Volle Datensaetze fuer Impact-Analyse (gesamter Zeitraum, nicht nur 14 Tage)
+    const allSovFull = CORRELATION_EVENTS.filter(e => e.event_type === 'sov_change');
+    const nonSovFull = CORRELATION_EVENTS.filter(e => e.event_type !== 'sov_change');
+
     // ── 1. KPI-Cards ──
     const kpiEl = document.getElementById('corrKPIs');
     if (kpiEl) {
@@ -2772,7 +2776,7 @@ function buildGeoTab() {
     const impTabsEl = document.getElementById('corrImpactBrandTabs');
     if (impEl) {
       // Brand-Liste aus ALLEN sov_change Events (nicht nur share_of_voice_pct)
-      const impBrands = [...new Set(allSov.map(e => e.brand))].sort();
+      const impBrands = [...new Set(allSovFull.map(e => e.brand))].sort();
 
       // Delta normalisieren je nach Metric-Typ
       function calcSovDelta(sov) {
@@ -2786,10 +2790,10 @@ function buildGeoTab() {
 
       // Render-Funktion fuer eine Brand-Auswahl
       function renderImpactForBrand(selectedBrand) {
-        const LOOKBACK = 180;
+        const LOOKBACK = 30;
         const LOOKBACK_MS = LOOKBACK * 86400000;
-        const filteredSov = selectedBrand === 'Alle' ? allSov : allSov.filter(e => e.brand === selectedBrand);
-        const filteredNonSov = selectedBrand === 'Alle' ? nonSov : nonSov.filter(e => e.brand === selectedBrand);
+        const filteredSov = selectedBrand === 'Alle' ? allSovFull : allSovFull.filter(e => e.brand === selectedBrand);
+        const filteredNonSov = selectedBrand === 'Alle' ? nonSovFull : nonSovFull.filter(e => e.brand === selectedBrand);
 
         if (filteredSov.length === 0 || filteredNonSov.length === 0) {
           impEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p class="text-sm">Keine Daten fuer ' + selectedBrand + ' im Analysezeitraum.</p></div>';
@@ -2856,14 +2860,14 @@ function buildGeoTab() {
             ih += '</div></div>';
           });
           ih += '</div>';
-          ih += '<div class="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500"><strong>Methodik:</strong> Fuer jede der ' + filteredSov.length + ' SoV-Messungen' + (selectedBrand !== 'Alle' ? ' von ' + selectedBrand : '') + ' wird geprueft, welche Aktivitaeten in den 180 Tagen davor stattfanden. Der angezeigte Wert ist das durchschnittliche SoV-Delta pro Messung, bei der dieser Event-Typ vorausging. <span class="text-gray-400">Doppelklick fuer Details.</span></div>';
+          ih += '<div class="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500"><strong>Methodik:</strong> Fuer jede der ' + filteredSov.length + ' SoV-Messungen (gesamter Zeitraum)' + (selectedBrand !== 'Alle' ? ' von ' + selectedBrand : '') + ' wird geprueft, welche Aktivitaeten in den 30 Tagen davor stattfanden. Der angezeigte Wert ist das durchschnittliche SoV-Delta pro Messung, bei der dieser Event-Typ vorausging. <span class="text-gray-400">Doppelklick fuer Details.</span></div>';
           impEl.innerHTML = ih;
         } else {
           impEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p class="text-sm">Keine Aktivitaeten im Lookback-Fenster fuer ' + selectedBrand + '.</p></div>';
         }
       }
 
-      if (allSov.length > 0 && nonSov.length > 0) {
+      if (allSovFull.length > 0 && nonSovFull.length > 0) {
         // Brand-Reiter rendern
         if (impTabsEl) {
           let tabsHtml = '<button class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-ergo-red text-white" onclick="window._impactBrandSelect(this,\'Alle\')">Alle</button>';
@@ -2881,7 +2885,7 @@ function buildGeoTab() {
         // Initial: Alle
         renderImpactForBrand('Alle');
       } else {
-        let msg = allSov.length === 0 ? 'Noch keine SoV-Messungen vorhanden.' : 'Noch keine Aktivitaeten erfasst.';
+        let msg = allSovFull.length === 0 ? 'Noch keine SoV-Messungen vorhanden.' : 'Noch keine Aktivitaeten erfasst.';
         impEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p class="text-lg mb-2">🎯 ' + msg + '</p><p class="text-sm">Impact-Analyse startet nach dem naechsten GEO-Run mit erfassten Events.</p></div>';
       }
     }

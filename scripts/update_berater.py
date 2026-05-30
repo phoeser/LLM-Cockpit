@@ -11,6 +11,7 @@ import re
 import random
 import sys
 import time
+from pathlib import Path
 
 # Event-Emitter für Korrelations-Engine
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -211,6 +212,7 @@ class SimpleHTMLAnalyzer(HTMLParser):
         self.has_google_maps = False
         self.img_count = 0
         self.product_keywords = []
+        self.product_keyword_counts = {}
         self._in_title = False
         self._in_h1 = False
         self._current_text = ""
@@ -252,7 +254,9 @@ class SimpleHTMLAnalyzer(HTMLParser):
             "reise": ["reiseversicherung", "reisekranken"],
         }
         for prod, kws in prod_kw.items():
-            if any(kw in self._raw_html for kw in kws):
+            cnt = sum(self._raw_html.count(kw) for kw in kws)
+            self.product_keyword_counts[prod] = cnt
+            if cnt > 0:
                 self.product_keywords.append(prod)
         try:
             self.feed(html)
@@ -383,6 +387,7 @@ def crawl_homepage(homepage):
             "has_faq": analyzer.has_faq,
             "has_google_maps": analyzer.has_google_maps,
             "product_keywords": analyzer.product_keywords,
+            "product_keyword_counts": analyzer.product_keyword_counts,
             "page_size_kb": round(len(raw) / 1024, 1),
         }
         classification = classify_page_type(result)
@@ -405,7 +410,7 @@ def run_typology(rows, sample_size=80):
     std = [r for r in with_hp if r not in rd and r not in dkv]
     random.seed(42)
     sample = []
-    for group, name, quota in [(rd, "rd", 15), (dkv, "dkv", 15), (std, "standard", 50)]:
+    for group, name, quota in [(rd, "rd", 25), (dkv, "dkv", 25), (std, "standard", 100)]:
         n = min(quota, len(group))
         sample.extend(random.sample(group, n))
     print("\n=== Seiten-Typologisierung: %d Seiten crawlen ===" % len(sample))
@@ -462,7 +467,25 @@ def run_typology(rows, sample_size=80):
         avg_links += r.get("link_count", 0)
         avg_images += r.get("img_count", 0)
         avg_page_size += r.get("page_size_kb", 0)
+    # Kannibalisierungs-Aggregation: Produkt-Keyword-Nennungen je Seite
+    prod_mentions = {}
+    prod_pages = {}
+    for r in ok:
+        for prod, cnt in (r.get('product_keyword_counts') or {}).items():
+            prod_mentions[prod] = prod_mentions.get(prod, 0) + cnt
+            if cnt > 0:
+                prod_pages[prod] = prod_pages.get(prod, 0) + 1
     n_ok = max(len(ok), 1)
+    _base = len(with_hp)
+    cannibalization = {}
+    for prod in prod_mentions:
+        pw = prod_pages.get(prod, 0)
+        cannibalization[prod] = {
+            'avg_mentions': round(prod_mentions[prod] / n_ok, 1),
+            'pages_with': pw,
+            'pct': round(pw * 100.0 / n_ok, 1),
+            'projection': round((pw / n_ok) * _base),
+        }
     typology = {
         "sample_size": len(sample),
         "crawled_ok": len(ok),
@@ -470,6 +493,8 @@ def run_typology(rows, sample_size=80):
         "type_distribution": dict(sorted(type_counts.items(), key=lambda kv: -kv[1])),
         "feature_frequency": dict(sorted(feature_counts.items(), key=lambda kv: -kv[1])),
         "product_keyword_frequency": dict(sorted(product_counts.items(), key=lambda kv: -kv[1])),
+        "cannibalization": dict(sorted(cannibalization.items(), key=lambda kv: -kv[1]["avg_mentions"])),
+        "cannibalization_base": _base,
         "seo_stats": seo_stats,
         "avg_links": round(avg_links / n_ok, 1),
         "avg_images": round(avg_images / n_ok, 1),

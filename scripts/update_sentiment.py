@@ -853,41 +853,50 @@ def crawl_check24_reviews(product_subdomain, brand_keys, last_crawl_date=None):
         return {}
     print("  [C24 Reviews] Lade %s ..." % product_subdomain)
     all_reviews = {}
-    JS_EXTRACT = """() => {
-        var reviews = [];
-        document.querySelectorAll("*").forEach(function(el) {
-            if (el.children.length > 0) return;
-            var t = el.textContent.trim();
-            if (!t.match(/^\\d{2}\\.\\d{2}\\.\\d{4}$/)) return;
-            if (!el.offsetParent) return;
-            var block = el.parentElement;
-            for (var i = 0; i < 4; i++) {
-                if (!block) break;
-                var bt = block.textContent.trim();
-                if (bt.length > 20 && bt.length < 1000) {
-                    var nameM = bt.match(/([A-Z\\u00C4\\u00D6\\u00DC][a-z\\u00E4\\u00F6\\u00FC\\u00DF]+\\s+[A-Z\\u00C4\\u00D6\\u00DC]\\.)/);
-                    var parts = bt.split(t);
-                    var txt = parts.length > 1 ? parts[parts.length-1].trim() : "";
-                    txt = txt.replace(/vorherige.*$/i,"").replace(/n.chste.*$/i,"").trim();
-                    if (txt.length > 3 && txt.length < 500) {
-                        reviews.push({author: nameM?nameM[1]:"", date: t, text: txt});
-                    }
-                    break;
-                }
-                block = block.parentElement;
-            }
-        });
-        var seen = {};
-        return reviews.filter(function(r) {
-            var k = r.date + r.text.substring(0,30);
-            if (seen[k]) return false;
-            seen[k] = true;
-            return true;
-        });
-    }"""
-    BRAND_DISPLAY = {"ergo":"ERGO","allianz":"Allianz","axa":"AXA","huk":"HUK",
-        "generali":"Generali","signal-iduna":"Signal Iduna","cosmosdirekt":"CosmosDirekt",
-        "ruv":"R+V","devk":"DEVK","hannoversche":"Hannoversche"}
+    BRAND_DISPLAY = {
+        "ergo": "ERGO", "allianz": "Allianz", "axa": "AXA", "huk": "HUK",
+        "generali": "Generali", "signal-iduna": "Signal Iduna",
+        "cosmosdirekt": "CosmosDirekt", "ruv": "R+V", "devk": "DEVK",
+        "hannoversche": "Hannoversche",
+    }
+    js_code = (
+        "() => {"
+        "  var reviews = [];"
+        "  var dateEls = [];"
+        "  document.querySelectorAll('*').forEach(function(el) {"
+        "    if (el.children.length > 0) return;"
+        "    var t = el.textContent.trim();"
+        "    if (t.match(/^[0-9]{2}[.][0-9]{2}[.][0-9]{4}$/) && el.offsetParent !== null) {"
+        "      dateEls.push({el: el, date: t});"
+        "    }"
+        "  });"
+        "  dateEls.forEach(function(item) {"
+        "    var block = item.el.parentElement;"
+        "    for (var i = 0; i < 4; i++) {"
+        "      if (!block) break;"
+        "      var bt = block.textContent.trim();"
+        "      if (bt.length > 20 && bt.length < 1000) {"
+        "        var parts = bt.split(item.date);"
+        "        var txt = parts.length > 1 ? parts[parts.length-1].trim() : '';"
+        "        txt = txt.replace(/vorherige.*/i, '').replace(/n.chste.*/i, '').trim();"
+        "        var nameM = bt.match(/([A-Z][a-z]+\\s+[A-Z][.])/);"
+        "        if (txt.length > 3 && txt.length < 500) {"
+        "          reviews.push({author: nameM ? nameM[1] : '', date: item.date, text: txt});"
+        "        }"
+        "        break;"
+        "      }"
+        "      block = block.parentElement;"
+        "    }"
+        "  });"
+        "  var seen = {};"
+        "  return reviews.filter(function(r) {"
+        "    var k = r.date + r.text.substring(0, 30);"
+        "    if (seen[k]) return false;"
+        "    seen[k] = true;"
+        "    return true;"
+        "  });"
+        "}"
+    )
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -902,12 +911,17 @@ def crawl_check24_reviews(product_subdomain, brand_keys, last_crawl_date=None):
                         logo = page.query_selector('img[alt*="%s"]' % bname)
                     if not logo:
                         continue
-                    rating_btn = logo.evaluate_handle('el => { let n=el; for(let i=0;i<10;i++){n=n.parentElement;if(!n)break;let r=n.querySelector("[class*=\\"component_1hbh5\\"]");if(r)return r;} return null; }')
+                    rating_btn = logo.evaluate_handle(
+                        'el => { let n=el; for(let i=0;i<10;i++)'
+                        '{n=n.parentElement;if(!n)break;'
+                        'let r=n.querySelector("[class*=\\"component_1hbh5\\"]");'
+                        'if(r)return r;} return null; }'
+                    )
                     if not rating_btn:
                         continue
                     rating_btn.click()
                     page.wait_for_timeout(1500)
-                    reviews = page.evaluate(JS_EXTRACT)
+                    reviews = page.evaluate(js_code)
                     if reviews:
                         filtered = []
                         for rv in reviews:
@@ -933,10 +947,11 @@ def crawl_check24_reviews(product_subdomain, brand_keys, last_crawl_date=None):
             browser.close()
     except Exception as e:
         print("  [C24 Reviews] Fehler: %s" % str(e)[:200])
-    print("  [C24 Reviews] %s: %d Reviews" % (product_subdomain, sum(len(v) for v in all_reviews.values())))
+    total = sum(len(v) for v in all_reviews.values())
+    print("  [C24 Reviews] %s: %d Reviews" % (product_subdomain, total))
     return all_reviews
 
-# ── 5. FRANKE & BORNBERG ─────────────────────────────────────────────────────
+
 FB_RATING_CLASSES = {
     "FFF+": 0.5, "FFF": 1.0, "FF+": 2.0, "FF": 3.0,
     "F+": 4.0, "F": 5.0, "F-": 6.0,

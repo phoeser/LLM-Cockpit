@@ -2018,7 +2018,7 @@ def main():
     if events_file.exists():
         try:
             from shared.event_emitter import load_events
-            all_events = load_events(events_file, max_age_days=90)
+            all_events = load_events(events_file, max_age_days=365)
             if all_events:
                 events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
                 events_block = "  window.CORRELATION_EVENTS = %s;" % events_json

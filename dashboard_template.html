@@ -1892,11 +1892,16 @@ function buildPressTab() {
       });
       allArticles.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       if (allArticles.length === 0) {
-        articleAllList.innerHTML = '<p class="text-gray-500 text-sm">Keine Artikel gefunden</p>';
-        return;
-      }
-      articleAllList.innerHTML = '<p class="text-xs text-gray-400 mb-2">' + allArticles.length + ' Artikel</p>' +
-        allArticles.map(a => renderArticleCard(a, true)).join('');
+    var limit = 10;
+    var firstTen = allArticles.slice(0, limit);
+    var rest = allArticles.slice(limit);
+    var html = '<p style="color:#6b7280;margin-bottom:.5rem;">' + allArticles.length + ' Artikel aus allen Quellen, sortiert nach Datum</p>';
+    html += firstTen.map(function(a){return renderArticleCard(a, true);}).join('');
+    if (rest.length > 0) {
+      html += '<details style="margin-top:.5rem;"><summary style="cursor:pointer;padding:.6rem;background:#f3f4f6;border-radius:6px;font-weight:600;color:#4b5563;">Weitere ' + rest.length + ' Artikel anzeigen</summary>';
+      html += '<div style="margin-top:.5rem;">' + rest.map(function(a){return renderArticleCard(a, true);}).join('') + '</div></details>';
+    }
+    articleAllList.innerHTML = html;
     }
 
     // Brand-Filter-Ansicht (wie bisher)

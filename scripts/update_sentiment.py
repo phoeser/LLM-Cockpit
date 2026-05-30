@@ -111,14 +111,12 @@ BRANDS = [
     },
     {
         "key": "ruv", "name": "R+V", "domain": "ruv.de",
-        "ekomi_slugs": ["ruv"],
+        "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "R+V Versicherung Wiesbaden",
         "check24_slug": "r-und-v",
         "fb_keywords": ["R+V", "R + V", "Condor"],
-        "products": [
-            {"name": "Gesamt", "ekomi": "ruv"},
-        ],
+        "products": [],
     },
     {
         "key": "devk", "name": "DEVK", "domain": "devk.de",
@@ -133,14 +131,12 @@ BRANDS = [
     },
     {
         "key": "hannoversche", "name": "Hannoversche", "domain": "hannoversche.de",
-        "ekomi_slugs": ["hannoversche-leben"],
+        "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "Hannoversche Lebensversicherung Hannover",
         "check24_slug": "hannoversche",
         "fb_keywords": ["Hannoversche"],
-        "products": [
-            {"name": "Lebensversicherung", "ekomi": "hannoversche-leben"},
-        ],
+        "products": [],
     },
     {
         "key": "cosmosdirekt", "name": "Cosmos Direkt", "domain": "cosmosdirekt.de",
@@ -1401,6 +1397,26 @@ def main():
             if dedup_key not in existing_keys:
                 existing_reviews.append(new_rv)
                 existing_keys.add(dedup_key)
+                new_count += 1
+
+        # eKomi: Aggregat-Score als Datenpunkt (keine Einzel-Reviews bei eKomi)
+        ek = entry.get("ekomi", {})
+        if ek.get("score") and ek.get("count"):
+            ek_rv = {
+                "brand": brand_key,
+                "brand_name": brand_name,
+                "source": "eKomi",
+                "title": "",
+                "text": "Aggregiertes Rating: %.1f/5 bei %s Bewertungen" % (ek["score"], ek["count"]),
+                "score": ek["score"],
+                "date": today,
+                "author": "eKomi Aggregat",
+                "crawl_date": today,
+            }
+            ek_key = _dedup_key(ek_rv)
+            if ek_key not in existing_keys:
+                existing_reviews.append(ek_rv)
+                existing_keys.add(ek_key)
                 new_count += 1
 
     # Nach Datum sortieren (neueste zuerst)

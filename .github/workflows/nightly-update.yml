@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout LLM-Cockpit-Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -57,39 +59,28 @@ jobs:
         run: python scripts/update_domain_footprint.py
         continue-on-error: true
 
-      - name: GEO Page-Events importieren (Seiten-Aenderungen)
+      - name: GEO Page-Events importieren (max 3 Min)
         env:
           GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
           GEO_REPO: phoeser/geo-visibility-tool
-        run: timeout 180 python scripts/merge_geo_page_events.py || echo "GEO-Import Timeout (3 min) - uebersprungen"
+        run: timeout 180 python scripts/merge_geo_page_events.py || echo "GEO-Import Timeout"
         continue-on-error: true
 
-      - name: Externe Ratings aktualisieren (Finanztip + manuelle Quellen)
+      - name: Externe Ratings aktualisieren (Finanztip)
         run: python scripts/update_ratings.py
         continue-on-error: true
 
-      - name: Daten-Dateien zurueck in main committen
+      - name: Daten-Dateien committen und pushen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/review_history.json 2>/dev/null || true
-          git add data/press_history.json 2>/dev/null || true
-          git add data/sentiment_data.json 2>/dev/null || true
-          git add data/sentiment_data.previous.json 2>/dev/null || true
-          git add data/press_data.json 2>/dev/null || true
-          git add data/press_data.previous.json 2>/dev/null || true
-          git add data/geo_snapshot.json 2>/dev/null || true
-          git add data/geo_snapshot.previous.json 2>/dev/null || true
-          git add domain_footprint_data.json 2>/dev/null || true
-          git add domain_footprint_data.previous.json 2>/dev/null || true
-          git add shared/events.jsonl 2>/dev/null || true
-          git add data/geo_page_changes.json 2>/dev/null || true
-          git add data/ratings_external.json 2>/dev/null || true
-          git add data/press_history.json 2>/dev/null || true
-          git add data/price_comparison.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: nightly update (alle Daten + Events)"
-          git pull --rebase origin main || true
-          git push origin main
+          git add -A data/ shared/ domain_footprint_data* dashboard_template.html 2>/dev/null || true
+          git diff --cached --quiet && echo "Keine Aenderungen" && exit 0
+          git commit -m "data: nightly update $(date +%Y-%m-%d)"
+          # Robuster Push: fetch + rebase + push, bei Conflict force
+          git fetch origin main
+          git rebase origin/main || (git rebase --abort && git push origin main --force-with-lease)
+          git push origin main || git push origin main --force-with-lease
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy

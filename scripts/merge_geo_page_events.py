@@ -37,9 +37,9 @@ TEMPLATE_FILE = Path("dashboard_template.html")
 # Nur Events der letzten N Tage importieren
 MAX_AGE_DAYS = 180
 # Fuer den Dashboard-Tab: nur letzte 90 Tage mit vollen Details
-DETAIL_AGE_DAYS = 90
+DETAIL_AGE_DAYS = 14
 # Max Diff-Zeilen pro Event (verhindert Datei-Explosion)
-MAX_DIFF_LINES = 50
+MAX_DIFF_LINES = 20
 
 # Rauschfilter: identisch zum GEO page_tracker
 NOISE_SIMILARITY = 0.97

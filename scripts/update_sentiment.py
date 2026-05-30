@@ -1557,7 +1557,12 @@ def main():
 
     # ── Phase 3: Check24 Einzelbewertungen ──────────────────────────
     print("\n" + "=" * 60)
-    print("Phase 3: Check24 Einzelbewertungen")
+    # Check24 Reviews nur im Weekly-Workflow (zu langsam fuer Nightly)
+    if not os.environ.get("CHECK24_REVIEWS_ENABLED"):
+        print("Phase 3: Check24 Reviews uebersprungen (nur im Weekly-Workflow)")
+        c24_all_reviews = {}
+    else:
+        print("Phase 3: Check24 Einzelbewertungen")
     c24_all_reviews = {}
     for cat in PRODUCT_CATEGORIES:
         c24_comp_sub = cat.get("check24_comparison")

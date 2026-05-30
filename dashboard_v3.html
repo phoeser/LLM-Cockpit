@@ -95,9 +95,9 @@
       <button data-tab="bewertungen" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Bewertungen</button>
       <button data-tab="ratings" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Ratings</button>
       <button data-tab="presse" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Pressemitteilungen</button>
-      <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
       <button data-tab="contentgeo" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Content (GEO)</button>
       <button data-tab="preisvergleich" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Preisvergleich</button>
+      <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
     </div>
   </div>
 </nav>
@@ -460,6 +460,12 @@
   </div>
 
   <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Share-of-Voice — Zeitreihe</h3>
+    <p class="text-xs text-gray-500 mb-3">Entwicklung der LLM-Sichtbarkeit (Share of Voice %) je Marke über die Messläufe — Quelle: GEO-Events.</p>
+    <div style="position:relative;height:320px"><canvas id="geoSovTimeChart"></canvas></div>
+    <p id="geoSovTimeEmpty" class="text-sm text-gray-400 mt-2" style="display:none">Noch keine SoV-Zeitreihe verfügbar.</p>
+  </div>
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-3">Anbieter-Ranking gesamt (über alle Produkte und LLMs)</h3>
     <table class="w-full text-sm" id="geoRankingTable"></table>
   </div>
@@ -589,7 +595,7 @@
     <div class="flex items-start justify-between flex-wrap gap-3">
       <div>
         <h2 class="text-2xl font-bold text-ergo-dark mb-2">Produktbewertungen & Ratings</h2>
-        <p class="text-sm text-gray-600">Alle professionellen Ratings je Produkt im Vergleich — Franke & Bornberg, Finanztip, Stiftung Warentest, Morgen & Morgen, Verivox, DFSI</p>
+        <p class="text-sm text-gray-600">Alle professionellen Ratings je Produkt im Vergleich — Franke & Bornberg, Finanztip, Stiftung Warentest, Morgen & Morgen, DFSI</p>
       </div>
     </div>
   </div>
@@ -601,7 +607,7 @@
 
   <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
     <span class="font-bold text-blue-900">Datenquellen:</span>
-    <span class="text-gray-700">Franke & Bornberg (AJAX-API live), Finanztip, Stiftung Warentest / Finanztest, Morgen & Morgen, Verivox, DFSI · F&B wird nightly aktualisiert, andere Quellen aus redaktioneller Recherche</span>
+    <span class="text-gray-700">Franke & Bornberg (AJAX-API live), Finanztip, Stiftung Warentest / Finanztest, Morgen & Morgen, DFSI · F&B wird nightly aktualisiert, andere Quellen aus redaktioneller Recherche</span>
   </div>
 </section>
 
@@ -830,17 +836,16 @@
 </section>
 
 
-<!-- ===== TAB: CONTENT (GEO) ===== -->
+<!-- TAB: CONTENT (GEO) -->
 <section data-content="contentgeo" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h2 class="text-2xl font-bold text-ergo-dark mb-2">Content-Aenderungen der Wettbewerber (GEO)</h2>
-    <p class="text-sm text-gray-600">Vom GEO-Crawler erfasste Aenderungen an Wettbewerber-Produktseiten — niedrige Aehnlichkeit = grosse Aenderung.</p>
+    <h2 class="text-2xl font-bold text-ergo-dark mb-2">Content-Änderungen der Wettbewerber (GEO)</h2>
+    <p class="text-sm text-gray-600">Vom GEO-Crawler erfasste Änderungen an Wettbewerber-Produktseiten — Zeile anklicken für die konkrete Veränderung.</p>
   </div>
   <div id="cgKpis" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
   <div id="contentGeoBody"></div>
 </section>
-
-<!-- ===== TAB: PREISVERGLEICH ===== -->
+<!-- TAB: PREISVERGLEICH -->
 <section data-content="preisvergleich" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h2 class="text-2xl font-bold text-ergo-dark mb-2">Preisvergleich (Check24)</h2>
@@ -848,7 +853,6 @@
   </div>
   <div id="preisvergleichBody"></div>
 </section>
-
 </main>
 
 <footer class="bg-ergo-dark text-white text-center py-6 mt-12">
@@ -1705,7 +1709,9 @@ function renderRatingsTables() {
   ['zahnzusatz','sterbegeld','risikoleben'].forEach(function(prodKey) {
     var container = document.getElementById('ratingsTable' + prodKey.charAt(0).toUpperCase() + prodKey.slice(1));
     if (!container) return;
-    var prod = RATINGS_DB[prodKey];
+    var __ext = (window.RATINGS_EXTERNAL||{})[prodKey];
+    var __icons = {zahnzusatz:'\ud83e\udd77', sterbegeld:'\ud83d\udd6f\ufe0f', risikoleben:'\ud83d\udee1\ufe0f'};
+    var prod = __ext ? {label: __ext.label, icon: (__icons[prodKey]||(RATINGS_DB[prodKey]||{}).icon||''), versicherer: __ext.versicherer} : RATINGS_DB[prodKey];
     if (!prod) return;
 
     // F&B Live-Daten einmischen
@@ -1734,7 +1740,6 @@ function renderRatingsTables() {
     html += '<th class="px-3 py-2 font-semibold text-center" title="Finanztip - Verbraucherempfehlung">Finanztip</th>';
     html += '<th class="px-3 py-2 font-semibold text-center" title="Stiftung Warentest / Finanztest">Warentest</th>';
     html += '<th class="px-3 py-2 font-semibold text-center" title="Morgen & Morgen - 5-Sterne-System">M&M</th>';
-    html += '<th class="px-3 py-2 font-semibold text-center" title="Verivox - Vergleichsportal">Verivox</th>';
     html += '<th class="px-3 py-2 font-semibold text-center" title="Deutsches Finanz-Service Institut">DFSI</th>';
     html += '</tr></thead><tbody>';
 
@@ -1747,7 +1752,6 @@ function renderRatingsTables() {
       html += '<td class="px-3 py-2 text-center">' + ftBadge(v.finanztip) + '</td>';
       html += '<td class="px-3 py-2 text-center">' + wtBadge(v.warentest) + '</td>';
       html += '<td class="px-3 py-2 text-center">' + mmBadge(v.mm) + '</td>';
-      html += '<td class="px-3 py-2 text-center">' + vxBadge(v.verivox) + '</td>';
       html += '<td class="px-3 py-2 text-center">' + dfsiBadge(v.dfsi) + '</td>';
       html += '</tr>';
     });
@@ -1898,8 +1902,14 @@ function buildPressTab() {
         articleAllList.innerHTML = '<p class="text-gray-500 text-sm">Keine Artikel gefunden</p>';
         return;
       }
-      articleAllList.innerHTML = '<p class="text-xs text-gray-400 mb-2">' + allArticles.length + ' Artikel</p>' +
-        allArticles.map(a => renderArticleCard(a, true)).join('');
+      var __first = allArticles.slice(0,20), __rest = allArticles.slice(20);
+      var __restHtml = '';
+      if (__rest.length) {
+        __restHtml = '<div id="pressRestArticles" class="hidden">' + __rest.map(a => renderArticleCard(a, true)).join('') + '</div>'
+          + '<button id="pressMoreBtn" class="mt-3 px-4 py-2 text-sm font-semibold text-ergo-red border border-ergo-red rounded hover:bg-red-50" '
+          + 'onclick="var r=document.getElementById(\'pressRestArticles\');var b=document.getElementById(\'pressMoreBtn\');var h=r.classList.toggle(\'hidden\');b.textContent=h?(\'+ __rest.length + \' weitere anzeigen\'):\'Weniger anzeigen\';">' + __rest.length + ' weitere anzeigen</button>';
+      }
+      articleAllList.innerHTML = '<p class="text-xs text-gray-400 mb-2">' + allArticles.length + ' Artikel (20 sichtbar)</p>' + __first.map(a => renderArticleCard(a, true)).join('') + __restHtml;
     }
 
     // Brand-Filter-Ansicht (wie bisher)
@@ -2452,7 +2462,7 @@ function buildGeoTab() {
 
   // ===== Korrelations-Tab Rendering =====
   // CORRELATION_EVENTS wird vom Nightly-Workflow injiziert (nach Datensammlung)
-  const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];
+  let CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];
 
   
     // === Drilldown Modal für Event-Kategorien ===
@@ -3088,10 +3098,26 @@ function buildGeoTab() {
     safeCall('__beraterList');
     safeCall('buildContentGeo');
     safeCall('buildPreisvergleich');
+    safeCall('buildGeoSovTime');
+    safeCall('renderCorrelationTab');
   }
   async function __v3_loadJSON(path) {
     try { var r = await fetch(path, {cache:'no-store'}); if (!r.ok) return null; return await r.json(); }
     catch(e) { console.warn('load ' + path + ':', e.message); return null; }
+  }
+  async function __v3_loadEvents() {
+    try {
+      var r = await fetch('shared/events.jsonl', {cache:'no-store'});
+      if (!r.ok) return [];
+      var t = await r.text();
+      var cutoff = new Date(Date.now() - 90*24*60*60*1000).toISOString().slice(0,10);
+      var out = [];
+      t.split('\n').forEach(function(line){
+        line = line.trim(); if(!line) return;
+        try { var e = JSON.parse(line); if ((e.timestamp||'').slice(0,10) >= cutoff) out.push(e); } catch(x){}
+      });
+      return out;
+    } catch(e) { console.warn('load events:', e.message); return []; }
   }
   async function __v3_bootstrap() {
     var banner = document.getElementById('v3LoadBanner');
@@ -3104,12 +3130,15 @@ function buildGeoTab() {
         __v3_loadJSON('berater_data.json'),
         __v3_loadJSON('data/geo_page_changes.json'),
         __v3_loadJSON('data/price_comparison.json'),
-        __v3_loadJSON('data/ratings_external.json')
+        __v3_loadJSON('data/ratings_external.json'),
+        __v3_loadEvents()
       ]);
       GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
       window.GEO_PAGE_CHANGES = res[5] || []; window.PRICE_COMPARISON = res[6];
       window.RATINGS_EXTERNAL = res[7];
+      window.CORRELATION_EVENTS = res[8] || [];
+      CORRELATION_EVENTS = window.CORRELATION_EVENTS;
     } catch(e) { console.error('Bootstrap-Ladefehler:', e); }
     __v3_runBuilds();
     if (banner) banner.style.display = 'none';
@@ -3324,97 +3353,138 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
 })();
 </script>
 
-<!-- v3: Render-Logik fuer neue Tabs (Content-GEO + Preisvergleich) -->
+<!-- v3: neue Tabs + GEO-Zeitreihe -->
 <script>
 (function(){
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  var _expanded = {};
 
-  // ---------- Content (GEO): Seitenaenderungen der Wettbewerber ----------
+  // ---------- GEO Share-of-Voice Zeitreihe (#2) ----------
+  var _geoSovChart = null;
+  window.buildGeoSovTime = function(){
+    var canvas = document.getElementById('geoSovTimeChart');
+    var emptyEl = document.getElementById('geoSovTimeEmpty');
+    if(!canvas) return;
+    var ev = (window.CORRELATION_EVENTS || []).filter(function(e){
+      return e.event_type==='sov_change' && (e.detail||{}).metric==='share_of_voice_pct' && e.detail.new_pct!=null;
+    });
+    if(!ev.length){ if(emptyEl) emptyEl.style.display='block'; canvas.style.display='none'; return; }
+    if(emptyEl) emptyEl.style.display='none'; canvas.style.display='block';
+    var COL = (typeof GEO_BRAND_COLORS!=='undefined') ? GEO_BRAND_COLORS : {};
+    var byBrand = {}, dateSet = {};
+    ev.forEach(function(e){
+      var d = (e.timestamp||'').slice(0,10); if(!d) return;
+      dateSet[d]=1; byBrand[e.brand]=byBrand[e.brand]||{};
+      byBrand[e.brand][d] = e.detail.new_pct;   // letzter Wert je Tag gewinnt
+    });
+    var dates = Object.keys(dateSet).sort();
+    var ds = Object.keys(byBrand).map(function(b){
+      return { label:b, borderColor: COL[b]||'#888', backgroundColor:'transparent',
+        data: dates.map(function(d){ return byBrand[b][d]!=null ? byBrand[b][d] : null; }),
+        spanGaps:true, tension:0.25, borderWidth: b==='ERGO'?3:1.5, pointRadius:2 };
+    });
+    try {
+      if(_geoSovChart) _geoSovChart.destroy();
+      _geoSovChart = new Chart(canvas.getContext('2d'), {
+        type:'line',
+        data:{ labels:dates, datasets:ds },
+        options:{ responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{position:'bottom'} },
+          scales:{ y:{ title:{display:true,text:'Share of Voice %'}, ticks:{callback:function(v){return v+'%';}} } } }
+      });
+    } catch(e){ console.warn('geoSovTime:', e.message); }
+  };
+
+  // ---------- Content (GEO): letzte 30, scrollbar, aufklappbare Diffs (#7) ----------
   window.buildContentGeo = function(){
     var host = document.getElementById('contentGeoBody');
     if(!host) return;
     var data = (window.GEO_PAGE_CHANGES || []).slice();
-    if(!data.length){
-      host.innerHTML = '<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Seitenaenderungen erfasst. <code>merge_geo_page_events.py</code> erzeugt <code>data/geo_page_changes.json</code> beim naechsten Nightly-Lauf.</div>';
-      var k=document.getElementById('cgKpis'); if(k) k.innerHTML='';
-      return;
-    }
-    // neueste zuerst
-    data.sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
-    // KPIs
-    var byBrand = {};
-    data.forEach(function(e){ var b=e.b||'?'; byBrand[b]=(byBrand[b]||0)+1; });
     var kpiHost = document.getElementById('cgKpis');
-    if(kpiHost){
-      var cards = '<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-ergo-red"><div class="text-xs uppercase text-gray-500 font-semibold">Erfasste Aenderungen</div><div class="text-3xl font-bold text-ergo-dark mt-1">'+data.length+'</div></div>';
-      cards += '<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-blue-500"><div class="text-xs uppercase text-gray-500 font-semibold">Betroffene Marken</div><div class="text-3xl font-bold text-ergo-dark mt-1">'+Object.keys(byBrand).length+'</div></div>';
-      var newest = data[0] && data[0].ts ? data[0].ts.replace('T',' ').replace('Z',' UTC').replace(/-/g,'-') : '–';
-      cards += '<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-emerald-500"><div class="text-xs uppercase text-gray-500 font-semibold">Letzte Erfassung</div><div class="text-base font-bold text-ergo-dark mt-2">'+esc(newest)+'</div></div>';
-      kpiHost.innerHTML = cards;
+    if(!data.length){
+      host.innerHTML = '<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Seitenänderungen erfasst. <code>merge_geo_page_events.py</code> erzeugt <code>data/geo_page_changes.json</code> beim nächsten Nightly-Lauf.</div>';
+      if(kpiHost) kpiHost.innerHTML=''; return;
     }
-    // Tabelle (max 200 Eintraege)
-    var rows = data.slice(0,200).map(function(e){
-      var ts = (e.ts||'').replace('T',' ').replace('Z',' UTC');
-      var sim = (e.sim==null)?'–':(Math.round(e.sim*100)+'%');
-      var simColor = (e.sim!=null && e.sim<0.6) ? 'text-red-600 font-bold' : 'text-gray-700';
-      var ac = (e.ac==null)?'':('<span class="text-emerald-600">+'+e.ac+'</span>');
-      var rc = (e.rc==null)?'':(' <span class="text-red-600">-'+e.rc+'</span>');
-      var url = e.u ? '<a href="'+esc(e.u)+'" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all">'+esc(e.u)+'</a>' : '';
-      return '<tr class="border-b hover:bg-gray-50 align-top">'
-        + '<td class="py-2 px-2 whitespace-nowrap text-gray-500 text-xs">'+esc(ts)+'</td>'
-        + '<td class="py-2 px-2 font-semibold">'+esc(e.b||'')+'</td>'
-        + '<td class="py-2 px-2">'+url+'</td>'
-        + '<td class="py-2 px-2 text-center '+simColor+'">'+sim+'</td>'
-        + '<td class="py-2 px-2 text-center text-xs">'+ac+rc+'</td>'
-        + '</tr>';
+    data.sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+    var byBrand={}; data.forEach(function(e){var b=e.b||'?';byBrand[b]=(byBrand[b]||0)+1;});
+    if(kpiHost){
+      var c='<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-ergo-red"><div class="text-xs uppercase text-gray-500 font-semibold">Erfasste Änderungen</div><div class="text-3xl font-bold text-ergo-dark mt-1">'+data.length+'</div></div>';
+      c+='<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-blue-500"><div class="text-xs uppercase text-gray-500 font-semibold">Betroffene Marken</div><div class="text-3xl font-bold text-ergo-dark mt-1">'+Object.keys(byBrand).length+'</div></div>';
+      var newest=data[0]&&data[0].ts?data[0].ts.replace('T',' ').replace('Z',' UTC'):'–';
+      c+='<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-emerald-500"><div class="text-xs uppercase text-gray-500 font-semibold">Letzte Erfassung</div><div class="text-base font-bold text-ergo-dark mt-2">'+esc(newest)+'</div></div>';
+      kpiHost.innerHTML=c;
+    }
+    var view = data.slice(0,30);
+    var rows = view.map(function(e,i){
+      var ts=(e.ts||'').replace('T',' ').replace('Z',' UTC');
+      var sim=(e.sim==null)?'–':(Math.round(e.sim*100)+'%');
+      var simColor=(e.sim!=null && e.sim<0.6)?'text-red-600 font-bold':'text-gray-700';
+      var ac=(e.ac==null)?'':('<span class="text-emerald-600">+'+e.ac+'</span>');
+      var rc=(e.rc==null)?'':(' <span class="text-red-600">-'+e.rc+'</span>');
+      var url=e.u?'<a href="'+esc(e.u)+'" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">'+esc(e.u)+'</a>':'';
+      var added=(e.al||[]).slice(0,40), removed=(e.rl||[]).slice(0,40);
+      var detail='';
+      if(added.length||removed.length){
+        detail='<div class="mt-2 text-xs font-mono bg-gray-50 rounded p-2 max-h-60 overflow-auto">';
+        removed.forEach(function(l){detail+='<div class="text-red-700">- '+esc(l)+'</div>';});
+        added.forEach(function(l){detail+='<div class="text-emerald-700">+ '+esc(l)+'</div>';});
+        if((e.al||[]).length>40||(e.rl||[]).length>40) detail+='<div class="text-gray-400 mt-1">… gekürzt</div>';
+        detail+='</div>';
+      } else { detail='<div class="mt-2 text-xs text-gray-400">Keine Zeilen-Details gespeichert.</div>'; }
+      return '<div class="border-b">'
+        + '<div class="flex items-start gap-2 py-2 px-2 hover:bg-gray-50 cursor-pointer" onclick="window.__cgToggle('+i+')">'
+        + '<span id="cgArrow'+i+'" class="text-gray-400 select-none">▶</span>'
+        + '<span class="text-gray-500 text-xs whitespace-nowrap">'+esc(ts)+'</span>'
+        + '<span class="font-semibold whitespace-nowrap">'+esc(e.b||'')+'</span>'
+        + '<span class="flex-1 min-w-0 truncate">'+url+'</span>'
+        + '<span class="'+simColor+' text-center whitespace-nowrap">'+sim+'</span>'
+        + '<span class="text-xs whitespace-nowrap">'+ac+rc+'</span>'
+        + '</div>'
+        + '<div id="cgDetail'+i+'" class="hidden px-7 pb-3">'+detail+'</div>'
+        + '</div>';
     }).join('');
     host.innerHTML =
-      '<div class="bg-white rounded-xl p-4 shadow overflow-x-auto">'
-      + '<table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2">'
-      + '<th class="py-2 px-2">Zeitpunkt</th><th class="py-2 px-2">Marke</th><th class="py-2 px-2">Seite (URL)</th>'
-      + '<th class="py-2 px-2 text-center">Aehnlichkeit</th><th class="py-2 px-2 text-center">+/- Zeilen</th>'
-      + '</tr></thead><tbody>'+rows+'</tbody></table>'
-      + (data.length>200 ? '<div class="text-xs text-gray-400 mt-2">'+(data.length-200)+' weitere Eintraege ausgeblendet</div>' : '')
-      + '</div>';
+      '<div class="bg-white rounded-xl p-4 shadow">'
+      + '<div class="flex justify-between items-center mb-2"><div class="text-xs text-gray-500">Letzte '+view.length+' Änderungen (klicken zum Aufklappen)</div>'
+      + (data.length>30?'<div class="text-xs text-gray-400">'+data.length+' gesamt</div>':'')+'</div>'
+      + '<div style="max-height:600px;overflow:auto">'
+      + '<div class="text-xs text-gray-400 flex gap-2 px-2 pb-1 border-b font-semibold"><span style="width:14px"></span><span>Zeit</span><span>Marke</span><span class="flex-1">Seite</span><span>Ähnl.</span><span>+/-</span></div>'
+      + rows + '</div></div>';
+  };
+  window.__cgToggle = function(i){
+    var d=document.getElementById('cgDetail'+i), a=document.getElementById('cgArrow'+i);
+    if(!d) return; var hidden=d.classList.toggle('hidden');
+    if(a) a.textContent = hidden ? '▶' : '▼';
   };
 
-  // ---------- Preisvergleich (Check24, woechentlich) ----------
+  // ---------- Preisvergleich ----------
   window.buildPreisvergleich = function(){
     var host = document.getElementById('preisvergleichBody');
     if(!host) return;
     var data = window.PRICE_COMPARISON;
     if(!data || (typeof data==='object' && Object.keys(data).length===0)){
-      host.innerHTML = '<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Preisvergleichsdaten. <code>update_prices.py</code> (woechentlich, Montag) erzeugt <code>data/price_comparison.json</code>.</div>';
+      host.innerHTML = '<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Preisvergleichsdaten. <code>update_prices.py</code> (montags) erzeugt <code>data/price_comparison.json</code>.</div>';
       return;
     }
-    var BRAND_NAMES = {ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
-    var html = '';
-    Object.keys(data).forEach(function(prodKey){
-      var prod = data[prodKey]; if(!prod || !prod.profiles) return;
-      html += '<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-3">'+esc(prod.name||prodKey)+'</h3>';
-      var profileKeys = Object.keys(prod.profiles);
-      // Alle Marken sammeln
-      var brandsSet = {};
-      profileKeys.forEach(function(pk){ var pr=prod.profiles[pk]; Object.keys(pr.brands||{}).forEach(function(bk){ if(!bk.indexOf('_other_')) return; brandsSet[bk]=1; }); });
-      // Header
-      html += '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
-      profileKeys.forEach(function(pk){ html += '<th class="py-2 px-2 text-right">'+esc(prod.profiles[pk].label||pk)+'</th>'; });
-      html += '</tr></thead><tbody>';
-      Object.keys(brandsSet).sort().forEach(function(bk){
-        var isErgo = (bk==='ergo');
-        html += '<tr class="border-b '+(isErgo?'bg-red-50 font-semibold':'')+'"><td class="py-2 px-2">'+esc(BRAND_NAMES[bk]||bk)+(isErgo?' ★':'')+'</td>';
-        profileKeys.forEach(function(pk){
-          var b = (prod.profiles[pk].brands||{})[bk];
-          var price = (b && b.price!=null) ? b.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €' : '–';
-          html += '<td class="py-2 px-2 text-right">'+price+'</td>';
-        });
-        html += '</tr>';
+    var BN = {ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    var out='';
+    Object.keys(data).forEach(function(pk){
+      var prod=data[pk]; if(!prod||!prod.profiles) return;
+      out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-3">'+esc(prod.name||pk)+'</h3>';
+      var pks=Object.keys(prod.profiles), bset={};
+      pks.forEach(function(p){Object.keys(prod.profiles[p].brands||{}).forEach(function(bk){if(bk.indexOf('_other_')!==0)bset[bk]=1;});});
+      out+='<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
+      pks.forEach(function(p){out+='<th class="py-2 px-2 text-right">'+esc(prod.profiles[p].label||p)+'</th>';});
+      out+='</tr></thead><tbody>';
+      Object.keys(bset).sort().forEach(function(bk){
+        var isE=(bk==='ergo');
+        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':'')+'"><td class="py-2 px-2">'+esc(BN[bk]||bk)+(isE?' ★':'')+'</td>';
+        pks.forEach(function(p){var b=(prod.profiles[p].brands||{})[bk];var pr=(b&&b.price!=null)?b.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–';out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
+        out+='</tr>';
       });
-      html += '</tbody></table></div>';
-      if(prod.as_of) html += '<div class="text-xs text-gray-400 mt-2">Stand: '+esc(prod.as_of)+' · Quelle: Check24</div>';
-      html += '</div>';
+      out+='</tbody></table></div>'+(prod.as_of?'<div class="text-xs text-gray-400 mt-2">Stand: '+esc(prod.as_of)+' · Quelle: Check24</div>':'')+'</div>';
     });
-    host.innerHTML = html || '<div class="text-sm text-gray-500">Keine Produktdaten.</div>';
+    host.innerHTML = out || '<div class="text-sm text-gray-500">Keine Produktdaten.</div>';
   };
 })();
 </script>

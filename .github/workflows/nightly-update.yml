@@ -14,6 +14,9 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -44,24 +47,60 @@ jobs:
       - name: Aktualisiere Sentiment-Daten (4 Quellen)
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/update_sentiment.py
 
       - name: Aktualisiere Presse-Daten (Google News RSS)
         run: python scripts/update_press.py
         continue-on-error: true
 
+      - name: v3 - Dashboard-fertige JSONs exportieren (sentiment + presse)
+        run: python scripts/export_v3_json.py
+        continue-on-error: true
+
       - name: Aktualisiere Domain-Footprint (Subdomain-Crawl)
         run: python scripts/update_domain_footprint.py
+        continue-on-error: true
+
+      - name: GEO Page-Events importieren (Seiten-Aenderungen)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
+          GEO_REPO: phoeser/geo-visibility-tool
+        run: python scripts/merge_geo_page_events.py
+        continue-on-error: true
+
+      - name: Externe Ratings aktualisieren (Finanztip + manuelle Quellen)
+        run: python scripts/update_ratings.py
+        continue-on-error: true
+
+      - name: Preisvergleich crawlen (Check24, 3 Produkte x 3 Altersprofile)
+        run: python scripts/update_prices.py
         continue-on-error: true
 
       - name: Daten-Dateien zurueck in main committen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Review-History + Events-Timeline committen
+          # Alle Daten-Dateien + .previous.json fuer Event-Vergleiche committen
           git add data/review_history.json 2>/dev/null || true
+          git add data/press_history.json 2>/dev/null || true
+          git add data/sentiment_data.json 2>/dev/null || true
+          git add data/sentiment_data.previous.json 2>/dev/null || true
+          git add data/press_data.json 2>/dev/null || true
+          git add data/press_data.previous.json 2>/dev/null || true
+          git add data/geo_snapshot.json 2>/dev/null || true
+          git add data/geo_snapshot.previous.json 2>/dev/null || true
+          git add data/sentiment_dashboard.json 2>/dev/null || true
+          git add data/press_dashboard.json 2>/dev/null || true
+          git add domain_footprint_data.json 2>/dev/null || true
+          git add domain_footprint_data.previous.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: update review_history + events"
+          git add data/geo_page_changes.json 2>/dev/null || true
+          git add data/ratings_external.json 2>/dev/null || true
+          git add data/price_comparison.json 2>/dev/null || true
+          git add data/press_history.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: nightly update (alle Daten + Events)"
+          git pull --rebase origin main || true
           git push origin main
 
       - name: Build und Deploy

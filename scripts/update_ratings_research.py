@@ -51,12 +51,11 @@ def gemini_research(product_name: str, versicherer_names: list) -> dict:
         f"   Bei Zahnzusatz: Finanztest-Ausgabe 2024 oder neuer. Bei Risikoleben: aktuelle Bewertungen.\n"
         f"2. **Morgen & Morgen (M&M)**: Sterne-Rating 1-5 (z.B. 5 Sterne = ausgezeichnet). "
         f"   M&M bewertet Tarife, nicht Unternehmen. Gib die hoechste Sternezahl an, die ein Tarif des Versicherers erreicht hat.\n"
-        f"3. **Verivox**: Ranking-Position im Tarifvergleich (z.B. '#1', 'Top 5', 'Top 10', 'Top 20'). "
-        f"   Falls nicht gelistet: '---'.\n"
+        
         f"4. **DFSI (Deutsches Finanz-Service Institut)**: Qualitaetsbewertung (z.B. 'Hervorragend', 'Sehr Gut', 'Gut', 'Befriedigend'). "
         f"   DFSI veroeffentlicht in Focus Money.\n\n"
         f"Antworte als JSON-Array. Pro Versicherer ein Objekt:\n"
-        f'{{"name": "ERGO", "warentest": "Gut (1,7-2,4)", "mm": 5, "verivox": "Top 10", "dfsi": "Sehr Gut"}}\n\n'
+        f'{{"name": "ERGO", "warentest": "Gut (1,7-2,4)", "mm": 5, "dfsi": "Sehr Gut"}}\n\n'
         f"Regeln:\n"
         f"- Nutze nur verifizierbare, aktuelle Daten (2024-2026)\n"
         f"- Wenn fuer einen Versicherer bei einer Quelle KEIN Rating existiert, setze den Wert auf '---'\n"
@@ -144,7 +143,7 @@ def update_product_ratings(ratings: dict, product_key: str, product_name: str) -
 
         new_data = gemini_data[name_key]
 
-        for field in ("warentest", "verivox", "dfsi"):
+        for field in ("warentest", "dfsi"):
             new_val = new_data.get(field, "---")
             old_val = v.get(field, "---")
             # Normalisierung

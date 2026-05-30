@@ -298,4 +298,88 @@ def inject_into_dashboard(changes: list):
         return False
 
     content = TEMPLATE_FILE.read_text(encoding="utf-8")
-    marker = "const GEO_PAGE_CHANGES 
+    marker = "const GEO_PAGE_CHANGES = window.GEO_PAGE_CHANGES || [];"
+    if marker not in content:
+        print("[merge_geo] GEO_PAGE_CHANGES Marker nicht gefunden — ueberspringe Injection")
+        return False
+
+    # Alte Injection entfernen
+    cleaned = []
+    for line in content.split("\n"):
+        if "window.GEO_PAGE_CHANGES = [" in line:
+            continue
+        cleaned.append(line)
+    content = "\n".join(cleaned)
+
+    # Neue Daten injizieren
+    changes_json = json.dumps(changes, ensure_ascii=False, separators=(",", ":"))
+    inject = "  window.GEO_PAGE_CHANGES = %s;" % changes_json
+    content = content.replace(marker, inject + "\n  " + marker)
+
+    TEMPLATE_FILE.write_text(content, encoding="utf-8")
+    print(f"[merge_geo] {len(changes)} Detail-Events in dashboard_template.html injiziert")
+    return True
+
+
+def main():
+    print("=" * 60)
+    print("[merge_geo] GEO Page-Events -> Cockpit events.jsonl + Dashboard")
+    print("=" * 60)
+
+    if not GITHUB_TOKEN:
+        print("[merge_geo] WARNUNG: Kein GITHUB_TOKEN — nur public repos moeglich")
+
+    # 1. GEO Events holen
+    geo_events = fetch_geo_page_events()
+    if not geo_events:
+        print("[merge_geo] Keine Events gefunden — fertig.")
+        return
+
+    # 2. Ins Cockpit-Format konvertieren (Kurzform fuer events.jsonl)
+    cockpit_events = convert_to_cockpit_format(geo_events)
+    print(f"[merge_geo] {len(cockpit_events)} Events nach Rauschfilter")
+
+    # 3. Deduplizieren und an events.jsonl anhaengen
+    existing_keys = load_existing_keys(EVENTS_FILE)
+    new_events = []
+    for ev in cockpit_events:
+        url = ev.get("url") or (ev.get("detail") or {}).get("url") or ""
+        key = f"{ev['timestamp']}|{url}|{ev['event_type']}"
+        if key not in existing_keys:
+            new_events.append(ev)
+            existing_keys.add(key)
+
+    print(f"[merge_geo] {len(new_events)} neue Events (nach Deduplizierung)")
+
+    if new_events:
+        EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(EVENTS_FILE, "a", encoding="utf-8") as f:
+            for ev in sorted(new_events, key=lambda e: e.get("timestamp", "")):
+                f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+        print(f"[merge_geo] {len(new_events)} Events angehaengt an {EVENTS_FILE}")
+
+    # 4. Detaillierte Changes fuer Dashboard-Tab (mit vollen Diff-Zeilen)
+    detailed = build_detailed_changes(geo_events)
+    print(f"[merge_geo] {len(detailed)} Detail-Events fuer Dashboard")
+
+    # 5. JSON-Datei schreiben
+    PAGE_CHANGES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PAGE_CHANGES_FILE.write_text(
+        json.dumps(detailed, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    print(f"[merge_geo] {PAGE_CHANGES_FILE} geschrieben ({PAGE_CHANGES_FILE.stat().st_size // 1024} KB)")
+
+    # 6. In Dashboard injizieren
+    inject_into_dashboard(detailed)
+
+    # Stats
+    brands = {}
+    for ev in cockpit_events:
+        b = ev.get("brand", "?")
+        brands[b] = brands.get(b, 0) + 1
+    for b, c in sorted(brands.items(), key=lambda x: -x[1]):
+        print(f"  {b}: {c} Events")
+
+
+if __name__ == "__main__":
+    main()

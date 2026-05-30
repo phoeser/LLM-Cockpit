@@ -155,18 +155,21 @@ PRODUCT_CATEGORIES = [
         "key": "zahnzusatz",
         "name": "Zahnzusatzversicherung",
         "check24_path": "zahnzusatzversicherung",
+        "check24_comparison": "zahnzusatzversicherung",
         "fb_rating_id": "gkvzahn_neu",
     },
     {
         "key": "sterbegeld",
         "name": "Sterbegeldversicherung",
         "check24_path": None,
+        "check24_comparison": "sterbegeldversicherung",
         "fb_rating_id": "hbs_stg",
     },
     {
         "key": "risikoleben",
         "name": "Risikolebensversicherung",
         "check24_path": "risikolebensversicherung",
+        "check24_comparison": "risikolebensversicherung",
         "fb_rating_id": "hbs_rlv",
     },
 ]
@@ -728,6 +731,112 @@ def crawl_check24_all_brands(brands, product_path):
             filtered[key] = r
     return filtered
 
+
+
+
+# ── 4b. CHECK24 COMPARISON (Playwright) ────────────────────────────────────
+CHECK24_BRAND_MAP = {
+    "ergo": "ergo", "ERGO": "ergo",
+    "allianz": "allianz", "Allianz": "allianz",
+    "axa": "axa", "AXA": "axa",
+    "huk-coburg": "huk", "HUK-Coburg": "huk", "HUK24": "huk", "HUK-COBURG": "huk",
+    "generali": "generali", "Generali": "generali",
+    "signal iduna": "signal-iduna", "Signal Iduna": "signal-iduna",
+    "cosmosdirekt": "cosmosdirekt", "CosmosDirekt": "cosmosdirekt", "Cosmos Direkt": "cosmosdirekt",
+    "r+v": "ruv", "R+V": "ruv",
+    "devk": "devk", "DEVK": "devk",
+    "hannoversche": "hannoversche", "Hannoversche": "hannoversche",
+}
+
+def crawl_check24_comparison(product_subdomain):
+    """Check24 Vergleichsrechner via Playwright laden und Kundenbewertungen pro Versicherer extrahieren.
+    
+    Gibt Dict {brand_key: {score, count, url}} zurueck.
+    """
+    comparison_url = (
+        "https://%s.check24.de/desktop/calculation/result/check24?"
+        "cbirth=19760530&cinssum=8000&prefill=true&"
+        "waitingPeriodInMonths=36&cinception=20260601&cpayment=1&csort=4"
+    ) % product_subdomain
+    
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("  [Check24 Comparison] Playwright nicht installiert — ueberspringe")
+        return {}
+    
+    print("  [Check24 Comparison] Lade %s ..." % comparison_url)
+    results = {}
+    
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(comparison_url, timeout=30000)
+            page.wait_for_timeout(5000)  # Warten bis Ergebnisse geladen
+            
+            # Ratings aus dem DOM extrahieren
+            raw = page.evaluate("""() => {
+                var results = [];
+                var allEls = document.body.querySelectorAll('*');
+                for (var i = 0; i < allEls.length; i++) {
+                    var el = allEls[i];
+                    if (el.children.length > 2) continue;
+                    var t = el.textContent.trim();
+                    if (t.match(/^\(\d[.,]\d\)\s*[\d.]+$/) && t.length < 20) {
+                        var m = t.match(/\((\d[.,]\d)\)\s*([\d.]+)/);
+                        if (!m) continue;
+                        var node = el.parentElement;
+                        for (var lvl = 0; lvl < 6; lvl++) {
+                            if (!node) break;
+                            var logos = node.querySelectorAll('img[alt*="Logo"]');
+                            if (logos.length === 1) {
+                                results.push({
+                                    brand: logos[0].alt.replace(/\s*Logo\s*/gi, '').trim(),
+                                    score: m[1],
+                                    count: m[2]
+                                });
+                                break;
+                            }
+                            node = node.parentElement;
+                        }
+                    }
+                }
+                // Deduplizieren
+                var unique = {};
+                results.forEach(function(r) {
+                    var c = parseInt(r.count.replace(/\./g, ''));
+                    if (!unique[r.brand] || c > parseInt((unique[r.brand].count || '0').replace(/\./g, ''))) {
+                        unique[r.brand] = r;
+                    }
+                });
+                return unique;
+            }""")
+            
+            browser.close()
+            
+            # Auf unsere Brand-Keys mappen
+            for brand_name, data in raw.items():
+                brand_lower = brand_name.lower().strip()
+                brand_key = CHECK24_BRAND_MAP.get(brand_name) or CHECK24_BRAND_MAP.get(brand_lower)
+                if not brand_key:
+                    continue
+                score = float(data["score"].replace(",", "."))
+                count = int(data["count"].replace(".", ""))
+                results[brand_key] = {
+                    "score": round(score, 1),
+                    "count": count,
+                    "url": comparison_url,
+                }
+            
+            print("  [Check24 Comparison] %d Versicherer mit Bewertungen gefunden" % len(results))
+            for bk, bv in sorted(results.items()):
+                print("    %s: %.1f/5 (%d Reviews)" % (bk, bv["score"], bv["count"]))
+    
+    except Exception as e:
+        print("  [Check24 Comparison] Fehler: %s" % str(e)[:200])
+    
+    return results
 
 # ── 5. FRANKE & BORNBERG ─────────────────────────────────────────────────────
 FB_RATING_CLASSES = {

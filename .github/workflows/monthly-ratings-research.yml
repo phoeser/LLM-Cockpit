@@ -1,0 +1,43 @@
+name: Monthly Ratings Research
+
+on:
+  schedule:
+    # Am 1. jedes Monats um 02:00 UTC (04:00 MESZ)
+    - cron: '0 2 1 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: monthly-ratings-research
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout LLM-Cockpit-Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Ratings-Research via Gemini (Warentest, M&M, Verivox, DFSI)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/update_ratings_research.py
+
+      - name: Aenderungen committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ratings_external.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: monatliches Ratings-Update (Gemini Research)"
+          git pull --rebase origin main || true
+          git push origin main

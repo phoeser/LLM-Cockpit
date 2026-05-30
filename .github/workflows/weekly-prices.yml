@@ -1,4 +1,4 @@
-name: Weekly Price Comparison
+name: Weekly Check24 Prices & Reviews
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: weekly-price-comparison
+  group: weekly-check24
   cancel-in-progress: false
 
 permissions:
@@ -17,8 +17,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  prices:
+  check24:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout LLM-Cockpit-Repo
         uses: actions/checkout@v4
@@ -28,19 +29,33 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Playwright
+      - name: Install dependencies
         run: |
+          pip install -r requirements.txt
           pip install playwright
           playwright install chromium --with-deps
 
-      - name: Preisvergleich crawlen (Check24, 3 Produkte x 3 Altersprofile)
+      - name: Preisvergleich crawlen (3 Produkte x 3 Altersprofile)
         run: python scripts/update_prices.py
+        continue-on-error: true
+
+      - name: Check24 Einzelbewertungen crawlen
+        env:
+          CHECK24_REVIEWS_ENABLED: "1"
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/update_sentiment.py
+        continue-on-error: true
 
       - name: Aenderungen committen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/price_comparison.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: woechentliches Preisvergleich-Update (Check24)"
+          git add data/review_history.json 2>/dev/null || true
+          git add data/sentiment_data.json 2>/dev/null || true
+          git add data/sentiment_data.previous.json 2>/dev/null || true
+          git add shared/events.jsonl 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: weekly Check24 update (Preise + Reviews)"
           git pull --rebase origin main || true
           git push origin main

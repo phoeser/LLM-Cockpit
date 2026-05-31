@@ -3123,14 +3123,30 @@ function buildGeoTab() {
         __v3_loadJSON('data/geo_page_changes.json'),
         __v3_loadJSON('data/price_comparison.json'),
         __v3_loadJSON('data/ratings_external.json'),
+        __v3_loadJSON('data/providers.json'),
         __v3_loadEvents()
       ]);
       GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
       window.GEO_PAGE_CHANGES = res[5] || []; window.PRICE_COMPARISON = res[6];
       window.RATINGS_EXTERNAL = res[7];
-      window.CORRELATION_EVENTS = res[8] || [];
+      window.PROVIDERS_CRAWL = res[8];
+      window.CORRELATION_EVENTS = res[9] || [];
       CORRELATION_EVENTS = window.CORRELATION_EVENTS;
+      // v3: gecrawlte Anbieter-URLs in PROVIDERS einmischen (#11)
+      try {
+        var __pc = window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.providers;
+        if (__pc && typeof PROVIDERS !== 'undefined') {
+          Object.keys(__pc).forEach(function(k){
+            var c = __pc[k];
+            if (PROVIDERS[k] && c && c.source === 'crawl' && c.total) {
+              ['total','ratgeber','faq','rechner','presse','glossar','service','produkt','b2b','video'].forEach(function(f){ if (c[f] != null) PROVIDERS[k][f] = c[f]; });
+              if (c.sparten) PROVIDERS[k].sparten = c.sparten;
+              PROVIDERS[k]._crawl_as_of = c.as_of;
+            }
+          });
+        }
+      } catch(e){ console.warn('providers merge:', e.message); }
     } catch(e) { console.error('Bootstrap-Ladefehler:', e); }
     __v3_runBuilds();
     if (banner) banner.style.display = 'none';
@@ -3388,6 +3404,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
 
   // ---------- Content (GEO): letzte 30, scrollbar, aufklappbare Diffs (#7) ----------
+  var _cgBrand = 'all';
   window.buildContentGeo = function(){
     var host = document.getElementById('contentGeoBody');
     if(!host) return;
@@ -3406,8 +3423,18 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       c+='<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-emerald-500"><div class="text-xs uppercase text-gray-500 font-semibold">Letzte Erfassung</div><div class="text-base font-bold text-ergo-dark mt-2">'+esc(newest)+'</div></div>';
       kpiHost.innerHTML=c;
     }
-    var view = data.slice(0,30);
-    var rows = view.map(function(e,i){
+    window.__cgData=data; window.__cgByBrand=byBrand;
+    window.__cgRender();
+  };
+  window.__cgRender = function(){
+    var host=document.getElementById('contentGeoBody'); if(!host) return;
+    var data=window.__cgData||[]; var byBrand=window.__cgByBrand||{};
+    var brands=Object.keys(byBrand).sort();
+    var filtered=(_cgBrand==='all')?data:data.filter(function(e){return (e.b||'')===_cgBrand;});
+    var view=filtered.slice(0,300);
+    function fbtn(label,val,cnt){return '<button onclick="window.__cgFilter(this.getAttribute(\'data-v\'))" data-v="'+esc(val)+'" class="px-3 py-1 text-xs rounded-full border transition '+(_cgBrand===val?'bg-ergo-red text-white border-ergo-red':'text-gray-600 border-gray-300 hover:border-ergo-red')+'">'+esc(label)+(cnt!=null?' ('+cnt+')':'')+'</button>';}
+    var bar='<div class="flex flex-wrap gap-2 mb-3">'+fbtn('Alle','all',data.length)+brands.map(function(b){return fbtn(b,b,byBrand[b]);}).join('')+'</div>';
+    var rows=view.map(function(e,i){
       var ts=(e.ts||'').replace('T',' ').replace('Z',' UTC');
       var sim=(e.sim==null)?'–':(Math.round(e.sim*100)+'%');
       var simColor=(e.sim!=null && e.sim<0.6)?'text-red-600 font-bold':'text-gray-700';
@@ -3424,62 +3451,61 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         detail+='</div>';
       } else { detail='<div class="mt-2 text-xs text-gray-400">Keine Zeilen-Details gespeichert.</div>'; }
       return '<div class="border-b">'
-        + '<div class="flex items-start gap-2 py-2 px-2 hover:bg-gray-50 cursor-pointer" onclick="window.__cgToggle('+i+')">'
-        + '<span id="cgArrow'+i+'" class="text-gray-400 select-none">▶</span>'
-        + '<span class="text-gray-500 text-xs whitespace-nowrap">'+esc(ts)+'</span>'
-        + '<span class="font-semibold whitespace-nowrap">'+esc(e.b||'')+'</span>'
-        + '<span class="flex-1 min-w-0 truncate">'+url+'</span>'
-        + '<span class="'+simColor+' text-center whitespace-nowrap">'+sim+'</span>'
-        + '<span class="text-xs whitespace-nowrap">'+ac+rc+'</span>'
-        + '</div>'
-        + '<div id="cgDetail'+i+'" class="hidden px-7 pb-3">'+detail+'</div>'
-        + '</div>';
+        +'<div class="flex items-start gap-2 py-2 px-2 hover:bg-gray-50 cursor-pointer" onclick="window.__cgToggle('+i+')">'
+        +'<span id="cgArrow'+i+'" class="text-gray-400 select-none">▶</span>'
+        +'<span class="text-gray-500 text-xs whitespace-nowrap">'+esc(ts)+'</span>'
+        +'<span class="font-semibold whitespace-nowrap">'+esc(e.b||'')+'</span>'
+        +'<span class="flex-1 min-w-0 truncate">'+url+'</span>'
+        +'<span class="'+simColor+' text-center whitespace-nowrap">'+sim+'</span>'
+        +'<span class="text-xs whitespace-nowrap">'+ac+rc+'</span>'
+        +'</div><div id="cgDetail'+i+'" class="hidden px-7 pb-3">'+detail+'</div></div>';
     }).join('');
-    host.innerHTML =
-      '<div class="bg-white rounded-xl p-4 shadow">'
-      + '<div class="flex justify-between items-center mb-2"><div class="text-xs text-gray-500">Letzte '+view.length+' Änderungen (klicken zum Aufklappen)</div>'
-      + (data.length>30?'<div class="text-xs text-gray-400">'+data.length+' gesamt</div>':'')+'</div>'
-      + '<div style="max-height:600px;overflow:auto">'
-      + '<div class="text-xs text-gray-400 flex gap-2 px-2 pb-1 border-b font-semibold"><span style="width:14px"></span><span>Zeit</span><span>Marke</span><span class="flex-1">Seite</span><span>Ähnl.</span><span>+/-</span></div>'
-      + rows + '</div></div>';
+    host.innerHTML='<div class="bg-white rounded-xl p-4 shadow">'+bar
+      +'<div class="text-xs text-gray-500 mb-2">Zeige '+view.length+' von '+filtered.length+' Änderungen'+(_cgBrand!=='all'?(' (Filter: '+esc(_cgBrand)+')'):'')+' — klicken zum Aufklappen</div>'
+      +'<div style="max-height:640px;overflow:auto">'
+      +'<div class="text-xs text-gray-400 flex gap-2 px-2 pb-1 border-b font-semibold"><span style="width:14px"></span><span>Zeit</span><span>Marke</span><span class="flex-1">Seite</span><span>Ähnl.</span><span>+/-</span></div>'
+      +rows+'</div></div>';
   };
-  window.__cgToggle = function(i){
-    var d=document.getElementById('cgDetail'+i), a=document.getElementById('cgArrow'+i);
-    if(!d) return; var hidden=d.classList.toggle('hidden');
-    if(a) a.textContent = hidden ? '▶' : '▼';
-  };
+  window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
+  window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};
 
-  // ---------- Preisvergleich ----------
   window.buildPreisvergleich = function(){
-    var host = document.getElementById('preisvergleichBody');
-    if(!host) return;
-    var data = window.PRICE_COMPARISON;
-    if(!data || (typeof data==='object' && Object.keys(data).length===0)){
-      host.innerHTML = '<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Preisvergleichsdaten. <code>update_prices.py</code> (montags) erzeugt <code>data/price_comparison.json</code>.</div>';
+    var host=document.getElementById('preisvergleichBody'); if(!host) return;
+    var data=window.PRICE_COMPARISON;
+    var products=data && data.products;
+    if(!products || !Object.keys(products).length){
+      host.innerHTML='<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Preisvergleichsdaten. <code>update_prices.py</code> erzeugt <code>data/price_comparison.json</code>.</div>';
       return;
     }
-    var BN = {ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    var BN={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    function disp(b){return b.indexOf('_other_')===0?b.slice(7):(BN[b]||b);}
+    function tracked(b){return b.indexOf('_other_')!==0;}
     var out='';
-    Object.keys(data).forEach(function(pk){
-      var prod=data[pk]; if(!prod||!prod.profiles) return;
+    if(data.as_of) out+='<p class="text-xs text-gray-400 mb-3">Stand: '+esc(data.as_of)+' · Quelle: Check24 (günstigster Monatsbeitrag je Tarif). Eigene Marken hervorgehoben, Wettbewerb ausgegraut.</p>';
+    Object.keys(products).forEach(function(pk){
+      var prod=products[pk]; var profs=prod.profiles||{}; var profKeys=Object.keys(profs);
+      var brandSet={}; profKeys.forEach(function(a){var pr=profs[a]; if(pr.brands) Object.keys(pr.brands).forEach(function(b){brandSet[b]=1;});});
+      var brands=Object.keys(brandSet);
       out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-3">'+esc(prod.name||pk)+'</h3>';
-      var pks=Object.keys(prod.profiles), bset={};
-      pks.forEach(function(p){Object.keys(prod.profiles[p].brands||{}).forEach(function(bk){if(bk.indexOf('_other_')!==0)bset[bk]=1;});});
+      if(!brands.length){ out+='<p class="text-sm text-gray-500">Keine Tarife gefunden (Check24-Crawl unvollständig).</p></div>'; return; }
+      var firstAge=profKeys[0];
+      function price(b,a){var br=(profs[a].brands||{})[b]; return (br&&br.price!=null)?br.price:Infinity;}
+      brands.sort(function(x,y){var tx=tracked(x),ty=tracked(y); if(tx!==ty)return tx?-1:1; return price(x,firstAge)-price(y,firstAge);});
       out+='<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
-      pks.forEach(function(p){out+='<th class="py-2 px-2 text-right">'+esc(prod.profiles[p].label||p)+'</th>';});
+      profKeys.forEach(function(a){out+='<th class="py-2 px-2 text-right">'+esc(profs[a].label||a)+'</th>';});
       out+='</tr></thead><tbody>';
-      Object.keys(bset).sort().forEach(function(bk){
-        var isE=(bk==='ergo');
-        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':'')+'"><td class="py-2 px-2">'+esc(BN[bk]||bk)+(isE?' ★':'')+'</td>';
-        pks.forEach(function(p){var b=(prod.profiles[p].brands||{})[bk];var pr=(b&&b.price!=null)?b.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–';out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
+      brands.forEach(function(b){
+        var isE=(b==='ergo'), isT=tracked(b);
+        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+'</td>';
+        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
         out+='</tr>';
       });
-      out+='</tbody></table></div>'+(prod.as_of?'<div class="text-xs text-gray-400 mt-2">Stand: '+esc(prod.as_of)+' · Quelle: Check24</div>':'')+'</div>';
+      out+='</tbody></table></div></div>';
     });
-    host.innerHTML = out || '<div class="text-sm text-gray-500">Keine Produktdaten.</div>';
+    host.innerHTML=out;
   };
 
-  // ---------- Kannibalisierung: dynamische Keyword-Overlap-Tabelle (#10) ----------
+
   window.buildBeraterCannibalization = function(){
     var tb = document.getElementById('berKannibTableBody');
     if(!tb) return;

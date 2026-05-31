@@ -317,7 +317,7 @@
       <span class="text-2xl">&#9888;</span>
       <h3 class="text-xl font-bold text-red-900">Kannibalisierungs-Risiko: Berater vs. Direktvertrieb</h3>
     </div>
-    <p class="text-sm text-gray-700 mb-4">Stichproben-Analyse von 15 Berater-Subdomains zeigt: <strong>100% aller Berater-Seiten sind vollstaendige Produkt-Kataloge</strong> mit identischem Template-Content und Online-Abschluss-CTAs. Diese Seiten konkurrieren direkt mit ergo.de/produkte um dieselben Keywords.</p>
+    <p class="text-sm text-gray-700 mb-4" id="berKannibIntro">Stichproben-Analyse von 15 Berater-Subdomains zeigt: <strong>100% aller Berater-Seiten sind vollstaendige Produkt-Kataloge</strong> mit identischem Template-Content und Online-Abschluss-CTAs. Diese Seiten konkurrieren direkt mit ergo.de/produkte um dieselben Keywords.</p>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
       <div class="bg-white rounded-lg p-3 shadow-sm border border-red-200">
         <div class="text-xs text-gray-500 uppercase">Seiten mit Produkt-Keywords</div>
@@ -3637,4 +3637,56 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       brands.forEach(function(b){
         var isE=(b==='ergo'), isT=tracked(b);
         out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+'</td>';
-        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{min
+        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
+        out+='</tr>';
+      });
+      out+='</tbody></table></div></div>';
+    });
+    host.innerHTML=out;
+  };
+
+
+  window.buildBeraterCannibalization = function(){
+    var tb = document.getElementById('berKannibTableBody');
+    if(!tb) return;
+    var d = window.BERATER_DATA;
+    var cann = (d && d.typology && d.typology.cannibalization) || null;
+    var LABELS={zahnzusatz:'Zahnzusatzversicherung',rechtsschutz:'Rechtsschutzversicherung',haftpflicht:'Privathaftpflicht',kfz:'KFZ-Versicherung',hausrat:'Hausratversicherung',berufsunfaehigkeit:'Berufsunfähigkeit',sterbegeld:'Sterbegeldversicherung',risikoleben:'Risikolebensversicherung',pflege:'Pflegeversicherung',reise:'Reiseversicherung'};
+    var FOKUS={zahnzusatz:1,rechtsschutz:1,sterbegeld:1};
+    if(!cann){ tb.innerHTML='<tr><td colspan="6" class="px-3 py-3 text-gray-500 text-sm">Keine Typologie-Daten (Berater-Crawl ausstehend).</td></tr>'; return; }
+    var order=Object.keys(cann).sort(function(a,b){return (cann[b].avg_mentions||0)-(cann[a].avg_mentions||0);});
+    tb.innerHTML=order.map(function(k){
+      var c=cann[k]; var fokus=FOKUS[k];
+      var r = (c.avg_mentions>=10)?['HOCH','#dc2626']:(c.avg_mentions>=4)?['MITTEL','#d97706']:['GERING','#16a34a'];
+      return '<tr class="border-b '+(fokus?'bg-red-50':'')+'">'
+        +'<td class="px-3 py-2 font-semibold">'+(LABELS[k]||k)+'</td>'
+        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs '+(fokus?'bg-ergo-red text-white':'bg-gray-200 text-gray-700')+'">'+(fokus?'FOKUS':'Standard')+'</span></td>'
+        +'<td class="text-right px-3 py-2 font-semibold">'+(c.avg_mentions!=null?c.avg_mentions.toLocaleString('de-DE'):'–')+'</td>'
+        +'<td class="text-right px-3 py-2">'+c.pct+'% ('+c.pages_with+')</td>'
+        +'<td class="text-right px-3 py-2">~'+(c.projection!=null?c.projection.toLocaleString('de-DE'):'–')+'</td>'
+        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs text-white" style="background:'+r[1]+'">'+r[0]+'</span></td>'
+        +'</tr>';
+    }).join('');
+    var foot=document.getElementById('berKannibFoot');
+    if(foot && d.typology){
+      var base=d.typology.cannibalization_base||((d.totals||{}).with_subdomain)||0;
+      foot.textContent='Datenquelle: Crawl von '+(d.typology.crawled_ok||d.typology.sample_size||0)+' zufällig gezogenen Berater-Subdomains, hochgerechnet auf '+base.toLocaleString('de-DE')+' Berater mit Subdomain. Stand: '+(d.generated_at||'').slice(0,10);
+    }
+    var __ok=(d.typology.crawled_ok||d.typology.sample_size||0);
+    var __ws=(d.totals||{}).with_subdomain||d.typology.cannibalization_base||0;
+    var __sn=document.getElementById('berKannibSampleNote');
+    if(__sn){ __sn.textContent=__ok+'/'+__ok+' Stichprobe'; }
+    var __pages=document.getElementById('berKannibPages');
+    if(__pages){ __pages.textContent='~'+(__ws*15).toLocaleString('de-DE'); }
+    var __intro=document.getElementById('berKannibIntro');
+    if(__intro){
+      var __td=d.typology.type_distribution||{};
+      var __kat=(__td.produktkatalog||0)+(__td.minimal||0);
+      var __pct=__ok?Math.round(__kat/__ok*100):0;
+      __intro.innerHTML='Stichproben-Analyse von '+__ok+' Berater-Subdomains: <strong>'+__pct+'% sind Produkt-Kataloge bzw. Standard-Templates</strong> mit Online-Abschluss-CTAs — sie konkurrieren direkt mit ergo.de/produkte um dieselben Keywords.';
+    }
+  };
+})();
+</script>
+</body>
+</html>

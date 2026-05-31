@@ -462,6 +462,7 @@
     <p class="text-xs text-gray-500 mb-3">Entwicklung der LLM-Sichtbarkeit (Share of Voice %) je Marke über die Messläufe — Quelle: GEO-Events.</p>
     <div style="position:relative;height:320px"><canvas id="geoSovTimeChart"></canvas></div>
     <p id="geoSovTimeEmpty" class="text-sm text-gray-400 mt-2" style="display:none">Noch keine SoV-Zeitreihe verfügbar.</p>
+    <div class="mt-3"><div class="text-xs text-gray-500 mb-1">Tägliche Veränderung (letzter Messpunkt ggü. Vortag):</div><div id="geoSovDelta" class="flex flex-wrap gap-2"></div></div>
   </div>
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-3">Anbieter-Ranking gesamt (über alle Produkte und LLMs)</h3>
@@ -595,6 +596,7 @@
         <h2 class="text-2xl font-bold text-ergo-dark mb-2">Produktbewertungen & Ratings</h2>
         <p class="text-sm text-gray-600">Alle professionellen Ratings je Produkt im Vergleich — Franke & Bornberg, Finanztip, Stiftung Warentest, Morgen & Morgen, DFSI</p>
       </div>
+      <span class="text-xs text-gray-500 whitespace-nowrap" id="ratingsDataStand"></span>
     </div>
   </div>
 
@@ -667,7 +669,8 @@
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-2">Presse-Archiv (6 Monate)</h3>
     <p class="text-xs text-gray-500 mb-3">Alle gesammelten Artikel chronologisch. Klick auf Titel zum Originalartikel.</p>
-    <div class="flex flex-wrap gap-2 mb-4" id="pressArchiveBrandFilter"></div>
+    <div class="flex flex-wrap gap-2 mb-3" id="pressArchiveBrandFilter"></div>
+    <input type="search" id="pressArchiveSearch" placeholder="Artikel durchsuchen (Titel, Quelle) …" oninput="if(window.__pressArchiveRender)window.__pressArchiveRender()" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3" />
     <div id="pressArchiveList" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg"></div>
     <div class="text-xs text-gray-400 mt-2" id="pressArchiveCount"></div>
   </div>
@@ -1721,6 +1724,8 @@ function renderRatingsTables() {
     }
   };
 
+  var __rds = document.getElementById('ratingsDataStand');
+  if(__rds && window.RATINGS_EXTERNAL && window.RATINGS_EXTERNAL._updated) __rds.textContent = 'Datenstand: ' + window.RATINGS_EXTERNAL._updated;
   ['zahnzusatz','sterbegeld','risikoleben'].forEach(function(prodKey) {
     var container = document.getElementById('ratingsTable' + prodKey.charAt(0).toUpperCase() + prodKey.slice(1));
     if (!container) return;
@@ -1992,9 +1997,11 @@ function buildPressTab() {
           '">' + stats[k].name + ' <span class="opacity-70">(' + count + ')</span></button>';
       }).join('');
 
-      const articles = PH[archiveBrand] || [];
+      var __aq = ((document.getElementById('pressArchiveSearch')||{}).value||'').trim().toLowerCase();
+      const __allArt = PH[archiveBrand] || [];
+      const articles = __aq ? __allArt.filter(function(a){ return ((a.title||'')+' '+(a.source||'')).toLowerCase().indexOf(__aq) > -1; }) : __allArt;
       if (articles.length === 0) {
-        archiveList.innerHTML = '<p class="text-gray-500 text-sm p-4">Noch keine archivierten Artikel</p>';
+        archiveList.innerHTML = '<p class="text-gray-500 text-sm p-4">' + (__aq ? ('Keine Treffer für „' + __aq + '"') : 'Noch keine archivierten Artikel') + '</p>';
         archiveCount.textContent = '';
         return;
       }
@@ -2031,6 +2038,7 @@ function buildPressTab() {
       archiveCount.textContent = articles.length + ' Artikel im Archiv (max. 6 Monate)';
     }
     window.showPressArchive = function(k) { archiveBrand = k; renderArchive(); };
+    window.__pressArchiveRender = renderArchive;
     renderArchive();
   }
 }
@@ -3504,6 +3512,20 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       byBrand[e.brand][d] = e.detail.new_pct;   // letzter Wert je Tag gewinnt
     });
     var dates = Object.keys(dateSet).sort();
+    // Tägliche Veränderung (letzter vs. vorletzter Messpunkt) je Marke — grafisch +/-
+    var deltaHost = document.getElementById('geoSovDelta');
+    if(deltaHost){
+      var chips = Object.keys(byBrand).map(function(b){
+        var vals = dates.map(function(d){ return byBrand[b][d]; }).filter(function(v){ return v!=null; });
+        if(vals.length<2) return '';
+        var delta = vals[vals.length-1] - vals[vals.length-2];
+        var up = delta>0.05, down = delta<-0.05;
+        var arrow = up?'▲':(down?'▼':'■');
+        var cls = up?'text-green-700 bg-green-50':(down?'text-red-700 bg-red-50':'text-gray-500 bg-gray-100');
+        return '<span class="px-2 py-1 rounded text-xs font-semibold '+cls+'">'+b+' '+arrow+' '+(delta>0?'+':'')+delta.toFixed(1)+' pp</span>';
+      }).filter(Boolean).join('');
+      deltaHost.innerHTML = chips || '<span class="text-xs text-gray-400">Noch keine zwei Messpunkte für einen Tagesvergleich.</span>';
+    }
     var ds = Object.keys(byBrand).map(function(b){
       return { label:b, borderColor: COL[b]||'#888', backgroundColor:'transparent',
         data: dates.map(function(d){ return byBrand[b][d]!=null ? byBrand[b][d] : null; }),
@@ -3615,31 +3637,4 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       brands.forEach(function(b){
         var isE=(b==='ergo'), isT=tracked(b);
         out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+'</td>';
-        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
-        out+='</tr>';
-      });
-      out+='</tbody></table></div></div>';
-    });
-    host.innerHTML=out;
-  };
-
-
-  window.buildBeraterCannibalization = function(){
-    var tb = document.getElementById('berKannibTableBody');
-    if(!tb) return;
-    var d = window.BERATER_DATA;
-    var cann = (d && d.typology && d.typology.cannibalization) || null;
-    var LABELS={zahnzusatz:'Zahnzusatzversicherung',rechtsschutz:'Rechtsschutzversicherung',haftpflicht:'Privathaftpflicht',kfz:'KFZ-Versicherung',hausrat:'Hausratversicherung',berufsunfaehigkeit:'Berufsunfähigkeit',sterbegeld:'Sterbegeldversicherung',risikoleben:'Risikolebensversicherung',pflege:'Pflegeversicherung',reise:'Reiseversicherung'};
-    var FOKUS={zahnzusatz:1,rechtsschutz:1,sterbegeld:1};
-    if(!cann){ tb.innerHTML='<tr><td colspan="6" class="px-3 py-3 text-gray-500 text-sm">Keine Typologie-Daten (Berater-Crawl ausstehend).</td></tr>'; return; }
-    var order=Object.keys(cann).sort(function(a,b){return (cann[b].avg_mentions||0)-(cann[a].avg_mentions||0);});
-    tb.innerHTML=order.map(function(k){
-      var c=cann[k]; var fokus=FOKUS[k];
-      var r = (c.avg_mentions>=10)?['HOCH','#dc2626']:(c.avg_mentions>=4)?['MITTEL','#d97706']:['GERING','#16a34a'];
-      return '<tr class="border-b '+(fokus?'bg-red-50':'')+'">'
-        +'<td class="px-3 py-2 font-semibold">'+(LABELS[k]||k)+'</td>'
-        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs '+(fokus?'bg-ergo-red text-white':'bg-gray-200 text-gray-700')+'">'+(fokus?'FOKUS':'Standard')+'</span></td>'
-        +'<td class="text-right px-3 py-2 font-semibold">'+(c.avg_mentions!=null?c.avg_mentions.toLocaleString('de-DE'):'–')+'</td>'
-        +'<td class="text-right px-3 py-2">'+c.pct+'% ('+c.pages_with+')</td>'
-        +'<td class="text-right px-3 py-2">~'+(c.projection!=null?c.projection.toLocaleString('de-DE'):'–')+'</td>'
-        +'<td class="text-center px-3 py-2"><span 
+        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{min

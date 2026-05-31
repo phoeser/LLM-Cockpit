@@ -563,6 +563,7 @@ def aggregate(rows):
 
 def main():
     out_dir = Path(__file__).parent.parent
+    out_path = out_dir / "berater_data.json"
     seen = {}
     raw_count = 0
     plz_limit = os.environ.get("BERATER_PLZ_LIMIT")
@@ -591,6 +592,7 @@ def main():
         if typology:
             agg["typology"] = typology
 
+    t = agg["totals"]
     # ── Event-Emission für Korrelations-Engine ───────────────────────────
     if HAS_EVENTS:
         print("\n--- Event-Emission ---")

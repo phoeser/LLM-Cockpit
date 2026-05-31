@@ -2335,16 +2335,28 @@ function buildGeoTab() {
   const llmSet = new Set();
   Object.values(data.products || {}).forEach(p => Object.keys(p.summary_by_llm || {}).forEach(k => llmSet.add(k)));
   const llmList = [...llmSet];
+  // Treffer (Mentions) je LLM, um leere LLMs zu kennzeichnen
+  const geoLlmMentions = (l) => geoRankingForLlm(data, l).reduce((s, r) => s + (r.mentions || 0), 0);
+  const llmEmpty = {};
+  llmList.forEach(l => { llmEmpty[l] = geoLlmMentions(l) === 0; });
   const llmSelEl = document.getElementById('geoLlmSelect');
   if (llmSelEl) {
     llmSelEl.innerHTML = '<option value="__all__">Alle LLMs (Gesamt)</option>' +
-      llmList.map(l => `<option value="${l}">${geoLlmLabel(l)}</option>`).join('');
+      llmList.map(l => `<option value="${l}">${geoLlmLabel(l)}${llmEmpty[l] ? ' (keine Daten)' : ''}</option>`).join('');
     llmSelEl.value = (geoSel === '__all__' || llmList.includes(geoSel)) ? geoSel : '__all__';
   }
   const hintEl = document.getElementById('geoLlmHint');
-  if (hintEl) hintEl.textContent = (geoSel === '__all__')
-    ? (llmList.length ? `${llmList.length} LLMs gemessen: ` + llmList.map(geoLlmLabel).join(', ') : '')
-    : `Gefiltert auf ${geoLlmLabel(geoSel)}`;
+  if (hintEl) {
+    if (geoSel !== '__all__' && llmEmpty[geoSel]) {
+      hintEl.innerHTML = '<span class="text-yellow-700 font-semibold">⚠ ' + geoLlmLabel(geoSel) +
+        ' lieferte in diesem Messlauf keine Treffer (Quelldaten leer) — Werte daher 0. Vergleiche ChatGPT/Perplexity.</span>';
+    } else {
+      const okLlms = llmList.filter(l => !llmEmpty[l]);
+      hintEl.textContent = (geoSel === '__all__')
+        ? (llmList.length ? `${llmList.length} LLMs im Lauf` + (okLlms.length < llmList.length ? ` (mit Daten: ${okLlms.map(geoLlmLabel).join(', ')})` : `: ${llmList.map(geoLlmLabel).join(', ')}`) : '')
+        : `Gefiltert auf ${geoLlmLabel(geoSel)}`;
+    }
+  }
   // Effektives Ranking je nach Auswahl (ersetzt RANKING in allen Render-Bloecken)
   const RANKING = geoRankingForLlm(data, geoSel);
   // Status-Badge
@@ -3630,16 +3642,4 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         +'<td class="text-right px-3 py-2 font-semibold">'+(c.avg_mentions!=null?c.avg_mentions.toLocaleString('de-DE'):'–')+'</td>'
         +'<td class="text-right px-3 py-2">'+c.pct+'% ('+c.pages_with+')</td>'
         +'<td class="text-right px-3 py-2">~'+(c.projection!=null?c.projection.toLocaleString('de-DE'):'–')+'</td>'
-        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs text-white" style="background:'+r[1]+'">'+r[0]+'</span></td>'
-        +'</tr>';
-    }).join('');
-    var foot=document.getElementById('berKannibFoot');
-    if(foot && d.typology){
-      var base=d.typology.cannibalization_base||((d.totals||{}).with_subdomain)||0;
-      foot.textContent='Datenquelle: Crawl von '+(d.typology.crawled_ok||d.typology.sample_size||0)+' zufällig gezogenen Berater-Subdomains, hochgerechnet auf '+base.toLocaleString('de-DE')+' Berater mit Subdomain. Stand: '+(d.generated_at||'').slice(0,10);
-    }
-    var __sn=document.getElementById('berKannibSampleNote');
-    if(__sn && d.typology){ __sn.textContent=(d.typology.crawled_ok||d.typology.sample_size||0)+' Subdomains (Stichprobe)'; }
-  };
-})();
-</
+        +'<td class="text-center px-3 py-2"><span 

@@ -65,7 +65,7 @@
       </div>
     </div>
     <div class="text-right text-sm">
-      <div class="text-gray-300">Stand: 2026-04-25</div>
+      <div class="text-gray-300" id="headerDataStand">Stand: 2026-04-25</div>
       <div class="text-gray-400">Paul Höser · ERGO Marketing/Direktvertrieb</div>
     </div>
   </div>
@@ -428,6 +428,13 @@
       </div>
       <div id="geoStatusBadge"></div>
     </div>
+    <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3 flex-wrap">
+      <label for="geoLlmSelect" class="text-sm font-semibold text-ergo-dark">LLM-Ansicht:</label>
+      <select id="geoLlmSelect" onchange="window.geoSelectedLLM=this.value; buildGeoTab();" class="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
+        <option value="__all__">Alle LLMs (Gesamt)</option>
+      </select>
+      <span class="text-xs text-gray-500" id="geoLlmHint"></span>
+    </div>
   </div>
 
   <div id="geoDryRunWarning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-4 mb-6 text-sm">
@@ -725,7 +732,10 @@
 <!-- ===== TAB: HANDLUNGSEMPFEHLUNGEN (inkl. GAP-Analyse) ===== -->
 <section data-content="actions" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h2 class="text-2xl font-bold text-ergo-dark mb-2">Handlungsempfehlungen</h2>
+    <div class="flex items-start justify-between flex-wrap gap-2">
+      <h2 class="text-2xl font-bold text-ergo-dark mb-2">Handlungsempfehlungen</h2>
+      <span class="text-xs text-gray-500" id="recoDataStand">Datenstand: 2026-04-25</span>
+    </div>
     <p class="text-sm text-gray-600">GAP-Analyse und priorisierte Maßnahmen auf einen Blick.</p>
   </div>
 
@@ -847,7 +857,7 @@
 </main>
 
 <footer class="bg-ergo-dark text-white text-center py-6 mt-12">
-  <div class="text-sm">© 2026 ERGO LLM-Sichtbarkeits-Projekt · Erstellt mit Claude · Datenstand: 2026-04-25</div>
+  <div class="text-sm">© 2026 ERGO LLM-Sichtbarkeits-Projekt · Erstellt mit Claude · <span id="footerDataStand">Datenstand: 2026-04-25</span></div>
 </footer>
 
 <script>
@@ -991,7 +1001,7 @@ function providerTemplate(key) {
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 class="text-2xl font-bold text-ergo-dark">${p.name}</h2>
-          <p class="text-sm text-gray-500">${p.url} · ${p.quelle}</p>
+          <p class="text-sm text-gray-500">${p.url} · ${p._crawl_as_of ? ('Sitemap-Crawl ' + p._crawl_as_of) : p.quelle}</p>
         </div>
         <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${p.strategy}</div>
       </div>
@@ -1128,7 +1138,7 @@ function providerTemplate(key) {
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 class="text-2xl font-bold text-ergo-dark">${p.name}</h2>
-          <p class="text-sm text-gray-500">${p.url} · ${p.quelle}</p>
+          <p class="text-sm text-gray-500">${p.url} · ${p._crawl_as_of ? ('Sitemap-Crawl ' + p._crawl_as_of) : p.quelle}</p>
         </div>
         <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${p.strategy}</div>
       </div>
@@ -1697,6 +1707,20 @@ function renderRatingsTables() {
     return '<span class="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">' + val + '</span>';
   }
 
+  // Statische F&B-Ratings (Quelle: franke-bornberg.de, Stand 2026-05; je Versicherer bestes Tarif-Rating).
+  // Dienen als Fallback, wenn der Live-Crawl (SENTIMENT_DATA.by_product) keine F&B-Sterne liefert.
+  // Sterne 1–5 (mehr = besser); cls = F&B-Klasse, grade = F&B-Note (niedriger = besser).
+  var RATINGS_FB_STATIC = {
+    sterbegeld: {
+      'allianz':     {stars:5, cls:'FFF', grade:'1.4'},
+      'ergo':        {stars:4, cls:'FF+', grade:'2.4'},
+      'ideal':       {stars:4, cls:'FF+', grade:'2.4'},
+      'devk':        {stars:2, cls:'F',   grade:'4.6'},
+      'huk-coburg':  {stars:2, cls:'F',   grade:'4.9'},
+      'r+v':         {stars:2, cls:'F',   grade:'5.1'}
+    }
+  };
+
   ['zahnzusatz','sterbegeld','risikoleben'].forEach(function(prodKey) {
     var container = document.getElementById('ratingsTable' + prodKey.charAt(0).toUpperCase() + prodKey.slice(1));
     if (!container) return;
@@ -1716,6 +1740,16 @@ function renderRatingsTables() {
         var match = fbMap[v.name.toLowerCase()];
         if (match && match.fb_stars != null) {
           v.fb = {stars: match.fb_stars, cls: match.fb_class, grade: match.fb_grade};
+        }
+      });
+    }
+
+    // Statischer F&B-Fallback (greift nur, wenn der Live-Crawl nichts geliefert hat)
+    if (RATINGS_FB_STATIC[prodKey]) {
+      prod.versicherer.forEach(function(v) {
+        if (!v.fb) {
+          var s = RATINGS_FB_STATIC[prodKey][v.name.toLowerCase()];
+          if (s) v.fb = s;
         }
       });
     }
@@ -1947,17 +1981,18 @@ function buildPressTab() {
   const archiveFilter = document.getElementById('pressArchiveBrandFilter');
   const archiveList = document.getElementById('pressArchiveList');
   const archiveCount = document.getElementById('pressArchiveCount');
-  if (archiveFilter && archiveList && PD.press_history) {
+  const PH = PD.press_history || PD.recent || {};
+  if (archiveFilter && archiveList && PH && Object.keys(PH).length) {
     let archiveBrand = 'ergo';
     function renderArchive() {
       archiveFilter.innerHTML = brandKeys.map(k => {
-        const count = (PD.press_history[k] || []).length;
+        const count = (PH[k] || []).length;
         return '<button onclick="showPressArchive(\''+k+'\')" class="px-3 py-1 text-xs rounded-full border transition ' +
           (k===archiveBrand ? 'bg-ergo-red text-white border-ergo-red' : 'text-gray-600 border-gray-300 hover:border-ergo-red') +
           '">' + stats[k].name + ' <span class="opacity-70">(' + count + ')</span></button>';
       }).join('');
 
-      const articles = PD.press_history[archiveBrand] || [];
+      const articles = PH[archiveBrand] || [];
       if (articles.length === 0) {
         archiveList.innerHTML = '<p class="text-gray-500 text-sm p-4">Noch keine archivierten Artikel</p>';
         archiveCount.textContent = '';
@@ -2260,8 +2295,58 @@ function buildGapCharts() {
 }
 
 // ============= GEO TAB =============
+// LLM-Anzeige-Namen (robust gegenueber unbekannten Keys)
+function geoLlmLabel(key) {
+  const map = { chatgpt:'ChatGPT', gpt:'ChatGPT', openai:'ChatGPT', gemini:'Gemini',
+    google:'Gemini', claude:'Claude', anthropic:'Claude', perplexity:'Perplexity', copilot:'Copilot' };
+  const k = (key || '').toLowerCase();
+  return map[k] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : key);
+}
+// Ranking fuer einen einzelnen LLM aus den Pro-Produkt-Daten aggregieren.
+// Gibt dieselbe Form wie data.totals_ranking zurueck (name, mentions, share_of_voice, avg_rank, citation_rate).
+function geoRankingForLlm(data, llm) {
+  if (!llm || llm === '__all__') return data.totals_ranking || [];
+  const agg = {};
+  Object.values(data.products || {}).forEach(p => {
+    const s = (p.summary_by_llm || {})[llm];
+    if (!s) return;
+    (s.brands || []).forEach(b => {
+      if (!agg[b.name]) agg[b.name] = { name:b.name, mentions:0, _sov:0, _sovCnt:0, _rank:0, _rankCnt:0, _cite:0, _citeCnt:0 };
+      const a = agg[b.name];
+      a.mentions += (b.mentions || 0);
+      if (b.share_of_voice != null) { a._sov += b.share_of_voice; a._sovCnt++; }
+      if (b.avg_rank != null) { a._rank += b.avg_rank; a._rankCnt++; }
+      if (b.citation_rate != null) { a._cite += b.citation_rate; a._citeCnt++; }
+    });
+  });
+  const totalMentions = Object.values(agg).reduce((s,a) => s + a.mentions, 0) || 1;
+  return Object.values(agg).map(a => ({
+    name: a.name,
+    mentions: a.mentions,
+    share_of_voice: a.mentions ? a.mentions / totalMentions : (a._sovCnt ? a._sov / a._sovCnt : 0),
+    avg_rank: a._rankCnt ? a._rank / a._rankCnt : null,
+    citation_rate: a._citeCnt ? a._cite / a._citeCnt : null
+  })).sort((x,y) => y.share_of_voice - x.share_of_voice);
+}
 function buildGeoTab() {
   const data = GEO_SNAPSHOT;
+  // ===== LLM-Auswahl (alle vs. einzelne) =====
+  const geoSel = window.geoSelectedLLM || '__all__';
+  const llmSet = new Set();
+  Object.values(data.products || {}).forEach(p => Object.keys(p.summary_by_llm || {}).forEach(k => llmSet.add(k)));
+  const llmList = [...llmSet];
+  const llmSelEl = document.getElementById('geoLlmSelect');
+  if (llmSelEl) {
+    llmSelEl.innerHTML = '<option value="__all__">Alle LLMs (Gesamt)</option>' +
+      llmList.map(l => `<option value="${l}">${geoLlmLabel(l)}</option>`).join('');
+    llmSelEl.value = (geoSel === '__all__' || llmList.includes(geoSel)) ? geoSel : '__all__';
+  }
+  const hintEl = document.getElementById('geoLlmHint');
+  if (hintEl) hintEl.textContent = (geoSel === '__all__')
+    ? (llmList.length ? `${llmList.length} LLMs gemessen: ` + llmList.map(geoLlmLabel).join(', ') : '')
+    : `Gefiltert auf ${geoLlmLabel(geoSel)}`;
+  // Effektives Ranking je nach Auswahl (ersetzt RANKING in allen Render-Bloecken)
+  const RANKING = geoRankingForLlm(data, geoSel);
   // Status-Badge
   const badge = document.getElementById('geoStatusBadge');
   if (badge) {
@@ -2276,9 +2361,9 @@ function buildGeoTab() {
   if (warn) warn.classList.toggle('hidden', !data.dry_run);
 
   // KPI-Kacheln
-  const ergo = data.totals_ranking.find(r => r.name === 'ERGO');
-  const top = data.totals_ranking[0];
-  const ergoRank = data.totals_ranking.findIndex(r => r.name === 'ERGO') + 1;
+  const ergo = RANKING.find(r => r.name === 'ERGO');
+  const top = RANKING[0];
+  const ergoRank = RANKING.findIndex(r => r.name === 'ERGO') + 1;
   if (!ergo) { document.getElementById('geoKpiRow').innerHTML = '<p class="text-red-500 col-span-4">ERGO nicht im Ranking gefunden</p>'; return; }
   const kpis = [
     { val: ((ergo.share_of_voice || 0) * 100).toFixed(1) + '%', label: 'Share of Voice ERGO', color: '#DC0028' },
@@ -2297,7 +2382,7 @@ function buildGeoTab() {
   const tbl = document.getElementById('geoRankingTable');
   if (tbl) {
     let h = '<thead><tr class="bg-ergo-dark text-white"><th class="text-left px-3 py-2">Rang</th><th class="text-left px-3 py-2">Anbieter</th><th class="text-right px-3 py-2">Mentions</th><th class="text-right px-3 py-2">Share of Voice</th><th class="text-right px-3 py-2">Ø Rang</th><th class="text-right px-3 py-2">Citation-Rate</th></tr></thead><tbody>';
-    data.totals_ranking.forEach((r, i) => {
+    RANKING.forEach((r, i) => {
       const rowCls = r.name === 'ERGO' ? 'font-bold bg-red-50' : '';
       h += `<tr class="border-b hover:bg-gray-50 ${rowCls}">
         <td class="px-3 py-2">${i+1}</td>
@@ -2316,9 +2401,10 @@ function buildGeoTab() {
   const pCards = document.getElementById('geoProductCards');
   if (pCards) {
     pCards.innerHTML = Object.entries(data.products).map(([pid, p]) => {
-      // Aggregation ueber LLMs (Mittelwert)
+      // Aggregation ueber LLMs (Mittelwert) — respektiert LLM-Auswahl
       const aggregated = {};
-      Object.values(p.summary_by_llm).forEach(llm => {
+      const llmsForCard = (geoSel === '__all__') ? Object.values(p.summary_by_llm || {}) : [ (p.summary_by_llm || {})[geoSel] ].filter(Boolean);
+      llmsForCard.forEach(llm => {
         llm.brands.forEach(b => {
           if (!aggregated[b.name]) aggregated[b.name] = { mentions: 0, sov: 0, rank: 0, rankCnt: 0, cnt: 0 };
           aggregated[b.name].mentions += (b.mentions || 0);
@@ -2371,10 +2457,10 @@ function buildGeoTab() {
     const hasError = !summary || /nicht verf|nicht generiert|client nicht|error|fehler/i.test(summary);
     if (hasError) {
       // Generiere intelligente Summary aus den Daten
-      const ergo = data.totals_ranking.find(r => r.name === 'ERGO');
-      const top = data.totals_ranking[0];
-      const ergoRank = data.totals_ranking.findIndex(r => r.name === 'ERGO') + 1;
-      const totalBrands = data.totals_ranking.length;
+      const ergo = RANKING.find(r => r.name === 'ERGO');
+      const top = RANKING[0];
+      const ergoRank = RANKING.findIndex(r => r.name === 'ERGO') + 1;
+      const totalBrands = RANKING.length;
       const ergoSoV = ((ergo.share_of_voice || 0) * 100).toFixed(1);
       const ergoRankAvg = ergo.avg_rank != null ? ergo.avg_rank.toFixed(1) : 'n/a';
       const topName = top.name;
@@ -2390,7 +2476,8 @@ function buildGeoTab() {
       Object.entries(data.products || {}).forEach(([pid, p]) => {
         // Aggregiere LLMs
         let totalSoV = 0, count = 0;
-        Object.values(p.summary_by_llm || {}).forEach(llm => {
+        const llmsForEs = (geoSel === '__all__') ? Object.values(p.summary_by_llm || {}) : [ (p.summary_by_llm || {})[geoSel] ].filter(Boolean);
+        llmsForEs.forEach(llm => {
           const e = llm.brands.find(b => b.name === 'ERGO');
           if (e) { totalSoV += (e.share_of_voice || 0); count++; }
         });
@@ -2411,10 +2498,10 @@ function buildGeoTab() {
     new Chart(sovCv.getContext('2d'), {
       type: 'doughnut',
       data: {
-        labels: data.totals_ranking.map(r => r.name),
+        labels: RANKING.map(r => r.name),
         datasets: [{
-          data: data.totals_ranking.map(r => ((r.share_of_voice||0) * 100).toFixed(1)),
-          backgroundColor: data.totals_ranking.map(r => GEO_BRAND_COLORS[r.name] || '#666')
+          data: RANKING.map(r => ((r.share_of_voice||0) * 100).toFixed(1)),
+          backgroundColor: RANKING.map(r => GEO_BRAND_COLORS[r.name] || '#666')
         }]
       },
       options: {
@@ -2431,7 +2518,7 @@ function buildGeoTab() {
   const rankCv = document.getElementById('chartGeoRank');
   if (rankCv) {
     if (Chart.getChart(rankCv)) Chart.getChart(rankCv).destroy();
-    const sorted = [...data.totals_ranking].filter(r => r.avg_rank != null).sort((a, b) => a.avg_rank - b.avg_rank);
+    const sorted = [...RANKING].filter(r => r.avg_rank != null).sort((a, b) => a.avg_rank - b.avg_rank);
     new Chart(rankCv.getContext('2d'), {
       type: 'bar',
       data: {
@@ -3147,6 +3234,25 @@ function buildGeoTab() {
           });
         }
       } catch(e){ console.warn('providers merge:', e.message); }
+      // v3: Datenstand-Anzeige dynamisch aus den frischesten geladenen Daten setzen (#1, #5)
+      try {
+        var __dates = [
+          GEO_SNAPSHOT && (GEO_SNAPSHOT.finished_at || GEO_SNAPSHOT.started_at),
+          SENTIMENT_DATA && SENTIMENT_DATA.as_of,
+          PRESS_DATA && PRESS_DATA.as_of,
+          window.PRICE_COMPARISON && window.PRICE_COMPARISON.as_of,
+          window.RATINGS_EXTERNAL && window.RATINGS_EXTERNAL._updated,
+          window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.as_of,
+          window.BERATER_DATA && window.BERATER_DATA.generated_at
+        ].filter(Boolean).map(function(s){ return String(s).slice(0,10); }).filter(function(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s); });
+        if (__dates.length) {
+          var __fresh = __dates.sort().slice(-1)[0];
+          window.__DATA_STAND = __fresh;
+          var __h = document.getElementById('headerDataStand'); if (__h) __h.textContent = 'Stand: ' + __fresh;
+          var __f = document.getElementById('footerDataStand'); if (__f) __f.textContent = 'Datenstand: ' + __fresh;
+          var __r = document.getElementById('recoDataStand'); if (__r) __r.textContent = 'Datenstand: ' + __fresh;
+        }
+      } catch(e){ console.warn('datestand:', e.message); }
     } catch(e) { console.error('Bootstrap-Ladefehler:', e); }
     __v3_runBuilds();
     if (banner) banner.style.display = 'none';
@@ -3536,6 +3642,4 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(__sn && d.typology){ __sn.textContent=(d.typology.crawled_ok||d.typology.sample_size||0)+' Subdomains (Stichprobe)'; }
   };
 })();
-</script>
-</body>
-</html>
+</

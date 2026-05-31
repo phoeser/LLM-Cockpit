@@ -322,7 +322,7 @@
       <div class="bg-white rounded-lg p-3 shadow-sm border border-red-200">
         <div class="text-xs text-gray-500 uppercase">Seiten mit Produkt-Keywords</div>
         <div class="text-2xl font-bold text-red-600">100%</div>
-        <div class="text-xs text-gray-400">15/15 Stichprobe</div>
+        <div id="berKannibSampleNote" class="text-xs text-gray-400">15/15 Stichprobe</div>
       </div>
       <div class="bg-white rounded-lg p-3 shadow-sm border border-red-200">
         <div class="text-xs text-gray-500 uppercase">Mit &laquo;Jetzt berechnen&raquo;</div>
@@ -3532,6 +3532,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var base=d.typology.cannibalization_base||((d.totals||{}).with_subdomain)||0;
       foot.textContent='Datenquelle: Crawl von '+(d.typology.crawled_ok||d.typology.sample_size||0)+' zufällig gezogenen Berater-Subdomains, hochgerechnet auf '+base.toLocaleString('de-DE')+' Berater mit Subdomain. Stand: '+(d.generated_at||'').slice(0,10);
     }
+    var __sn=document.getElementById('berKannibSampleNote');
+    if(__sn && d.typology){ __sn.textContent=(d.typology.crawled_ok||d.typology.sample_size||0)+' Subdomains (Stichprobe)'; }
   };
 })();
 </script>

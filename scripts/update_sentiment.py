@@ -111,14 +111,12 @@ BRANDS = [
     },
     {
         "key": "ruv", "name": "R+V", "domain": "ruv.de",
-        "ekomi_slugs": ["ruv"],
+        "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "R+V Versicherung Wiesbaden",
         "check24_slug": "r-und-v",
         "fb_keywords": ["R+V", "R + V", "Condor"],
-        "products": [
-            {"name": "Gesamt", "ekomi": "ruv"},
-        ],
+        "products": [],
     },
     {
         "key": "devk", "name": "DEVK", "domain": "devk.de",
@@ -133,14 +131,12 @@ BRANDS = [
     },
     {
         "key": "hannoversche", "name": "Hannoversche", "domain": "hannoversche.de",
-        "ekomi_slugs": ["hannoversche-leben"],
+        "ekomi_slugs": [],
         "ekomi_multi": None,
         "google_query": "Hannoversche Lebensversicherung Hannover",
         "check24_slug": "hannoversche",
         "fb_keywords": ["Hannoversche"],
-        "products": [
-            {"name": "Lebensversicherung", "ekomi": "hannoversche-leben"},
-        ],
+        "products": [],
     },
     {
         "key": "cosmosdirekt", "name": "Cosmos Direkt", "domain": "cosmosdirekt.de",
@@ -159,18 +155,21 @@ PRODUCT_CATEGORIES = [
         "key": "zahnzusatz",
         "name": "Zahnzusatzversicherung",
         "check24_path": "zahnzusatzversicherung",
+        "check24_comparison": "zahnzusatzversicherung",
         "fb_rating_id": "gkvzahn_neu",
     },
     {
         "key": "sterbegeld",
         "name": "Sterbegeldversicherung",
         "check24_path": None,
-        "fb_rating_id": None,
+        "check24_comparison": "sterbegeldversicherung",
+        "fb_rating_id": "hbs_stg",
     },
     {
         "key": "risikoleben",
         "name": "Risikolebensversicherung",
         "check24_path": "risikolebensversicherung",
+        "check24_comparison": "risikolebensversicherung",
         "fb_rating_id": "hbs_rlv",
     },
 ]
@@ -733,6 +732,216 @@ def crawl_check24_all_brands(brands, product_path):
     return filtered
 
 
+
+
+# ── 4b. CHECK24 COMPARISON (Playwright) ────────────────────────────────────
+CHECK24_BRAND_MAP = {
+    "ergo": "ergo", "ERGO": "ergo",
+    "allianz": "allianz", "Allianz": "allianz",
+    "axa": "axa", "AXA": "axa",
+    "huk-coburg": "huk", "HUK-Coburg": "huk", "HUK24": "huk", "HUK-COBURG": "huk",
+    "generali": "generali", "Generali": "generali",
+    "signal iduna": "signal-iduna", "Signal Iduna": "signal-iduna",
+    "cosmosdirekt": "cosmosdirekt", "CosmosDirekt": "cosmosdirekt", "Cosmos Direkt": "cosmosdirekt",
+    "r+v": "ruv", "R+V": "ruv",
+    "devk": "devk", "DEVK": "devk",
+    "hannoversche": "hannoversche", "Hannoversche": "hannoversche",
+}
+
+def crawl_check24_comparison(product_subdomain):
+    """Check24 Vergleichsrechner via Playwright laden und Kundenbewertungen pro Versicherer extrahieren.
+    
+    Gibt Dict {brand_key: {score, count, url}} zurueck.
+    """
+    comparison_url = (
+        "https://%s.check24.de/desktop/calculation/result/check24?"
+        "cbirth=19760530&cinssum=8000&prefill=true&"
+        "waitingPeriodInMonths=36&cinception=20260601&cpayment=1&csort=4"
+    ) % product_subdomain
+    
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("  [Check24 Comparison] Playwright nicht installiert — ueberspringe")
+        return {}
+    
+    print("  [Check24 Comparison] Lade %s ..." % comparison_url)
+    results = {}
+    
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(comparison_url, timeout=45000)
+            # Schwere Seiten (z.B. Sterbegeld, 2000+ Tarife) brauchen laenger,
+            # bis die Bewertungen gerendert sind -> auf networkidle warten + Puffer.
+            try:
+                page.wait_for_load_state("networkidle", timeout=20000)
+            except Exception:
+                pass
+            page.wait_for_timeout(9000)  # Warten bis Ergebnisse/Bewertungen geladen
+            
+            # Ratings aus dem DOM extrahieren
+            raw = page.evaluate("""() => {
+                var results = [];
+                var allEls = document.body.querySelectorAll('*');
+                for (var i = 0; i < allEls.length; i++) {
+                    var el = allEls[i];
+                    if (el.children.length > 2) continue;
+                    var t = el.textContent.trim();
+                    if (t.match(/^\(\d[.,]\d\)\s*[\d.]+$/) && t.length < 20) {
+                        var m = t.match(/\((\d[.,]\d)\)\s*([\d.]+)/);
+                        if (!m) continue;
+                        var node = el.parentElement;
+                        for (var lvl = 0; lvl < 6; lvl++) {
+                            if (!node) break;
+                            var logos = node.querySelectorAll('img[alt*="Logo"]');
+                            if (logos.length === 1) {
+                                results.push({
+                                    brand: logos[0].alt.replace(/\s*Logo\s*/gi, '').trim(),
+                                    score: m[1],
+                                    count: m[2]
+                                });
+                                break;
+                            }
+                            node = node.parentElement;
+                        }
+                    }
+                }
+                // Deduplizieren
+                var unique = {};
+                results.forEach(function(r) {
+                    var c = parseInt(r.count.replace(/\./g, ''));
+                    if (!unique[r.brand] || c > parseInt((unique[r.brand].count || '0').replace(/\./g, ''))) {
+                        unique[r.brand] = r;
+                    }
+                });
+                return unique;
+            }""")
+            
+            browser.close()
+            
+            # Auf unsere Brand-Keys mappen
+            for brand_name, data in raw.items():
+                brand_lower = brand_name.lower().strip()
+                brand_key = CHECK24_BRAND_MAP.get(brand_name) or CHECK24_BRAND_MAP.get(brand_lower)
+                if not brand_key:
+                    continue
+                score = float(data["score"].replace(",", "."))
+                count = int(data["count"].replace(".", ""))
+                results[brand_key] = {
+                    "score": round(score, 1),
+                    "count": count,
+                    "url": comparison_url,
+                }
+            
+            print("  [Check24 Comparison] %d Versicherer mit Bewertungen gefunden" % len(results))
+            for bk, bv in sorted(results.items()):
+                print("    %s: %.1f/5 (%d Reviews)" % (bk, bv["score"], bv["count"]))
+    
+    except Exception as e:
+        print("  [Check24 Comparison] Fehler: %s" % str(e)[:200])
+    
+    return results
+
+
+
+def crawl_check24_reviews(product_subdomain, brand_keys, last_crawl_date=None):
+    """Extrahiert Einzelbewertungen aus Check24 Vergleichsrechner via Playwright."""
+    comparison_url = (
+        "https://%s.check24.de/desktop/calculation/result/check24?"
+        "cbirth=19760530&cinssum=8000&prefill=true&"
+        "waitingPeriodInMonths=36&cinception=20260601&cpayment=1&csort=4"
+    ) % product_subdomain
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return {}
+    print("  [C24 Reviews] Lade %s ..." % product_subdomain)
+    all_reviews = {}
+    JS_EXTRACT = """() => {
+        var reviews = [];
+        document.querySelectorAll("*").forEach(function(el) {
+            if (el.children.length > 0) return;
+            var t = el.textContent.trim();
+            if (!t.match(/^\\d{2}\\.\\d{2}\\.\\d{4}$/)) return;
+            if (!el.offsetParent) return;
+            var block = el.parentElement;
+            for (var i = 0; i < 4; i++) {
+                if (!block) break;
+                var bt = block.textContent.trim();
+                if (bt.length > 20 && bt.length < 1000) {
+                    var nameM = bt.match(/([A-Z\\u00C4\\u00D6\\u00DC][a-z\\u00E4\\u00F6\\u00FC\\u00DF]+\\s+[A-Z\\u00C4\\u00D6\\u00DC]\\.)/);
+                    var parts = bt.split(t);
+                    var txt = parts.length > 1 ? parts[parts.length-1].trim() : "";
+                    txt = txt.replace(/vorherige.*$/i,"").replace(/n.chste.*$/i,"").trim();
+                    if (txt.length > 3 && txt.length < 500) {
+                        reviews.push({author: nameM?nameM[1]:"", date: t, text: txt});
+                    }
+                    break;
+                }
+                block = block.parentElement;
+            }
+        });
+        var seen = {};
+        return reviews.filter(function(r) {
+            var k = r.date + r.text.substring(0,30);
+            if (seen[k]) return false;
+            seen[k] = true;
+            return true;
+        });
+    }"""
+    BRAND_DISPLAY = {"ergo":"ERGO","allianz":"Allianz","axa":"AXA","huk":"HUK",
+        "generali":"Generali","signal-iduna":"Signal Iduna","cosmosdirekt":"CosmosDirekt",
+        "ruv":"R+V","devk":"DEVK","hannoversche":"Hannoversche"}
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(comparison_url, timeout=30000)
+            page.wait_for_timeout(5000)
+            for bk in brand_keys:
+                bname = BRAND_DISPLAY.get(bk, bk)
+                try:
+                    logo = page.query_selector('img[alt*="%s Logo"]' % bname)
+                    if not logo:
+                        logo = page.query_selector('img[alt*="%s"]' % bname)
+                    if not logo:
+                        continue
+                    rating_btn = logo.evaluate_handle('el => { let n=el; for(let i=0;i<10;i++){n=n.parentElement;if(!n)break;let r=n.querySelector("[class*=\\"component_1hbh5\\"]");if(r)return r;} return null; }')
+                    if not rating_btn:
+                        continue
+                    rating_btn.click()
+                    page.wait_for_timeout(1500)
+                    reviews = page.evaluate(JS_EXTRACT)
+                    if reviews:
+                        filtered = []
+                        for rv in reviews:
+                            try:
+                                dp = rv["date"].split(".")
+                                iso = "%s-%s-%s" % (dp[2], dp[1], dp[0])
+                                if last_crawl_date and iso < last_crawl_date:
+                                    continue
+                                rv["iso_date"] = iso
+                                filtered.append(rv)
+                            except Exception:
+                                filtered.append(rv)
+                        if filtered:
+                            all_reviews[bk] = filtered
+                            print("    %s: %d Reviews" % (bname, len(filtered)))
+                    try:
+                        rating_btn.click()
+                        page.wait_for_timeout(300)
+                    except Exception:
+                        pass
+                except Exception as ex:
+                    print("    %s: Fehler - %s" % (bname, str(ex)[:80]))
+            browser.close()
+    except Exception as e:
+        print("  [C24 Reviews] Fehler: %s" % str(e)[:200])
+    print("  [C24 Reviews] %s: %d Reviews" % (product_subdomain, sum(len(v) for v in all_reviews.values())))
+    return all_reviews
+
 # ── 5. FRANKE & BORNBERG ─────────────────────────────────────────────────────
 FB_RATING_CLASSES = {
     "FFF+": 0.5, "FFF": 1.0, "FF+": 2.0, "FF": 3.0,
@@ -756,22 +965,36 @@ def crawl_franke_bornberg(rating_id, brands):
         return {b["key"]: None for b in brands}
 
     url = "https://www.franke-bornberg.de/page/rating/getrating.php"
-    data = post_json(url + "?" + urllib.parse.urlencode({"ratingid": rating_id}), {"ratingid": rating_id})
-    if not data or not isinstance(data, list):
-        # Retry with body-only POST
+    # Robust: bis zu 3 Versuche, laengerer Timeout, Browser-AJAX-Header.
+    # (Grosse Ratings wie hbs_stg/Sterbegeld liefern 50+ Tarife -> 15s reichten nicht.)
+    data = None
+    for attempt in range(3):
         try:
             body = urllib.parse.urlencode({"ratingid": rating_id}).encode("utf-8")
-            req = urllib.request.Request(url, data=body, method="POST", headers={
-                "User-Agent": UA,
-                "Content-Type": "application/x-www-form-urlencoded",
-            })
-            with urllib.request.urlopen(req, timeout=15) as r:
-                data = json.loads(r.read().decode("utf-8"))
-        except Exception:
+            req = urllib.request.Request(
+                url + "?" + urllib.parse.urlencode({"ratingid": rating_id}),
+                data=body, method="POST",
+                headers={
+                    "User-Agent": UA,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Referer": "https://www.franke-bornberg.de/ratings",
+                })
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read()
+                if raw[:2] == b"\x1f\x8b":
+                    raw = gzip.decompress(raw)
+                data = json.loads(raw.decode("utf-8", errors="ignore"))
+            if isinstance(data, list) and data:
+                break
+        except Exception as e:
+            print("    [F&B] Versuch %d fuer %s fehlgeschlagen: %s" % (attempt + 1, rating_id, str(e)[:60]))
             data = None
+        time.sleep(2)
 
     if not data or not isinstance(data, list):
-        print("    [F&B] API-Fehler fuer rating_id=%s" % rating_id)
+        print("    [F&B] API-Fehler fuer rating_id=%s (nach 3 Versuchen)" % rating_id)
         return {b["key"]: None for b in brands}
 
     print("    [F&B] %d Tarife geladen fuer %s" % (len(data), rating_id))
@@ -1160,9 +1383,22 @@ def main():
                     print("    [C24] %s: %.1f (%s)" % (brand["name"], c24["score"], c24.get("count", "?")))
                 product_results[cat_key]["brands"].setdefault(brand["key"], {})["check24"] = c24 or {"score": None, "count": None}
         else:
-            print("  Check24: nicht verfuegbar fuer %s" % cat_name)
+            print("  Check24: keine Einzelseiten fuer %s" % cat_name)
             for brand in BRANDS:
                 product_results[cat_key]["brands"].setdefault(brand["key"], {})["check24"] = {"score": None, "count": None}
+
+        # Check24 Comparison: Kundenbewertungen aus dem Vergleichsrechner (Playwright)
+        c24_comp_sub = cat.get("check24_comparison")
+        if c24_comp_sub:
+            print("  Crawle Check24 Vergleichsrechner (%s)..." % c24_comp_sub)
+            c24_comp = crawl_check24_comparison(c24_comp_sub)
+            for brand in BRANDS:
+                bk = brand["key"]
+                existing = product_results[cat_key]["brands"].get(bk, {}).get("check24", {})
+                comp = c24_comp.get(bk, {})
+                if comp.get("score") and (not existing.get("score") or existing.get("error")):
+                    product_results[cat_key]["brands"].setdefault(bk, {})["check24"] = comp
+                    print("    [C24 Comp] %s: %.1f/5 (%d Reviews)" % (brand["name"], comp["score"], comp["count"]))
 
         # Franke & Bornberg fuer dieses Produkt
         if cat.get("fb_rating_id"):
@@ -1324,6 +1560,23 @@ def main():
     json_path.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
     print("\nSaved: %s (%d bytes)" % (json_path, json_path.stat().st_size))
 
+    # ── Phase 3: Check24 Einzelbewertungen ──────────────────────────
+    print("\n" + "=" * 60)
+    print("Phase 3: Check24 Einzelbewertungen")
+    c24_all_reviews = {}
+    for cat in PRODUCT_CATEGORIES:
+        c24_comp_sub = cat.get("check24_comparison")
+        if not c24_comp_sub:
+            continue
+        cat_reviews = crawl_check24_reviews(c24_comp_sub, [b["key"] for b in BRANDS])
+        for bk, rvs in cat_reviews.items():
+            if bk not in c24_all_reviews:
+                c24_all_reviews[bk] = []
+            for rv in rvs:
+                rv["product"] = cat["key"]
+            c24_all_reviews[bk].extend(rvs)
+    print("Check24 Reviews: %d von %d Brands" % (sum(len(v) for v in c24_all_reviews.values()), len(c24_all_reviews)))
+
     # ── Review-History: persistente JSON-Datei mit allen Reviews ──────────
     history_path = Path("data/review_history.json")
     existing_reviews = []
@@ -1401,6 +1654,41 @@ def main():
             if dedup_key not in existing_keys:
                 existing_reviews.append(new_rv)
                 existing_keys.add(dedup_key)
+                new_count += 1
+
+        # eKomi: Aggregat-Score als Datenpunkt (keine Einzel-Reviews bei eKomi)
+        ek = entry.get("ekomi", {})
+        if ek.get("score") and ek.get("count"):
+            ek_rv = {
+                "brand": brand_key,
+                "brand_name": brand_name,
+                "source": "eKomi",
+                "title": "",
+                "text": "Aggregiertes Rating: %.1f/5 bei %s Bewertungen" % (ek["score"], ek["count"]),
+                "score": ek["score"],
+                "date": today,
+                "author": "eKomi Aggregat",
+                "crawl_date": today,
+            }
+            ek_key = _dedup_key(ek_rv)
+            if ek_key not in existing_keys:
+                existing_reviews.append(ek_rv)
+                existing_keys.add(ek_key)
+                new_count += 1
+
+
+    # Check24 Einzelbewertungen in History
+    for brand_key, rvs in c24_all_reviews.items():
+        bn = next((b["name"] for b in BRANDS if b["key"] == brand_key), brand_key)
+        for rv in rvs:
+            new_rv = {"brand": brand_key, "brand_name": bn, "source": "Check24",
+                "title": "", "text": rv.get("text", ""), "score": rv.get("stars"),
+                "date": rv.get("iso_date", rv.get("date", "")),
+                "author": rv.get("author", ""), "crawl_date": today}
+            dk = _dedup_key(new_rv)
+            if dk not in existing_keys:
+                existing_reviews.append(new_rv)
+                existing_keys.add(dk)
                 new_count += 1
 
     # Nach Datum sortieren (neueste zuerst)
@@ -1555,8 +1843,11 @@ def main():
             by_brand = prev_data["by_brand"]
             if isinstance(by_brand, dict):
                 prev_brands = by_brand
+            elif isinstance(by_brand, list):
+                # Liste zu Dict konvertieren: [{key: "ergo", ...}, ...] -> {"ergo": {...}, ...}
+                prev_brands = {item["key"]: item for item in by_brand if isinstance(item, dict) and "key" in item}
             else:
-                prev_brands = {}  # by_brand list has no per-source data
+                prev_brands = {}
         else:
             prev_brands = prev_data  # flat format: prev_data IS the brand dict
         event_count = 0
@@ -1720,14 +2011,14 @@ def main():
                       '        <span class="badge badge-sentiment-live" '
                       'style="background:#e8f5e9;color:#2e7d32;font-size:11px;'
                       'padding:2px 8px;border-radius:4px;margin-left:8px;">'
-                      'Live-Daten \xc2\xb7 Stand '
+                      'Live-Daten \u00b7 Stand '
                       '<span id="sentimentDate"></span></span>')
         content = content.replace(
             '<h3 class="text-lg font-bold text-ergo-dark">Sentiment-Analyse je Anbieter</h3>',
             live_badge,
         )
 
-    # CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren
+    # ── CORRELATION_EVENTS aus events.jsonl ins Dashboard injizieren ──────
     events_file = Path("shared/events.jsonl")
     if events_file.exists():
         try:
@@ -1735,14 +2026,23 @@ def main():
             all_events = load_events(events_file, max_age_days=90)
             if all_events:
                 events_json = json.dumps(all_events, ensure_ascii=False, separators=(",", ":"))
-                events_block = "window.CORRELATION_EVENTS = %s;" % events_json
+                events_block = "  window.CORRELATION_EVENTS = %s;" % events_json
                 corr_marker = "const CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];"
                 if corr_marker in content:
+                    # Alte injizierte CORRELATION_EVENTS-Zeilen zeilenweise entfernen
+                    # (Regex versagt bei 2M+ Zeichen pro Zeile, daher line-by-line)
+                    cleaned_lines = []
+                    for line in content.split('\n'):
+                        if 'window.CORRELATION_EVENTS = [' in line:
+                            continue  # alte Injection entfernen
+                        cleaned_lines.append(line)
+                    content = '\n'.join(cleaned_lines)
+                    # Frisch einfuegen: genau 1x vor dem Marker
                     content = content.replace(
                         corr_marker,
                         events_block + "\n  " + corr_marker
                     )
-                    print("  CORRELATION_EVENTS: %d Events injiziert" % len(all_events))
+                    print("  CORRELATION_EVENTS: %d Events injiziert (alte Duplikate entfernt)" % len(all_events))
                 else:
                     print("  WARN: CORRELATION_EVENTS-Marker nicht gefunden")
         except Exception as exc:

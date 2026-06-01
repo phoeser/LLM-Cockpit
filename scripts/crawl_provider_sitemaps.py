@@ -47,10 +47,16 @@ CONTENT_RULES = [
     ("glossar", [r"/glossar", r"/lexikon", r"/versicherungslexikon", r"/abc/"]),
     ("rechner", [r"rechner", r"tarifrechner", r"beitrag-berechnen", r"kalkulator", r"/rechnen"]),
     ("ratgeber",[r"/ratgeber", r"/magazin", r"/wissen", r"/tipps", r"/blog", r"/aktuelles", r"wissenswert", r"/themen/"]),
-    ("service", [r"/service", r"/kontakt", r"/schadenmeldung", r"/schaden-melden", r"/hilfe", r"/kundenservice", r"meine-?", r"/login"]),
+    # NEU (datenbasiert aus Sonstige-Analyse) — vor 'produkt', damit Firmen-/Rechts-/Standort-Seiten gewinnen:
+    ("rechtliches",[r"/impressum", r"/datenschutz", r"/agb", r"nutzungsbedingung", r"rechtliche-hinweise", r"/cookie", r"erstinformation", r"/widerruf", r"barrierefreiheit", r"transparenz"]),
+    ("unternehmen",[r"ueber-uns", r"ueber_uns", r"wir-ueber-uns", r"/unternehmen", r"/konzern", r"karriere", r"/jobs", r"nachhaltigkeit", r"/engagement", r"investor", r"autoren-experten", r"/ueber-die", r"unsere-werte"]),
+    ("standorte", [r"/gs/", r"geschaeftsstelle", r"/vermittler", r"/agentur", r"/standort", r"/filiale", r"vor-ort", r"vertretersuche", r"berater-finden", r"vertretung"]),
+    ("medien",    [r"/mediathek", r"/download", r"/formular", r"/dokument", r"broschuere", r"/podcast", r"merkblatt", r"/bilder/"]),
+    ("service", [r"/service", r"/kontakt", r"/schadenmeldung", r"/schaden-melden", r"/hilfe", r"/kundenservice", r"meine-?", r"/login", r"kundenportal", r"/mein-"]),
     ("b2b",     [r"/firmen", r"/gewerbe", r"/business", r"/makler", r"/unternehmenskunden", r"/geschaeftskunden"]),
     ("video",   [r"/video", r"youtube"]),
-    ("produkt", [r"/produkt", r"/versicherung", r"/vorsorge", r"/tarife", r"/de/produkte"]),
+    # 'produkt' breiter: 'versicherung' (ohne fuehrenden Slash), Privatkunden-Bereiche, Vorsorge-/Schutz-Begriffe:
+    ("produkt", [r"/produkt", r"versicherung", r"/vorsorge", r"/tarife", r"/de/produkte", r"/pk/", r"/privatkunden", r"absicherung", r"/rente", r"/police", r"/rundum-schutz", r"gesundheit-freizeit"]),
 ]
 
 # Sparten-Regeln (Mehrfachzuordnung moeglich -> Tiefe je Sparte)
@@ -190,6 +196,8 @@ def crawl_provider(key, cfg):
                 "ratgeber": counts["ratgeber"], "faq": counts["faq"], "rechner": counts["rechner"],
                 "presse": counts["presse"], "glossar": counts["glossar"], "service": counts["service"],
                 "produkt": counts["produkt"], "b2b": counts["b2b"], "video": counts["video"],
+                "rechtliches": counts["rechtliches"], "unternehmen": counts["unternehmen"],
+                "standorte": counts["standorte"], "medien": counts["medien"],
                 "sonstige": counts["sonstige"],
                 "sonstige_top_segments": top_segs,
                 "sonstige_sample": sonstige_urls[:50],

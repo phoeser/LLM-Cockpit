@@ -46,10 +46,10 @@ CONTENT_RULES = [
     ("faq",     [r"/faq", r"haeufige-fragen", r"haeufige_fragen", r"/fragen-und-antworten"]),
     ("glossar", [r"/glossar", r"/lexikon", r"/versicherungslexikon", r"/abc/"]),
     ("rechner", [r"rechner", r"tarifrechner", r"beitrag-berechnen", r"kalkulator", r"/rechnen"]),
-    ("ratgeber",[r"/ratgeber", r"/magazin", r"/wissen", r"/tipps", r"/blog", r"/aktuelles", r"wissenswert", r"/themen/"]),
+    ("ratgeber",[r"/ratgeber", r"/magazin", r"/journal", r"/rechtsportal", r"/wissen", r"/tipps", r"/blog", r"/aktuelles", r"wissenswert", r"/themen/"]),
     # NEU (datenbasiert aus Sonstige-Analyse) — vor 'produkt', damit Firmen-/Rechts-/Standort-Seiten gewinnen:
     ("rechtliches",[r"/impressum", r"/datenschutz", r"/agb", r"nutzungsbedingung", r"rechtliche-hinweise", r"/cookie", r"erstinformation", r"/widerruf", r"barrierefreiheit", r"transparenz"]),
-    ("unternehmen",[r"ueber-uns", r"ueber_uns", r"wir-ueber-uns", r"/unternehmen", r"/konzern", r"karriere", r"/jobs", r"nachhaltigkeit", r"/engagement", r"investor", r"autoren-experten", r"/ueber-die", r"unsere-werte"]),
+    ("unternehmen",[r"ueber-uns", r"ueber_uns", r"wir-ueber-uns", r"/unternehmen", r"/konzern", r"karriere", r"/jobs", r"nachhaltigkeit", r"/engagement", r"investor", r"autoren-experten", r"/ueber-die", r"unsere-werte", r"public-affairs"]),
     ("standorte", [r"/gs/", r"geschaeftsstelle", r"/vermittler", r"/agentur", r"/standort", r"/filiale", r"vor-ort", r"vertretersuche", r"berater-finden", r"vertretung"]),
     ("medien",    [r"/mediathek", r"/download", r"/formular", r"/dokument", r"broschuere", r"/podcast", r"merkblatt", r"/bilder/"]),
     ("service", [r"/service", r"/kontakt", r"/schadenmeldung", r"/schaden-melden", r"/hilfe", r"/kundenservice", r"meine-?", r"/login", r"kundenportal", r"/mein-"]),

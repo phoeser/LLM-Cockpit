@@ -689,6 +689,16 @@
     <div id="corrKPIs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
   </div>
 
+  <!-- Validierte Impact-Analyse (Event-Study, waechst mit jedem Tag) -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
+    <div class="flex items-start justify-between flex-wrap gap-2">
+      <h3 class="text-lg font-bold text-ergo-dark mb-2">🧪 Validierte Impact-Analyse <span class="text-xs font-normal text-gray-500">(Event-Study)</span></h3>
+      <span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Geschätzter durchschnittlicher Effekt eines Ereignis-Typs auf den Share of Voice (in Prozentpunkten), pro Messintervall. Wird mit jeder Nacht statistisch belastbarer.</p>
+    <div id="corrImpactStudy"></div>
+  </div>
+
   <!-- Tages-Heatmap -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-4">📅 Tagesübersicht</h3>
@@ -2238,7 +2248,11 @@ function buildOverviewCharts() {
         { label: 'Presse', data: allKeys.map(k=>PROVIDERS[k].presse||0), backgroundColor: '#00BFA5' },
         { label: 'Service', data: allKeys.map(k=>PROVIDERS[k].service||0), backgroundColor: '#9333EA' },
         { label: 'Produktseiten', data: allKeys.map(k=>PROVIDERS[k].produkt||0), backgroundColor: '#F97316' },
-        { label: 'Sonstige', data: allKeys.map(k=>{ const p=PROVIDERS[k]; return Math.max(0,(p.total||0)-(p.ratgeber||0)-(p.faq||0)-(p.rechner||0)-(p.presse||0)-(p.glossar||0)-(p.b2b||0)-(p.service||0)-(p.produkt||0)); }), backgroundColor: '#6B7280' }
+        { label: 'Unternehmen', data: allKeys.map(k=>PROVIDERS[k].unternehmen||0), backgroundColor: '#0EA5E9' },
+        { label: 'Standorte', data: allKeys.map(k=>PROVIDERS[k].standorte||0), backgroundColor: '#14B8A6' },
+        { label: 'Rechtliches', data: allKeys.map(k=>PROVIDERS[k].rechtliches||0), backgroundColor: '#A16207' },
+        { label: 'Medien', data: allKeys.map(k=>PROVIDERS[k].medien||0), backgroundColor: '#DB2777' },
+        { label: 'Sonstige', data: allKeys.map(k=>{ const p=PROVIDERS[k]; return (p.sonstige!=null) ? p.sonstige : Math.max(0,(p.total||0)-(p.ratgeber||0)-(p.faq||0)-(p.rechner||0)-(p.presse||0)-(p.glossar||0)-(p.b2b||0)-(p.service||0)-(p.produkt||0)); }), backgroundColor: '#6B7280' }
       ]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } }
@@ -2690,7 +2704,54 @@ function buildGeoTab() {
       });
     }
 
+    function renderImpactStudy() {
+      var el = document.getElementById('corrImpactStudy');
+      var badge = document.getElementById('impactStudyBadge');
+      var ci = window.CORRELATION_IMPACT;
+      if (!el) return;
+      if (!ci || !ci.impact) {
+        el.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Noch keine Impact-Berechnung vorhanden. Wird ab dem nächsten Nightly-Run erzeugt (benötigt die dichte SoV-Historie).</div>';
+        if (badge) { badge.textContent = '–'; badge.style.background = '#f1f5f9'; badge.style.color = '#64748b'; }
+        return;
+      }
+      var confMap = {
+        'unzureichend': { bg:'#fee2e2', fg:'#b91c1c', txt:'Datenbasis unzureichend' },
+        'vorlaeufig':   { bg:'#fef3c7', fg:'#b45309', txt:'Vorläufig' },
+        'moderat':      { bg:'#dbeafe', fg:'#1d4ed8', txt:'Moderat belastbar' },
+        'belastbar':    { bg:'#dcfce7', fg:'#15803d', txt:'Belastbar' }
+      };
+      var c = confMap[ci.confidence] || { bg:'#f1f5f9', fg:'#64748b', txt:(ci.confidence||'?') };
+      if (badge) { badge.textContent = c.txt + ' · ' + (ci.sov_measure_days||0) + ' Messtage'; badge.style.background = c.bg; badge.style.color = c.fg; }
+      var rows = Object.keys(ci.impact || {}).map(function(k){ return ci.impact[k]; });
+      var range = ci.sov_measure_range || [];
+      var note = '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px">' + (ci.confidence_note||'') +
+        ' · Quelle: ' + (ci.sov_source === 'sov_history' ? 'dichte SoV-Historie' : 'SoV-Änderungs-Events') +
+        ' · Zeitraum: ' + (range[0]||'?') + '–' + (range[1]||'?') +
+        ' · Stand: ' + ((ci.generated_at||'').slice(0,10)) + '</div>';
+      if (!rows.length) { el.innerHTML = note + '<div class="text-center py-4 text-gray-400 text-sm">Noch keine Ereignis-Intervalle mit messbarem Effekt.</div>'; return; }
+      var maxAbs = Math.max.apply(null, rows.map(function(r){ return Math.abs(r.avg_sov_effect_pp||0); }).concat([0.01]));
+      var html = note + '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">' +
+        '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Ø Effekt auf SoV</th><th style="padding:6px 8px;text-align:right">Korrelation r</th><th style="padding:6px 8px;text-align:right">Intervalle (mit Event)</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        var eff = r.avg_sov_effect_pp; var pos = (eff||0) >= 0;
+        var w = Math.round(Math.abs(eff||0)/maxAbs*100);
+        var bar = '<div style="display:inline-block;vertical-align:middle;width:80px;height:8px;background:#f1f5f9;border-radius:4px;margin-right:6px;position:relative"><div style="position:absolute;' + (pos?'left':'right') + ':50%;width:' + (w/2) + '%;height:8px;background:' + (pos?'#16a34a':'#dc2626') + ';border-radius:4px"></div></div>';
+        html += '<tr style="border-bottom:1px solid #f1f5f9">' +
+          '<td style="padding:6px 8px;color:#1e293b">' + (r.label||'') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + ' Pp</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#475569">' + (r.pearson_r!=null?r.pearson_r:'–') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#475569">' + (r.n_intervals||0) + ' (' + (r.n_with_event||0) + ')</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+      if (ci.confidence === 'unzureichend' || ci.confidence === 'vorlaeufig') {
+        html += '<div style="margin-top:10px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Diese Werte sind noch nicht statistisch belastbar. Die Schätzungen werden mit jedem weiteren Mess-Tag genauer.</div>';
+      }
+      el.innerHTML = html;
+    }
+
     function renderCorrelationTab() {
+    try { renderImpactStudy(); } catch(e){ console.warn('impactStudy:', e.message); }
     const EI = { review_change:'⭐', press_mention:'📰', news_mention:'🗞️', page_change:'🌐', page_new:'🆕', domain_change:'🔗', sov_change:'📈', berater_shift:'👥', review_volume:'📊', rating_update:'🏆' };
     const EC = { review_change:'#f59e0b', press_mention:'#3b82f6', news_mention:'#6366f1', page_change:'#8b5cf6', page_new:'#06b6d4', domain_change:'#14b8a6', sov_change:'#ef4444', berater_shift:'#ec4899', review_volume:'#f59e0b', rating_update:'#10b981' };
     const EN = { review_change:'Bewertungen', press_mention:'Presse', news_mention:'News', page_change:'Seitenänderungen', page_new:'Neue Seiten', domain_change:'Domain', sov_change:'SoV', berater_shift:'Berater', review_volume:'Review-Volumen', rating_update:'Rating-Update' };
@@ -3239,7 +3300,8 @@ function buildGeoTab() {
         __v3_loadJSON('data/price_comparison.json'),
         __v3_loadJSON('data/ratings_external.json'),
         __v3_loadJSON('data/providers.json'),
-        __v3_loadEvents()
+        __v3_loadEvents(),
+        __v3_loadJSON('data/correlation_impact.json')
       ]);
       GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
@@ -3248,6 +3310,7 @@ function buildGeoTab() {
       window.PROVIDERS_CRAWL = res[8];
       window.CORRELATION_EVENTS = res[9] || [];
       CORRELATION_EVENTS = window.CORRELATION_EVENTS;
+      window.CORRELATION_IMPACT = res[10] || null;
       // v3: gecrawlte Anbieter-URLs in PROVIDERS einmischen (#11)
       try {
         var __pc = window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.providers;
@@ -3628,73 +3691,4 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var BN={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
     function disp(b){return b.indexOf('_other_')===0?b.slice(7):(BN[b]||b);}
     function tracked(b){return b.indexOf('_other_')!==0;}
-    var out='';
-    if(data.as_of) out+='<p class="text-xs text-gray-400 mb-3">Stand: '+esc(data.as_of)+' · Quelle: Check24 (günstigster Monatsbeitrag je Tarif). Eigene Marken hervorgehoben, Wettbewerb ausgegraut.</p>';
-    Object.keys(products).forEach(function(pk){
-      var prod=products[pk]; var profs=prod.profiles||{}; var profKeys=Object.keys(profs);
-      var brandSet={}; profKeys.forEach(function(a){var pr=profs[a]; if(pr.brands) Object.keys(pr.brands).forEach(function(b){brandSet[b]=1;});});
-      var brands=Object.keys(brandSet);
-      out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-3">'+esc(prod.name||pk)+'</h3>';
-      if(!brands.length){ out+='<p class="text-sm text-gray-500">Keine Tarife gefunden (Check24-Crawl unvollständig).</p></div>'; return; }
-      var firstAge=profKeys[0];
-      function price(b,a){var br=(profs[a].brands||{})[b]; return (br&&br.price!=null)?br.price:Infinity;}
-      brands.sort(function(x,y){var tx=tracked(x),ty=tracked(y); if(tx!==ty)return tx?-1:1; return price(x,firstAge)-price(y,firstAge);});
-      out+='<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
-      profKeys.forEach(function(a){out+='<th class="py-2 px-2 text-right">'+esc(profs[a].label||a)+'</th>';});
-      out+='</tr></thead><tbody>';
-      brands.forEach(function(b){
-        var isE=(b==='ergo'), isT=tracked(b);
-        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+'</td>';
-        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
-        out+='</tr>';
-      });
-      out+='</tbody></table></div></div>';
-    });
-    host.innerHTML=out;
-  };
-
-
-  window.buildBeraterCannibalization = function(){
-    var tb = document.getElementById('berKannibTableBody');
-    if(!tb) return;
-    var d = window.BERATER_DATA;
-    var cann = (d && d.typology && d.typology.cannibalization) || null;
-    var LABELS={zahnzusatz:'Zahnzusatzversicherung',rechtsschutz:'Rechtsschutzversicherung',haftpflicht:'Privathaftpflicht',kfz:'KFZ-Versicherung',hausrat:'Hausratversicherung',berufsunfaehigkeit:'Berufsunfähigkeit',sterbegeld:'Sterbegeldversicherung',risikoleben:'Risikolebensversicherung',pflege:'Pflegeversicherung',reise:'Reiseversicherung'};
-    var FOKUS={zahnzusatz:1,rechtsschutz:1,sterbegeld:1};
-    if(!cann){ tb.innerHTML='<tr><td colspan="6" class="px-3 py-3 text-gray-500 text-sm">Keine Typologie-Daten (Berater-Crawl ausstehend).</td></tr>'; return; }
-    var order=Object.keys(cann).sort(function(a,b){return (cann[b].avg_mentions||0)-(cann[a].avg_mentions||0);});
-    tb.innerHTML=order.map(function(k){
-      var c=cann[k]; var fokus=FOKUS[k];
-      var r = (c.avg_mentions>=10)?['HOCH','#dc2626']:(c.avg_mentions>=4)?['MITTEL','#d97706']:['GERING','#16a34a'];
-      return '<tr class="border-b '+(fokus?'bg-red-50':'')+'">'
-        +'<td class="px-3 py-2 font-semibold">'+(LABELS[k]||k)+'</td>'
-        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs '+(fokus?'bg-ergo-red text-white':'bg-gray-200 text-gray-700')+'">'+(fokus?'FOKUS':'Standard')+'</span></td>'
-        +'<td class="text-right px-3 py-2 font-semibold">'+(c.avg_mentions!=null?c.avg_mentions.toLocaleString('de-DE'):'–')+'</td>'
-        +'<td class="text-right px-3 py-2">'+c.pct+'% ('+c.pages_with+')</td>'
-        +'<td class="text-right px-3 py-2">~'+(c.projection!=null?c.projection.toLocaleString('de-DE'):'–')+'</td>'
-        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs text-white" style="background:'+r[1]+'">'+r[0]+'</span></td>'
-        +'</tr>';
-    }).join('');
-    var foot=document.getElementById('berKannibFoot');
-    if(foot && d.typology){
-      var base=d.typology.cannibalization_base||((d.totals||{}).with_subdomain)||0;
-      foot.textContent='Datenquelle: Crawl von '+(d.typology.crawled_ok||d.typology.sample_size||0)+' zufällig gezogenen Berater-Subdomains, hochgerechnet auf '+base.toLocaleString('de-DE')+' Berater mit Subdomain. Stand: '+(d.generated_at||'').slice(0,10);
-    }
-    var __ok=(d.typology.crawled_ok||d.typology.sample_size||0);
-    var __ws=(d.totals||{}).with_subdomain||d.typology.cannibalization_base||0;
-    var __sn=document.getElementById('berKannibSampleNote');
-    if(__sn){ __sn.textContent=__ok+'/'+__ok+' Stichprobe'; }
-    var __pages=document.getElementById('berKannibPages');
-    if(__pages){ __pages.textContent='~'+(__ws*15).toLocaleString('de-DE'); }
-    var __intro=document.getElementById('berKannibIntro');
-    if(__intro){
-      var __td=d.typology.type_distribution||{};
-      var __kat=(__td.produktkatalog||0)+(__td.minimal||0);
-      var __pct=__ok?Math.round(__kat/__ok*100):0;
-      __intro.innerHTML='Stichproben-Analyse von '+__ok+' Berater-Subdomains: <strong>'+__pct+'% sind Produkt-Kataloge bzw. Standard-Templates</strong> mit Online-Abschluss-CTAs — sie konkurrieren direkt mit ergo.de/produkte um dieselben Keywords.';
-    }
-  };
-})();
-</script>
-</body>
-</html>
+    

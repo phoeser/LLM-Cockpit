@@ -164,11 +164,25 @@ def crawl_provider(key, cfg):
             counts = {t: 0 for t, _ in CONTENT_RULES}
             counts["sonstige"] = 0
             sparten = {sp: 0 for sp in SPARTEN_RULES}
+            sonstige_urls = []
             for u in all_urls:
-                counts[classify(u)] += 1
+                c = classify(u)
+                counts[c] += 1
+                if c == "sonstige":
+                    sonstige_urls.append(u)
                 for sp in sparten_of(u):
                     sparten[sp] += 1
             sparten = {k: v for k, v in sparten.items() if v > 0}
+            # Analyse-Hilfe: Pfad-Segment-Haeufigkeiten + Stichprobe der Sonstige-URLs
+            seg_freq = {}
+            for u in sonstige_urls:
+                try:
+                    path = re.sub(r"^https?://[^/]+", "", u).strip("/")
+                    seg = path.split("/")[0].split("?")[0][:40] if path else "(root)"
+                    seg_freq[seg] = seg_freq.get(seg, 0) + 1
+                except Exception:
+                    pass
+            top_segs = dict(sorted(seg_freq.items(), key=lambda kv: -kv[1])[:25])
             print("  OK: %d URLs (Sitemaps: %d)" % (len(all_urls), len(seen)))
             return {
                 "name": name,
@@ -177,6 +191,8 @@ def crawl_provider(key, cfg):
                 "presse": counts["presse"], "glossar": counts["glossar"], "service": counts["service"],
                 "produkt": counts["produkt"], "b2b": counts["b2b"], "video": counts["video"],
                 "sonstige": counts["sonstige"],
+                "sonstige_top_segments": top_segs,
+                "sonstige_sample": sonstige_urls[:50],
                 "sparten": dict(sorted(sparten.items(), key=lambda kv: -kv[1])),
                 "source": "crawl",
                 "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d"),

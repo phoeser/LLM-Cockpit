@@ -22,13 +22,17 @@ TEMPLATE_FILE = Path("dashboard_template.html")
 PRODUCTS = {
     "zahnzusatz": {
         "name": "Zahnzusatzversicherung",
-        "url_tpl": (
-            "https://zahnzusatzversicherung.check24.de/desktop/calculation/result/check24?"
-            "cbirth={birth}&prefill=true&cinception=20260601&cpayment=1&csort=4"
-        ),
+        # Check24 hat Zahnzusatz auf ein mehrstufiges Formular umgestellt (2026).
+        # Wir fuellen das Formular ueber Playwright aus statt eines Deep-Links.
+        "flow": "form",
+        "url_tpl": "https://zusatzversicherung.check24.de/zahn/benutzereingaben/?c24api_birthdate={birth_de}",
+        "form": {
+            "radio_labels": ["Gesetzliche Krankenkasse", "nein", "nein", "nein", "nein"],
+        },
     },
     "sterbegeld": {
         "name": "Sterbegeldversicherung",
+        "flow": "deeplink",
         "url_tpl": (
             "https://sterbegeldversicherung.check24.de/desktop/calculation/result/check24?"
             "cbirth={birth}&cinssum=8000&prefill=true&waitingPeriodInMonths=36&"
@@ -37,6 +41,10 @@ PRODUCTS = {
     },
     "risikoleben": {
         "name": "Risikolebensversicherung",
+        # ALT (funktioniert nicht mehr): risikolebensversicherung.check24.de existiert nicht mehr.
+        # Neuer Rechner: vorsorge.check24.de/risikoleben/benutzereingaben (Formular-Flow).
+        # Wird nach erfolgreichem Zahn-PoC analog umgestellt.
+        "flow": "deeplink",
         "url_tpl": (
             "https://risikolebensversicherung.check24.de/desktop/calculation/result/check24?"
             "cbirth={birth}&cinssum=100000&prefill=true&cinception=20260601&cpayment=1&csort=4"
@@ -127,6 +135,45 @@ JS_EXTRACT = """() => {
 }"""
 
 
+def _drive_form(page):
+    """Fuellt das Check24-Eingabeformular (benutzereingaben) aus und navigiert zum Ergebnis.
+    Heuristisch + defensiv: Standard-Optionen waehlen, dann Weiter/Vergleichen klicken."""
+    # 1) Krankenkasse-Typ: 'Gesetzliche Krankenkasse'
+    try:
+        page.get_by_text("Gesetzliche Krankenkasse", exact=False).first.click(timeout=4000)
+        page.wait_for_timeout(300)
+    except Exception:
+        pass
+    # 2) Alle ja/nein-Fragen mit 'nein' beantworten (je Frage eine Option)
+    try:
+        neins = page.locator("label", has_text=re.compile(r"^\s*nein\s*$", re.I))
+        cnt = neins.count()
+        for i in range(cnt):
+            try:
+                neins.nth(i).click(timeout=3000)
+                page.wait_for_timeout(250)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    # 3) Weiter/Vergleichen-Button(s) klicken bis Ergebnisseite erreicht (mehrstufige Wizards)
+    btn_re = re.compile(r"zum ergebnis|tarife (anzeigen|vergleichen)|jetzt vergleichen|vergleichen|weiter", re.I)
+    for _ in range(6):
+        if re.search(r"ergebnis|result|tarife|vergleich", page.url, re.I):
+            break
+        clicked = False
+        try:
+            b = page.locator("button:visible, a:visible", has_text=btn_re)
+            if b.count() > 0:
+                b.first.click(timeout=4000)
+                clicked = True
+                page.wait_for_timeout(2500)
+        except Exception:
+            pass
+        if not clicked:
+            break
+
+
 def crawl_product_prices(product_key, product_config):
     """Crawlt Preise fuer ein Produkt ueber alle Altersprofile."""
     try:
@@ -141,16 +188,36 @@ def crawl_product_prices(product_key, product_config):
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
 
+            is_form = product_config.get("flow") == "form"
             for profile in AGE_PROFILES:
-                url = product_config["url_tpl"].format(birth=profile["birth"])
-                print("  [%s] %s: %s" % (product_key, profile["label"], url[:80]))
+                b = profile["birth"]
+                birth_de = "%s.%s.%s" % (b[6:8], b[4:6], b[0:4])  # YYYYMMDD -> DD.MM.YYYY
+                url = product_config["url_tpl"].format(birth=b, birth_de=birth_de)
+                print("  [%s] %s: %s" % (product_key, profile["label"], url[:90]))
 
                 page = browser.new_page()
                 try:
-                    page.goto(url, timeout=30000)
-                    page.wait_for_timeout(6000)  # Warten bis Ergebnisse geladen
+                    page.goto(url, timeout=45000)
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=20000)
+                    except Exception:
+                        pass
+                    page.wait_for_timeout(7000)
+
+                    # Formular-Flow (Zahn/Risiko): Eingaben ausfuellen + zum Ergebnis navigieren
+                    if is_form:
+                        _drive_form(page)
+                        try:
+                            page.wait_for_load_state("networkidle", timeout=25000)
+                        except Exception:
+                            pass
+                        page.wait_for_timeout(9000)
 
                     raw = page.evaluate(JS_EXTRACT)
+                    # Falls noch keine Tarife: einmal nachladen + laenger warten
+                    if not raw:
+                        page.wait_for_timeout(6000)
+                        raw = page.evaluate(JS_EXTRACT)
 
                     # Auf unsere Brands mappen
                     profile_data = {}

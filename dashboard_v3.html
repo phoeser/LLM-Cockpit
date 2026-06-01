@@ -1019,8 +1019,12 @@ function providerTemplate(key) {
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Glossar</div><div class="text-2xl font-bold text-ergo-dark">${num(p.glossar)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Service</div><div class="text-2xl font-bold text-ergo-dark">${num(p.service)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Produktseiten</div><div class="text-2xl font-bold text-ergo-dark">${num(p.produkt)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Unternehmen</div><div class="text-2xl font-bold text-ergo-dark">${num(p.unternehmen)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Standorte</div><div class="text-2xl font-bold text-ergo-dark">${num(p.standorte)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechtliches</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechtliches)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Medien</div><div class="text-2xl font-bold text-ergo-dark">${num(p.medien)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
-      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0))}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.sonstige != null ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0)))}</div></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -1156,8 +1160,12 @@ function providerTemplate(key) {
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Glossar</div><div class="text-2xl font-bold text-ergo-dark">${num(p.glossar)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Service</div><div class="text-2xl font-bold text-ergo-dark">${num(p.service)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Produktseiten</div><div class="text-2xl font-bold text-ergo-dark">${num(p.produkt)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Unternehmen</div><div class="text-2xl font-bold text-ergo-dark">${num(p.unternehmen)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Standorte</div><div class="text-2xl font-bold text-ergo-dark">${num(p.standorte)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechtliches</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechtliches)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Medien</div><div class="text-2xl font-bold text-ergo-dark">${num(p.medien)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
-      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0))}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.sonstige != null ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0)))}</div></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -2103,8 +2111,8 @@ function fillProviderTabs() {
 }
 
 function buildOverviewMatrix() {
-  const headers = ["Anbieter","Gesamt","Ratgeber","FAQ","Rechner","Presse","Glossar","Service","Produkt","Sonstige"];
-  const keys = ["total","ratgeber","faq","rechner","presse","glossar","service","produkt","_sonstige"];
+  const headers = ["Anbieter","Gesamt","Ratgeber","FAQ","Rechner","Presse","Glossar","Service","Produkt","Untern.","Standorte","Rechtl.","Medien","Sonstige"];
+  const keys = ["total","ratgeber","faq","rechner","presse","glossar","service","produkt","unternehmen","standorte","rechtliches","medien","_sonstige"];
   const tbl = document.getElementById('overviewMatrix');
   let html = '<thead><tr class="bg-ergo-dark text-white">';
   headers.forEach(h => html += `<th class="text-left px-3 py-2">${h}</th>`);
@@ -2115,12 +2123,12 @@ function buildOverviewMatrix() {
     keys.forEach(field => {
       let v;
       if (field === '_sonstige') {
-        v = p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0);
+        v = (p.sonstige != null) ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0));
       } else {
         v = p[field];
       }
       const allVals = Object.values(PROVIDERS).map(x => {
-        if (field === '_sonstige') return x.total - (x.ratgeber||0) - (x.faq||0) - (x.rechner||0) - (x.presse||0) - (x.glossar||0) - (x.b2b||0) - (x.service||0) - (x.produkt||0);
+        if (field === '_sonstige') return (x.sonstige != null) ? x.sonstige : (x.total - (x.ratgeber||0) - (x.faq||0) - (x.rechner||0) - (x.presse||0) - (x.glossar||0) - (x.b2b||0) - (x.service||0) - (x.produkt||0));
         return x[field];
       }).filter(x=>x!=null);
       const max = allVals.length ? Math.max(...allVals) : 0;
@@ -3247,7 +3255,7 @@ function buildGeoTab() {
           Object.keys(__pc).forEach(function(k){
             var c = __pc[k];
             if (PROVIDERS[k] && c && c.source === 'crawl' && c.total) {
-              ['total','ratgeber','faq','rechner','presse','glossar','service','produkt','b2b','video'].forEach(function(f){ if (c[f] != null) PROVIDERS[k][f] = c[f]; });
+              ['total','ratgeber','faq','rechner','presse','glossar','service','produkt','b2b','video','rechtliches','unternehmen','standorte','medien','sonstige'].forEach(function(f){ if (c[f] != null) PROVIDERS[k][f] = c[f]; });
               if (c.sparten) PROVIDERS[k].sparten = c.sparten;
               PROVIDERS[k]._crawl_as_of = c.as_of;
             }

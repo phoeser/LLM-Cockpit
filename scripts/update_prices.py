@@ -41,14 +41,10 @@ PRODUCTS = {
     },
     "risikoleben": {
         "name": "Risikolebensversicherung",
-        # ALT (funktioniert nicht mehr): risikolebensversicherung.check24.de existiert nicht mehr.
-        # Neuer Rechner: vorsorge.check24.de/risikoleben/benutzereingaben (Formular-Flow).
-        # Wird nach erfolgreichem Zahn-PoC analog umgestellt.
-        "flow": "deeplink",
-        "url_tpl": (
-            "https://risikolebensversicherung.check24.de/desktop/calculation/result/check24?"
-            "cbirth={birth}&cinssum=100000&prefill=true&cinception=20260601&cpayment=1&csort=4"
-        ),
+        # Alte Deeplink-Domain risikolebensversicherung.check24.de existiert NICHT mehr (ERR_NAME_NOT_RESOLVED).
+        # Neuer Rechner = Formular-Flow auf vorsorge.check24.de (URL verifiziert 2026-06-02, loest auf).
+        "flow": "form",
+        "url_tpl": "https://vorsorge.check24.de/risikoleben/benutzereingaben/?c24api_birthdate={birth_de}",
     },
 }
 
@@ -135,41 +131,70 @@ JS_EXTRACT = """() => {
 }"""
 
 
+# Diagnose-JS: erfasst bei 0 Tarifen, WAS auf der Seite ist (fuer gezielten Fix statt Raten)
+JS_DIAG = """() => {
+  function cnt(sel){ try{ return document.querySelectorAll(sel).length; }catch(e){ return -1; } }
+  var heads = [].slice.call(document.querySelectorAll('h1,h2,h3,legend'))
+    .map(function(h){ return (h.textContent||'').trim().slice(0,45); }).filter(Boolean).slice(0,12);
+  var btns = [].slice.call(document.querySelectorAll('button,[role=button]'))
+    .map(function(b){ return (b.textContent||'').trim().slice(0,30); }).filter(Boolean).slice(0,12);
+  var body = (document.body && document.body.innerText) || '';
+  return {
+    title: (document.title||'').slice(0,70),
+    radios: cnt('[role=radio],input[type=radio]'),
+    inputs: cnt('input:not([type=hidden])'),
+    buttons: cnt('button'),
+    logos: cnt('img[alt*="Logo"]'),
+    price_like: (body.match(/\\d{1,3},\\d{2}\\s*€/g) || []).length,
+    body_len: body.length,
+    headings: heads,
+    button_texts: btns,
+    still_benutzereingaben: location.href.indexOf('benutzereingaben') >= 0
+  };
+}"""
+
+
 def _drive_form(page):
     """Fuellt das Check24-Eingabeformular (benutzereingaben) aus und navigiert zum Ergebnis.
-    Heuristisch + defensiv: Standard-Optionen waehlen, dann Weiter/Vergleichen klicken."""
+    Angular mat-radio: ueber Rollen-API + .check() statt Label-Klick (zuverlaessiger)."""
+    import re as _re
     # 1) Krankenkasse-Typ: 'Gesetzliche Krankenkasse'
     try:
-        page.get_by_text("Gesetzliche Krankenkasse", exact=False).first.click(timeout=4000)
+        page.get_by_role("radio", name=_re.compile("Gesetzliche", _re.I)).first.check(timeout=5000)
         page.wait_for_timeout(300)
-    except Exception:
-        pass
-    # 2) Alle ja/nein-Fragen mit 'nein' beantworten (je Frage eine Option)
+    except Exception as e:
+        print("    [form] Krankenkasse-Radio: %s" % str(e)[:60])
+    # 2) Alle ja/nein-Fragen mit 'nein' beantworten (je Gruppe eine Option)
     try:
-        neins = page.locator("label", has_text=re.compile(r"^\s*nein\s*$", re.I))
+        neins = page.get_by_role("radio", name=_re.compile(r"^\s*nein\s*$", _re.I))
         cnt = neins.count()
+        print("    [form] %d 'nein'-Radios gefunden" % cnt)
         for i in range(cnt):
             try:
-                neins.nth(i).click(timeout=3000)
-                page.wait_for_timeout(250)
+                neins.nth(i).check(timeout=3000)
+                page.wait_for_timeout(200)
             except Exception:
                 pass
-    except Exception:
-        pass
-    # 3) Weiter/Vergleichen-Button(s) klicken bis Ergebnisseite erreicht (mehrstufige Wizards)
-    btn_re = re.compile(r"zum ergebnis|tarife (anzeigen|vergleichen)|jetzt vergleichen|vergleichen|weiter", re.I)
-    for _ in range(6):
-        if re.search(r"ergebnis|result|tarife|vergleich", page.url, re.I):
+    except Exception as e:
+        print("    [form] nein-Radios: %s" % str(e)[:60])
+    # 3) 'Tarife anzeigen' / Weiter klicken bis Ergebnisseite erreicht
+    btn_re = _re.compile(r"tarife anzeigen|zum ergebnis|tarife vergleichen|jetzt vergleichen|weiter", _re.I)
+    for _ in range(5):
+        if _re.search(r"ergebnis|result|tarife|vergleich", page.url, _re.I) and "benutzereingaben" not in page.url:
             break
         clicked = False
-        try:
-            b = page.locator("button:visible, a:visible", has_text=btn_re)
-            if b.count() > 0:
-                b.first.click(timeout=4000)
-                clicked = True
-                page.wait_for_timeout(2500)
-        except Exception:
-            pass
+        for getter in (lambda: page.get_by_role("button", name=btn_re),
+                       lambda: page.get_by_role("link", name=btn_re),
+                       lambda: page.get_by_text(btn_re)):
+            try:
+                el = getter()
+                if el.count() > 0:
+                    el.first.click(timeout=5000)
+                    clicked = True
+                    page.wait_for_timeout(3000)
+                    break
+            except Exception:
+                continue
         if not clicked:
             break
 
@@ -219,6 +244,16 @@ def crawl_product_prices(product_key, product_config):
                         page.wait_for_timeout(6000)
                         raw = page.evaluate(JS_EXTRACT)
 
+                    # Diagnose erfassen, wenn 0 Tarife (zeigt, woran der Crawl haengt)
+                    diag = None
+                    if not raw:
+                        try:
+                            diag = page.evaluate(JS_DIAG)
+                            diag["final_url"] = page.url[:160]
+                        except Exception as de:
+                            diag = {"diag_error": str(de)[:120]}
+                        print("    [diag] %s" % json.dumps(diag, ensure_ascii=False)[:300])
+
                     # Auf unsere Brands mappen
                     profile_data = {}
                     for c24_name, data in raw.items():
@@ -248,6 +283,8 @@ def crawl_product_prices(product_key, product_config):
                         "brands": profile_data,
                         "total_tariffs": len(raw),
                     }
+                    if diag:
+                        product_data["profiles"][profile["key"]]["_diag"] = diag
                     tracked = {k: v for k, v in profile_data.items() if not k.startswith("_other_")}
                     print("    %d Tarife, %d unsere Brands" % (len(raw), len(tracked)))
                     for bk, bv in sorted(tracked.items(), key=lambda x: x[1]["price"]):
@@ -266,65 +303,4 @@ def crawl_product_prices(product_key, product_config):
         print("  Playwright-Fehler: %s" % str(e)[:200])
         return None
 
-    return product_data
-
-
-def inject_into_dashboard(price_data):
-    """Injiziert PRICE_DATA in dashboard_template.html."""
-    if not TEMPLATE_FILE.exists():
-        print("[prices] Template nicht gefunden")
-        return False
-
-    content = TEMPLATE_FILE.read_text(encoding="utf-8")
-    marker = "const PRICE_DATA = window.PRICE_DATA || {};"
-    if marker not in content:
-        print("[prices] PRICE_DATA Marker nicht gefunden — ueberspringe")
-        return False
-
-    # Alte Injection entfernen
-    cleaned = []
-    for line in content.split("\n"):
-        if "window.PRICE_DATA = {" in line:
-            continue
-        cleaned.append(line)
-    content = "\n".join(cleaned)
-
-    price_json = json.dumps(price_data, ensure_ascii=False, separators=(",", ":"))
-    inject = "  window.PRICE_DATA = %s;" % price_json
-    content = content.replace(marker, inject + "\n  " + marker)
-
-    TEMPLATE_FILE.write_text(content, encoding="utf-8")
-    print("[prices] PRICE_DATA injiziert")
-    return True
-
-
-def main():
-    print("=" * 60)
-    print("[prices] Check24 Preisvergleich-Crawler")
-    print("=" * 60)
-
-    all_data = {
-        "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "profiles": [{"key": p["key"], "label": p["label"]} for p in AGE_PROFILES],
-        "products": {},
-    }
-
-    for product_key, product_config in PRODUCTS.items():
-        print("\n--- %s ---" % product_config["name"])
-        result = crawl_product_prices(product_key, product_config)
-        if result:
-            all_data["products"][product_key] = result
-
-    # Speichern
-    PRICE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PRICE_FILE.write_text(json.dumps(all_data, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("\n[prices] %s gespeichert (%d KB)" % (PRICE_FILE, PRICE_FILE.stat().st_size // 1024))
-
-    # In Dashboard injizieren
-    inject_into_dashboard(all_data)
-
-    print("[prices] Fertig!")
-
-
-if __name__ == "__main__":
-    main()
+    

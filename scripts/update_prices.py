@@ -303,4 +303,65 @@ def crawl_product_prices(product_key, product_config):
         print("  Playwright-Fehler: %s" % str(e)[:200])
         return None
 
-    
+    return product_data
+
+
+def inject_into_dashboard(price_data):
+    """Injiziert PRICE_DATA in dashboard_template.html."""
+    if not TEMPLATE_FILE.exists():
+        print("[prices] Template nicht gefunden")
+        return False
+
+    content = TEMPLATE_FILE.read_text(encoding="utf-8")
+    marker = "const PRICE_DATA = window.PRICE_DATA || {};"
+    if marker not in content:
+        print("[prices] PRICE_DATA Marker nicht gefunden — ueberspringe")
+        return False
+
+    # Alte Injection entfernen
+    cleaned = []
+    for line in content.split("\n"):
+        if "window.PRICE_DATA = {" in line:
+            continue
+        cleaned.append(line)
+    content = "\n".join(cleaned)
+
+    price_json = json.dumps(price_data, ensure_ascii=False, separators=(",", ":"))
+    inject = "  window.PRICE_DATA = %s;" % price_json
+    content = content.replace(marker, inject + "\n  " + marker)
+
+    TEMPLATE_FILE.write_text(content, encoding="utf-8")
+    print("[prices] PRICE_DATA injiziert")
+    return True
+
+
+def main():
+    print("=" * 60)
+    print("[prices] Check24 Preisvergleich-Crawler")
+    print("=" * 60)
+
+    all_data = {
+        "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "profiles": [{"key": p["key"], "label": p["label"]} for p in AGE_PROFILES],
+        "products": {},
+    }
+
+    for product_key, product_config in PRODUCTS.items():
+        print("\n--- %s ---" % product_config["name"])
+        result = crawl_product_prices(product_key, product_config)
+        if result:
+            all_data["products"][product_key] = result
+
+    # Speichern
+    PRICE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PRICE_FILE.write_text(json.dumps(all_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("\n[prices] %s gespeichert (%d KB)" % (PRICE_FILE, PRICE_FILE.stat().st_size // 1024))
+
+    # In Dashboard injizieren
+    inject_into_dashboard(all_data)
+
+    print("[prices] Fertig!")
+
+
+if __name__ == "__main__":
+    main()

@@ -47,6 +47,12 @@ jobs:
         run: python scripts/update_sentiment.py
         continue-on-error: true
 
+      - name: Review-Themen-Clustering (Gemini)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/review_themes.py
+        continue-on-error: true
+
       - name: Aenderungen committen
         run: |
           git config user.name "github-actions[bot]"
@@ -56,6 +62,8 @@ jobs:
           git add data/sentiment_data.json 2>/dev/null || true
           git add data/sentiment_data.previous.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
+          git add data/review_themes.json 2>/dev/null || true
+          git add data/review_themes_cache.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Aenderungen."; exit 0; fi
           git commit -m "data: weekly Check24 update (Preise + Reviews)"
           for i in 1 2 3; do

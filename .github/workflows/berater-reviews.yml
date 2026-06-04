@@ -28,11 +28,18 @@ jobs:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: python scripts/fetch_berater_reviews.py
 
+      - name: Marken-Hauptprofile Reviews abrufen (alle 10 Anbieter)
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+        run: python scripts/fetch_brand_reviews.py
+        continue-on-error: true
+
       - name: Ergebnisse committen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/berater_reviews.json 2>/dev/null || true
+          git add data/brand_reviews.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "data: berater google reviews (einmalig)"
           git pull --rebase origin main || true
           git push origin main

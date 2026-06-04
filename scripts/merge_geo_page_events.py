@@ -209,13 +209,13 @@ def convert_to_cockpit_format(geo_events: list) -> list:
     converted = []
     for ev in geo_events:
         etype = ev.get("event_type")
-        if etype not in ("change", "first_seen"):
+        if etype not in ("change", "first_seen", "removed"):
             continue
         if _is_noise(ev):
             continue
 
         brand = _canonicalize_brand(ev.get("brand", ""))
-        cockpit_type = "page_change" if etype == "change" else "page_new"
+        cockpit_type = ("page_change" if etype == "change" else ("page_removed" if etype == "removed" else "page_new"))
         url = ev.get("url", "")
 
         if etype == "change":
@@ -256,7 +256,7 @@ def build_detailed_changes(geo_events: list) -> list:
     changes = []
     for ev in geo_events:
         etype = ev.get("event_type")
-        if etype not in ("change", "first_seen"):
+        if etype not in ("change", "first_seen", "removed"):
             continue
         ts = ev.get("timestamp", "")
         if ts < cutoff:
@@ -274,7 +274,7 @@ def build_detailed_changes(geo_events: list) -> list:
 
         changes.append({
             "ts": ts,
-            "t": "page_change" if etype == "change" else "page_new",
+            "t": ("page_change" if etype == "change" else ("page_removed" if etype == "removed" else "page_new")),
             "b": brand,
             "u": ev.get("url", ""),
             "sim": ev.get("similarity"),

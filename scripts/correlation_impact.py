@@ -79,8 +79,9 @@ def load_events():
     return out
 
 
-def build_sov_series_from_history():
-    """SoV(brand) -> sortierte (day, pct) aus der dichten sov_history.jsonl (1 Punkt/Tag)."""
+def build_sov_series_from_history(llm=None):
+    """SoV(brand) -> sortierte (day, pct) aus sov_history.jsonl.
+    llm=None -> Gesamt-Zeilen (ohne llm-Feld); sonst nur Zeilen des LLMs."""
     if not HISTORY_FILE.exists():
         return {}
     series = {}
@@ -92,11 +93,27 @@ def build_sov_series_from_history():
             r = json.loads(line)
         except Exception:
             continue
+        if (r.get("llm") or None) != llm:
+            continue
         day, brand, pct = r.get("date"), r.get("brand"), r.get("sov_pct")
         if not day or not brand or pct is None:
             continue
         series.setdefault(brand, {})[day] = float(pct)  # letzter Wert/Tag gewinnt
     return {b: sorted(m.items()) for b, m in series.items()}
+
+
+def list_llms_in_history():
+    out = set()
+    if not HISTORY_FILE.exists():
+        return []
+    for line in HISTORY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        if r.get("llm"):
+            out.add(r["llm"])
+    return sorted(out)
 
 
 def build_sov_series(events):
@@ -185,11 +202,11 @@ def confidence(n_measure_days):
     return ("belastbar", "Ausreichend Messpunkte fuer eine belastbare Aussage.")
 
 
-def analyze(events):
-    # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events
-    sov = build_sov_series_from_history()
-    sov_source = "sov_history"
-    if not sov:
+def analyze(events, llm=None):
+    # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
+    sov = build_sov_series_from_history(llm=llm)
+    sov_source = "sov_history" if llm is None else ("sov_history_llm:" + llm)
+    if not sov and llm is None:
         sov = build_sov_series(events)
         sov_source = "sov_change_events"
     mdays = set()
@@ -305,6 +322,17 @@ def main():
         print("Keine Events — Abbruch")
         return 0
     res = analyze(events)
+    # 2026-06-04: zusaetzlich Impact je LLM (fuer die LLM-Auswahl im Dashboard)
+    by_llm = {}
+    for llm in list_llms_in_history():
+        try:
+            r = analyze(events, llm=llm)
+            by_llm[llm] = {k: r[k] for k in ("impact", "confidence", "confidence_note",
+                                             "sov_measure_days", "sov_measure_range",
+                                             "n_intervals_total", "brands_with_sov") if k in r}
+        except Exception as e:
+            print("WARN per-LLM (%s): %s" % (llm, str(e)[:80]))
+    res["by_llm"] = by_llm
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK: %s (Konfidenz=%s, SoV-Messtage=%d, Intervalle=%d)"

@@ -57,7 +57,7 @@ PRODUCTS = {
         "url_tpl": (
             "https://sterbegeldversicherung.check24.de/desktop/calculation/result/check24?"
             "cbirth={birth}&cinssum=8000&prefill=true&waitingPeriodInMonths=36&"
-            "cinception=20260601&cpayment=1&csort=4"
+            "cinception={inception}&cpayment=1&csort=4"
         ),
     },
     "risikoleben": {
@@ -82,11 +82,19 @@ PRODUCTS = {
     },
 }
 
-# Altersprofile (Geburtsdatum im Check24-Format YYYYMMDD)
+def _birth_for_age(years):
+    """Geburtsdatum YYYYMMDD, sodass die Person heute sicher N Jahre alt ist
+    (Review-Fix 2026-06-04: vorher hartkodiert -> Profile alterten mit)."""
+    from datetime import timedelta
+    d = datetime.now(timezone.utc).date() - timedelta(days=int(years * 365.25) + 14)
+    return d.strftime("%Y%m%d")
+
+
+# Altersprofile (Geburtsdatum dynamisch, Check24-Format YYYYMMDD)
 AGE_PROFILES = [
-    {"label": "30 Jahre", "birth": "19960530", "key": "age_30"},
-    {"label": "50 Jahre", "birth": "19760530", "key": "age_50"},
-    {"label": "65 Jahre", "birth": "19610530", "key": "age_65"},
+    {"label": "30 Jahre", "birth": _birth_for_age(30), "key": "age_30"},
+    {"label": "50 Jahre", "birth": _birth_for_age(50), "key": "age_50"},
+    {"label": "65 Jahre", "birth": _birth_for_age(65), "key": "age_65"},
 ]
 
 # Unsere 10 Haupt-Versicherer (Check24-Name -> unser Brand-Key), exakte Treffer
@@ -368,7 +376,8 @@ def crawl_product_prices(product_key, product_config):
                 b = profile["birth"]
                 birth_de = "%s.%s.%s" % (b[6:8], b[4:6], b[0:4])  # YYYYMMDD -> DD.MM.YYYY
                 url = product_config["url_tpl"].format(
-                    birth=b, birth_de=birth_de, insure_date=_first_of_next_month()
+                    birth=b, birth_de=birth_de, insure_date=_first_of_next_month(),
+                    inception=_first_of_next_month().replace("-", ""),
                 )
                 print("  [%s] %s: %s" % (product_key, profile["label"], url[:90]))
 

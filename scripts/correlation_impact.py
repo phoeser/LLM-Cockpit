@@ -137,6 +137,44 @@ def pearson(xs, ys):
     return sxy / math.sqrt(sxx * syy)
 
 
+def spearman(xs, ys):
+    """Spearman-Rangkorrelation (robust bei nullinflationierten Zaehldaten,
+    Review-Fix 2026-06-04: Pearson auf Counts war hebelpunkt-getrieben)."""
+    def ranks(v):
+        order = sorted(range(len(v)), key=lambda i: v[i])
+        r = [0.0] * len(v)
+        i = 0
+        while i < len(order):
+            j = i
+            while j + 1 < len(order) and v[order[j + 1]] == v[order[i]]:
+                j += 1
+            avg = (i + j) / 2.0 + 1.0
+            for k in range(i, j + 1):
+                r[order[k]] = avg
+            i = j + 1
+        return r
+    return pearson(ranks(list(xs)), ranks(list(ys)))
+
+
+def type_confidence(n_with):
+    """Konfidenz JE EVENT-TYP nach effektiver Stichprobe (Intervalle mit Event)."""
+    if n_with < 5:
+        return "unzureichend"
+    if n_with < 10:
+        return "vorlaeufig"
+    if n_with < 20:
+        return "moderat"
+    return "belastbar"
+
+
+def _days_between(a, b):
+    from datetime import date as _date
+    try:
+        return max((_date.fromisoformat(b) - _date.fromisoformat(a)).days, 1)
+    except Exception:
+        return 1
+
+
 def confidence(n_measure_days):
     if n_measure_days < 6:
         return ("unzureichend", "Zu wenige SoV-Messpunkte fuer eine belastbare Aussage.")
@@ -167,6 +205,10 @@ def analyze(events):
         t = e.get("event_type")
         if t not in IMPACT_TYPES:
             continue
+        # Review-Fix 2026-06-04: historische Subdomain-Events des alten
+        # Domain-Footprint-Crawlers sind KEINE Inhaltsseiten -> ausschliessen
+        if e.get("crawler") == "update_domain_footprint" and t in ("page_new", "page_change"):
+            continue
         b = e.get("brand")
         day = _day(e.get("timestamp"))
         if not b or not day:
@@ -174,44 +216,69 @@ def analyze(events):
         counts.setdefault(b, {}).setdefault(day, {})
         counts[b][day][t] = counts[b][day].get(t, 0) + 1
 
-    # Pro Marke Intervalle bilden, je Typ Datenpunkte (count_in_interval, delta_sov) sammeln
-    points = {t: {"x": [], "y": []} for t in IMPACT_TYPES}
-    intervals_total = 0
+    # v2 (Review-Fixes 2026-06-04):
+    #  - Intervalle ungleicher Laenge werden auf RATEN pro Tag normalisiert
+    #  - Brand-Demeaning: delta je Marke um den Markenmittelwert zentriert
+    #    (verhindert Scheinkorrelation durch markenspezifische Trends)
+    #  - Spearman statt nur Pearson (robust bei nullinflationierten Counts)
+    #  - Standardfehler (SE) des Effekts + Konfidenz JE TYP (aus n_with)
+    points_raw = []
     for brand, ser in sov.items():
+        bydays = counts.get(brand, {})
         for i in range(len(ser) - 1):
             start_day, start_pct = ser[i]
             end_day, end_pct = ser[i + 1]
-            delta = end_pct - start_pct
-            intervals_total += 1
-            # Events der Marke im Fenster [start_day (+lag), end_day)
+            days = _days_between(start_day, end_day)
+            cnt = {}
             for t in IMPACT_TYPES:
                 c = 0
-                bydays = counts.get(brand, {})
                 for day, tc in bydays.items():
                     if start_day <= day < end_day:
                         c += tc.get(t, 0)
-                points[t]["x"].append(c)
-                points[t]["y"].append(delta)
+                cnt[t] = c / days
+            points_raw.append({"brand": brand, "days": days,
+                               "y": (end_pct - start_pct) / days, "x": cnt})
+    intervals_total = len(points_raw)
+
+    # Brand-Demeaning
+    bsum, bn = {}, {}
+    for p in points_raw:
+        bsum[p["brand"]] = bsum.get(p["brand"], 0.0) + p["y"]
+        bn[p["brand"]] = bn.get(p["brand"], 0) + 1
+    for p in points_raw:
+        p["yc"] = p["y"] - bsum[p["brand"]] / bn[p["brand"]]
+
+    def _var(v, m):
+        return sum((a - m) ** 2 for a in v) / (len(v) - 1) if len(v) > 1 else 0.0
 
     results = {}
     for t in IMPACT_TYPES:
-        xs, ys = points[t]["x"], points[t]["y"]
+        xs = [p["x"][t] for p in points_raw]
+        ys = [p["yc"] for p in points_raw]
         n = len(xs)
         n_with = sum(1 for x in xs if x > 0)
-        r = pearson(xs, ys)
-        with_mean = ([y for x, y in zip(xs, ys) if x > 0])
-        without_mean = ([y for x, y in zip(xs, ys) if x == 0])
-        eff = None
-        if with_mean and without_mean:
-            eff = (sum(with_mean) / len(with_mean)) - (sum(without_mean) / len(without_mean))
         if n_with == 0:
             continue  # Typ kam in keinem Intervall vor -> nicht ausweisen
+        r = pearson(xs, ys)
+        rho = spearman(xs, ys)
+        with_v = [y for x, y in zip(xs, ys) if x > 0]
+        without_v = [y for x, y in zip(xs, ys) if x == 0]
+        eff, se = None, None
+        if with_v and without_v:
+            m1 = sum(with_v) / len(with_v)
+            m0 = sum(without_v) / len(without_v)
+            eff = m1 - m0
+            if len(with_v) > 1 and len(without_v) > 1:
+                se = math.sqrt(_var(with_v, m1) / len(with_v) + _var(without_v, m0) / len(without_v))
         results[t] = {
             "label": TYPE_LABEL.get(t, t),
             "pearson_r": round(r, 3) if r is not None else None,
-            "avg_sov_effect_pp": round(eff, 2) if eff is not None else None,
+            "spearman_r": round(rho, 3) if rho is not None else None,
+            "avg_sov_effect_pp": round(eff, 3) if eff is not None else None,
+            "effect_se_pp": round(se, 3) if se is not None else None,
             "n_intervals": n,
             "n_with_event": n_with,
+            "type_confidence": type_confidence(n_with),
         }
 
     # nach |Effekt| sortiert
@@ -219,7 +286,7 @@ def analyze(events):
                           key=lambda kv: -abs(kv[1]["avg_sov_effect_pp"] or 0)))
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "method": "interval-event-study",
+        "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE)",
         "sov_source": sov_source,
         "lag_days": LAG_DAYS,
         "sov_measure_days": len(measure_days),

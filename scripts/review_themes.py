@@ -58,8 +58,11 @@ def collect_reviews():
         if h in seen:
             return
         seen.add(h)
+        d = str(date or "")[:10] if date else None
+        if d and not re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+            d = None
         out.append({"id": h, "brand": brand or "ergo", "source": source,
-                    "text": text[:600], "rating": rating, "date": date})
+                    "text": text[:600], "rating": rating, "date": d})
 
     if BERATER_FILE.exists():
         try:
@@ -179,8 +182,13 @@ def main():
         if not c:
             continue
         classified += 1
-        b = agg.setdefault(r["brand"], {"total": 0, "themes": {}})
+        b = agg.setdefault(r["brand"], {"total": 0, "themes": {}, "reviews": []})
         b["total"] += 1
+        b["reviews"].append({
+            "date": r.get("date"), "rating": r.get("rating"),
+            "sentiment": c["sentiment"], "source": r["source"],
+            "themes": c["themes"], "text": r["text"][:400],
+        })
         for t in c["themes"]:
             th = b["themes"].setdefault(t, {"count": 0, "positiv": 0, "neutral": 0, "negativ": 0, "quotes": []})
             th["count"] += 1
@@ -194,6 +202,9 @@ def main():
 
     for b in agg.values():
         b["themes"] = dict(sorted(b["themes"].items(), key=lambda kv: -kv[1]["count"]))
+        # chronologisch absteigend (None-Daten ans Ende) — fuer Ampel/Trend/Lesen
+        b["reviews"].sort(key=lambda r: (r.get("date") or "0000-00-00"), reverse=True)
+        b["reviews"] = b["reviews"][:300]
 
     payload = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

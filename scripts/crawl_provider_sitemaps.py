@@ -90,11 +90,68 @@ def http_get(url, timeout=25):
     return raw, final_url
 
 
+_BROWSER = {"pw": None, "ctx": None}
+
+
+def _browser_get(url, timeout=30):
+    """Playwright-Fallback: holt eine URL mit echtem Chromium.
+    Noetig fuer Anbieter mit Bot-Erkennung auf TLS-Ebene (z.B. Allianz/Akamai),
+    bei denen urllib trotz Browser-User-Agent geblockt wird."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("    [browser] Playwright nicht installiert — kein Fallback")
+        return None
+    try:
+        if _BROWSER["pw"] is None:
+            _BROWSER["pw"] = sync_playwright().start()
+            b = _BROWSER["pw"].chromium.launch(
+                headless=True, args=["--disable-blink-features=AutomationControlled"])
+            _BROWSER["ctx"] = b.new_context(
+                user_agent=UA, locale="de-DE",
+                extra_http_headers={"Accept-Language": "de-DE,de;q=0.9"})
+        page = _BROWSER["ctx"].new_page()
+        try:
+            resp = page.goto(url, timeout=timeout * 1000, wait_until="domcontentloaded")
+            if resp is None or resp.status >= 400:
+                print("    [browser] %s -> HTTP %s" % (url, resp.status if resp else "?"))
+                return None
+            raw = resp.body()
+            if raw[:2] == b"\x1f\x8b":
+                try:
+                    raw = gzip.decompress(raw)
+                except Exception:
+                    pass
+            print("    [browser] OK %s (%d Bytes)" % (url, len(raw)))
+            return raw
+        finally:
+            page.close()
+    except Exception as e:
+        print("    [browser] fail %s: %s" % (url, str(e)[:80]))
+        return None
+
+
+def fetch_raw(url, timeout=25):
+    """urllib zuerst; bei Fehler oder HTML-statt-Inhalt (WAF) Browser-Fallback."""
+    try:
+        raw, _ = http_get(url, timeout=timeout)
+        head = raw[:200].lstrip().lower()
+        if head.startswith(b"<!doctype html") or b"<html" in head:
+            raise RuntimeError("HTML statt erwartetem Inhalt (WAF-Block?)")
+        return raw
+    except Exception as e:
+        print("    http fail %s: %s -> Browser-Fallback" % (url, str(e)[:70]))
+        raw = _browser_get(url, timeout=max(timeout, 30))
+        if raw is None:
+            raise
+        return raw
+
+
 def discover_sitemaps(domain):
     """robots.txt -> Sitemap-URLs; sonst leer."""
     urls = []
     try:
-        raw, _ = http_get("https://%s/robots.txt" % domain, timeout=15)
+        raw = fetch_raw("https://%s/robots.txt" % domain, timeout=15)
         for line in raw.decode("utf-8", "replace").splitlines():
             m = re.match(r"\s*Sitemap:\s*(\S+)", line, re.I)
             if m:
@@ -110,14 +167,9 @@ def collect_urls(sitemap_url, seen_sitemaps, depth=0):
         return []
     seen_sitemaps.add(sitemap_url)
     try:
-        raw, _ = http_get(sitemap_url)
+        raw = fetch_raw(sitemap_url)
     except Exception as e:
         print("    sitemap fail %s: %s" % (sitemap_url, str(e)[:80]))
-        return []
-    # WAF/HTML statt XML?
-    head = raw[:200].lstrip().lower()
-    if head.startswith(b"<!doctype html") or b"<html" in head:
-        print("    %s -> HTML (geblockt?)" % sitemap_url)
         return []
     try:
         root = ET.fromstring(raw)
@@ -231,5 +283,17 @@ def main():
     return 0
 
 
+def _close_browser():
+    try:
+        if _BROWSER["pw"] is not None:
+            _BROWSER["pw"].stop()
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        rc = main()
+    finally:
+        _close_browser()
+    sys.exit(rc)

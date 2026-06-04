@@ -41,7 +41,7 @@ def load_history():
 
 
 def existing_keys(rows):
-    return {(r.get("date"), r.get("brand")) for r in rows}
+    return {(r.get("date"), r.get("brand"), r.get("llm")) for r in rows}
 
 
 def backfill_from_events(seen, out_lines):
@@ -64,9 +64,9 @@ def backfill_from_events(seen, out_lines):
             continue
         day = (e.get("timestamp") or "")[:10]
         brand = e.get("brand")
-        if not day or not brand or (day, brand) in seen:
+        if not day or not brand or (day, brand, None) in seen:
             continue
-        seen.add((day, brand))
+        seen.add((day, brand, None))
         out_lines.append(json.dumps({
             "date": day, "brand": brand,
             "sov_pct": round(float(d["new_pct"]), 2),
@@ -102,9 +102,9 @@ def main():
                 sov = r.get("share_of_voice")
                 if not brand or sov is None or not day:
                     continue
-                if (day, brand) in seen:
+                if (day, brand, None) in seen:
                     continue
-                seen.add((day, brand))
+                seen.add((day, brand, None))
                 out_lines.append(json.dumps({
                     "date": day, "brand": brand,
                     "sov_pct": round(float(sov) * 100, 2),
@@ -112,7 +112,32 @@ def main():
                     "source": "snapshot",
                 }, ensure_ascii=False))
                 added += 1
-            print("Snapshot %s: %d neue Messpunkte" % (day, added))
+            # 2026-06-04: zusaetzlich SoV JE LLM (fuer die LLM-Auswahl im Dashboard).
+            # Aggregation: Mentions je Marke ueber alle Produkte, je LLM -> Anteil.
+            llm_mentions = {}
+            for prod in (snap.get("products") or {}).values():
+                for llm, summ in (prod.get("summary_by_llm") or {}).items():
+                    for b in (summ.get("brands") or []):
+                        bn, m = b.get("name"), b.get("mentions")
+                        if not bn or m is None:
+                            continue
+                        llm_mentions.setdefault(llm, {})
+                        llm_mentions[llm][bn] = llm_mentions[llm].get(bn, 0) + int(m)
+            for llm, per_brand in llm_mentions.items():
+                tot = sum(per_brand.values())
+                if tot <= 0:
+                    continue
+                for brand, m in per_brand.items():
+                    if (day, brand, llm) in seen:
+                        continue
+                    seen.add((day, brand, llm))
+                    out_lines.append(json.dumps({
+                        "date": day, "brand": brand, "llm": llm,
+                        "sov_pct": round(m / tot * 100.0, 2),
+                        "avg_rank": None, "source": "snapshot_llm",
+                    }, ensure_ascii=False))
+                    added += 1
+            print("Snapshot %s: %d neue Messpunkte (inkl. per-LLM)" % (day, added))
     else:
         print("WARN: data/geo_snapshot.json fehlt — nur Backfill")
 

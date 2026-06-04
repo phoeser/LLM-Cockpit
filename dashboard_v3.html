@@ -788,6 +788,28 @@
     </div>
   </div>
 
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Treiber-GAP: Aktivität ERGO vs. Wettbewerb</h3>
+    <p class="text-sm text-gray-600 mb-4">Alle Sichtbarkeits-Treiber aus der Event-Pipeline — wo ist der Wettbewerb aktiver als ERGO? Sortiert nach größtem Rückstand.</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-ergo-dark text-white">
+            <th class="text-left px-3 py-2">Treiber</th>
+            <th class="text-right px-3 py-2">ERGO</th>
+            <th class="text-right px-3 py-2">Aktivster Wettbewerber</th>
+            <th class="text-right px-3 py-2">Ø Wettbewerb</th>
+            <th class="text-right px-3 py-2">GAP zu Ø</th>
+            <th class="text-right px-3 py-2">Impact (SoV)</th>
+            <th class="text-center px-3 py-2">Priorität</th>
+          </tr>
+        </thead>
+        <tbody id="driverGapBody"></tbody>
+      </table>
+    </div>
+    <p class="text-xs text-gray-400 mt-3" id="driverGapNote"></p>
+  </div>
+
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
     <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-5">
       <div class="text-xs uppercase font-semibold text-green-700">ERGO Stärken</div>
@@ -826,27 +848,6 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="actionCards"></div>
 
-  <div class="bg-white rounded-xl p-6 shadow mt-8">
-    <h3 class="text-lg font-bold text-ergo-dark mb-3">Roadmap (vereinfacht)</h3>
-    <div class="space-y-3 text-sm">
-      <div class="flex items-start gap-3">
-        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q2/26</div>
-        <div>FAQ-Schema-Markup ausrollen · Glossar A-Z konzipieren · LLM-Monitoring aufsetzen · Content-Audit Tier/Rechtsschutz</div>
-      </div>
-      <div class="flex items-start gap-3">
-        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q3/26</div>
-        <div>Glossar live (300+ Begriffe) · Autoren-Profile aufbauen · 5 neue Rechner · Video-Strategie pilotieren</div>
-      </div>
-      <div class="flex items-start gap-3">
-        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q4/26</div>
-        <div>Pressebereich ausbauen · Ratgeber-Vertiefung schwacher Sparten · Krankheitslexikon Tier/Kranken</div>
-      </div>
-      <div class="flex items-start gap-3">
-        <div class="bg-ergo-red text-white px-3 py-1 rounded font-bold whitespace-nowrap">Q1/27</div>
-        <div>Wirkungsmessung · 2. Iteration auf Basis GEO-Monitoring-Daten · Skalierung erfolgreicher Module</div>
-      </div>
-    </div>
-  </div>
 </section>
 
 
@@ -3210,7 +3211,7 @@ function buildGeoTab() {
     overview: ['buildOverviewMatrix','buildOverviewCharts'],
     gap: ['buildGapTable','buildGapCharts'],
     geo: ['buildGeoTab','renderGeoData_init'],
-    actions: ['buildActionCards'],
+    actions: ['buildActionCards','buildDriverGap'],
     domain: ['buildDomainFootprint'],
     bewertungen: ['buildSentimentChart','buildSentimentSourceTable','renderProductSentiment','renderRecentReviews'],
     ratings: ['renderRatingsTables'],
@@ -3268,6 +3269,7 @@ function buildGeoTab() {
     safeCall('buildGeoSovTime');
     safeCall('renderCorrelationTab');
     safeCall('buildBeraterCannibalization');
+    safeCall('buildDriverGap');
   }
   async function __v3_loadJSON(path) {
     try { var r = await fetch(path, {cache:'no-store'}); if (!r.ok) return null; return await r.json(); }
@@ -3742,6 +3744,61 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     host.innerHTML=out;
   };
 
+
+  // ===== Treiber-GAP: alle Sichtbarkeits-Treiber, ERGO vs. Wettbewerb (30 Tage) =====
+  window.buildDriverGap = function(){
+    var tb=document.getElementById('driverGapBody'); if(!tb) return;
+    var evs=window.CORRELATION_EVENTS||[];
+    var DAYS=30;
+    var cutoff=new Date(Date.now()-DAYS*86400000).toISOString().slice(0,10);
+    var TYPES={
+      page_change:['Seitenänderungen','Content-Pflege: Produkt-/Ratgeberseiten aktualisieren'],
+      page_new:['Neue Seiten','Neue Produkt-/Ratgeberseiten veröffentlichen'],
+      press_mention:['Pressemitteilungen','Presse-Frequenz erhöhen (Newsroom)'],
+      news_mention:['News-Erwähnungen (extern)','PR: externe Berichterstattung treiben'],
+      review_change:['Bewertungs-Änderungen','Bewertungsmanagement (Google/Trustpilot/Check24)'],
+      review_volume:['Bewertungs-Volumen','Aktiv Kundenbewertungen einsammeln'],
+      domain_change:['Domain-/Subdomain-Änderungen','Domain-Portfolio (informativ)']
+    };
+    var counts={};
+    evs.forEach(function(e){
+      var t=e.event_type,b=e.brand;
+      if(!TYPES[t]||!b)return;
+      var d=String(e.timestamp||'').slice(0,10);
+      if(d<cutoff)return;
+      (counts[t]||(counts[t]={}))[b]=(counts[t][b]||0)+1;
+    });
+    var impact=(window.CORRELATION_IMPACT&&window.CORRELATION_IMPACT.impact)||{};
+    var conf=(window.CORRELATION_IMPACT&&window.CORRELATION_IMPACT.confidence)||null;
+    var rows=Object.keys(TYPES).map(function(t){
+      var c=counts[t]||{};
+      var ergo=c['ERGO']||0;
+      var comp=Object.keys(c).filter(function(b){return b!=='ERGO';});
+      var sum=0,best=null;
+      comp.forEach(function(b){sum+=c[b];if(best===null||c[b]>c[best])best=b;});
+      var avg=comp.length?sum/comp.length:0;
+      var imp=impact[t]||null;
+      return {label:TYPES[t][0],hint:TYPES[t][1],ergo:ergo,best:best,bestN:best!==null?c[best]:0,nComp:comp.length,avg:avg,gap:ergo-avg,eff:(imp&&imp.avg_sov_effect_pp!=null)?imp.avg_sov_effect_pp:null};
+    }).filter(function(r){return r.ergo>0||r.nComp>0;});
+    rows.sort(function(a,b){return a.gap-b.gap;});
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="px-3 py-3 text-sm text-gray-500">Noch keine Treiber-Events im Zeitfenster.</td></tr>'; return; }
+    tb.innerHTML=rows.map(function(r){
+      var prio=(r.gap<0&&Math.abs(r.gap)>=Math.max(2,r.avg*0.3))?['HOCH','#dc2626']:(r.gap<0?['MITTEL','#d97706']:['OK','#16a34a']);
+      var gapTxt=(r.gap>0?'+':'')+r.gap.toFixed(1);
+      var effTxt=(r.eff!=null)?((r.eff>0?'+':'')+r.eff.toFixed(2)+' Pp'):'–';
+      return '<tr class="border-b">'
+        +'<td class="px-3 py-2"><div class="font-semibold">'+esc(r.label)+'</div><div class="text-xs text-gray-400">'+esc(r.hint)+'</div></td>'
+        +'<td class="text-right px-3 py-2 font-bold">'+r.ergo+'</td>'
+        +'<td class="text-right px-3 py-2">'+(r.best!==null?(r.bestN+' <span class="text-xs text-gray-500">('+esc(r.best)+')</span>'):'–')+'</td>'
+        +'<td class="text-right px-3 py-2">'+r.avg.toFixed(1)+'</td>'
+        +'<td class="text-right px-3 py-2 font-semibold" style="color:'+(r.gap<0?'#dc2626':'#16a34a')+'">'+gapTxt+'</td>'
+        +'<td class="text-right px-3 py-2">'+effTxt+'</td>'
+        +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs text-white" style="background:'+prio[1]+'">'+prio[0]+'</span></td>'
+        +'</tr>';
+    }).join('');
+    var note=document.getElementById('driverGapNote');
+    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. Seiten-Tracking: ERGO, Allianz, AXA, Generali, HUK-Coburg.';
+  };
 
   window.buildBeraterCannibalization = function(){
     var tb = document.getElementById('berKannibTableBody');

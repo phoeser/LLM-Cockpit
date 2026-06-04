@@ -202,16 +202,18 @@ JS_EXTRACT = """() => {
             var customerScore = rm ? parseFloat(rm[1].replace(',','.')) : null;
             var customerCount = rm ? parseInt(rm[2].replace(/\\./g,'')) : null;
 
-            // Tarifname: Zeile direkt nach 'monatlich' (Karten-Layout Check24)
+            // Tarifname: Listen-Karten = Zeile nach Positionsnummer ('1.'),
+            // Empfehlungs-Karten = Zeile nach 'monatlich' (live verifiziert 2026-06-04)
             var tarif = null;
             try {
                 var lines = (node.innerText || '').split('\\n').map(function(s){return s.trim();}).filter(Boolean);
-                for (var li = 0; li < lines.length - 1; li++) {
-                    if (/^monatlich/i.test(lines[li])) {
-                        var cand = lines[li + 1];
-                        if (cand && cand.length >= 3 && cand.length <= 60 && !/€|%|Tarifbewertung|Wartezeit/i.test(cand)) tarif = cand;
-                        break;
-                    }
+                var okName = function(c){ return c && c.length >= 3 && c.length <= 60 &&
+                    !/€|%|Tarifbewertung|Wartezeit|beitragsfrei|Auszahlung|Weiterempfehlung|Gesundheits|Sonderzahlung|vergleichen/i.test(c); };
+                for (var li = 0; li < lines.length - 1 && !tarif; li++) {
+                    if (/^\\d+\\.$/.test(lines[li]) && okName(lines[li + 1])) tarif = lines[li + 1];
+                }
+                for (var li = 0; li < lines.length - 1 && !tarif; li++) {
+                    if (/^monatlich/i.test(lines[li]) && okName(lines[li + 1])) tarif = lines[li + 1];
                 }
             } catch(e) {}
             // Wartezeit: 'Keine Wartezeit' oder 'X Monate Wartezeit'

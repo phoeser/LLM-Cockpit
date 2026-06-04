@@ -225,7 +225,7 @@ JS_EXTRACT = """() => {
             var name = logo.alt.replace(/anbieter\\s*logo\\s*/gi, '').replace(/\\s*Logo\\s*/gi, '').trim();
 
             var gradeText = node.textContent || '';
-            var gm = gradeText.match(/(\\d[.,]\\d)\\s*(Exzellent|Hervorragend|Sehr gut|Gut|Befriedigend|Ausreichend)/i);
+            var gm = gradeText.match(/(\\d{1,2}(?:[.,]\\d)?)\\s*(Exzellent|Hervorragend|Sehr gut|Gut|Befriedigend|Ausreichend)/i);
             var grade = gm ? parseFloat(gm[1].replace(',','.')) : null;
             var gradeLabel = gm ? gm[2] : null;
 
@@ -266,6 +266,15 @@ JS_EXTRACT = """() => {
         if (!best[r.name] || r.price < best[r.name].price) {
             best[r.name] = r;
         }
+    });
+    // Fehlende Felder (Note/Tarif/Wartezeit/Bewertung) aus anderen Karten
+    // derselben Marke auffuellen (z.B. Empfehlungs- vs. Listen-Karte)
+    results.forEach(function(r) {
+        var b = best[r.name];
+        if (!b || b === r) return;
+        ['grade','gradeLabel','customerScore','customerCount','tarif','wartezeit'].forEach(function(f){
+            if ((b[f] === null || b[f] === undefined) && r[f] !== null && r[f] !== undefined) b[f] = r[f];
+        });
     });
     return best;
 }"""
@@ -446,7 +455,16 @@ def crawl_product_prices(product_key, product_config):
                     # Zahn: Tarif-Kacheln liefern Tarifname + Leistungsumfang -> anreichern
                     if product_key == "zahnzusatz" and raw:
                         try:
-                            tiles = page.evaluate(JS_EXTRACT_ZAHN_TILES)
+                            # Virtuelles Rendering: schrittweise scrollen und Kacheln einsammeln
+                            tiles = {}
+                            for step in range(14):
+                                part = page.evaluate(JS_EXTRACT_ZAHN_TILES) or {}
+                                for tn, tv in part.items():
+                                    if tn not in tiles or tv["price"] < tiles[tn]["price"]:
+                                        tiles[tn] = tv
+                                page.mouse.wheel(0, 1000)
+                                page.wait_for_timeout(450)
+                            page.evaluate("window.scrollTo(0,0)")
                             tile_by_brand = {}
                             for tn, tv in (tiles or {}).items():
                                 bk = map_brand(tn) or ("_other_" + tn)

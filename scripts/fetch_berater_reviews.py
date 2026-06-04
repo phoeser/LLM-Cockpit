@@ -60,13 +60,38 @@ def places_text_search(query):
 
 
 def places_get_reviews(place_id):
-    """Google Places API (New) — Place Details für Reviews."""
-    url = f"https://places.googleapis.com/v1/places/{place_id}"
+    """Place Details fuer Reviews.
+    2026-06-05: Legacy-API mit reviews_sort=newest + language=de — liefert die
+    NEUESTEN Reviews im deutschen ORIGINAL (v1 lieferte 'relevanteste', oft
+    englisch uebersetzt). Fallback: v1 mit languageCode=de."""
+    url = ("https://maps.googleapis.com/maps/api/place/details/json?place_id=%s"
+           "&fields=reviews,rating,user_ratings_total&reviews_sort=newest"
+           "&language=de&key=%s" % (place_id, API_KEY))
+    try:
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            d = json.loads(resp.read().decode("utf-8"))
+        if d.get("status") == "OK":
+            res = d.get("result") or {}
+            return {
+                "reviews": [{
+                    "authorAttribution": {"displayName": r.get("author_name", "Unbekannt")},
+                    "rating": r.get("rating", 0),
+                    "text": {"text": r.get("text", ""), "languageCode": r.get("language", "de")},
+                    "publishTime": __import__("datetime").datetime.utcfromtimestamp(
+                        r.get("time", 0)).strftime("%Y-%m-%dT%H:%M:%SZ") if r.get("time") else "",
+                } for r in (res.get("reviews") or [])],
+                "rating": res.get("rating"),
+                "userRatingCount": res.get("user_ratings_total"),
+            }
+        print(f"  Legacy-Status {d.get('status')} -> v1-Fallback")
+    except Exception as e:
+        print(f"  Legacy Error: {str(e)[:120]} -> v1-Fallback")
+    # Fallback: Places API (New) mit deutscher Sprache
+    url = f"https://places.googleapis.com/v1/places/{place_id}?languageCode=de"
     headers = {
         "X-Goog-Api-Key": API_KEY,
         "X-Goog-FieldMask": "reviews,rating,userRatingCount"
     }
-    
     req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -85,7 +110,7 @@ def format_review(review):
     return {
         "author": review.get("authorAttribution", {}).get("displayName", "Unbekannt"),
         "rating": review.get("rating", 0),
-        "text": text_obj.get("text", "") if isinstance(text_obj, dict) else str(text_obj),
+        "text": ((review.get("originalText") or {}).get("text") or (text_obj.get("text", "") if isinstance(text_obj, dict) else str(text_obj))),
         "time": review.get("publishTime", ""),
         "language": text_obj.get("languageCode", "de") if isinstance(text_obj, dict) else "de"
     }
@@ -123,8 +148,10 @@ def main():
         key = f"{v.get('firstname','').strip()}_{v.get('lastname','').strip()}_{v.get('city','').strip()}"
         key = key.replace(" ", "_").lower()
         
-        # Skip wenn bereits vorhanden
-        if key in reviews_data and (reviews_data[key].get("reviews") or not reviews_data[key].get("place_id")):
+        # 2026-06-05: Reviews werden bei jedem Lauf AKTUALISIERT (vorher wurden
+        # vorhandene uebersprungen -> Datenstand blieb beim Erst-Crawl stehen).
+        # Nur Eintraege ohne Google-Treffer werden weiterhin uebersprungen.
+        if key in reviews_data and not reviews_data[key].get("place_id") and reviews_data[key].get("found") is False:
             stats["skipped"] += 1
             continue
         
@@ -139,9 +166,16 @@ def main():
         
         print(f"  [{i+1}] {name}, {city} ... ", end="", flush=True)
         
-        # 1. Text Search — Place finden
-        place = places_text_search(query)
-        time.sleep(DELAY_BETWEEN)
+        # 1. Text Search — Place finden (bekannte place_id wiederverwenden, spart API-Kosten)
+        prev = reviews_data.get(key) or {}
+        if prev.get("place_id"):
+            place = {"id": prev["place_id"], "rating": prev.get("rating"),
+                     "userRatingCount": prev.get("review_count", 0) or 1,
+                     "formattedAddress": prev.get("address", ""),
+                     "displayName": {"text": prev.get("place_name", "")}}
+        else:
+            place = places_text_search(query)
+            time.sleep(DELAY_BETWEEN)
         
         if not place:
             print("nicht gefunden")

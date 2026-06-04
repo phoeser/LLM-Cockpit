@@ -3701,28 +3701,30 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       if(pk==='sterbegeld') profKeys=profKeys.filter(function(a){return a!=='age_30';});
       var brandSet={}; profKeys.forEach(function(a){var pr=profs[a]; if(pr.brands) Object.keys(pr.brands).forEach(function(b){brandSet[b]=1;});});
       var brands=Object.keys(brandSet);
-      out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-3">'+esc(prod.name||pk)+'</h3>';
+      out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">'+esc(prod.name||pk)+'</h3>';
+      if(prod.params) out+='<p class="text-xs text-gray-500 mb-3">'+esc(prod.params)+'</p>';
       if(!brands.length){ out+='<p class="text-sm text-gray-500">Keine Tarife gefunden (Check24-Crawl unvollständig).</p></div>'; return; }
       // Sortier-Basis: immer das 50-Jahre-Profil (Pauls Vorgabe)
       var firstAge=(profKeys.indexOf('age_50')>=0)?'age_50':profKeys[0];
       function price(b,a){var br=(profs[a].brands||{})[b]; return (br&&br.price!=null)?br.price:Infinity;}
       // Bestes verfuegbares Rating je Versicherer (bevorzugt aeltestes Profil = 65 J.)
       function ratingOf(b){ for(var i=profKeys.length-1;i>=0;i--){ var br=(profs[profKeys[i]].brands||{})[b]; if(br&&(br.grade!=null||br.customer_score!=null)) return br; } return null; }
+      function infoOf(b){ var pref=['age_50'].concat(profKeys); for(var i=0;i<pref.length;i++){ if(profKeys.indexOf(pref[i])<0)continue; var br=(profs[pref[i]].brands||{})[b]; if(br&&(br.tariff||br.waiting_period)) return br; } return null; }
+      var hasInfo=brands.some(function(b){return !!infoOf(b);});
       var hasRatings=brands.some(function(b){return !!ratingOf(b);});
-      if(pk==='sterbegeld'){
-        // Sterbegeld: rein nach Preis aufsteigend (Basis: 50 Jahre)
-        brands.sort(function(x,y){return price(x,firstAge)-price(y,firstAge);});
-      } else {
-        brands.sort(function(x,y){var tx=tracked(x),ty=tracked(y); if(tx!==ty)return tx?-1:1; return price(x,firstAge)-price(y,firstAge);});
-      }
+      // Alle Produkte: rein nach Preis aufsteigend (Basis: 50-Jahre-Profil)
+      brands.sort(function(x,y){return price(x,firstAge)-price(y,firstAge);});
       out+='<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
       profKeys.forEach(function(a){out+='<th class="py-2 px-2 text-right">'+esc(profs[a].label||a)+'</th>';});
+      if(hasInfo){ out+='<th class="py-2 px-2 text-right">Wartezeit</th>'; }
       if(hasRatings){ out+='<th class="py-2 px-2 text-right">Tarifnote (C24)</th><th class="py-2 px-2 text-right">Kundenbewertung</th>'; }
       out+='</tr></thead><tbody>';
       brands.forEach(function(b){
         var isE=(b==='ergo'), isT=tracked(b);
-        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+'</td>';
+        var info=hasInfo?infoOf(b):null;
+        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+(info&&info.tariff?'<div class="text-xs text-gray-400 font-normal">Tarif: '+esc(info.tariff)+'</div>':'')+'</td>';
         profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
+        if(hasInfo){ out+='<td class="py-2 px-2 text-right">'+(info&&info.waiting_period?esc(info.waiting_period):'–')+'</td>'; }
         if(hasRatings){
           var rt=ratingOf(b);
           var g='–';
@@ -3757,8 +3759,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       press_mention:['Pressemitteilungen','Presse-Frequenz erhöhen (Newsroom)'],
       news_mention:['News-Erwähnungen (extern)','PR: externe Berichterstattung treiben'],
       review_change:['Bewertungs-Änderungen','Bewertungsmanagement (Google/Trustpilot/Check24)'],
-      review_volume:['Bewertungs-Volumen','Aktiv Kundenbewertungen einsammeln'],
-      domain_change:['Domain-/Subdomain-Änderungen','Domain-Portfolio (informativ)']
+      review_volume:['Bewertungs-Volumen','Aktiv Kundenbewertungen einsammeln']
     };
     var counts={};
     evs.forEach(function(e){

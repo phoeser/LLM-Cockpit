@@ -59,6 +59,10 @@ def collect_reviews():
         if h in seen:
             return
         seen.add(h)
+        # 2026-06-05: Berater-Agentur-Reviews als eigene "Marke" getrennt,
+        # damit ERGO (Marke) mit dem Wettbewerb vergleichbar bleibt
+        if source == "Google (Berater)":
+            brand = "ergo-berater"
         d = str(date or "")[:10] if date else None
         if d and not re.match(r"^\d{4}-\d{2}-\d{2}$", d):
             d = None

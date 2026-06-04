@@ -116,7 +116,7 @@ def classify_batch(reviews, api_key):
     }).encode("utf-8")
     # Gleiches Aufruf-Muster wie update_sentiment.py (nachweislich funktionierend)
     url = ("https://generativelanguage.googleapis.com/v1beta/models/"
-           "gemini-2.0-flash:generateContent?key=%s" % api_key)
+           "gemini-flash-latest:generateContent?key=%s" % api_key)
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
@@ -217,7 +217,7 @@ def main():
 
     payload = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "model": "gemini-2.0-flash",
+        "model": "gemini-flash-latest",
         "themes_taxonomy": THEMES,
         "reviews_total": len(reviews),
         "reviews_classified": classified,

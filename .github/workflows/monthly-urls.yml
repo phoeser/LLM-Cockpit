@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: monthly-urls
+  group: repo-writes
   cancel-in-progress: false
 
 permissions:
@@ -16,6 +16,7 @@ permissions:
 jobs:
   crawl-urls:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4

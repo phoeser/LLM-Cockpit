@@ -1,11 +1,21 @@
 """
-Preisvergleich-Crawler: Holt Tarif-Preise und Bewertungen aus dem Check24
-Vergleichsrechner via Playwright fuer 3 Produkte x 3 Altersprofile.
+Preisvergleich-Crawler: Holt Tarif-Preise aus den Check24-Vergleichsrechnern
+via Playwright fuer 3 Produkte x 3 Altersprofile.
 
 Ergebnis: data/price_comparison.json + Injection in Dashboard als PRICE_DATA.
 
-Produkte: Zahnzusatz, Sterbegeld, Risikoleben
+Produkte: Zahnzusatz (Form-Flow), Sterbegeld (Deeplink), Risikoleben (Deeplink)
 Altersprofile: 30 Jahre, 50 Jahre, 65 Jahre
+
+Fixes 2026-06-04 (per Live-Browser-Analyse verifiziert):
+- Cookie-Consent-Layer blockierte alle Klicks -> wird per DOM-remove entfernt (ohne Einwilligung).
+- Zahnzusatz: Pflicht-Checkbox 'Erstinformationen' wird jetzt gecheckt (war DER Submit-Blocker),
+  Submit ist ein <a class="next_button"> ohne href (weder role=button noch role=link!).
+- Risikoleben: vorsorge.check24.de gab 403 (Headless-UA) -> realistischer User-Agent;
+  Ergebnisseite ist per GET-Deeplink mit c24api_*-Parametern erreichbar (kein Formular noetig).
+- 'OK, verstanden'-Erstinformations-Modal auf Ergebnisseiten wird weggeklickt.
+- Neuer primaerer Extraktor: Provider-Chips ('ab X,XX EUR' je Anbieter-Logo) — existieren
+  auf Zahn- UND Risikoleben-Ergebnisseiten. Fallback: alter Karten-Extraktor (Sterbegeld).
 """
 import json
 import os
@@ -17,18 +27,27 @@ from pathlib import Path
 PRICE_FILE = Path("data/price_comparison.json")
 TEMPLATE_FILE = Path("dashboard_template.html")
 
+# Realistischer Desktop-UA gegen Bot-Erkennung (vorsorge.check24.de gab 403 bei Headless-UA)
+REAL_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+           "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+
+
+def _first_of_next_month():
+    today = datetime.now(timezone.utc).date()
+    if today.month == 12:
+        return "%04d-01-01" % (today.year + 1)
+    return "%04d-%02d-01" % (today.year, today.month + 1)
+
+
 # Check24 Vergleichsrechner URLs pro Produkt
-# Jedes Produkt hat eigene Parameter
 PRODUCTS = {
     "zahnzusatz": {
         "name": "Zahnzusatzversicherung",
-        # Check24 hat Zahnzusatz auf ein mehrstufiges Formular umgestellt (2026).
-        # Wir fuellen das Formular ueber Playwright aus statt eines Deep-Links.
+        # Einstufiges Angular-Formular. Geburtsdatum kommt per URL-Parameter an,
+        # Radios sind sinnvoll vorbelegt, aber Angular-State ist 'pristine' ->
+        # alle Gruppen muessen per trusted Click gesetzt werden + Erstinfo-Checkbox.
         "flow": "form",
         "url_tpl": "https://zusatzversicherung.check24.de/zahn/benutzereingaben/?c24api_birthdate={birth_de}",
-        "form": {
-            "radio_labels": ["Gesetzliche Krankenkasse", "nein", "nein", "nein", "nein"],
-        },
     },
     "sterbegeld": {
         "name": "Sterbegeldversicherung",
@@ -41,10 +60,22 @@ PRODUCTS = {
     },
     "risikoleben": {
         "name": "Risikolebensversicherung",
-        # Alte Deeplink-Domain risikolebensversicherung.check24.de existiert NICHT mehr (ERR_NAME_NOT_RESOLVED).
-        # Neuer Rechner = Formular-Flow auf vorsorge.check24.de (URL verifiziert 2026-06-02, loest auf).
-        "flow": "form",
-        "url_tpl": "https://vorsorge.check24.de/risikoleben/benutzereingaben/?c24api_birthdate={birth_de}",
+        # GET-Deeplink auf die Ergebnisseite (Form-Action des Onboarding-Formulars).
+        # WICHTIG: Die leeren Parameter (rs_lang, rs_session, ...) sind Pflicht —
+        # ohne sie liefert die Berechnung '0 Ergebnisse' (live verifiziert 2026-06-04).
+        "flow": "deeplink",
+        "url_tpl": (
+            "https://vorsorge.check24.de/risikoleben/vergleichsergebnis/?"
+            "c24api_rs_lang=&c24api_rs_session=&c24login_type=none&c24_controller=result&"
+            "c24_calculate=x&c24api_currentinsurancetype=&c24api_smoker=no&c24api_nonsmokeryears=&"
+            "c24api_birthdate={birth_de}&c24api_protectiontype=constant&c24api_protectiontarget=family&"
+            "c24api_occupation_id=6194&c24api_sum_course=decreasing_linearly&c24api_sortfield=price&"
+            "c24api_sortorder=asc&c24api_loannotolderthansixmonths=no&c24api_realestateproprietor=no&"
+            "c24api_referringleadid=&c24api_children_discount=no&c24api_childnotolderthansixmonths=no&"
+            "c24api_insure_sum=100.000&c24api_insure_period=20&c24api_paymentperiod=month&"
+            "c24api_occupation_name=Angestellte%2Fr+%28%C3%BCber+90%25+B%C3%BCrot%C3%A4tigkeit%29&"
+            "c24api_insure_date={insure_date}"
+        ),
     },
 }
 
@@ -55,7 +86,7 @@ AGE_PROFILES = [
     {"label": "65 Jahre", "birth": "19610530", "key": "age_65"},
 ]
 
-# Unsere 10 Haupt-Versicherer (Check24-Name -> unser Brand-Key)
+# Unsere 10 Haupt-Versicherer (Check24-Name -> unser Brand-Key), exakte Treffer
 BRAND_MAP = {
     "ergo": "ergo", "ERGO": "ergo",
     "allianz": "allianz", "Allianz": "allianz",
@@ -70,14 +101,75 @@ BRAND_MAP = {
     "hannoversche": "hannoversche", "Hannoversche": "hannoversche",
 }
 
-# JS-Code fuer DOM-Extraktion (Preise + Ratings + Bewertung pro Versicherer)
+# Substring-Matching fuer zusammengesetzte Check24-Namen
+# (z.B. 'ERGO Vorsorge', 'Allianz Private Krankenversicherung AG')
+BRAND_KEYWORDS = [
+    ("signal iduna", "signal-iduna"),
+    ("signal-iduna", "signal-iduna"),
+    ("hannoversche", "hannoversche"),
+    ("cosmos", "cosmosdirekt"),
+    ("generali", "generali"),
+    ("allianz", "allianz"),
+    ("ergo", "ergo"),
+    ("axa", "axa"),
+    ("huk", "huk"),
+    ("devk", "devk"),
+    ("r+v", "ruv"),
+]
+
+
+def map_brand(c24_name):
+    """Mappt einen Check24-Anbieternamen auf unseren Brand-Key (oder None)."""
+    if c24_name in BRAND_MAP:
+        return BRAND_MAP[c24_name]
+    n = c24_name.lower().strip()
+    if n in BRAND_MAP:
+        return BRAND_MAP[n]
+    for kw, key in BRAND_KEYWORDS:
+        # Wortgrenzen, damit z.B. 'axa' nicht in 'Maxalta' matcht
+        if re.search(r"(?<![a-z0-9])" + re.escape(kw) + r"(?![a-z0-9])", n):
+            return key
+    return None
+
+
+# PRIMAERER Extraktor: Provider-Chips ('ab X,XX EUR' neben genau einem Anbieter-Logo).
+# Existiert auf zahn- (zzv-frontend-provider-chip) und risikoleben-Ergebnisseiten
+# (div.chips-provider__wrapper__option) — Selektor generisch ueber Struktur statt Klassen.
+JS_EXTRACT_CHIPS = """() => {
+    var out = {};
+    document.querySelectorAll('*').forEach(function(el) {
+        if (el.children.length > 2) return;
+        var t = (el.textContent || '').trim();
+        var m = t.match(/^ab\\s*(\\d{1,3}(?:\\.\\d{3})?,\\d{2})\\s*€$/);
+        if (!m) return;
+        var node = el;
+        for (var i = 0; i < 5; i++) {
+            node = node.parentElement;
+            if (!node) break;
+            var imgs = node.querySelectorAll('img[alt]:not([alt=""])');
+            if (imgs.length === 1) {
+                var name = imgs[0].alt.replace(/anbieter\\s*logo\\s*/gi, '')
+                                       .replace(/\\s*logo\\s*/gi, ' ').trim();
+                var price = parseFloat(m[1].replace('.', '').replace(',', '.'));
+                if (name && price > 0 && (!(name in out) || price < out[name].price)) {
+                    out[name] = {price: price, grade: null, gradeLabel: null,
+                                 customerScore: null, customerCount: null};
+                }
+                break;
+            }
+            if (imgs.length > 1) break;
+        }
+    });
+    return out;
+}"""
+
+# FALLBACK-Extraktor (bisheriges Verfahren, funktioniert auf Sterbegeld-Seite):
+# Preis-Element -> Vorfahr mit Versicherer-Logo, plus Tarifnote/Kundenbewertung
 JS_EXTRACT = """() => {
     var results = [];
-    // Finde alle Preis-Elemente und matche mit Versicherer-Logos
     document.querySelectorAll('*').forEach(function(el) {
         if (el.children.length > 0) return;
         var t = el.textContent.trim();
-        // Preis: "20,59 €" Pattern
         if (!t.match(/^\\d{2,3},\\d{2}\\s*€$/)) return;
         var price = parseFloat(t.replace(',','.').replace('€','').trim());
         if (price < 1 || price > 500) return;
@@ -88,39 +180,25 @@ JS_EXTRACT = """() => {
             if (!node) break;
             var logo = node.querySelector('img[alt*="Logo"]');
             if (!logo) continue;
-            var name = logo.alt.replace(/\\s*Logo\\s*/gi, '').trim();
+            var name = logo.alt.replace(/anbieter\\s*logo\\s*/gi, '').replace(/\\s*Logo\\s*/gi, '').trim();
 
-            // Suche auch nach Tarifbewertung und Kundenbewertung
-            var gradeEl = node.querySelector('[class*="tariffGrade"], [class*="grade"]');
-            var grade = null;
-            var gradeLabel = null;
-            // Suche nach dem Muster "7.4 Gut" oder "9.4 Hervorragend"
             var gradeText = node.textContent || '';
             var gm = gradeText.match(/(\\d[.,]\\d)\\s*(Exzellent|Hervorragend|Sehr gut|Gut|Befriedigend|Ausreichend)/i);
-            if (gm) {
-                grade = parseFloat(gm[1].replace(',','.'));
-                gradeLabel = gm[2];
-            }
+            var grade = gm ? parseFloat(gm[1].replace(',','.')) : null;
+            var gradeLabel = gm ? gm[2] : null;
 
-            // Kundenbewertung (Sterne)
-            var ratingText = node.textContent || '';
-            var rm = ratingText.match(/\\((\\d[.,]\\d)\\)\\s*([\\d.]+)/);
+            var rm = gradeText.match(/\\((\\d[.,]\\d)\\)\\s*([\\d.]+)/);
             var customerScore = rm ? parseFloat(rm[1].replace(',','.')) : null;
             var customerCount = rm ? parseInt(rm[2].replace(/\\./g,'')) : null;
 
             results.push({
-                name: name,
-                price: price,
-                grade: grade,
-                gradeLabel: gradeLabel,
-                customerScore: customerScore,
-                customerCount: customerCount
+                name: name, price: price, grade: grade, gradeLabel: gradeLabel,
+                customerScore: customerScore, customerCount: customerCount
             });
             break;
         }
     });
 
-    // Pro Versicherer: guenstigster Tarif
     var best = {};
     results.forEach(function(r) {
         if (!best[r.name] || r.price < best[r.name].price) {
@@ -145,6 +223,7 @@ JS_DIAG = """() => {
     inputs: cnt('input:not([type=hidden])'),
     buttons: cnt('button'),
     logos: cnt('img[alt*="Logo"]'),
+    chips: cnt('[class*="provider-chip"],[class*="chips-provider"]'),
     price_like: (body.match(/\\d{1,3},\\d{2}\\s*€/g) || []).length,
     body_len: body.length,
     headings: heads,
@@ -154,19 +233,42 @@ JS_DIAG = """() => {
 }"""
 
 
-def _drive_form(page):
-    """Fuellt das Check24-Eingabeformular (benutzereingaben) aus und navigiert zum Ergebnis.
-    Angular mat-radio: ueber Rollen-API + .check() statt Label-Klick (zuverlaessiger)."""
-    import re as _re
+def _dismiss_overlays(page):
+    """Entfernt den C24-Cookie-Consent-Layer (per DOM-remove, OHNE Einwilligung — es
+    werden keine Consent-Cookies gesetzt) und klickt das 'OK, verstanden'-Modal weg.
+    Beide Overlays blockieren sonst saemtliche Klicks/Inhalte."""
+    try:
+        page.evaluate(
+            "() => { document.querySelectorAll('[class*=cookie-consent],[id*=cookie-consent]')"
+            ".forEach(function(e){e.remove()});"
+            " if (document.body) document.body.style.overflow='auto'; }"
+        )
+    except Exception as e:
+        print("    [overlay] cookie-remove: %s" % str(e)[:60])
+    try:
+        btn = page.get_by_role("button", name=re.compile(r"OK,?\s*verstanden", re.I))
+        if btn.count() > 0:
+            btn.first.click(timeout=3000)
+            page.wait_for_timeout(1500)
+            print("    [overlay] 'OK, verstanden'-Modal geschlossen")
+    except Exception:
+        pass
+
+
+def _drive_form_zahn(page):
+    """Fuellt das Zahnzusatz-Eingabeformular aus und navigiert zum Ergebnis.
+    Reihenfolge wichtig: Radios (alle Gruppen!) -> Erstinfo-Checkbox -> a.next_button.
+    Hintergrund: Das Formular ist visuell vorbelegt, aber Angular-State ist 'pristine' —
+    erst trusted Events von Playwright machen es 'dirty + valid'."""
     # 1) Krankenkasse-Typ: 'Gesetzliche Krankenkasse'
     try:
-        page.get_by_role("radio", name=_re.compile("Gesetzliche", _re.I)).first.check(timeout=5000)
+        page.get_by_role("radio", name=re.compile("Gesetzliche", re.I)).first.check(timeout=5000)
         page.wait_for_timeout(300)
     except Exception as e:
         print("    [form] Krankenkasse-Radio: %s" % str(e)[:60])
     # 2) Alle ja/nein-Fragen mit 'nein' beantworten (je Gruppe eine Option)
     try:
-        neins = page.get_by_role("radio", name=_re.compile(r"^\s*nein\s*$", _re.I))
+        neins = page.get_by_role("radio", name=re.compile(r"^\s*nein\s*$", re.I))
         cnt = neins.count()
         print("    [form] %d 'nein'-Radios gefunden" % cnt)
         for i in range(cnt):
@@ -177,12 +279,42 @@ def _drive_form(page):
                 pass
     except Exception as e:
         print("    [form] nein-Radios: %s" % str(e)[:60])
-    # 3) 'Tarife anzeigen' / Weiter klicken bis Ergebnisseite erreicht
-    btn_re = _re.compile(r"tarife anzeigen|zum ergebnis|tarife vergleichen|jetzt vergleichen|weiter", _re.I)
-    for _ in range(5):
-        if _re.search(r"ergebnis|result|tarife|vergleich", page.url, _re.I) and "benutzereingaben" not in page.url:
-            break
-        clicked = False
+    # 3) Erstinformations-Checkbox (PFLICHT — ohne sie blockiert die Validierung den Submit)
+    checked = False
+    for attempt in ("label", "force"):
+        try:
+            if attempt == "label":
+                page.locator("mat-checkbox").first.click(timeout=4000)
+            else:
+                page.locator("mat-checkbox input[type=checkbox]").first.check(timeout=4000, force=True)
+            page.wait_for_timeout(300)
+            checked = page.locator("mat-checkbox input[type=checkbox]").first.is_checked()
+            if checked:
+                break
+        except Exception as e:
+            print("    [form] Checkbox (%s): %s" % (attempt, str(e)[:60]))
+    print("    [form] Erstinfo-Checkbox gecheckt: %s" % checked)
+    # Formular-Status loggen (Diagnose)
+    try:
+        st = page.evaluate("() => { var f=document.querySelector('#c24StartForm');"
+                           " return f ? f.className : 'kein #c24StartForm'; }")
+        print("    [form] Status: %s" % str(st)[:90])
+    except Exception:
+        pass
+    # 4) Submit: <a class="next_button"> (KEIN button, KEIN link mit href!)
+    clicked = False
+    for sel in ("a.next_button", "a:has-text('Tarife anzeigen')", ".next_button"):
+        try:
+            loc = page.locator(sel)
+            if loc.count() > 0:
+                loc.first.click(timeout=5000)
+                clicked = True
+                break
+        except Exception:
+            continue
+    if not clicked:
+        # Letzter Fallback: role-basiert (alte Methode)
+        btn_re = re.compile(r"tarife anzeigen|zum ergebnis|jetzt vergleichen|weiter", re.I)
         for getter in (lambda: page.get_by_role("button", name=btn_re),
                        lambda: page.get_by_role("link", name=btn_re),
                        lambda: page.get_by_text(btn_re)):
@@ -191,12 +323,16 @@ def _drive_form(page):
                 if el.count() > 0:
                     el.first.click(timeout=5000)
                     clicked = True
-                    page.wait_for_timeout(3000)
                     break
             except Exception:
                 continue
-        if not clicked:
-            break
+    print("    [form] Submit geklickt: %s" % clicked)
+    # 5) Auf Ergebnisseite warten
+    try:
+        page.wait_for_url(re.compile(r"vergleichsergebnis|ergebnis|result"), timeout=30000)
+        print("    [form] Ergebnisseite erreicht")
+    except Exception:
+        print("    [form] WARNUNG: Ergebnisseite nicht erreicht (URL: %s)" % page.url[:90])
 
 
 def crawl_product_prices(product_key, product_config):
@@ -211,38 +347,65 @@ def crawl_product_prices(product_key, product_config):
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            context = browser.new_context(
+                user_agent=REAL_UA,
+                locale="de-DE",
+                viewport={"width": 1440, "height": 900},
+                extra_http_headers={"Accept-Language": "de-DE,de;q=0.9"},
+            )
 
             is_form = product_config.get("flow") == "form"
             for profile in AGE_PROFILES:
                 b = profile["birth"]
                 birth_de = "%s.%s.%s" % (b[6:8], b[4:6], b[0:4])  # YYYYMMDD -> DD.MM.YYYY
-                url = product_config["url_tpl"].format(birth=b, birth_de=birth_de)
+                url = product_config["url_tpl"].format(
+                    birth=b, birth_de=birth_de, insure_date=_first_of_next_month()
+                )
                 print("  [%s] %s: %s" % (product_key, profile["label"], url[:90]))
 
-                page = browser.new_page()
+                page = context.new_page()
                 try:
                     page.goto(url, timeout=45000)
                     try:
                         page.wait_for_load_state("networkidle", timeout=20000)
                     except Exception:
                         pass
-                    page.wait_for_timeout(7000)
+                    page.wait_for_timeout(5000)
+                    _dismiss_overlays(page)
 
-                    # Formular-Flow (Zahn/Risiko): Eingaben ausfuellen + zum Ergebnis navigieren
+                    # Formular-Flow (Zahn): Eingaben ausfuellen + zum Ergebnis navigieren
                     if is_form:
-                        _drive_form(page)
+                        _drive_form_zahn(page)
                         try:
                             page.wait_for_load_state("networkidle", timeout=25000)
                         except Exception:
                             pass
-                        page.wait_for_timeout(9000)
-
-                    raw = page.evaluate(JS_EXTRACT)
-                    # Falls noch keine Tarife: einmal nachladen + laenger warten
-                    if not raw:
+                        page.wait_for_timeout(7000)
+                        _dismiss_overlays(page)  # Modal kann auf Ergebnisseite erscheinen
+                    else:
+                        # Deeplink: Preise werden asynchron berechnet — warten,
+                        # Modal schliessen, nochmal warten
                         page.wait_for_timeout(6000)
+                        _dismiss_overlays(page)
+                        page.wait_for_timeout(6000)
+
+                    # 1) Primaer: Provider-Chips ('ab X EUR' je Anbieter)
+                    raw = page.evaluate(JS_EXTRACT_CHIPS)
+                    src = "chips"
+                    # 2) Fallback: Karten-Extraktor (Sterbegeld-Layout)
+                    if not raw:
                         raw = page.evaluate(JS_EXTRACT)
+                        src = "cards"
+                    # 3) Letzte Chance: laenger warten + beide nochmal
+                    if not raw:
+                        page.wait_for_timeout(8000)
+                        _dismiss_overlays(page)
+                        raw = page.evaluate(JS_EXTRACT_CHIPS) or page.evaluate(JS_EXTRACT)
+                        src = "retry"
 
                     # Diagnose erfassen, wenn 0 Tarife (zeigt, woran der Crawl haengt)
                     diag = None
@@ -257,36 +420,36 @@ def crawl_product_prices(product_key, product_config):
                     # Auf unsere Brands mappen
                     profile_data = {}
                     for c24_name, data in raw.items():
-                        c24_lower = c24_name.lower().strip()
-                        brand_key = BRAND_MAP.get(c24_name) or BRAND_MAP.get(c24_lower)
+                        brand_key = map_brand(c24_name)
+                        entry = {
+                            "price": data["price"],
+                            "grade": data.get("grade"),
+                            "grade_label": data.get("gradeLabel"),
+                            "customer_score": data.get("customerScore"),
+                            "customer_count": data.get("customerCount"),
+                            "c24_name": c24_name,
+                        }
                         if brand_key:
-                            profile_data[brand_key] = {
-                                "price": data["price"],
-                                "grade": data.get("grade"),
-                                "grade_label": data.get("gradeLabel"),
-                                "customer_score": data.get("customerScore"),
-                                "customer_count": data.get("customerCount"),
-                                "c24_name": c24_name,
-                            }
+                            # guenstigster Preis gewinnt, falls mehrere C24-Namen auf
+                            # denselben Brand mappen (z.B. 'ERGO' + 'ERGO Vorsorge')
+                            if brand_key not in profile_data or entry["price"] < profile_data[brand_key]["price"]:
+                                profile_data[brand_key] = entry
                         else:
-                            # Auch nicht-getrackte Versicherer speichern (fuer Kontext)
-                            profile_data["_other_" + c24_name] = {
-                                "price": data["price"],
-                                "grade": data.get("grade"),
-                                "grade_label": data.get("gradeLabel"),
-                                "c24_name": c24_name,
-                            }
+                            entry.pop("customer_score", None)
+                            entry.pop("customer_count", None)
+                            profile_data["_other_" + c24_name] = entry
 
                     product_data["profiles"][profile["key"]] = {
                         "label": profile["label"],
                         "birth": profile["birth"],
                         "brands": profile_data,
                         "total_tariffs": len(raw),
+                        "extractor": src if raw else None,
                     }
                     if diag:
                         product_data["profiles"][profile["key"]]["_diag"] = diag
                     tracked = {k: v for k, v in profile_data.items() if not k.startswith("_other_")}
-                    print("    %d Tarife, %d unsere Brands" % (len(raw), len(tracked)))
+                    print("    %d Anbieter (%s), %d unsere Brands" % (len(raw), src, len(tracked)))
                     for bk, bv in sorted(tracked.items(), key=lambda x: x[1]["price"]):
                         print("      %s: %.2f EUR/Monat" % (bk, bv["price"]))
 

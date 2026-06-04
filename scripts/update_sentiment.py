@@ -1173,7 +1173,7 @@ def analyze_reviews_with_gemini(review_texts, brand_name):
     ) % (brand_name, reviews_block)
 
     try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s" % api_key
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=%s" % api_key
         payload = json.dumps({
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {

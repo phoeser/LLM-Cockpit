@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -110,16 +111,22 @@ def classify_batch(reviews, api_key):
     )
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096},
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096,
+                             "responseMimeType": "application/json"},
     }).encode("utf-8")
-    # Review-konform: Key im Header, nicht in der URL
-    req = urllib.request.Request(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-        data=body,
-        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
-    )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    # Gleiches Aufruf-Muster wie update_sentiment.py (nachweislich funktionierend)
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           "gemini-2.0-flash:generateContent?key=%s" % api_key)
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as he:
+        try:
+            detail = he.read().decode("utf-8", errors="replace")[:300]
+        except Exception:
+            detail = ""
+        raise RuntimeError("HTTP %s: %s" % (he.code, detail))
     txt = data["candidates"][0]["content"]["parts"][0]["text"]
     m = re.search(r"\[.*\]", txt, re.S)
     if not m:
@@ -162,14 +169,16 @@ def main():
         try:
             res = classify_batch(batch, api_key)
             cache.update(res)
+            failed = 0
             print("[themes] Batch %d: %d/%d klassifiziert" % (i // BATCH_SIZE + 1, len(res), len(batch)))
         except Exception as e:
             failed += 1
             print("[themes] Batch-Fehler: %s" % str(e)[:120])
-            if failed >= 3:
+            time.sleep(10)
+            if failed >= 5:
                 print("[themes] zu viele Fehler — breche Klassifikation ab (Cache bleibt)")
                 break
-        time.sleep(1.5)
+        time.sleep(4)  # Gemini-Rate-Limit (free tier: 15 Anfragen/Minute)
 
     CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     CACHE_FILE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")

@@ -717,7 +717,10 @@
 
   <!-- Tages-Heatmap -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-4">📅 Tagesübersicht</h3>
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+      <h3 class="text-lg font-bold text-ergo-dark">📅 Tagesübersicht</h3>
+      <select id="corrHmBrandSel" onchange="__renderCorrHeatmap()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle Anbieter</option></select>
+    </div>
     <div id="corrHeatmap" style="overflow-x:auto;"></div>
   </div>
 
@@ -2821,56 +2824,9 @@ function buildGeoTab() {
         + kpiCard('📰', 'Presse & News', nonSov.filter(e => e.event_type==='press_mention'||e.event_type==='news_mention').length, 'Artikel in 14 Tagen');
     }
 
-    // ── 2. Tages-Heatmap ──
-    const hmEl = document.getElementById('corrHeatmap');
-    if (hmEl && days14.length > 0) {
-      const grid = {};
-      nonSov.forEach(e => {
-        const d = (e.timestamp||'').substring(0,10);
-        const t = e.event_type;
-        if (!grid[t]) grid[t] = {};
-        grid[t][d] = (grid[t][d] || 0) + 1;
-      });
-      const types = Object.keys(grid).sort((a,b) => {
-        const sa = Object.values(grid[a]).reduce((x,y)=>x+y,0);
-        const sb = Object.values(grid[b]).reduce((x,y)=>x+y,0);
-        return sb - sa;
-      });
-      const maxVal = Math.max(...types.flatMap(t => Object.values(grid[t])), 1);
-
-      let h = '<table style="border-collapse:collapse;width:100%;font-size:12px;">';
-      h += '<thead><tr><th style="text-align:left;padding:6px 8px;font-weight:600;color:#64748b;min-width:140px;">Event-Typ</th>';
-      days14.forEach(d => {
-        const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(d+'T12:00:00').getDay()];
-        h += '<th style="text-align:center;padding:4px 2px;font-weight:500;color:#94a3b8;min-width:44px;">' + wd + '<br><span style="font-size:10px;">' + d.substring(5) + '</span></th>';
-      });
-      h += '<th style="text-align:center;padding:4px 8px;font-weight:600;color:#475569;">Summe</th></tr></thead><tbody>';
-
-      types.forEach(t => {
-        const icon = EI[t] || '📌';
-        const color = EC[t] || '#6b7280';
-        const total = Object.values(grid[t]).reduce((s,v)=>s+v,0);
-        h += '<tr><td style="padding:6px 8px;white-space:nowrap;">' + icon + ' <span style="font-weight:500;">' + (EN[t]||t) + '</span></td>';
-        days14.forEach(d => {
-          const v = grid[t][d] || 0;
-          const opacity = v > 0 ? Math.max(0.15, Math.min(v / maxVal, 1)) : 0;
-          const bg = v > 0 ? color + Math.round(opacity * 255).toString(16).padStart(2,'0') : 'transparent';
-          const textColor = opacity > 0.5 ? '#fff' : (v > 0 ? '#1e293b' : '#d1d5db');
-          h += '<td style="text-align:center;padding:4px 2px;"><div style="border-radius:6px;padding:4px 2px;background:' + bg + ';color:' + textColor + ';font-weight:' + (v>0?'600':'400') + ';cursor:' + (v>0?'pointer':'default') + ';" title="' + d + ': ' + v + ' ' + (EN[t]||t) + '">' + (v || '·') + '</div></td>';
-        });
-        h += '<td style="text-align:center;padding:4px 8px;font-weight:700;color:' + color + ';">' + total + '</td></tr>';
-      });
-
-      // Summenzeile
-      h += '<tr style="border-top:2px solid #e2e8f0;"><td style="padding:6px 8px;font-weight:700;color:#475569;">Gesamt</td>';
-      days14.forEach(d => {
-        const dayTotal = nonSov.filter(e => (e.timestamp||'').substring(0,10) === d).length;
-        h += '<td style="text-align:center;padding:4px 2px;font-weight:700;color:#475569;">' + (dayTotal || '·') + '</td>';
-      });
-      h += '<td style="text-align:center;padding:4px 8px;font-weight:800;color:#1e293b;">' + nonSov.length + '</td></tr>';
-      h += '</tbody></table>';
-      hmEl.innerHTML = h;
-    }
+    // ── 2. Tages-Heatmap (ausgelagert, mit Anbieter-Filter) ──
+    window._corrDays14 = days14;
+    __renderCorrHeatmap();
 
     // ── 3. SoV-Chart ──
     const sovEl = document.getElementById('corrSovChart');
@@ -3145,6 +3101,60 @@ function buildGeoTab() {
       statEl.textContent = events14.length + ' Events (' + dateRange + '), ' + allSov.length + ' SoV-Messungen (' + sovPct.length + ' SoV%, ' + mentions.length + ' Mentions), ' + nonSov.length + ' Aktivitäten';
     }
   }
+
+  window.__renderCorrHeatmap = function(){
+    const hmEl = document.getElementById('corrHeatmap');
+    const days14 = window._corrDays14 || [];
+    let nonSov = window._corrNonSov || [];
+    const sel = document.getElementById('corrHmBrandSel');
+    if (sel && sel.options.length <= 1 && nonSov.length) {
+      const bs = {}; nonSov.forEach(e => { if (e.brand) bs[e.brand] = 1; });
+      Object.keys(bs).sort().forEach(b => { const o = document.createElement('option'); o.value = b; o.textContent = b; sel.appendChild(o); });
+    }
+    const pick = sel ? sel.value : '';
+    if (pick) nonSov = nonSov.filter(e => e.brand === pick);
+    if (!hmEl || !days14.length) return;
+    const grid = {};
+    nonSov.forEach(e => {
+      const dd = (e.timestamp||'').substring(0,10);
+      const t = e.event_type;
+      if (!grid[t]) grid[t] = {};
+      grid[t][dd] = (grid[t][dd] || 0) + 1;
+    });
+    const EN = window._corrEN || {};
+    const types = Object.keys(grid).sort((a,b) => {
+      const sa = Object.values(grid[a]).reduce((x,y)=>x+y,0);
+      const sb = Object.values(grid[b]).reduce((x,y)=>x+y,0);
+      return sb - sa;
+    });
+    if (!types.length) { hmEl.innerHTML = '<div class="text-sm text-gray-400 py-3">Keine Events für ' + (pick||'alle Anbieter') + ' im Zeitraum.</div>'; return; }
+    const maxVal = Math.max(...types.flatMap(t => Object.values(grid[t])), 1);
+    let h = '<table style="border-collapse:collapse;width:100%;font-size:12px;">';
+    h += '<thead><tr><th style="text-align:left;padding:6px 8px;font-weight:600;color:#64748b;min-width:140px;">Event-Typ</th>';
+    days14.forEach(dd => {
+      const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(dd+'T12:00:00').getDay()];
+      h += '<th style="text-align:center;padding:4px 2px;font-weight:500;color:#94a3b8;min-width:44px;">' + wd + '<br><span style="font-size:10px;">' + dd.substring(5) + '</span></th>';
+    });
+    h += '<th style="text-align:center;padding:4px 8px;font-weight:600;color:#64748b;">Σ</th></tr></thead><tbody>';
+    types.forEach(t => {
+      const sum = Object.values(grid[t]).reduce((x,y)=>x+y,0);
+      h += '<tr style="border-top:1px solid #f1f5f9;"><td style="padding:6px 8px;font-weight:600;color:#334155;">' + (EN[t]||t) + '</td>';
+      days14.forEach(dd => {
+        const v = grid[t][dd] || 0;
+        const alpha = v ? (0.15 + 0.85 * v / maxVal) : 0;
+        h += '<td style="text-align:center;padding:4px 2px;background:rgba(220,0,40,' + alpha.toFixed(2) + ');color:' + (alpha > 0.5 ? '#fff' : '#334155') + ';">' + (v || '·') + '</td>';
+      });
+      h += '<td style="text-align:center;padding:4px 8px;font-weight:700;color:#1e293b;">' + sum + '</td></tr>';
+    });
+    h += '<tr style="border-top:2px solid #e2e8f0;"><td style="padding:6px 8px;font-weight:700;color:#475569;">Gesamt</td>';
+    days14.forEach(dd => {
+      const dayTotal = nonSov.filter(e => (e.timestamp||'').substring(0,10) === dd).length;
+      h += '<td style="text-align:center;padding:4px 2px;font-weight:700;color:#475569;">' + (dayTotal || '·') + '</td>';
+    });
+    h += '<td style="text-align:center;padding:4px 8px;font-weight:800;color:#1e293b;">' + nonSov.length + '</td></tr>';
+    h += '</tbody></table>';
+    hmEl.innerHTML = h;
+  };
 
   function renderCorrelationStream(filter) {
     const streamEl = document.getElementById('corrStream');
@@ -3689,40 +3699,57 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var data=window.__cgData||[]; var byBrand=window.__cgByBrand||{};
     var brands=Object.keys(byBrand).sort();
     var filtered=(_cgBrand==='all')?data:data.filter(function(e){return (e.b||'')===_cgBrand;});
-    var view=filtered.slice(0,300);
+    // globale Indizes fuer Toggle-Eindeutigkeit
+    data.forEach(function(e,gi){e.__i=gi;});
     function fbtn(label,val,cnt){return '<button onclick="window.__cgFilter(this.getAttribute(\'data-v\'))" data-v="'+esc(val)+'" class="px-3 py-1 text-xs rounded-full border transition '+(_cgBrand===val?'bg-ergo-red text-white border-ergo-red':'text-gray-600 border-gray-300 hover:border-ergo-red')+'">'+esc(label)+(cnt!=null?' ('+cnt+')':'')+'</button>';}
     var bar='<div class="flex flex-wrap gap-2 mb-3">'+fbtn('Alle','all',data.length)+brands.map(function(b){return fbtn(b,b,byBrand[b]);}).join('')+'</div>';
-    var rows=view.map(function(e,i){
-      var ts=(e.ts||'').replace('T',' ').replace('Z',' UTC');
-      var sim=(e.sim==null)?'–':(Math.round(e.sim*100)+'%');
-      var simColor=(e.sim!=null && e.sim<0.6)?'text-red-600 font-bold':'text-gray-700';
-      var ac=(e.ac==null)?'':('<span class="text-emerald-600">+'+e.ac+'</span>');
-      var rc=(e.rc==null)?'':(' <span class="text-red-600">-'+e.rc+'</span>');
-      var url=e.u?'<a href="'+esc(e.u)+'" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">'+esc(e.u)+'</a>':'';
-      var added=(e.al||[]).slice(0,40), removed=(e.rl||[]).slice(0,40);
-      var detail='';
-      if(added.length||removed.length){
-        detail='<div class="mt-2 text-xs font-mono bg-gray-50 rounded p-2 max-h-60 overflow-auto">';
-        removed.forEach(function(l){detail+='<div class="text-red-700">- '+esc(l)+'</div>';});
-        added.forEach(function(l){detail+='<div class="text-emerald-700">+ '+esc(l)+'</div>';});
-        if((e.al||[]).length>40||(e.rl||[]).length>40) detail+='<div class="text-gray-400 mt-1">… gekürzt</div>';
-        detail+='</div>';
-      } else { detail='<div class="mt-2 text-xs text-gray-400">Keine Zeilen-Details gespeichert.</div>'; }
-      return '<div class="border-b">'
-        +'<div class="flex items-start gap-2 py-2 px-2 hover:bg-gray-50 cursor-pointer" onclick="window.__cgToggle('+i+')">'
-        +'<span id="cgArrow'+i+'" class="text-gray-400 select-none">▶</span>'
-        +'<span class="text-gray-500 text-xs whitespace-nowrap">'+esc(ts)+'</span>'
-        +'<span class="font-semibold whitespace-nowrap">'+esc(e.b||'')+'</span>'
-        +'<span class="flex-1 min-w-0 truncate">'+url+'</span>'
-        +'<span class="'+simColor+' text-center whitespace-nowrap">'+sim+'</span>'
-        +'<span class="text-xs whitespace-nowrap">'+ac+rc+'</span>'
-        +'</div><div id="cgDetail'+i+'" class="hidden px-7 pb-3">'+detail+'</div></div>';
-    }).join('');
-    host.innerHTML='<div class="bg-white rounded-xl p-4 shadow">'+bar
-      +'<div class="text-xs text-gray-500 mb-2">Zeige '+view.length+' von '+filtered.length+' Änderungen'+(_cgBrand!=='all'?(' (Filter: '+esc(_cgBrand)+')'):'')+' — klicken zum Aufklappen</div>'
-      +'<div style="max-height:640px;overflow:auto">'
-      +'<div class="text-xs text-gray-400 flex gap-2 px-2 pb-1 border-b font-semibold"><span style="width:14px"></span><span>Zeit</span><span>Marke</span><span class="flex-1">Seite</span><span>Ähnl.</span><span>+/-</span></div>'
-      +rows+'</div></div>';
+    function rowsFor(items){
+      return items.map(function(e){
+        var i=e.__i;
+        var ts=(e.ts||'').replace('T',' ').replace('Z',' UTC');
+        var sim=(e.sim==null)?'–':(Math.round(e.sim*100)+'%');
+        var simColor=(e.sim!=null && e.sim<0.6)?'text-red-600 font-bold':'text-gray-700';
+        var ac=(e.ac==null)?'':('<span class="text-emerald-600">+'+e.ac+'</span>');
+        var rc=(e.rc==null)?'':(' <span class="text-red-600">-'+e.rc+'</span>');
+        var url=e.u?'<a href="'+esc(e.u)+'" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">'+esc(e.u)+'</a>':'';
+        var added=(e.al||[]).slice(0,40), removed=(e.rl||[]).slice(0,40);
+        var detail='';
+        if(added.length||removed.length){
+          detail='<div class="mt-2 text-xs font-mono bg-gray-50 rounded p-2 max-h-60 overflow-auto">';
+          removed.forEach(function(l){detail+='<div class="text-red-700">- '+esc(l)+'</div>';});
+          added.forEach(function(l){detail+='<div class="text-emerald-700">+ '+esc(l)+'</div>';});
+          if((e.al||[]).length>40||(e.rl||[]).length>40) detail+='<div class="text-gray-400 mt-1">… gekürzt</div>';
+          detail+='</div>';
+        } else { detail='<div class="mt-2 text-xs text-gray-400">'+(e.s?esc(e.s):'Keine Zeilen-Details gespeichert.')+'</div>'; }
+        return '<div class="border-b">'
+          +'<div class="flex items-start gap-2 py-2 px-2 hover:bg-gray-50 cursor-pointer" onclick="window.__cgToggle('+i+')">'
+          +'<span id="cgArrow'+i+'" class="text-gray-400 select-none">▶</span>'
+          +'<span class="text-gray-500 text-xs whitespace-nowrap">'+esc(ts)+'</span>'
+          +'<span class="font-semibold whitespace-nowrap">'+esc(e.b||'')+'</span>'
+          +'<span class="flex-1 min-w-0 truncate">'+url+'</span>'
+          +'<span class="'+simColor+' text-center whitespace-nowrap">'+sim+'</span>'
+          +'<span class="text-xs whitespace-nowrap">'+ac+rc+'</span>'
+          +'</div><div id="cgDetail'+i+'" class="hidden px-7 pb-3">'+detail+'</div></div>';
+      }).join('');
+    }
+    function section(title,items,emptyText,limit){
+      var view=items.slice(0,limit||200);
+      var s='<div class="bg-white rounded-xl p-4 shadow mb-6">';
+      s+='<div class="text-base font-bold text-ergo-dark mb-1">'+title+' <span class="text-xs font-normal text-gray-400">('+items.length+')</span></div>';
+      if(!items.length){ s+='<div class="text-sm text-gray-400 py-2">'+emptyText+'</div></div>'; return s; }
+      s+='<div class="text-xs text-gray-500 mb-2">Zeige '+view.length+' von '+items.length+(_cgBrand!=='all'?(' (Filter: '+esc(_cgBrand)+')'):'')+' — klicken zum Aufklappen</div>';
+      s+='<div style="max-height:560px;overflow:auto">';
+      s+='<div class="text-xs text-gray-400 flex gap-2 px-2 pb-1 border-b font-semibold"><span style="width:14px"></span><span>Zeit</span><span>Marke</span><span class="flex-1">Seite</span><span>Ähnl.</span><span>+/-</span></div>';
+      s+=rowsFor(view)+'</div></div>';
+      return s;
+    }
+    var changes=filtered.filter(function(e){return e.t==='page_change';});
+    var news=filtered.filter(function(e){return e.t==='page_new';});
+    var removedP=filtered.filter(function(e){return e.t==='page_removed';});
+    host.innerHTML='<div class="bg-white rounded-xl p-4 shadow mb-4">'+bar+'</div>'
+      +section('✏️ Geänderte Seiten',changes,'Keine Änderungen im Zeitraum.')
+      +section('🆕 Neue Seiten',news,'Keine neuen Seiten im Zeitraum erfasst.')
+      +section('🗑️ Gelöschte Seiten',removedP,'Noch keine Löschungen erfasst — die Erkennung (HTTP 404/410 beim täglichen Crawl) startet mit dem nächsten GEO-Lauf.');
   };
   window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
   window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};

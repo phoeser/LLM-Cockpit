@@ -622,9 +622,16 @@ def main():
         if "typology" in agg and "typology" in prev_data:
             curr_types = agg["typology"].get("type_distribution", {})
             prev_types = prev_data["typology"].get("type_distribution", {})
+            def _type_val(dist, name):
+                # Review-Fix 2026-06-04: type_distribution enthaelt ints (Counts),
+                # kein {"percent": ...} -> int.get() crashte den ganzen Run.
+                v = dist.get(name, 0)
+                if isinstance(v, dict):
+                    return v.get("percent", 0) or 0
+                return v or 0
             for type_name in ["individuell", "angepasst", "produktkatalog", "minimal"]:
-                curr_pct = curr_types.get(type_name, {}).get("percent", 0)
-                prev_pct = prev_types.get(type_name, {}).get("percent", 0)
+                curr_pct = _type_val(curr_types, type_name)
+                prev_pct = _type_val(prev_types, type_name)
                 if abs(curr_pct - prev_pct) > 2:  # >2% Shift
                     emit_event(
                         event_type="berater_shift",

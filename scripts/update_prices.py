@@ -255,77 +255,61 @@ def _dismiss_overlays(page):
         pass
 
 
-def _drive_form_zahn(page):
-    """Fuellt das Zahnzusatz-Eingabeformular aus und navigiert zum Ergebnis.
-    Reihenfolge wichtig: Radios (alle Gruppen!) -> Erstinfo-Checkbox -> a.next_button.
-    Hintergrund: Das Formular ist visuell vorbelegt, aber Angular-State ist 'pristine' —
-    erst trusted Events von Playwright machen es 'dirty + valid'."""
-    # 1) Krankenkasse-Typ: 'Gesetzliche Krankenkasse'
+def _real_click(page, loc, what):
+    """Echter Maus-Klick auf die Element-Mitte (trusted, ohne Actionability-Haenger).
+    Angular Material ignoriert synthetische Events und Playwrights .check() scheitert
+    an den versteckten Inputs — Koordinaten-Klick funktioniert (live verifiziert)."""
     try:
-        page.get_by_role("radio", name=re.compile("Gesetzliche", re.I)).first.check(timeout=5000)
+        el = loc.first
+        el.scroll_into_view_if_needed(timeout=4000)
         page.wait_for_timeout(300)
+        box = el.bounding_box()
+        if not box:
+            print("    [click] %s: keine bounding box" % what)
+            return False
+        page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        page.wait_for_timeout(300)
+        return True
     except Exception as e:
-        print("    [form] Krankenkasse-Radio: %s" % str(e)[:60])
-    # 2) Alle ja/nein-Fragen mit 'nein' beantworten (je Gruppe eine Option)
+        print("    [click] %s: %s" % (what, str(e)[:80]))
+        return False
+
+
+def _drive_form_zahn(page):
+    """Fuellt das Zahnzusatz-Formular per echten Maus-Klicks aus und submittet.
+    Reihenfolge: Krankenkasse-Radio -> 4x 'nein' -> Erstinfo-Checkbox -> a.next_button."""
+    # 1) Krankenkasse: 'Gesetzliche Krankenkasse'
+    _real_click(page, page.locator("mat-radio-button", has_text=re.compile("Gesetzliche", re.I)), "Krankenkasse")
+    # 2) Alle 'nein'-Radios (je Frage eine Gruppe)
     try:
-        neins = page.get_by_role("radio", name=re.compile(r"^\s*nein\s*$", re.I))
+        neins = page.locator("mat-radio-button").filter(has_text=re.compile(r"^\s*nein\s*$", re.I))
         cnt = neins.count()
         print("    [form] %d 'nein'-Radios gefunden" % cnt)
         for i in range(cnt):
-            try:
-                neins.nth(i).check(timeout=3000)
-                page.wait_for_timeout(200)
-            except Exception:
-                pass
+            _real_click(page, neins.nth(i), "nein-Radio %d" % i)
     except Exception as e:
-        print("    [form] nein-Radios: %s" % str(e)[:60])
-    # 3) Erstinformations-Checkbox (PFLICHT — ohne sie blockiert die Validierung den Submit)
-    checked = False
-    for attempt in ("label", "force"):
-        try:
-            if attempt == "label":
-                page.locator("mat-checkbox").first.click(timeout=4000)
-            else:
-                page.locator("mat-checkbox input[type=checkbox]").first.check(timeout=4000, force=True)
-            page.wait_for_timeout(300)
-            checked = page.locator("mat-checkbox input[type=checkbox]").first.is_checked()
-            if checked:
-                break
-        except Exception as e:
-            print("    [form] Checkbox (%s): %s" % (attempt, str(e)[:60]))
-    print("    [form] Erstinfo-Checkbox gecheckt: %s" % checked)
-    # Formular-Status loggen (Diagnose)
+        print("    [form] nein-Radios: %s" % str(e)[:70])
+    # 3) Erstinformations-Checkbox (Pflicht)
+    ok = _real_click(page, page.locator("mat-checkbox"), "Erstinfo-Checkbox")
+    try:
+        checked = page.locator("mat-checkbox input[type=checkbox]").first.is_checked()
+    except Exception:
+        checked = None
+    print("    [form] Erstinfo-Checkbox gecheckt: %s (Klick: %s)" % (checked, ok))
+    # Falls noch nicht gecheckt: zweiter Versuch direkt auf das innere Quadrat
+    if not checked:
+        _real_click(page, page.locator("mat-checkbox .mat-checkbox-inner-container, mat-checkbox [class*=checkbox-frame], mat-checkbox label"), "Checkbox-2.Versuch")
+    # Formular-Status loggen
     try:
         st = page.evaluate("() => { var f=document.querySelector('#c24StartForm');"
                            " return f ? f.className : 'kein #c24StartForm'; }")
         print("    [form] Status: %s" % str(st)[:90])
     except Exception:
         pass
-    # 4) Submit: <a class="next_button"> (KEIN button, KEIN link mit href!)
-    clicked = False
-    for sel in ("a.next_button", "a:has-text('Tarife anzeigen')", ".next_button"):
-        try:
-            loc = page.locator(sel)
-            if loc.count() > 0:
-                loc.first.click(timeout=5000)
-                clicked = True
-                break
-        except Exception:
-            continue
+    # 4) Submit: <a class="next_button">
+    clicked = _real_click(page, page.locator("a.next_button"), "Submit a.next_button")
     if not clicked:
-        # Letzter Fallback: role-basiert (alte Methode)
-        btn_re = re.compile(r"tarife anzeigen|zum ergebnis|jetzt vergleichen|weiter", re.I)
-        for getter in (lambda: page.get_by_role("button", name=btn_re),
-                       lambda: page.get_by_role("link", name=btn_re),
-                       lambda: page.get_by_text(btn_re)):
-            try:
-                el = getter()
-                if el.count() > 0:
-                    el.first.click(timeout=5000)
-                    clicked = True
-                    break
-            except Exception:
-                continue
+        clicked = _real_click(page, page.get_by_text(re.compile("Tarife anzeigen", re.I)), "Submit Text-Fallback")
     print("    [form] Submit geklickt: %s" % clicked)
     # 5) Auf Ergebnisseite warten
     try:
@@ -354,7 +338,7 @@ def crawl_product_prices(product_key, product_config):
             context = browser.new_context(
                 user_agent=REAL_UA,
                 locale="de-DE",
-                viewport={"width": 1440, "height": 900},
+                viewport={"width": 1440, "height": 1800},
                 extra_http_headers={"Accept-Language": "de-DE,de;q=0.9"},
             )
 

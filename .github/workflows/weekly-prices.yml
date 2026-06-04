@@ -56,6 +56,11 @@ jobs:
           git add data/sentiment_data.json 2>/dev/null || true
           git add data/sentiment_data.previous.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: weekly Check24 update (Preise + Reviews)"
-          git pull --rebase origin main || true
-          git push origin main
+          if git diff --cached --quiet; then echo "Keine Aenderungen."; exit 0; fi
+          git commit -m "data: weekly Check24 update (Preise + Reviews)"
+          for i in 1 2 3; do
+            git pull --rebase -X theirs origin main || git rebase --abort 2>/dev/null || true
+            if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
+            echo "Push fehlgeschlagen, Versuch $i"; sleep 10
+          done
+          echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1

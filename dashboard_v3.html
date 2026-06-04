@@ -3703,15 +3703,15 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var brands=Object.keys(brandSet);
       out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-3">'+esc(prod.name||pk)+'</h3>';
       if(!brands.length){ out+='<p class="text-sm text-gray-500">Keine Tarife gefunden (Check24-Crawl unvollständig).</p></div>'; return; }
-      var firstAge=profKeys[0];
+      // Sortier-Basis: immer das 50-Jahre-Profil (Pauls Vorgabe)
+      var firstAge=(profKeys.indexOf('age_50')>=0)?'age_50':profKeys[0];
       function price(b,a){var br=(profs[a].brands||{})[b]; return (br&&br.price!=null)?br.price:Infinity;}
       // Bestes verfuegbares Rating je Versicherer (bevorzugt aeltestes Profil = 65 J.)
       function ratingOf(b){ for(var i=profKeys.length-1;i>=0;i--){ var br=(profs[profKeys[i]].brands||{})[b]; if(br&&(br.grade!=null||br.customer_score!=null)) return br; } return null; }
       var hasRatings=brands.some(function(b){return !!ratingOf(b);});
       if(pk==='sterbegeld'){
-        // Sterbegeld: rein nach Preis fuer 65-Jaehrige aufsteigend
-        var sortAge=(profs.age_65)?'age_65':firstAge;
-        brands.sort(function(x,y){return price(x,sortAge)-price(y,sortAge);});
+        // Sterbegeld: rein nach Preis aufsteigend (Basis: 50 Jahre)
+        brands.sort(function(x,y){return price(x,firstAge)-price(y,firstAge);});
       } else {
         brands.sort(function(x,y){var tx=tracked(x),ty=tracked(y); if(tx!==ty)return tx?-1:1; return price(x,firstAge)-price(y,firstAge);});
       }

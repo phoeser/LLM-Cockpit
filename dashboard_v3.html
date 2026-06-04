@@ -2731,16 +2731,21 @@ function buildGeoTab() {
         ' · Stand: ' + ((ci.generated_at||'').slice(0,10)) + '</div>';
       if (!rows.length) { el.innerHTML = note + '<div class="text-center py-4 text-gray-400 text-sm">Noch keine Ereignis-Intervalle mit messbarem Effekt.</div>'; return; }
       var maxAbs = Math.max.apply(null, rows.map(function(r){ return Math.abs(r.avg_sov_effect_pp||0); }).concat([0.01]));
+      var tcMap = {unzureichend:['#fee2e2','#b91c1c'], vorlaeufig:['#fef3c7','#b45309'], moderat:['#dbeafe','#1d4ed8'], belastbar:['#dcfce7','#15803d']};
       var html = note + '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">' +
-        '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Ø Effekt auf SoV</th><th style="padding:6px 8px;text-align:right">Korrelation r</th><th style="padding:6px 8px;text-align:right">Intervalle (mit Event)</th></tr></thead><tbody>';
+        '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Ø Effekt (Pp/Tag) ± SE</th><th style="padding:6px 8px;text-align:right">ρ (Spearman)</th><th style="padding:6px 8px;text-align:right">Intervalle (mit Event)</th></tr></thead><tbody>';
       rows.forEach(function(r){
         var eff = r.avg_sov_effect_pp; var pos = (eff||0) >= 0;
         var w = Math.round(Math.abs(eff||0)/maxAbs*100);
         var bar = '<div style="display:inline-block;vertical-align:middle;width:80px;height:8px;background:#f1f5f9;border-radius:4px;margin-right:6px;position:relative"><div style="position:absolute;' + (pos?'left':'right') + ':50%;width:' + (w/2) + '%;height:8px;background:' + (pos?'#16a34a':'#dc2626') + ';border-radius:4px"></div></div>';
+        var tc = r.type_confidence ? (tcMap[r.type_confidence]||['#f1f5f9','#64748b']) : null;
+        var chip = tc ? ' <span style="font-size:10px;padding:1px 6px;border-radius:8px;background:'+tc[0]+';color:'+tc[1]+'">'+r.type_confidence+'</span>' : '';
+        var seTxt = (r.effect_se_pp!=null) ? ' <span style="color:#94a3b8;font-weight:400">± '+r.effect_se_pp.toFixed(2)+'</span>' : '';
+        var rho = (r.spearman_r!=null) ? r.spearman_r : (r.pearson_r!=null ? r.pearson_r : '–');
         html += '<tr style="border-bottom:1px solid #f1f5f9">' +
-          '<td style="padding:6px 8px;color:#1e293b">' + (r.label||'') + '</td>' +
-          '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + ' Pp</td>' +
-          '<td style="padding:6px 8px;text-align:right;color:#475569">' + (r.pearson_r!=null?r.pearson_r:'–') + '</td>' +
+          '<td style="padding:6px 8px;color:#1e293b">' + (r.label||'') + chip + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + seTxt + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#475569">' + rho + '</td>' +
           '<td style="padding:6px 8px;text-align:right;color:#475569">' + (r.n_intervals||0) + ' (' + (r.n_with_event||0) + ')</td>' +
         '</tr>';
       });
@@ -3697,8 +3702,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(data.as_of) out+='<p class="text-xs text-gray-400 mb-3">Stand: '+esc(data.as_of)+' · Quelle: Check24 (günstigster Monatsbeitrag je Tarif). Eigene Marken hervorgehoben, Wettbewerb ausgegraut.</p>';
     Object.keys(products).forEach(function(pk){
       var prod=products[pk]; var profs=prod.profiles||{}; var profKeys=Object.keys(profs);
-      // Sterbegeld: 30-Jaehrige ausblenden (kaum relevante Zielgruppe)
-      if(pk==='sterbegeld') profKeys=profKeys.filter(function(a){return a!=='age_30';});
+      // Nur das 50-Jahre-Profil anzeigen (Pauls Vorgabe 04.06.2026); Fallback: alle
+      if(profKeys.indexOf('age_50')>=0) profKeys=['age_50'];
       var brandSet={}; profKeys.forEach(function(a){var pr=profs[a]; if(pr.brands) Object.keys(pr.brands).forEach(function(b){brandSet[b]=1;});});
       var brands=Object.keys(brandSet);
       out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">'+esc(prod.name||pk)+'</h3>';
@@ -3765,6 +3770,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     evs.forEach(function(e){
       var t=e.event_type,b=e.brand;
       if(!TYPES[t]||!b)return;
+      // Alt-Events des Domain-Crawlers sind Subdomains, keine Inhaltsseiten
+      if(e.crawler==='update_domain_footprint'&&(t==='page_new'||t==='page_change'))return;
       var d=String(e.timestamp||'').slice(0,10);
       if(d<cutoff)return;
       (counts[t]||(counts[t]={}))[b]=(counts[t][b]||0)+1;

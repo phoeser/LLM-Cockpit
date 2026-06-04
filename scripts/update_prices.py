@@ -43,6 +43,7 @@ def _first_of_next_month():
 PRODUCTS = {
     "zahnzusatz": {
         "name": "Zahnzusatzversicherung",
+        "params": "Profil: gesetzlich versichert, keine fehlenden Zaehne, kein Zahnersatz, keine Behandlung — guenstigster Tarif je Anbieter",
         # Einstufiges Angular-Formular. Geburtsdatum kommt per URL-Parameter an,
         # Radios sind sinnvoll vorbelegt, aber Angular-State ist 'pristine' ->
         # alle Gruppen muessen per trusted Click gesetzt werden + Erstinfo-Checkbox.
@@ -51,6 +52,7 @@ PRODUCTS = {
     },
     "sterbegeld": {
         "name": "Sterbegeldversicherung",
+        "params": "Profil: 8.000 EUR Versicherungssumme, monatliche Zahlweise — guenstigster Tarif je Anbieter",
         "flow": "deeplink",
         "url_tpl": (
             "https://sterbegeldversicherung.check24.de/desktop/calculation/result/check24?"
@@ -60,6 +62,7 @@ PRODUCTS = {
     },
     "risikoleben": {
         "name": "Risikolebensversicherung",
+        "params": "Profil: konstante Summe 100.000 EUR, 20 Jahre Laufzeit, Nichtraucher, Bueroangestellte/r — guenstigster Tarif je Anbieter",
         # GET-Deeplink auf die Ergebnisseite (Form-Action des Onboarding-Formulars).
         # WICHTIG: Die leeren Parameter (rs_lang, rs_session, ...) sind Pflicht —
         # ohne sie liefert die Berechnung '0 Ergebnisse' (live verifiziert 2026-06-04).
@@ -191,9 +194,27 @@ JS_EXTRACT = """() => {
             var customerScore = rm ? parseFloat(rm[1].replace(',','.')) : null;
             var customerCount = rm ? parseInt(rm[2].replace(/\\./g,'')) : null;
 
+            // Tarifname: Zeile direkt nach 'monatlich' (Karten-Layout Check24)
+            var tarif = null;
+            try {
+                var lines = (node.innerText || '').split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+                for (var li = 0; li < lines.length - 1; li++) {
+                    if (/^monatlich/i.test(lines[li])) {
+                        var cand = lines[li + 1];
+                        if (cand && cand.length >= 3 && cand.length <= 60 && !/€|%|Tarifbewertung|Wartezeit/i.test(cand)) tarif = cand;
+                        break;
+                    }
+                }
+            } catch(e) {}
+            // Wartezeit: 'Keine Wartezeit' oder 'X Monate Wartezeit'
+            var wz = null;
+            var wm = gradeText.match(/(keine|\\d{1,2}\\s*Monate?n?)\\s*Wartezeit/i);
+            if (wm) wz = /keine/i.test(wm[1]) ? 'keine' : wm[1].replace(/\\s+/g, ' ') + '';
+
             results.push({
                 name: name, price: price, grade: grade, gradeLabel: gradeLabel,
-                customerScore: customerScore, customerCount: customerCount
+                customerScore: customerScore, customerCount: customerCount,
+                tarif: tarif, wartezeit: wz
             });
             break;
         }
@@ -327,7 +348,7 @@ def crawl_product_prices(product_key, product_config):
         print("  Playwright nicht installiert — ueberspringe")
         return None
 
-    product_data = {"name": product_config["name"], "profiles": {}}
+    product_data = {"name": product_config["name"], "params": product_config.get("params"), "profiles": {}}
 
     try:
         with sync_playwright() as p:
@@ -411,6 +432,8 @@ def crawl_product_prices(product_key, product_config):
                             "grade_label": data.get("gradeLabel"),
                             "customer_score": data.get("customerScore"),
                             "customer_count": data.get("customerCount"),
+                            "tariff": data.get("tarif"),
+                            "waiting_period": data.get("wartezeit"),
                             "c24_name": c24_name,
                         }
                         if brand_key:

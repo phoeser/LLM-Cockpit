@@ -458,8 +458,11 @@
   </div>
 
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-1">Share-of-Voice — Zeitreihe</h3>
-    <p class="text-xs text-gray-500 mb-3">Entwicklung der LLM-Sichtbarkeit (Share of Voice %) je Marke über die Messläufe — Quelle: GEO-Events.</p>
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+      <h3 class="text-lg font-bold text-ergo-dark">Share-of-Voice — Zeitreihe</h3>
+      <select id="sovLlmSel" onchange="buildGeoSovTime()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle LLMs (gesamt)</option></select>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Entwicklung der LLM-Sichtbarkeit (Share of Voice %) je Marke. Per-LLM-Messung startet 04.06.2026 — die Auswahl füllt sich mit jedem Messtag.</p>
     <div style="position:relative;height:320px"><canvas id="geoSovTimeChart"></canvas></div>
     <p id="geoSovTimeEmpty" class="text-sm text-gray-400 mt-2" style="display:none">Noch keine SoV-Zeitreihe verfügbar.</p>
     <div class="mt-3"><div class="text-xs text-gray-500 mb-1">Tägliche Veränderung (letzter Messpunkt ggü. Vortag):</div><div id="geoSovDelta" class="flex flex-wrap gap-2"></div></div>
@@ -500,6 +503,16 @@
         <p class="text-sm text-gray-600">Echte Kundenbewertungen aus 4 Quellen: Trustpilot, eKomi, Google Places, Check24 · <span id="sentimentDateHeader" class="font-semibold"></span></p>
       </div>
     </div>
+
+  <!-- Review-Themen-Cluster (Gemini-Klassifikation echter Bewertungstexte) -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+      <h3 class="text-lg font-bold text-ergo-dark">Themen-Cluster aus echten Bewertungstexten</h3>
+      <select id="rtBrandSel" onchange="buildReviewThemes()" class="text-xs border rounded px-2 py-1 text-gray-700"></select>
+    </div>
+    <p class="text-xs text-gray-500 mb-3" id="rtMeta">Worüber loben oder meckern Kunden? KI-Klassifikation (Gemini) der gesammelten Bewertungstexte.</p>
+    <div id="reviewThemesBody"></div>
+  </div>
   </div>
 
   <div class="bg-white rounded-xl p-6 shadow mb-6">
@@ -685,7 +698,7 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h2 class="text-2xl font-bold text-ergo-dark mb-2">🔗 Korrelation: Events × LLM-Sichtbarkeit</h2>
-    <p class="text-sm text-gray-600 mb-4">Analyse der letzten 14 Tage: Welche Veränderungen beeinflussen die LLM-Sichtbarkeit?</p>
+    <p class="text-sm text-gray-600 mb-4">Event-Überblick der letzten 14 Tage — die validierte Impact-Analyse unten nutzt den gesamten Messzeitraum (siehe Badge).</p>
     <div id="corrKPIs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
   </div>
 
@@ -693,7 +706,7 @@
   <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
     <div class="flex items-start justify-between flex-wrap gap-2">
       <h3 class="text-lg font-bold text-ergo-dark mb-2">🧪 Validierte Impact-Analyse <span class="text-xs font-normal text-gray-500">(Event-Study)</span></h3>
-      <span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span>
+      <span class="flex items-center gap-2"><select id="impactLlmSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle LLMs (gesamt)</option></select><span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span></span>
     </div>
     <p class="text-xs text-gray-500 mb-3">Geschätzter durchschnittlicher Effekt eines Ereignis-Typs auf den Share of Voice (in Prozentpunkten), pro Messintervall. Wird mit jeder Nacht statistisch belastbarer.</p>
     <div id="corrImpactStudy"></div>
@@ -2708,7 +2721,14 @@ function buildGeoTab() {
     function renderImpactStudy() {
       var el = document.getElementById('corrImpactStudy');
       var badge = document.getElementById('impactStudyBadge');
-      var ci = window.CORRELATION_IMPACT;
+      var ciRoot = window.CORRELATION_IMPACT;
+      var sel = document.getElementById('impactLlmSel');
+      if (sel && ciRoot && ciRoot.by_llm && sel.options.length <= 1) {
+        Object.keys(ciRoot.by_llm).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+      }
+      var pick = sel ? sel.value : '';
+      var ci = (pick && ciRoot && ciRoot.by_llm && ciRoot.by_llm[pick]) ? ciRoot.by_llm[pick] : ciRoot;
+      if (ci && ciRoot && !ci.generated_at) ci.generated_at = ciRoot.generated_at;
       if (!el) return;
       if (!ci || !ci.impact) {
         el.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Noch keine Impact-Berechnung vorhanden. Wird ab dem nächsten Nightly-Run erzeugt (benötigt die dichte SoV-Historie).</div>';
@@ -3218,7 +3238,7 @@ function buildGeoTab() {
     geo: ['buildGeoTab','renderGeoData_init'],
     actions: ['buildActionCards','buildDriverGap'],
     domain: ['buildDomainFootprint'],
-    bewertungen: ['buildSentimentChart','buildSentimentSourceTable','renderProductSentiment','renderRecentReviews'],
+    bewertungen: ['buildSentimentChart','buildSentimentSourceTable','renderProductSentiment','renderRecentReviews','buildReviewThemes'],
     ratings: ['renderRatingsTables'],
     presse: ['buildPressTab'],
     korrelation: ['renderCorrelationTab']
@@ -3275,6 +3295,7 @@ function buildGeoTab() {
     safeCall('renderCorrelationTab');
     safeCall('buildBeraterCannibalization');
     safeCall('buildDriverGap');
+    safeCall('buildReviewThemes');
   }
   async function __v3_loadJSON(path) {
     try { var r = await fetch(path, {cache:'no-store'}); if (!r.ok) return null; return await r.json(); }
@@ -3294,6 +3315,16 @@ function buildGeoTab() {
       return out;
     } catch(e) { console.warn('load events:', e.message); return []; }
   }
+  async function __v3_loadJSONL(path) {
+    try {
+      var r = await fetch(path, {cache:'no-store'});
+      if (!r.ok) return [];
+      var t = await r.text();
+      var out = [];
+      t.split('\n').forEach(function(line){ line=line.trim(); if(!line) return; try{ out.push(JSON.parse(line)); }catch(x){} });
+      return out;
+    } catch(e) { console.warn('loadJSONL '+path+':', e.message); return []; }
+  }
   async function __v3_bootstrap() {
     var banner = document.getElementById('v3LoadBanner');
     try {
@@ -3308,7 +3339,9 @@ function buildGeoTab() {
         __v3_loadJSON('data/ratings_external.json'),
         __v3_loadJSON('data/providers.json'),
         __v3_loadEvents(),
-        __v3_loadJSON('data/correlation_impact.json')
+        __v3_loadJSON('data/correlation_impact.json'),
+        __v3_loadJSONL('data/sov_history.jsonl'),
+        __v3_loadJSON('data/review_themes.json')
       ]);
       GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
@@ -3318,6 +3351,8 @@ function buildGeoTab() {
       window.CORRELATION_EVENTS = res[9] || [];
       CORRELATION_EVENTS = window.CORRELATION_EVENTS;
       window.CORRELATION_IMPACT = res[10] || null;
+      window.SOV_HISTORY = res[11] || [];
+      window.REVIEW_THEMES = res[12] || null;
       // v3: gecrawlte Anbieter-URLs in PROVIDERS einmischen (#11)
       try {
         var __pc = window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.providers;
@@ -3577,18 +3612,30 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var canvas = document.getElementById('geoSovTimeChart');
     var emptyEl = document.getElementById('geoSovTimeEmpty');
     if(!canvas) return;
-    var ev = (window.CORRELATION_EVENTS || []).filter(function(e){
-      return e.event_type==='sov_change' && (e.detail||{}).metric==='share_of_voice_pct' && e.detail.new_pct!=null;
-    });
-    if(!ev.length){ if(emptyEl) emptyEl.style.display='block'; canvas.style.display='none'; return; }
-    if(emptyEl) emptyEl.style.display='none'; canvas.style.display='block';
+    var hist = window.SOV_HISTORY || [];
+    var sel = document.getElementById('sovLlmSel');
+    if (sel && sel.options.length <= 1 && hist.length) {
+      var ll = {}; hist.forEach(function(r){ if(r.llm) ll[r.llm]=1; });
+      Object.keys(ll).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+    }
+    var pick = sel ? sel.value : '';
     var COL = (typeof GEO_BRAND_COLORS!=='undefined') ? GEO_BRAND_COLORS : {};
     var byBrand = {}, dateSet = {};
-    ev.forEach(function(e){
-      var d = (e.timestamp||'').slice(0,10); if(!d) return;
-      dateSet[d]=1; byBrand[e.brand]=byBrand[e.brand]||{};
-      byBrand[e.brand][d] = e.detail.new_pct;   // letzter Wert je Tag gewinnt
-    });
+    var histRows = hist.filter(function(r){ return (r.llm||'') === pick && r.sov_pct!=null; });
+    if (histRows.length) {
+      histRows.forEach(function(r){ dateSet[r.date]=1; byBrand[r.brand]=byBrand[r.brand]||{}; byBrand[r.brand][r.date]=r.sov_pct; });
+    } else if (!pick) {
+      var ev = (window.CORRELATION_EVENTS || []).filter(function(e){
+        return e.event_type==='sov_change' && (e.detail||{}).metric==='share_of_voice_pct' && e.detail.new_pct!=null;
+      });
+      ev.forEach(function(e){
+        var dd = (e.timestamp||'').slice(0,10); if(!dd) return;
+        dateSet[dd]=1; byBrand[e.brand]=byBrand[e.brand]||{};
+        byBrand[e.brand][dd] = e.detail.new_pct;
+      });
+    }
+    if(!Object.keys(dateSet).length){ if(emptyEl){emptyEl.style.display='block'; emptyEl.textContent = pick ? ('Noch keine per-LLM-Messpunkte für '+pick+' — startet mit dem nächsten Nightly.') : emptyEl.textContent;} canvas.style.display='none'; return; }
+    if(emptyEl) emptyEl.style.display='none'; canvas.style.display='block';
     var dates = Object.keys(dateSet).sort();
     // Tägliche Veränderung (letzter vs. vorletzter Messpunkt) je Marke — grafisch +/-
     var deltaHost = document.getElementById('geoSovDelta');
@@ -3696,6 +3743,13 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       return;
     }
     var BN={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    // Nur echte Versicherungsgesellschaften anzeigen (keine Makler/Assekuradeure/Marken) — Pauls Vorgabe 04.06.2026
+    var INSURERS=['allianz','axa','ergo','huk','generali','signal iduna','r+v','devk','hannoversche','cosmos','gothaer','barmenia','dkv','arag','hallesche','continentale','münchener verein','muenchener verein','württembergische','wuerttembergische','stuttgarter','nürnberger','nuernberger','ideal','dela','hansemerkur','lv 1871','dialog','interrisk','wgv','verti','die bayerische','bayerische','debeka','da direkt','bavariadirekt','ukv','ottonova','lkh','sdk','alte oldenburger','europa','helvetia','baloise','zurich','signal','uelzener','janitos','inter ','die dortmunder','direkte leben','solidar','vrk','provinzial','vgh','swiss life','canada life','axa'];
+    function isInsurer(b){
+      if(b.indexOf('_other_')!==0) return true; // unsere getrackten Marken sind Versicherer
+      var n=b.slice(7).toLowerCase();
+      return INSURERS.some(function(w){ return n.indexOf(w)>=0; });
+    }
     function disp(b){return b.indexOf('_other_')===0?b.slice(7):(BN[b]||b);}
     function tracked(b){return b.indexOf('_other_')!==0;}
     var out='';
@@ -3705,7 +3759,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       // Nur das 50-Jahre-Profil anzeigen (Pauls Vorgabe 04.06.2026); Fallback: alle
       if(profKeys.indexOf('age_50')>=0) profKeys=['age_50'];
       var brandSet={}; profKeys.forEach(function(a){var pr=profs[a]; if(pr.brands) Object.keys(pr.brands).forEach(function(b){brandSet[b]=1;});});
-      var brands=Object.keys(brandSet);
+      var brands=Object.keys(brandSet).filter(isInsurer);
       out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">'+esc(prod.name||pk)+'</h3>';
       if(prod.params) out+='<p class="text-xs text-gray-500 mb-3">'+esc(prod.params)+'</p>';
       if(!brands.length){ out+='<p class="text-sm text-gray-500">Keine Tarife gefunden (Check24-Crawl unvollständig).</p></div>'; return; }
@@ -3714,21 +3768,26 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       function price(b,a){var br=(profs[a].brands||{})[b]; return (br&&br.price!=null)?br.price:Infinity;}
       // Bestes verfuegbares Rating je Versicherer (bevorzugt aeltestes Profil = 65 J.)
       function ratingOf(b){ for(var i=profKeys.length-1;i>=0;i--){ var br=(profs[profKeys[i]].brands||{})[b]; if(br&&(br.grade!=null||br.customer_score!=null)) return br; } return null; }
-      function infoOf(b){ var pref=['age_50'].concat(profKeys); for(var i=0;i<pref.length;i++){ if(profKeys.indexOf(pref[i])<0)continue; var br=(profs[pref[i]].brands||{})[b]; if(br&&(br.tariff||br.waiting_period)) return br; } return null; }
+      function infoOf(b){ var pref=['age_50'].concat(profKeys); for(var i=0;i<pref.length;i++){ if(profKeys.indexOf(pref[i])<0)continue; var br=(profs[pref[i]].brands||{})[b]; if(br&&(br.tariff||br.waiting_period||br.leistung)) return br; } return null; }
       var hasInfo=brands.some(function(b){return !!infoOf(b);});
       var hasRatings=brands.some(function(b){return !!ratingOf(b);});
       // Alle Produkte: rein nach Preis aufsteigend (Basis: 50-Jahre-Profil)
       brands.sort(function(x,y){return price(x,firstAge)-price(y,firstAge);});
       out+='<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
       profKeys.forEach(function(a){out+='<th class="py-2 px-2 text-right">'+esc(profs[a].label||a)+'</th>';});
+      var showCust=hasRatings&&pk!=='sterbegeld';
+      var hasLeistung=brands.some(function(b){var ii=infoOf(b);return ii&&ii.leistung;});
+      if(hasLeistung){ out+='<th class="py-2 px-2 text-left">Leistung (Tarif)</th>'; }
       if(hasInfo){ out+='<th class="py-2 px-2 text-right">Wartezeit</th>'; }
-      if(hasRatings){ out+='<th class="py-2 px-2 text-right">Tarifnote (C24)</th><th class="py-2 px-2 text-right">Kundenbewertung</th>'; }
+      if(hasRatings){ out+='<th class="py-2 px-2 text-right">Tarifnote (C24)</th>'; }
+      if(showCust){ out+='<th class="py-2 px-2 text-right">Kundenbewertung</th>'; }
       out+='</tr></thead><tbody>';
       brands.forEach(function(b){
         var isE=(b==='ergo'), isT=tracked(b);
         var info=hasInfo?infoOf(b):null;
         out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+(info&&info.tariff?'<div class="text-xs text-gray-400 font-normal">Tarif: '+esc(info.tariff)+'</div>':'')+'</td>';
         profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
+        if(hasLeistung){ out+='<td class="py-2 px-2 text-left text-xs text-gray-600">'+(info&&info.leistung?esc(info.leistung):'–')+'</td>'; }
         if(hasInfo){ out+='<td class="py-2 px-2 text-right">'+(info&&info.waiting_period?esc(info.waiting_period):'–')+'</td>'; }
         if(hasRatings){
           var rt=ratingOf(b);
@@ -3738,11 +3797,14 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
             var gc=/hervorragend|exzellent/i.test(gl)?'bg-green-100 text-green-800':(/sehr gut|^gut/i.test(gl)?'bg-emerald-50 text-emerald-700':(/befriedigend|ausreichend/i.test(gl)?'bg-amber-50 text-amber-700':'bg-gray-100 text-gray-600'));
             g='<span class="px-2 py-0.5 rounded text-xs '+gc+'">'+rt.grade.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+(gl?' '+esc(gl):'')+'</span>';
           }
-          var c='–';
-          if(rt&&rt.customer_score!=null){
-            c='★ '+rt.customer_score.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+(rt.customer_count?' <span class="text-xs text-gray-400">('+rt.customer_count.toLocaleString('de-DE')+')</span>':'');
+          out+='<td class="py-2 px-2 text-right">'+g+'</td>';
+          if(showCust){
+            var c='–';
+            if(rt&&rt.customer_score!=null){
+              c='★ '+rt.customer_score.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+(rt.customer_count?' <span class="text-xs text-gray-400">('+rt.customer_count.toLocaleString('de-DE')+')</span>':'');
+            }
+            out+='<td class="py-2 px-2 text-right whitespace-nowrap">'+c+'</td>';
           }
-          out+='<td class="py-2 px-2 text-right">'+g+'</td><td class="py-2 px-2 text-right whitespace-nowrap">'+c+'</td>';
         }
         out+='</tr>';
       });
@@ -3806,6 +3868,50 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     }).join('');
     var note=document.getElementById('driverGapNote');
     if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. Seiten-Tracking: ERGO, Allianz, AXA, Generali, HUK-Coburg.';
+  };
+
+  // ===== Review-Themen-Cluster (data/review_themes.json) =====
+  window.buildReviewThemes = function(){
+    var host=document.getElementById('reviewThemesBody'); if(!host) return;
+    var rt=window.REVIEW_THEMES;
+    if(!rt||!rt.by_brand||!Object.keys(rt.by_brand).length){
+      host.innerHTML='<div class="text-sm text-gray-400 py-4">Noch keine Themen-Klassifikation vorhanden — entsteht mit dem nächsten Wochen-Crawl (review_themes.py).</div>';
+      return;
+    }
+    var BN={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    var sel=document.getElementById('rtBrandSel');
+    var brands=Object.keys(rt.by_brand).sort(function(a,b){return (rt.by_brand[b].total||0)-(rt.by_brand[a].total||0);});
+    if(sel&&!sel.options.length){
+      brands.forEach(function(b){var o=document.createElement('option');o.value=b;o.textContent=(BN[b]||b)+' ('+(rt.by_brand[b].total||0)+')';sel.appendChild(o);});
+      if(brands.indexOf('ergo')>=0) sel.value='ergo';
+    }
+    var pick=(sel&&sel.value)||brands[0];
+    var bd=rt.by_brand[pick]||{themes:{},total:0};
+    var meta=document.getElementById('rtMeta');
+    if(meta) meta.textContent=(rt.reviews_classified||0)+' von '+(rt.reviews_total||0)+' Texten klassifiziert (Modell: '+(rt.model||'?')+') · Stand: '+((rt.generated_at||'').slice(0,10))+' · Quellen: Google (Berater), Google, eKomi, Check24';
+    var themes=Object.keys(bd.themes||{});
+    if(!themes.length){ host.innerHTML='<div class="text-sm text-gray-400 py-4">Keine klassifizierten Texte für diese Marke.</div>'; return; }
+    var maxC=Math.max.apply(null,themes.map(function(t){return bd.themes[t].count;}));
+    var h='';
+    themes.forEach(function(t,idx){
+      var th=bd.themes[t];
+      var w=Math.round(th.count/maxC*100);
+      var pos=th.positiv||0,neg=th.negativ||0,neu=th.neutral||0,tot=Math.max(pos+neg+neu,1);
+      h+='<div class="mb-3 pb-3 '+(idx<themes.length-1?'border-b border-gray-100':'')+'">';
+      h+='<div class="flex items-center justify-between flex-wrap gap-2">';
+      h+='<div class="flex items-center gap-2"><span class="font-semibold text-sm text-gray-800">'+esc(t)+'</span><span class="text-xs text-gray-400">'+th.count+'×</span></div>';
+      h+='<div class="text-xs"><span style="color:#16a34a">'+Math.round(pos/tot*100)+'% positiv</span> · <span style="color:#94a3b8">'+Math.round(neu/tot*100)+'% neutral</span> · <span style="color:#dc2626">'+Math.round(neg/tot*100)+'% negativ</span></div></div>';
+      h+='<div class="mt-1 h-2 rounded bg-gray-100 overflow-hidden" style="max-width:420px"><div style="width:'+w+'%;height:100%;display:flex">';
+      h+='<div style="width:'+Math.round(pos/tot*100)+'%;background:#16a34a"></div><div style="width:'+Math.round(neu/tot*100)+'%;background:#cbd5e1"></div><div style="width:'+Math.round(neg/tot*100)+'%;background:#dc2626"></div></div></div>';
+      var qs=(th.quotes||[]).slice(0,2);
+      if(qs.length){
+        h+='<div class="mt-2 space-y-1">';
+        qs.forEach(function(q){ h+='<div class="text-xs text-gray-500 italic">&bdquo;'+esc(q.text)+'&ldquo; <span class="not-italic text-gray-400">('+esc(q.source||'')+(q.rating?(', ★'+q.rating):'')+')</span></div>'; });
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    host.innerHTML=h;
   };
 
   window.buildBeraterCannibalization = function(){

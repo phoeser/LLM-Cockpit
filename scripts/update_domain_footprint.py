@@ -40,12 +40,14 @@ def fetch_subdomains(domain):
         subs = set()
         for line in txt.splitlines():
             host = line.split(",", 1)[0].strip().lower()
-            if host and host.endswith("." + domain) or host == domain:
+            # Review-Fix 2026-06-04: Klammern (and/or-Praezedenz)
+            if host and (host.endswith("." + domain) or host == domain):
                 subs.add(host)
         return sorted(subs)
     except Exception as e:
         sys.stderr.write("  WARN " + domain + ": " + str(e)[:80] + "\n")
-        return []
+        # Review-Fix 2026-06-04: None statt [] — Fehler ist kein "0 Subdomains"
+        return None
 
 
 def categorize(subs, base_domain):
@@ -83,8 +85,14 @@ def main():
         print("  " + name + " (" + primary + ")")
         all_subs = []
         per_domain = {}
+        fetch_failed = False
         for d in all_domains:
             subs = fetch_subdomains(d)
+            if subs is None:
+                fetch_failed = True
+                per_domain[d] = {"count": 0, "examples": [], "fetch_failed": True}
+                time.sleep(2)
+                continue
             per_domain[d] = {"count": len(subs), "examples": subs[:10]}
             all_subs.extend(subs)
             time.sleep(2)  # rate limit
@@ -95,6 +103,7 @@ def main():
         out.append({
             "key": key,
             "name": name,
+            "fetch_failed": fetch_failed,
             "primary_domain": primary,
             "total_unique_subdomains": len(unique),
             "domain_count": len(all_domains),
@@ -113,6 +122,21 @@ def main():
 
     out_dir = Path(__file__).parent.parent
     json_path = out_dir / "domain_footprint_data.json"
+    # Review-Fix 2026-06-04: bei API-Fehler vorherige Brand-Daten behalten,
+    # damit das Dashboard keine falschen 0-Werte zeigt
+    if json_path.exists():
+        try:
+            prev = json.loads(json_path.read_text(encoding="utf-8"))
+            prev_by_key = {b.get("key"): b for b in prev.get("brands", [])}
+            for i, b in enumerate(payload["brands"]):
+                if b.get("fetch_failed") and b.get("total_unique_subdomains", 0) == 0 and b["key"] in prev_by_key:
+                    kept = dict(prev_by_key[b["key"]])
+                    kept["fetch_failed"] = True
+                    kept["stale"] = True
+                    payload["brands"][i] = kept
+                    print("  " + b["name"] + ": Fetch fehlgeschlagen -> vorherige Daten beibehalten (stale)")
+        except Exception as e:
+            print("  WARN previous-reuse: " + str(e)[:80])
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK", json_path, "(" + str(json_path.stat().st_size) + " bytes)")
 

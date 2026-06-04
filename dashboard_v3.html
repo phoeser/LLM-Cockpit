@@ -3873,7 +3873,9 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. Seiten-Tracking: ERGO, Allianz, AXA, Generali, HUK-Coburg.';
   };
 
-  // ===== Review-Themen-Cluster (data/review_themes.json) =====
+  // ===== Review-Themen-Cluster + Ampel + Einzelbewertungen (data/review_themes.json) =====
+  window.__rtShowAll=false;
+  window.__rtTheme=null;
   window.buildReviewThemes = function(){
     var host=document.getElementById('reviewThemesBody'); if(!host) return;
     var rt=window.REVIEW_THEMES;
@@ -3889,32 +3891,70 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       if(brands.indexOf('ergo')>=0) sel.value='ergo';
     }
     var pick=(sel&&sel.value)||brands[0];
-    var bd=rt.by_brand[pick]||{themes:{},total:0};
+    var bd=rt.by_brand[pick]||{themes:{},total:0,reviews:[]};
     var meta=document.getElementById('rtMeta');
     if(meta) meta.textContent=(rt.reviews_classified||0)+' von '+(rt.reviews_total||0)+' Texten klassifiziert (Modell: '+(rt.model||'?')+') · Stand: '+((rt.generated_at||'').slice(0,10))+' · Quellen: Google (Berater), Google, eKomi, Check24';
-    var themes=Object.keys(bd.themes||{});
-    if(!themes.length){ host.innerHTML='<div class="text-sm text-gray-400 py-4">Keine klassifizierten Texte für diese Marke.</div>'; return; }
-    var maxC=Math.max.apply(null,themes.map(function(t){return bd.themes[t].count;}));
     var h='';
+
+    // ===== Ampel: letzte 20 Bewertungen + Trend (vs. die 20 davor) =====
+    var revs=(bd.reviews||[]).filter(function(r){return r.rating!=null;});
+    if(revs.length){
+      var last20=revs.slice(0,20);
+      var prev20=revs.slice(20,40);
+      function avg(a){return a.length?a.reduce(function(s,r){return s+r.rating;},0)/a.length:null;}
+      var a1=avg(last20), a0=avg(prev20);
+      var negShare=last20.filter(function(r){return r.rating<=2||r.sentiment==='negativ';}).length/last20.length;
+      var col=(a1>=4.2&&negShare<=0.15)?['#16a34a','GRÜN']:((a1>=3.5&&negShare<=0.3)?['#d97706','GELB']:['#dc2626','ROT']);
+      var trend='→ stabil', tcol='#64748b';
+      if(a0!=null){ var dlt=a1-a0; if(dlt>0.15){trend='▲ besser (+'+dlt.toFixed(1)+'★)';tcol='#16a34a';} else if(dlt<-0.15){trend='▼ schlechter ('+dlt.toFixed(1)+'★)';tcol='#dc2626';} }
+      h+='<div class="flex items-center gap-4 flex-wrap mb-4 p-3 rounded-lg" style="background:#f8fafc;border:1px solid #e2e8f0">';
+      h+='<div class="flex items-center gap-2"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:'+col[0]+'"></span><span class="font-bold text-sm" style="color:'+col[0]+'">'+col[1]+'</span></div>';
+      h+='<div class="text-sm text-gray-700">Letzte '+last20.length+' Bewertungen: <b>Ø '+(a1!=null?a1.toFixed(1):'–')+'★</b> · '+Math.round(negShare*100)+'% negativ</div>';
+      h+='<div class="text-sm font-semibold" style="color:'+tcol+'">Trend: '+trend+'</div>';
+      h+='<div class="text-xs text-gray-400">(Vergleich: die 20 Bewertungen davor'+(a0!=null?(', Ø '+a0.toFixed(1)+'★')             :' — noch zu wenige')+')</div></div>';
+    }
+
+    // ===== Themen-Balken (klickbar -> Einzelbewertungen des Themas) =====
+    var themes=Object.keys(bd.themes||{});
+    if(!themes.length){ host.innerHTML=h+'<div class="text-sm text-gray-400 py-4">Keine klassifizierten Texte für diese Marke.</div>'; return; }
+    var maxC=Math.max.apply(null,themes.map(function(t){return bd.themes[t].count;}));
     themes.forEach(function(t,idx){
       var th=bd.themes[t];
       var w=Math.round(th.count/maxC*100);
       var pos=th.positiv||0,neg=th.negativ||0,neu=th.neutral||0,tot=Math.max(pos+neg+neu,1);
+      var active=(window.__rtTheme===t);
       h+='<div class="mb-3 pb-3 '+(idx<themes.length-1?'border-b border-gray-100':'')+'">';
-      h+='<div class="flex items-center justify-between flex-wrap gap-2">';
-      h+='<div class="flex items-center gap-2"><span class="font-semibold text-sm text-gray-800">'+esc(t)+'</span><span class="text-xs text-gray-400">'+th.count+'×</span></div>';
+      h+='<div class="flex items-center justify-between flex-wrap gap-2 cursor-pointer" onclick="window.__rtTheme=(window.__rtTheme===\''+t.replace(/'/g,"\\'")+'\')?null:\''+t.replace(/'/g,"\\'")+'\';window.__rtShowAll=false;buildReviewThemes()">';
+      h+='<div class="flex items-center gap-2"><span class="text-xs text-gray-400">'+(active?'▼':'▶')+'</span><span class="font-semibold text-sm text-gray-800">'+esc(t)+'</span><span class="text-xs text-gray-400">'+th.count+'×</span></div>';
       h+='<div class="text-xs"><span style="color:#16a34a">'+Math.round(pos/tot*100)+'% positiv</span> · <span style="color:#94a3b8">'+Math.round(neu/tot*100)+'% neutral</span> · <span style="color:#dc2626">'+Math.round(neg/tot*100)+'% negativ</span></div></div>';
       h+='<div class="mt-1 h-2 rounded bg-gray-100 overflow-hidden" style="max-width:420px"><div style="width:'+w+'%;height:100%;display:flex">';
       h+='<div style="width:'+Math.round(pos/tot*100)+'%;background:#16a34a"></div><div style="width:'+Math.round(neu/tot*100)+'%;background:#cbd5e1"></div><div style="width:'+Math.round(neg/tot*100)+'%;background:#dc2626"></div></div></div>';
-      var qs=(th.quotes||[]).slice(0,2);
-      if(qs.length){
-        h+='<div class="mt-2 space-y-1">';
-        qs.forEach(function(q){ h+='<div class="text-xs text-gray-500 italic">&bdquo;'+esc(q.text)+'&ldquo; <span class="not-italic text-gray-400">('+esc(q.source||'')+(q.rating?(', ★'+q.rating):'')+')</span></div>'; });
+      if(active){
+        var list=(bd.reviews||[]).filter(function(r){return (r.themes||[]).indexOf(t)>=0;}).slice(0,60);
+        h+='<div class="mt-2 space-y-2 overflow-y-auto pr-2" style="max-height:320px">';
+        list.forEach(function(r){ h+=window.__rtReviewRow(r); });
         h+='</div>';
       }
       h+='</div>';
     });
+
+    // ===== Alle Bewertungen lesen =====
+    h+='<div class="mt-3"><button onclick="window.__rtShowAll=!window.__rtShowAll;window.__rtTheme=null;buildReviewThemes()" class="text-xs font-semibold px-3 py-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">'+(window.__rtShowAll?'Einzelbewertungen ausblenden':'Alle Einzelbewertungen lesen ('+(bd.reviews||[]).length+')')+'</button></div>';
+    if(window.__rtShowAll){
+      h+='<div class="mt-3 space-y-2 overflow-y-auto pr-2" style="max-height:480px">';
+      (bd.reviews||[]).forEach(function(r){ h+=window.__rtReviewRow(r); });
+      h+='</div>';
+    }
     host.innerHTML=h;
+  };
+  window.__rtReviewRow=function(r){
+    var sc=r.sentiment==='positiv'?'#16a34a':(r.sentiment==='negativ'?'#dc2626':'#94a3b8');
+    var stars=r.rating!=null?('★'.repeat(Math.round(r.rating))+'<span class="text-gray-300">'+'★'.repeat(Math.max(0,5-Math.round(r.rating)))+'</span>'):'';
+    return '<div class="text-xs p-2 rounded" style="background:#fafafa;border-left:3px solid '+sc+'">'
+      +'<div class="flex items-center gap-2 mb-1"><span style="color:#d97706">'+stars+'</span>'
+      +'<span class="text-gray-400">'+esc(r.date||'ohne Datum')+' · '+esc(r.source||'')+'</span>'
+      +(r.themes&&r.themes.length?('<span class="text-gray-400">· '+esc(r.themes.join(', '))+'</span>'):'')+'</div>'
+      +'<div class="text-gray-700">'+esc(r.text||'')+'</div></div>';
   };
 
   window.buildBeraterCannibalization = function(){

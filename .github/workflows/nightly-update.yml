@@ -2,13 +2,16 @@ name: Nightly Dashboard Update
 
 on:
   schedule:
-    # 01:00 UTC (03:00 MESZ) - VOR dem GEO-Workflow (03:00 UTC),
-    # damit events.jsonl fuer Korrelation bereitsteht.
-    - cron: '0 1 * * *'
+    # 04:30 UTC (06:30 MESZ) — NACH dem GEO-Workflow (03:00 UTC), damit
+    # Snapshot/SoV/Korrelation mit den GEO-Daten von HEUTE rechnen
+    # (Review-Fix 2026-06-04: vorher 01:00 -> 22h alte GEO-Daten).
+    - cron: '30 4 * * *'
   workflow_dispatch:
 
 concurrency:
-  group: nightly-dashboard-update
+  # Review-Fix 2026-06-04: gemeinsame Gruppe fuer ALLE Workflows, die auf main
+  # committen -> serielle Ausfuehrung statt Push-Races
+  group: repo-writes
   cancel-in-progress: false
 
 permissions:
@@ -20,6 +23,7 @@ env:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     steps:
       - name: Checkout LLM-Cockpit-Repo
         uses: actions/checkout@v4
@@ -107,9 +111,14 @@ jobs:
           git add data/press_history.json 2>/dev/null || true
           git add data/sov_history.jsonl 2>/dev/null || true
           git add data/correlation_impact.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: nightly update (alle Daten + Events)"
-          git pull --rebase origin main || true
-          git push origin main
+          if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
+          git commit -m "data: nightly update (alle Daten + Events)"
+          for i in 1 2 3; do
+            git pull --rebase origin main || git rebase --abort 2>/dev/null || true
+            if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
+            echo "Push fehlgeschlagen, Versuch $i"; sleep 10
+          done
+          echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy

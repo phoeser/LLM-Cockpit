@@ -125,13 +125,19 @@ def tag_topics(title):
 
 
 def parse_rss_date(date_str):
-    """Parse RSS pubDate (RFC 822) zu ISO-Format."""
+    """Parse RSS pubDate (RFC 822) zu ISO-Format.
+    Review-Fix 2026-06-04: email.utils statt Eigenbau — numerische
+    TZ-Offsets (+0100) gingen vorher verloren (Datum wurde None)."""
     try:
-        clean = re.sub(r'\s+\w{2,4}$', '', date_str.strip())
-        dt = datetime.strptime(clean, "%a, %d %b %Y %H:%M:%S")
-        return dt.strftime("%Y-%m-%d")
+        from email.utils import parsedate_to_datetime
+        return parsedate_to_datetime(date_str.strip()).strftime("%Y-%m-%d")
     except Exception:
-        return None
+        try:
+            clean = re.sub(r'\s+\S{1,6}$', '', date_str.strip())
+            dt = datetime.strptime(clean, "%a, %d %b %Y %H:%M:%S")
+            return dt.strftime("%Y-%m-%d")
+        except Exception:
+            return None
 
 
 def crawl_google_news(query, source_type="media", max_items=100):
@@ -358,11 +364,11 @@ def main():
                 new_count += 1
 
     # Nach Datum sortieren (neueste zuerst)
-    existing_articles.sort(key=lambda x: x.get("date", ""), reverse=True)
+    existing_articles.sort(key=lambda x: (x.get("date") or ""), reverse=True)  # None-sicher (Review-Fix)
 
     # Max 6 Monate Retention
     cutoff_6m = (datetime.now(timezone.utc) - timedelta(days=180)).strftime("%Y-%m-%d")
-    existing_articles = [a for a in existing_articles if a.get("date", "9999") >= cutoff_6m]
+    existing_articles = [a for a in existing_articles if (a.get("date") or "9999") >= cutoff_6m]  # None-sicher (Review-Fix)
 
     # Max 2000 Artikel insgesamt
     if len(existing_articles) > 2000:

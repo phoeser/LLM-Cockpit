@@ -753,11 +753,15 @@ def crawl_check24_comparison(product_subdomain):
     
     Gibt Dict {brand_key: {score, count, url}} zurueck.
     """
+    from datetime import timedelta as _td
+    _today = datetime.now(timezone.utc).date()
+    _cbirth = (_today - _td(days=int(50 * 365.25) + 14)).strftime("%Y%m%d")
+    _nm = (_today.replace(day=1) + _td(days=32)).replace(day=1).strftime("%Y%m%d")
     comparison_url = (
         "https://%s.check24.de/desktop/calculation/result/check24?"
-        "cbirth=19760530&cinssum=8000&prefill=true&"
-        "waitingPeriodInMonths=36&cinception=20260601&cpayment=1&csort=4"
-    ) % product_subdomain
+        "cbirth=%s&cinssum=8000&prefill=true&"
+        "waitingPeriodInMonths=36&cinception=%s&cpayment=1&csort=4"
+    ) % (product_subdomain, _cbirth, _nm)
     
     try:
         from playwright.sync_api import sync_playwright
@@ -848,11 +852,15 @@ def crawl_check24_comparison(product_subdomain):
 
 def crawl_check24_reviews(product_subdomain, brand_keys, last_crawl_date=None):
     """Extrahiert Einzelbewertungen aus Check24 Vergleichsrechner via Playwright."""
+    from datetime import timedelta as _td
+    _today = datetime.now(timezone.utc).date()
+    _cbirth = (_today - _td(days=int(50 * 365.25) + 14)).strftime("%Y%m%d")
+    _nm = (_today.replace(day=1) + _td(days=32)).replace(day=1).strftime("%Y%m%d")
     comparison_url = (
         "https://%s.check24.de/desktop/calculation/result/check24?"
-        "cbirth=19760530&cinssum=8000&prefill=true&"
-        "waitingPeriodInMonths=36&cinception=20260601&cpayment=1&csort=4"
-    ) % product_subdomain
+        "cbirth=%s&cinssum=8000&prefill=true&"
+        "waitingPeriodInMonths=36&cinception=%s&cpayment=1&csort=4"
+    ) % (product_subdomain, _cbirth, _nm)
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:

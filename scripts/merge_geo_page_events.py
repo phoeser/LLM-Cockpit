@@ -37,7 +37,7 @@ TEMPLATE_FILE = Path("dashboard_template.html")
 # Nur Events der letzten N Tage importieren
 MAX_AGE_DAYS = 180
 # Fuer den Dashboard-Tab: nur letzte 90 Tage mit vollen Details
-DETAIL_AGE_DAYS = 14
+DETAIL_AGE_DAYS = 45  # 2026-06-04: von 14 auf 45 erhoeht, damit auch selten geaenderte Marken (Generali, HUK) mit ihren page_new-Events sichtbar sind
 # Max Diff-Zeilen pro Event (verhindert Datei-Explosion)
 MAX_DIFF_LINES = 20
 

@@ -24,6 +24,7 @@ import urllib.request
 from pathlib import Path
 
 BERATER_FILE = Path("data/berater_reviews.json")
+BRAND_FILE = Path("data/brand_reviews.json")
 HISTORY_FILE = Path("data/review_history.json")
 OUT_FILE = Path("data/review_themes.json")
 CACHE_FILE = Path("data/review_themes_cache.json")
@@ -77,6 +78,16 @@ def collect_reviews():
                     add("ergo", "Google (Berater)", r.get("text"), r.get("rating"), r.get("time"))
         except Exception as e:
             print("WARN berater_reviews:", str(e)[:80])
+
+    if BRAND_FILE.exists():
+        try:
+            bf = json.loads(BRAND_FILE.read_text(encoding="utf-8"))
+            for brand, entries in (bf.get("brands") or {}).items():
+                for entry in entries:
+                    for r in (entry.get("reviews") or []):
+                        add(brand, "Google (Marke)", r.get("text"), r.get("rating"), r.get("time"))
+        except Exception as e:
+            print("WARN brand_reviews:", str(e)[:80])
 
     if HISTORY_FILE.exists():
         try:

@@ -3873,7 +3873,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       host.innerHTML='<div class="text-sm text-gray-400 py-4">Noch keine Themen-Klassifikation vorhanden — entsteht mit dem nächsten Wochen-Crawl (review_themes.py).</div>';
       return;
     }
-    var BN={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    var BN={ergo:'ERGO (Marke)','ergo-berater':'ERGO Berater (Agenturen)',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
     var sel=document.getElementById('rtBrandSel');
     var brands=Object.keys(rt.by_brand).sort(function(a,b){return (rt.by_brand[b].total||0)-(rt.by_brand[a].total||0);});
     if(sel&&!sel.options.length){
@@ -3883,7 +3883,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var pick=(sel&&sel.value)||brands[0];
     var bd=rt.by_brand[pick]||{themes:{},total:0,reviews:[]};
     var meta=document.getElementById('rtMeta');
-    if(meta) meta.textContent=(rt.reviews_classified||0)+' von '+(rt.reviews_total||0)+' Texten klassifiziert (Modell: '+(rt.model||'?')+') · Stand: '+((rt.generated_at||'').slice(0,10))+' · Hinweis: ERGO enthält die Google-Bewertungen von 261 Berater-Agenturen (Stichprobe), Wettbewerber nur deren zentrale Profile — die Textanzahl ist daher NICHT marktvergleichbar.';
+    if(meta) meta.textContent=(rt.reviews_classified||0)+' von '+(rt.reviews_total||0)+' Texten klassifiziert (Modell: '+(rt.model||'?')+') · Stand: '+((rt.generated_at||'').slice(0,10))+' · ERGO (Marke) = zentrale Profile, vergleichbar mit Wettbewerb · ERGO Berater = Google-Bewertungen der 261 Agentur-Stichprobe (separat).';
     var h='';
 
     // ===== Ampel: letzte 20 Bewertungen + Trend (vs. die 20 davor) =====

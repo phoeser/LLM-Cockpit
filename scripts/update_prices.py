@@ -174,6 +174,37 @@ JS_EXTRACT_CHIPS = """() => {
     return out;
 }"""
 
+# ZAHN-TILES: Tarif-Kacheln der Zahn-Ergebnisseite (Top-Anbieter) mit Tarifname
+# und Leistungsumfang (Zahnersatz/Zahnbehandlung/Zahnreinigung) — ergaenzt die Chips.
+JS_EXTRACT_ZAHN_TILES = """() => {
+    var out = {};
+    document.querySelectorAll('zzv-frontend-tariff-tile-container').forEach(function(tile) {
+        var ln = tile.querySelector('zzv-frontend-tariff-tile-logo-and-name');
+        var pr = tile.querySelector('zzv-frontend-tariff-tile-price');
+        if (!ln || !pr) return;
+        var img = ln.querySelector('img[alt]:not([alt=""])');
+        var name = img ? img.alt.trim() : null;
+        if (!name) return;
+        var pm = (pr.textContent || '').match(/(\\d{1,3},\\d{2})\\s*€/);
+        if (!pm) return;
+        var price = parseFloat(pm[1].replace(',', '.'));
+        var tarif = null;
+        var lines = (ln.innerText || '').split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+        if (lines.length > 1) tarif = lines[lines.length - 1].slice(0, 60);
+        var leistung = null;
+        var sc = tile.querySelector('zzv-frontend-tariff-tile-service-summary-chips');
+        if (sc) leistung = (sc.innerText || '').split('\\n').map(function(s){return s.trim();}).filter(Boolean).join(' / ').slice(0, 180);
+        var grade = null;
+        var gr = tile.querySelector('zzv-frontend-tariff-tile-grade');
+        if (gr) { var gm = (gr.textContent || '').match(/(\\d[.,]\\d)/); if (gm) grade = parseFloat(gm[1].replace(',', '.')); }
+        if (!(name in out) || price < out[name].price) {
+            out[name] = {price: price, tarif: tarif, leistung: leistung, grade: grade};
+        }
+    });
+    return out;
+}"""
+
+
 # FALLBACK-Extraktor (bisheriges Verfahren, funktioniert auf Sterbegeld-Seite):
 # Preis-Element -> Vorfahr mit Versicherer-Logo, plus Tarifnote/Kundenbewertung
 JS_EXTRACT = """() => {
@@ -412,6 +443,26 @@ def crawl_product_prices(product_key, product_config):
                     # 1) Primaer: Provider-Chips ('ab X EUR' je Anbieter)
                     raw = page.evaluate(JS_EXTRACT_CHIPS)
                     src = "chips"
+                    # Zahn: Tarif-Kacheln liefern Tarifname + Leistungsumfang -> anreichern
+                    if product_key == "zahnzusatz" and raw:
+                        try:
+                            tiles = page.evaluate(JS_EXTRACT_ZAHN_TILES)
+                            tile_by_brand = {}
+                            for tn, tv in (tiles or {}).items():
+                                bk = map_brand(tn) or ("_other_" + tn)
+                                if bk not in tile_by_brand or tv["price"] < tile_by_brand[bk]["price"]:
+                                    tile_by_brand[bk] = tv
+                            for c24_name, data in raw.items():
+                                bk = map_brand(c24_name) or ("_other_" + c24_name)
+                                tv = tile_by_brand.get(bk)
+                                if tv:
+                                    data["tarif"] = tv.get("tarif")
+                                    data["leistung"] = tv.get("leistung")
+                                    if data.get("grade") is None:
+                                        data["grade"] = tv.get("grade")
+                            print("    [zahn] %d Kacheln mit Tarifdetails gemergt" % len(tile_by_brand))
+                        except Exception as te:
+                            print("    [zahn] Tile-Merge: %s" % str(te)[:80])
                     # 2) Fallback: Karten-Extraktor (Sterbegeld-Layout)
                     if not raw:
                         raw = page.evaluate(JS_EXTRACT)
@@ -444,6 +495,7 @@ def crawl_product_prices(product_key, product_config):
                             "customer_score": data.get("customerScore"),
                             "customer_count": data.get("customerCount"),
                             "tariff": data.get("tarif"),
+                            "leistung": data.get("leistung"),
                             "waiting_period": data.get("wartezeit"),
                             "c24_name": c24_name,
                         }

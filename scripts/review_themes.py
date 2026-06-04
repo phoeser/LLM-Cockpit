@@ -111,7 +111,7 @@ def classify_batch(reviews, api_key):
     )
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096,
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 16384,
                              "responseMimeType": "application/json"},
     }).encode("utf-8")
     # Gleiches Aufruf-Muster wie update_sentiment.py (nachweislich funktionierend)

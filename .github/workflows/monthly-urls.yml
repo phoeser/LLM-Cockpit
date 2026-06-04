@@ -25,6 +25,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Playwright installieren (Browser-Fallback gegen Bot-Erkennung, z.B. Allianz)
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+        continue-on-error: true
+
       - name: Anbieter-Sitemaps crawlen
         run: python scripts/crawl_provider_sitemaps.py
         continue-on-error: true

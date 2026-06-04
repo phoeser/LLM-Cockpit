@@ -63,7 +63,7 @@ def build_login_page(encrypted_data: dict) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ERGO LLM-Cockpit</title>
+<title>ERGO LLM-Treiber-Analyse</title>
 <style>
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 html, body {{ min-height: 100vh; }}
@@ -151,9 +151,9 @@ button:disabled {{ opacity: 0.6; cursor: wait; }}
 <div class="login-card" id="loginCard">
   <div class="brand-header">
     <div class="brand-logo">ERGO</div>
-    <div class="brand-tagline">LLM-Sichtbarkeits-Cockpit</div>
+    <div class="brand-tagline">LLM-Treiber-Analyse</div>
   </div>
-  <h1>ERGO LLM-Cockpit</h1>
+  <h1>ERGO LLM-Treiber-Analyse</h1>
   <p class="subtitle">Bitte Passwort eingeben.</p>
   <hr>
   <form id="loginForm" autocomplete="off">

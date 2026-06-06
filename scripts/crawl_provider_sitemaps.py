@@ -28,11 +28,11 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 
 # Anbieter + Domain + Fallback-Sitemap-Pfade (robots.txt hat Vorrang)
 PROVIDERS = {
-    "ergo":         {"name": "ERGO", "domains": ["www.ergo.de"], "fallback": ["/de/sitemap.xml", "/sitemap.xml"]},
-    "allianz":      {"name": "Allianz", "domains": ["www.allianz.de"], "fallback": ["/sitemap.xml"]},
+    "ergo":         {"name": "ERGO", "domains": ["www.ergo.de", "www.ergo.com"], "fallback": ["/de/sitemap.xml", "/sitemap.xml"]},
+    "allianz":      {"name": "Allianz", "domains": ["www.allianz.de", "www.allianz.com"], "fallback": ["/sitemap.xml"]},
     "huk":          {"name": "HUK-Coburg", "domains": ["www.huk.de"], "fallback": ["/sitemap.xml"]},
-    "axa":          {"name": "AXA", "domains": ["www.axa.de"], "fallback": ["/sitemap.xml"]},
-    "generali":     {"name": "Generali", "domains": ["www.generali.de"], "fallback": ["/sitemap.xml", "/de/sitemap.xml"]},
+    "axa":          {"name": "AXA", "domains": ["www.axa.de", "www.axa.com"], "fallback": ["/sitemap.xml"]},
+    "generali":     {"name": "Generali", "domains": ["www.generali.de", "www.generali.com"], "fallback": ["/sitemap.xml", "/de/sitemap.xml"]},
     "signal":       {"name": "Signal Iduna", "domains": ["www.signal-iduna.de"], "fallback": ["/sitemap.xml"]},
     "ruv":          {"name": "R+V", "domains": ["www.ruv.de"], "fallback": ["/sitemap.xml"]},
     "devk":         {"name": "DEVK", "domains": ["www.devk.de"], "fallback": ["/sitemap.xml"]},

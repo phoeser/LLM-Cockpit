@@ -709,7 +709,7 @@
   <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
     <div class="flex items-start justify-between flex-wrap gap-2">
       <h3 class="text-lg font-bold text-ergo-dark mb-2">🧪 Validierte Impact-Analyse <span class="text-xs font-normal text-gray-500">(Event-Study)</span></h3>
-      <span class="flex items-center gap-2"><select id="impactLlmSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle LLMs (gesamt)</option></select><span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span></span>
+      <span class="flex items-center gap-2"><select id="impactBrandSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle Anbieter</option></select><select id="impactLlmSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle LLMs (gesamt)</option></select><span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span></span>
     </div>
     <p class="text-xs text-gray-500 mb-3">Geschätzter durchschnittlicher Effekt eines Ereignis-Typs auf den Share of Voice (in Prozentpunkten), pro Messintervall. Wird mit jeder Nacht statistisch belastbarer.</p>
     <div id="corrImpactStudy"></div>
@@ -732,13 +732,6 @@
     <div id="corrSovSummary" class="mt-3"></div>
   </div>
 
-  <!-- Impact-Analyse -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-dark">
-    <h3 class="text-lg font-bold text-ergo-dark mb-2">🎯 Impact-Analyse: Was treibt die Sichtbarkeit?</h3>
-    <p class="text-xs text-gray-500 mb-2">Welche Event-Typen gehen positiven/negativen SoV-Veränderungen voraus? (180-Tage-Lookback)</p>
-    <div id="corrImpactBrandTabs" class="flex flex-wrap gap-1 mb-4"></div>
-    <div id="corrImpact"></div>
-  </div>
 
   <!-- Mention-Tracking -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
@@ -2722,9 +2715,24 @@ function buildGeoTab() {
       if (sel && ciRoot && ciRoot.by_llm && sel.options.length <= 1) {
         Object.keys(ciRoot.by_llm).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
       }
+      var bsel = document.getElementById('impactBrandSel');
+      if (bsel && ciRoot && ciRoot.by_brand && bsel.options.length <= 1) {
+        Object.keys(ciRoot.by_brand).sort().forEach(function(b){ var o=document.createElement('option'); o.value=b; o.textContent=b; bsel.appendChild(o); });
+      }
+      var bpick = bsel ? bsel.value : '';
       var pick = sel ? sel.value : '';
-      var ci = (pick && ciRoot && ciRoot.by_llm && ciRoot.by_llm[pick]) ? ciRoot.by_llm[pick] : ciRoot;
+      // Anbieter-Auswahl hat Vorrang (Marken-Isolierung); sonst LLM-Auswahl; sonst Gesamt
+      var ci = ciRoot;
+      var scopeNote = '';
+      if (bpick && ciRoot && ciRoot.by_brand && ciRoot.by_brand[bpick]) {
+        ci = ciRoot.by_brand[bpick]; scopeNote = 'Nur ' + bpick + ' · ';
+        if (sel) sel.disabled = true;
+      } else {
+        if (sel) sel.disabled = false;
+        if (pick && ciRoot && ciRoot.by_llm && ciRoot.by_llm[pick]) { ci = ciRoot.by_llm[pick]; scopeNote = 'LLM: ' + pick + ' · '; }
+      }
       if (ci && ciRoot && !ci.generated_at) ci.generated_at = ciRoot.generated_at;
+      if (ci && ciRoot && !ci.sov_source) ci.sov_source = ciRoot.sov_source;
       if (!el) return;
       if (!ci || !ci.impact) {
         el.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Noch keine Impact-Berechnung vorhanden. Wird ab dem nächsten Nightly-Run erzeugt (benötigt die dichte SoV-Historie).</div>';
@@ -2741,7 +2749,7 @@ function buildGeoTab() {
       if (badge) { badge.textContent = c.txt + ' · ' + (ci.sov_measure_days||0) + ' Messtage'; badge.style.background = c.bg; badge.style.color = c.fg; }
       var rows = Object.keys(ci.impact || {}).map(function(k){ return ci.impact[k]; });
       var range = ci.sov_measure_range || [];
-      var note = '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px">' + (ci.confidence_note||'') +
+      var note = '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px">' + scopeNote + (ci.confidence_note||'') +
         ' · Quelle: ' + (ci.sov_source === 'sov_history' ? 'dichte SoV-Historie' : 'SoV-Änderungs-Events') +
         ' · Zeitraum: ' + (range[0]||'?') + '–' + (range[1]||'?') +
         ' · Stand: ' + ((ci.generated_at||'').slice(0,10)) + '</div>';
@@ -2781,7 +2789,7 @@ function buildGeoTab() {
     const defC = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6'];
 
     if (!CORRELATION_EVENTS || CORRELATION_EVENTS.length === 0) {
-      ['corrKPIs','corrHeatmap','corrSovChart','corrImpact','corrMentions','corrStream'].forEach(id => {
+      ['corrKPIs','corrHeatmap','corrSovChart','corrMentions','corrStream'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">🔍 Noch keine Daten</p><p class="text-sm">Die Korrelations-Engine sammelt Events bei jedem Nightly-Run.</p></div>';
       });
@@ -2895,125 +2903,6 @@ function buildGeoTab() {
         }
       } else {
         sovEl.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">📊 Noch keine SoV-Messungen</p><p class="text-sm">SoV-Daten werden nach dem nächsten GEO-Run erfasst.</p></div>';
-      }
-    }
-
-    // ── 4. Impact-Analyse (180-Tage-Lookback, Brand-Reiter) ──
-    const impEl = document.getElementById('corrImpact');
-    const impTabsEl = document.getElementById('corrImpactBrandTabs');
-    if (impEl) {
-      // Brand-Liste aus ALLEN sov_change Events (nicht nur share_of_voice_pct)
-      const impBrands = [...new Set(allSov.map(e => e.brand))].sort();
-
-      // Delta normalisieren je nach Metric-Typ
-      function calcSovDelta(sov) {
-        const d = sov.detail || {};
-        if (d.metric === 'share_of_voice_pct' && d.old_pct !== undefined) return d.new_pct - d.old_pct;
-        if (d.metric === 'mentions' && d.old_mentions !== undefined && d.old_mentions > 0) return ((d.new_mentions - d.old_mentions) / d.old_mentions) * 10;
-        if (d.metric === 'mentions' && d.old_mentions === 0 && d.new_mentions > 0) return 5;
-        if (d.metric === 'overall_rank' && d.old_rank !== undefined) return (d.old_rank - d.new_rank) * 2;
-        return NaN;
-      }
-
-      // Render-Funktion fuer eine Brand-Auswahl
-      function renderImpactForBrand(selectedBrand) {
-        const LOOKBACK = 180;
-        const LOOKBACK_MS = LOOKBACK * 86400000;
-        const filteredSov = selectedBrand === 'Alle' ? allSov : allSov.filter(e => e.brand === selectedBrand);
-        const filteredNonSov = selectedBrand === 'Alle' ? nonSov : nonSov.filter(e => e.brand === selectedBrand);
-
-        if (filteredSov.length === 0 || filteredNonSov.length === 0) {
-          impEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p class="text-sm">Keine Daten fuer ' + selectedBrand + ' im Analysezeitraum.</p></div>';
-          return;
-        }
-
-        // Optimierung: Timestamps einmal vorberechnen, nach Brand indizieren
-        const nonSovByBrand = {};
-        filteredNonSov.forEach(e => {
-          const b = e.brand;
-          if (!nonSovByBrand[b]) nonSovByBrand[b] = [];
-          nonSovByBrand[b].push({ ts: new Date(e.timestamp).getTime(), type: e.event_type });
-        });
-        // Sortieren fuer Binary-Search
-        Object.values(nonSovByBrand).forEach(arr => arr.sort((a,b) => a.ts - b.ts));
-
-        const driverStats = {};
-        filteredSov.forEach(sov => {
-          const delta = calcSovDelta(sov);
-          if (isNaN(delta)) return;
-          const sovTs = new Date(sov.timestamp).getTime();
-          const lb = sovTs - LOOKBACK_MS;
-          const brandEvents = nonSovByBrand[sov.brand] || [];
-          // Binary search fuer lb
-          let lo = 0, hi = brandEvents.length;
-          while (lo < hi) { const m = (lo+hi)>>1; brandEvents[m].ts < lb ? lo=m+1 : hi=m; }
-          const byType = {};
-          for (let i = lo; i < brandEvents.length && brandEvents[i].ts <= sovTs; i++) {
-            byType[brandEvents[i].type] = (byType[brandEvents[i].type]||0)+1;
-          }
-          Object.entries(byType).forEach(([type, count]) => {
-            if (!driverStats[type]) driverStats[type] = { deltaSum: 0, posM: 0, negM: 0, totalEvents: 0, measurements: 0 };
-            driverStats[type].totalEvents += count;
-            driverStats[type].measurements += 1;
-            driverStats[type].deltaSum += delta;
-            if (delta > 0) driverStats[type].posM += 1;
-            else driverStats[type].negM += 1;
-          });
-        });
-
-        const sorted = Object.entries(driverStats).sort((a,b) => Math.abs(b[1].deltaSum/b[1].measurements) - Math.abs(a[1].deltaSum/a[1].measurements));
-        if (sorted.length > 0) {
-          const maxAvg = Math.max(...sorted.map(([,s]) => Math.abs(s.deltaSum / s.measurements)), 0.01);
-          let ih = '<div class="grid grid-cols-1 gap-3">';
-          sorted.forEach(([type, s]) => {
-            const avg = s.deltaSum / s.measurements;
-            const hitRate = s.measurements > 0 ? Math.round(s.posM / s.measurements * 100) : 0;
-            const isPos = avg >= 0;
-            const barPct = Math.min(Math.abs(avg) / maxAvg * 100, 100);
-            const barColor = isPos ? '#16a34a' : '#dc2626';
-            const icon = EI[type] || '📌';
-            ih += '<div class="p-4 rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow cursor-pointer" ondblclick="showEventDrilldown(\'' + type + '\', \'impact\')">';
-            ih += '<div class="flex items-center justify-between mb-2">';
-            ih += '<div class="flex items-center gap-2"><span class="text-xl">' + icon + '</span><span class="font-bold text-sm">' + (EN[type]||type) + '</span>';
-            ih += '<span class="text-xs text-gray-400">(' + s.totalEvents + ' Events vor ' + s.measurements + '/' + filteredSov.length + ' Messungen)</span></div>';
-            ih += '<span class="text-xs font-bold px-2 py-1 rounded" style="color:' + barColor + ';background:' + barColor + '15">' + (isPos ? '↑ Positiv' : '↓ Negativ') + '</span>';
-            ih += '</div>';
-            ih += '<div class="flex items-center gap-3"><div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">';
-            ih += '<div class="h-3 rounded-full transition-all" style="width:' + barPct + '%;background:' + barColor + '"></div>';
-            ih += '</div><span class="text-sm font-mono font-bold" style="color:' + barColor + ';min-width:110px;text-align:right">&Oslash; ' + (avg>0?'+':'') + avg.toFixed(2) + '</span></div>';
-            ih += '<div class="flex gap-4 mt-2 text-xs text-gray-500">';
-            ih += '<span>&#x2191; ' + s.posM + ' von ' + s.measurements + ' Messungen positiv (' + hitRate + '%)</span>';
-            ih += '<span>&#x2193; ' + s.negM + ' negativ</span>';
-            ih += '</div></div>';
-          });
-          ih += '</div>';
-          ih += '<div class="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500"><strong>Methodik:</strong> Fuer jede der ' + filteredSov.length + ' SoV-Messungen' + (selectedBrand !== 'Alle' ? ' von ' + selectedBrand : '') + ' wird geprueft, welche Aktivitaeten in den 180 Tagen davor stattfanden. Der angezeigte Wert ist das durchschnittliche SoV-Delta pro Messung, bei der dieser Event-Typ vorausging. <span class="text-gray-400">Doppelklick fuer Details.</span></div>';
-          impEl.innerHTML = ih;
-        } else {
-          impEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p class="text-sm">Keine Aktivitaeten im Lookback-Fenster fuer ' + selectedBrand + '.</p></div>';
-        }
-      }
-
-      if (allSov.length > 0 && nonSov.length > 0) {
-        // Brand-Reiter rendern
-        if (impTabsEl) {
-          let tabsHtml = '<button class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-ergo-red text-white" onclick="window._impactBrandSelect(this,\'Alle\')">Alle</button>';
-          impBrands.forEach(b => {
-            tabsHtml += '<button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" onclick="window._impactBrandSelect(this,\'' + b.replace(/'/g,"\\'") + '\')">' + b + '</button>';
-          });
-          impTabsEl.innerHTML = tabsHtml;
-        }
-        // Tab-Klick Handler
-        window._impactBrandSelect = function(btn, brand) {
-          impTabsEl.querySelectorAll('button').forEach(b => { b.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200'; });
-          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-ergo-red text-white';
-          renderImpactForBrand(brand);
-        };
-        // Initial: Alle
-        renderImpactForBrand('Alle');
-      } else {
-        let msg = allSov.length === 0 ? 'Noch keine SoV-Messungen vorhanden.' : 'Noch keine Aktivitaeten erfasst.';
-        impEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p class="text-lg mb-2">🎯 ' + msg + '</p><p class="text-sm">Impact-Analyse startet nach dem naechsten GEO-Run mit erfassten Events.</p></div>';
       }
     }
 

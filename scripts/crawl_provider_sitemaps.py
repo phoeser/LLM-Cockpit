@@ -209,55 +209,64 @@ def sparten_of(url):
 def crawl_provider(key, cfg):
     name = cfg["name"]
     print("\n=== %s (%s) ===" % (name, key))
+    # 2026-06-06: Ueber ALLE Domains des Anbieters crawlen und URLs summieren
+    # (vorher: return nach der ersten Domain mit Treffern -> Konzern-.com wurde
+    #  nie erfasst). seen ist global ueber alle Domains (dedupe exakter URLs).
+    all_urls = []
+    per_domain = {}
+    seen = set()
     for domain in cfg["domains"]:
         sitemaps = discover_sitemaps(domain)
         if not sitemaps:
             sitemaps = ["https://%s%s" % (domain, p) for p in cfg.get("fallback", ["/sitemap.xml"])]
-        seen = set()
-        all_urls = []
+        before = len(all_urls)
         for sm in sitemaps:
             all_urls.extend(collect_urls(sm, seen))
         all_urls = list(dict.fromkeys(all_urls))  # dedupe, Reihenfolge erhalten
-        if all_urls:
-            counts = {t: 0 for t, _ in CONTENT_RULES}
-            counts["sonstige"] = 0
-            sparten = {sp: 0 for sp in SPARTEN_RULES}
-            sonstige_urls = []
-            for u in all_urls:
-                c = classify(u)
-                counts[c] += 1
-                if c == "sonstige":
-                    sonstige_urls.append(u)
-                for sp in sparten_of(u):
-                    sparten[sp] += 1
-            sparten = {k: v for k, v in sparten.items() if v > 0}
-            # Analyse-Hilfe: Pfad-Segment-Haeufigkeiten + Stichprobe der Sonstige-URLs
-            seg_freq = {}
-            for u in sonstige_urls:
-                try:
-                    path = re.sub(r"^https?://[^/]+", "", u).strip("/")
-                    seg = path.split("/")[0].split("?")[0][:40] if path else "(root)"
-                    seg_freq[seg] = seg_freq.get(seg, 0) + 1
-                except Exception:
-                    pass
-            top_segs = dict(sorted(seg_freq.items(), key=lambda kv: -kv[1])[:25])
-            print("  OK: %d URLs (Sitemaps: %d)" % (len(all_urls), len(seen)))
-            return {
-                "name": name,
-                "total": len(all_urls),
-                "ratgeber": counts["ratgeber"], "faq": counts["faq"], "rechner": counts["rechner"],
-                "presse": counts["presse"], "glossar": counts["glossar"], "service": counts["service"],
-                "produkt": counts["produkt"], "b2b": counts["b2b"], "video": counts["video"],
-                "rechtliches": counts["rechtliches"], "unternehmen": counts["unternehmen"],
-                "standorte": counts["standorte"], "medien": counts["medien"],
-                "sonstige": counts["sonstige"],
-                "sonstige_top_segments": top_segs,
-                "sonstige_sample": sonstige_urls[:50],
-                "sparten": dict(sorted(sparten.items(), key=lambda kv: -kv[1])),
-                "source": "crawl",
-                "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                "sitemaps_used": len(seen),
-            }
+        per_domain[domain] = {"count": len(all_urls) - before}
+        print("  %s: +%d URLs (kumuliert %d)" % (domain, len(all_urls) - before, len(all_urls)))
+
+    if all_urls:
+        counts = {t: 0 for t, _ in CONTENT_RULES}
+        counts["sonstige"] = 0
+        sparten = {sp: 0 for sp in SPARTEN_RULES}
+        sonstige_urls = []
+        for u in all_urls:
+            c = classify(u)
+            counts[c] += 1
+            if c == "sonstige":
+                sonstige_urls.append(u)
+            for sp in sparten_of(u):
+                sparten[sp] += 1
+        sparten = {k: v for k, v in sparten.items() if v > 0}
+        seg_freq = {}
+        for u in sonstige_urls:
+            try:
+                path = re.sub(r"^https?://[^/]+", "", u).strip("/")
+                seg = path.split("/")[0].split("?")[0][:40] if path else "(root)"
+                seg_freq[seg] = seg_freq.get(seg, 0) + 1
+            except Exception:
+                pass
+        top_segs = dict(sorted(seg_freq.items(), key=lambda kv: -kv[1])[:25])
+        print("  OK: %d URLs gesamt ueber %d Domain(s)" % (len(all_urls), len(cfg["domains"])))
+        return {
+            "name": name,
+            "total": len(all_urls),
+            "ratgeber": counts["ratgeber"], "faq": counts["faq"], "rechner": counts["rechner"],
+            "presse": counts["presse"], "glossar": counts["glossar"], "service": counts["service"],
+            "produkt": counts["produkt"], "b2b": counts["b2b"], "video": counts["video"],
+            "rechtliches": counts["rechtliches"], "unternehmen": counts["unternehmen"],
+            "standorte": counts["standorte"], "medien": counts["medien"],
+            "sonstige": counts["sonstige"],
+            "sonstige_top_segments": top_segs,
+            "sonstige_sample": sonstige_urls[:50],
+            "sparten": dict(sorted(sparten.items(), key=lambda kv: -kv[1])),
+            "per_domain": per_domain,
+            "domains": cfg["domains"],
+            "source": "crawl",
+            "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "sitemaps_used": len(seen),
+        }
     print("  BLOCKIERT/leer")
     return {"name": name, "total": None, "source": "blockiert",
             "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d")}

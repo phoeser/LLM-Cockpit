@@ -202,7 +202,7 @@ def confidence(n_measure_days):
     return ("belastbar", "Ausreichend Messpunkte fuer eine belastbare Aussage.")
 
 
-def analyze(events, llm=None):
+def analyze(events, llm=None, brand_filter=None):
     # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
     sov = build_sov_series_from_history(llm=llm)
     sov_source = "sov_history" if llm is None else ("sov_history_llm:" + llm)
@@ -255,9 +255,12 @@ def analyze(events, llm=None):
                 cnt[t] = c / days
             points_raw.append({"brand": brand, "days": days,
                                "y": (end_pct - start_pct) / days, "x": cnt})
+    # Marken-Isolierung (optional): nur Intervalle dieser Marke
+    if brand_filter:
+        points_raw = [p for p in points_raw if p["brand"] == brand_filter]
     intervals_total = len(points_raw)
 
-    # Brand-Demeaning
+    # Brand-Demeaning (bei Einzelmarke = Zentrierung um deren Mittelwert)
     bsum, bn = {}, {}
     for p in points_raw:
         bsum[p["brand"]] = bsum.get(p["brand"], 0.0) + p["y"]
@@ -333,6 +336,18 @@ def main():
         except Exception as e:
             print("WARN per-LLM (%s): %s" % (llm, str(e)[:80]))
     res["by_llm"] = by_llm
+    # 2026-06-05: zusaetzlich Impact JE MARKE (Anbieter-Isolierung im Dashboard).
+    # Hinweis: pro Einzelmarke wenige Intervalle -> type_confidence weist das aus.
+    by_brand = {}
+    for b in res.get("brands_with_sov", []):
+        try:
+            rb = analyze(events, brand_filter=b)
+            by_brand[b] = {k: rb[k] for k in ("impact", "confidence", "confidence_note",
+                                              "sov_measure_days", "sov_measure_range",
+                                              "n_intervals_total") if k in rb}
+        except Exception as e:
+            print("WARN per-Brand (%s): %s" % (b, str(e)[:80]))
+    res["by_brand"] = by_brand
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK: %s (Konfidenz=%s, SoV-Messtage=%d, Intervalle=%d)"

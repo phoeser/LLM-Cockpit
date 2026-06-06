@@ -290,12 +290,22 @@ def analyze(events, llm=None, brand_filter=None):
             eff = m1 - m0
             if len(with_v) > 1 and len(without_v) > 1:
                 se = math.sqrt(_var(with_v, m1) / len(with_v) + _var(without_v, m0) / len(without_v))
+        ci_low = ci_high = None
+        significant = None
+        if eff is not None and se is not None and se > 0:
+            ci_low = round(eff - 1.96 * se, 3)
+            ci_high = round(eff + 1.96 * se, 3)
+            # signifikant auf 95%-Niveau, wenn das Konfidenzintervall die Null nicht enthaelt
+            significant = (ci_low > 0) or (ci_high < 0)
         results[t] = {
             "label": TYPE_LABEL.get(t, t),
             "pearson_r": round(r, 3) if r is not None else None,
             "spearman_r": round(rho, 3) if rho is not None else None,
             "avg_sov_effect_pp": round(eff, 3) if eff is not None else None,
             "effect_se_pp": round(se, 3) if se is not None else None,
+            "ci95_low_pp": ci_low,
+            "ci95_high_pp": ci_high,
+            "significant": significant,
             "n_intervals": n,
             "n_with_event": n_with,
             "type_confidence": type_confidence(n_with),

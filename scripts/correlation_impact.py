@@ -154,6 +154,24 @@ def pearson(xs, ys):
     return sxy / math.sqrt(sxx * syy)
 
 
+# t-kritische Werte (zweiseitig, 95%-Konfidenz) nach Freiheitsgraden df.
+# Fuer kleine Stichproben deutlich groesser als der Normalwert 1.96 -> ehrlich breitere
+# Konfidenzintervalle. df>30: Normalapproximation 1.96.
+_T95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365,
+        8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179, 13: 2.160, 14: 2.145,
+        15: 2.131, 16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093, 20: 2.086,
+        21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.060, 26: 2.056,
+        27: 2.052, 28: 2.048, 29: 2.045, 30: 2.042}
+
+
+def t_critical(df):
+    if df < 1:
+        return None
+    if df > 30:
+        return 1.96
+    return _T95[df]
+
+
 def spearman(xs, ys):
     """Spearman-Rangkorrelation (robust bei nullinflationierten Zaehldaten,
     Review-Fix 2026-06-04: Pearson auf Counts war hebelpunkt-getrieben)."""
@@ -293,10 +311,16 @@ def analyze(events, llm=None, brand_filter=None):
         ci_low = ci_high = None
         significant = None
         if eff is not None and se is not None and se > 0:
-            ci_low = round(eff - 1.96 * se, 3)
-            ci_high = round(eff + 1.96 * se, 3)
-            # signifikant auf 95%-Niveau, wenn das Konfidenzintervall die Null nicht enthaelt
-            significant = (ci_low > 0) or (ci_high < 0)
+            # Freiheitsgrade konservativ: kleinere der beiden Gruppen - 1
+            df = min(len(with_v), len(without_v)) - 1
+            tc = t_critical(df)
+            if tc is not None:
+                ci_low = round(eff - tc * se, 3)
+                ci_high = round(eff + tc * se, 3)
+                # "gesichert" nur, wenn das (t-basierte) KI die Null ausschliesst
+                # UND mindestens 8 Intervalle mit Event vorliegen (Mindest-Datenbasis)
+                excludes_zero = (ci_low > 0) or (ci_high < 0)
+                significant = bool(excludes_zero and n_with >= 8)
         results[t] = {
             "label": TYPE_LABEL.get(t, t),
             "pearson_r": round(r, 3) if r is not None else None,

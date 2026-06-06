@@ -2757,23 +2757,39 @@ function buildGeoTab() {
       var maxAbs = Math.max.apply(null, rows.map(function(r){ return Math.abs(r.avg_sov_effect_pp||0); }).concat([0.01]));
       var tcMap = {unzureichend:['#fee2e2','#b91c1c'], vorlaeufig:['#fef3c7','#b45309'], moderat:['#dbeafe','#1d4ed8'], belastbar:['#dcfce7','#15803d']};
       var html = note + '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">' +
-        '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Ø Effekt (Pp/Tag) ± SE</th><th style="padding:6px 8px;text-align:right">ρ (Spearman)</th><th style="padding:6px 8px;text-align:right">Intervalle (mit Event)</th></tr></thead><tbody>';
+        '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Ø Effekt (Pp/Tag)</th><th style="padding:6px 8px;text-align:right">95%-Konfidenz&shy;intervall</th><th style="padding:6px 8px;text-align:center">Aussagekraft</th><th style="padding:6px 8px;text-align:right">ρ</th><th style="padding:6px 8px;text-align:right">Interv. (mit Event)</th></tr></thead><tbody>';
       rows.forEach(function(r){
         var eff = r.avg_sov_effect_pp; var pos = (eff||0) >= 0;
         var w = Math.round(Math.abs(eff||0)/maxAbs*100);
         var bar = '<div style="display:inline-block;vertical-align:middle;width:80px;height:8px;background:#f1f5f9;border-radius:4px;margin-right:6px;position:relative"><div style="position:absolute;' + (pos?'left':'right') + ':50%;width:' + (w/2) + '%;height:8px;background:' + (pos?'#16a34a':'#dc2626') + ';border-radius:4px"></div></div>';
         var tc = r.type_confidence ? (tcMap[r.type_confidence]||['#f1f5f9','#64748b']) : null;
         var chip = tc ? ' <span style="font-size:10px;padding:1px 6px;border-radius:8px;background:'+tc[0]+';color:'+tc[1]+'">'+r.type_confidence+'</span>' : '';
-        var seTxt = (r.effect_se_pp!=null) ? ' <span style="color:#94a3b8;font-weight:400">± '+r.effect_se_pp.toFixed(2)+'</span>' : '';
         var rho = (r.spearman_r!=null) ? r.spearman_r : (r.pearson_r!=null ? r.pearson_r : '–');
+        var ciTxt = (r.ci95_low_pp!=null && r.ci95_high_pp!=null)
+          ? ((r.ci95_low_pp>0?'+':'')+r.ci95_low_pp.toFixed(1)+' … '+(r.ci95_high_pp>0?'+':'')+r.ci95_high_pp.toFixed(1))
+          : '<span style="color:#cbd5e1">—</span>';
+        var sig = r.significant;
+        var sigChip = (sig===true)
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>'
+          : (sig===false)
+            ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ Zufall mögl.</span>'
+            : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#94a3b8">zu wenig</span>';
         html += '<tr style="border-bottom:1px solid #f1f5f9">' +
           '<td style="padding:6px 8px;color:#1e293b">' + (r.label||'') + chip + '</td>' +
-          '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + seTxt + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#64748b;white-space:nowrap">' + ciTxt + '</td>' +
+          '<td style="padding:6px 8px;text-align:center">' + sigChip + '</td>' +
           '<td style="padding:6px 8px;text-align:right;color:#475569">' + rho + '</td>' +
           '<td style="padding:6px 8px;text-align:right;color:#475569">' + (r.n_intervals||0) + ' (' + (r.n_with_event||0) + ')</td>' +
         '</tr>';
       });
       html += '</tbody></table>';
+      html += '<div style="margin-top:8px;font-size:11px;color:#64748b;line-height:1.5">'
+        + '<b>Lesehilfe:</b> Der <b>Ø Effekt</b> ist die geschätzte SoV-Veränderung an Tagen mit diesem Ereignis (in Prozentpunkten pro Tag). '
+        + 'Das <b>95%-Konfidenzintervall</b> gibt die Spanne an, in der der wahre Effekt mit 95% Wahrscheinlichkeit liegt. '
+        + '<b>Aussagekraft „✓ gesichert“</b> = das Intervall schließt die Null aus (Effekt statistisch belegt); '
+        + '<b>„~ Zufall mögl.“</b> = Spanne umfasst die Null, der Effekt kann noch Zufall sein. '
+        + '<b>ρ</b> = Rang-Korrelation Eventzahl ↔ SoV (−1…+1). Alle Werte werden mit jedem Mess-Tag präziser.</div>';
       if (ci.confidence === 'unzureichend' || ci.confidence === 'vorlaeufig') {
         html += '<div style="margin-top:10px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Diese Werte sind noch nicht statistisch belastbar. Die Schätzungen werden mit jedem weiteren Mess-Tag genauer.</div>';
       }

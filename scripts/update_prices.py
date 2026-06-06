@@ -586,6 +586,53 @@ def inject_into_dashboard(price_data):
     return True
 
 
+EVENTS_FILE = Path("shared/events.jsonl")
+PRICE_CHANGE_THRESHOLD_PCT = 3.0  # ab 3% Monatsbeitragsaenderung wird ein Event emittiert
+
+
+def emit_price_events(old_data, new_data):
+    """Vergleicht den guenstigsten ERGO/Wettbewerber-Preis je Produkt (50-J.-Profil)
+    mit dem Vorlauf und schreibt price_change-Events nach shared/events.jsonl.
+    (2026-06-05: macht 'price_change' als Treiber in der Impact-Analyse nutzbar.)"""
+    if not old_data:
+        return 0
+    BN = {"ergo": "ERGO", "allianz": "Allianz", "axa": "AXA", "huk": "HUK-Coburg",
+          "generali": "Generali", "signal-iduna": "Signal Iduna", "ruv": "R+V",
+          "devk": "DEVK", "hannoversche": "Hannoversche", "cosmosdirekt": "Cosmos Direkt"}
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    lines = []
+    for pk, prod in (new_data.get("products") or {}).items():
+        old_prod = (old_data.get("products") or {}).get(pk, {})
+        for age in ("age_50",):
+            nb = ((prod.get("profiles") or {}).get(age) or {}).get("brands") or {}
+            ob = ((old_prod.get("profiles") or {}).get(age) or {}).get("brands") or {}
+            for bk, nv in nb.items():
+                if bk.startswith("_other_"):
+                    continue
+                np_, op_ = nv.get("price"), (ob.get(bk) or {}).get("price")
+                if not np_ or not op_ or op_ <= 0:
+                    continue
+                pct = (np_ - op_) / op_ * 100.0
+                if abs(pct) < PRICE_CHANGE_THRESHOLD_PCT:
+                    continue
+                lines.append(json.dumps({
+                    "id": "evt_%s_%s_price_%s" % (ts.replace("-", "").replace(":", ""), bk, pk),
+                    "timestamp": ts, "event_type": "price_change",
+                    "brand": BN.get(bk, bk), "product": pk,
+                    "source": "check24", "crawler": "update_prices",
+                    "magnitude": round(abs(pct) / 10.0, 3),
+                    "detail": {"metric": "monthly_premium", "product": pk, "age": age,
+                               "old_price": op_, "new_price": np_, "change_pct": round(pct, 1),
+                               "direction": "up" if pct > 0 else "down"},
+                }, ensure_ascii=False))
+    if lines:
+        EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with EVENTS_FILE.open("a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        print("[prices] %d price_change-Events emittiert" % len(lines))
+    return len(lines)
+
+
 def main():
     print("=" * 60)
     print("[prices] Check24 Preisvergleich-Crawler")
@@ -603,10 +650,24 @@ def main():
         if result:
             all_data["products"][product_key] = result
 
+    # Vorherigen Stand fuer Preis-Aenderungs-Events lesen
+    old_data = None
+    if PRICE_FILE.exists():
+        try:
+            old_data = json.loads(PRICE_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            old_data = None
+
     # Speichern
     PRICE_FILE.parent.mkdir(parents=True, exist_ok=True)
     PRICE_FILE.write_text(json.dumps(all_data, ensure_ascii=False, indent=2), encoding="utf-8")
     print("\n[prices] %s gespeichert (%d KB)" % (PRICE_FILE, PRICE_FILE.stat().st_size // 1024))
+
+    # price_change-Events (nur wenn echte Vergleichsdaten vorliegen)
+    try:
+        emit_price_events(old_data, all_data)
+    except Exception as e:
+        print("[prices] Event-Emission uebersprungen: %s" % str(e)[:80])
 
     # In Dashboard injizieren
     inject_into_dashboard(all_data)

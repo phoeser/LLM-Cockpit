@@ -1840,6 +1840,15 @@ def main():
             pass
     sd["recent_reviews"] = history_for_dash
 
+    # 2026-06-07: Deutsche Berater-Agentur-Reviews ins Bewertungs-Archiv aufnehmen
+    # (Marke "ergo-berater"). Quelle: data/berater_reviews.json (Google-Reviews je Agentur).
+    # Nur deutschsprachige Texte, neueste zuerst, gedeckelt -> sonst sprengt es das Archiv.
+    try:
+        sd["recent_reviews"] += collect_berater_recent(cap=80)
+    except Exception as _e:
+        print("WARN Berater-Reviews fuer Archiv:", str(_e)[:100])
+
+
 
     # ── Event-Emission für Korrelations-Engine ───────────────────────────
     if HAS_EVENTS:
@@ -2063,6 +2072,53 @@ def main():
     print("\nPatched dashboard_template.html")
     print("  %d/10 Brands mit >= 2 Quellen" % success_count)
     print("  SENTIMENT_DATA: %d bytes" % len(new_block))
+
+
+
+def collect_berater_recent(cap=80):
+    """Neueste deutschsprachige Berater-Agentur-Reviews als recent_reviews-Eintraege.
+    Schema passend zum Dashboard (renderRecentReviews): brand, brand_name, source,
+    title, text, score, date, author, crawl_date."""
+    from pathlib import Path as _P
+    import json as _json, re as _re
+    bf = _P("data/berater_reviews.json")
+    if not bf.exists():
+        return []
+    data = _json.loads(bf.read_text(encoding="utf-8"))
+    items = []
+    seen = set()
+    for ag in data.get("reviews", []):
+        for r in (ag.get("reviews") or []):
+            lang = (r.get("language") or "").lower()
+            if not (lang == "de" or lang.startswith("de")):
+                continue
+            txt = (r.get("text") or "").strip()
+            if len(txt) < 25:
+                continue
+            d = str(r.get("time") or "")[:10]
+            if not _re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+                d = ""
+            key = txt[:80].lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            try:
+                score = int(float(r.get("rating"))) if r.get("rating") not in (None, "") else None
+            except (ValueError, TypeError):
+                score = None
+            items.append({
+                "brand": "ergo-berater",
+                "brand_name": "ERGO Berater (Agenturen)",
+                "source": "Google (Berater)",
+                "title": "",
+                "text": txt[:500],
+                "score": score,
+                "date": d,
+                "author": r.get("author") or "",
+                "crawl_date": d,
+            })
+    items.sort(key=lambda x: x.get("date") or "0000-00-00", reverse=True)
+    return items[:cap]
 
 
 if __name__ == "__main__":

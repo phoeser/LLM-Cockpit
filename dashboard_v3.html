@@ -148,7 +148,7 @@
     </div>
     <div class="bg-white rounded-xl p-6 shadow">
       <h3 class="text-lg font-bold text-ergo-dark mb-1">Content-Typen-Verteilung (alle 10 Anbieter)</h3>
-      <p class="text-xs text-gray-500 mb-3">Ratgeber · FAQ · Rechner · Presse · Service · Produktseiten · Sonstige - sortiert nach Gesamt-URLs</p>
+      <p class="text-xs text-gray-500 mb-3">Ratgeber · FAQ · Rechner · Presse · Service · Produktseiten · Sonstige · Konzern (.com) - sortiert nach Gesamt-URLs</p>
       <div class="chart-container"><canvas id="chartContentTypes"></canvas></div>
     </div>
   </div>
@@ -2278,7 +2278,8 @@ function buildOverviewCharts() {
         { label: 'Standorte', data: allKeys.map(k=>PROVIDERS[k].standorte||0), backgroundColor: '#14B8A6' },
         { label: 'Rechtliches', data: allKeys.map(k=>PROVIDERS[k].rechtliches||0), backgroundColor: '#A16207' },
         { label: 'Medien', data: allKeys.map(k=>PROVIDERS[k].medien||0), backgroundColor: '#DB2777' },
-        { label: 'Sonstige', data: allKeys.map(k=>{ const p=PROVIDERS[k]; return (p.sonstige!=null) ? p.sonstige : Math.max(0,(p.total||0)-(p.ratgeber||0)-(p.faq||0)-(p.rechner||0)-(p.presse||0)-(p.glossar||0)-(p.b2b||0)-(p.service||0)-(p.produkt||0)); }), backgroundColor: '#6B7280' }
+        { label: 'Sonstige', data: allKeys.map(k=>{ const p=PROVIDERS[k]; return (p.sonstige!=null) ? p.sonstige : Math.max(0,(p.total||0)-(p.ratgeber||0)-(p.faq||0)-(p.rechner||0)-(p.presse||0)-(p.glossar||0)-(p.b2b||0)-(p.service||0)-(p.produkt||0)); }), backgroundColor: '#6B7280' },
+        { label: 'Konzern (.com)', data: allKeys.map(k=>PROVIDERS[k].konzern||0), backgroundColor: '#334155' }
       ]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } }
@@ -2293,11 +2294,11 @@ function buildProviderCharts() {
     const dataMap = {
       'Ratgeber': p.ratgeber, 'FAQ': p.faq, 'Rechner': p.rechner,
       'Presse': p.presse, 'Glossar': p.glossar, 'Service': p.service,
-      'Video': p.video, 'B2B': p.b2b
+      'Video': p.video, 'B2B': p.b2b, 'Konzern (.com)': p.konzern
     };
     const labels = Object.entries(dataMap).filter(([_,v])=>v!=null && v>0).map(([k,_])=>k);
     const values = Object.entries(dataMap).filter(([_,v])=>v!=null && v>0).map(([_,v])=>v);
-    const colors = ['#DC0028','#003781','#FFD500','#00BFA5','#9333EA','#F97316','#0EA5E9','#8B5CF6'];
+    const colors = ['#DC0028','#003781','#FFD500','#00BFA5','#9333EA','#F97316','#0EA5E9','#8B5CF6','#334155'];
     new Chart(el, {
       type: 'doughnut',
       data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
@@ -3314,7 +3315,7 @@ function buildGeoTab() {
           Object.keys(__pc).forEach(function(k){
             var c = __pc[k];
             if (PROVIDERS[k] && c && c.source === 'crawl' && c.total) {
-              ['total','ratgeber','faq','rechner','presse','glossar','service','produkt','b2b','video','rechtliches','unternehmen','standorte','medien','sonstige'].forEach(function(f){ if (c[f] != null) PROVIDERS[k][f] = c[f]; });
+              ['total','ratgeber','faq','rechner','presse','glossar','service','produkt','b2b','video','rechtliches','unternehmen','standorte','medien','sonstige','konzern'].forEach(function(f){ if (c[f] != null) PROVIDERS[k][f] = c[f]; });
               if (c.sparten) PROVIDERS[k].sparten = c.sparten;
               PROVIDERS[k]._crawl_as_of = c.as_of;
             }

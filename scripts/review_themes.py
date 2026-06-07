@@ -39,7 +39,8 @@ THEMES = [
     "Digitale Services",
     "Sonstiges",
 ]
-BATCH_SIZE = 25
+BATCH_SIZE = 40
+BERATER_CAP = 1500  # nur neueste N Berater-Texte klassifizieren (Kosten/Repraesentativitaet)
 MAX_QUOTE_LEN = 180
 
 
@@ -96,6 +97,13 @@ def collect_reviews():
         except Exception as e:
             print("WARN review_history:", str(e)[:80])
 
+    # Berater-Agentur-Texte auf neueste BERATER_CAP begrenzen (sonst 10k+ Gemini-Calls)
+    berater = [r for r in out if r["brand"] == "ergo-berater"]
+    if len(berater) > BERATER_CAP:
+        berater.sort(key=lambda r: (r.get("date") or "0000-00-00"), reverse=True)
+        keep_ids = {r["id"] for r in berater[:BERATER_CAP]}
+        out = [r for r in out if r["brand"] != "ergo-berater" or r["id"] in keep_ids]
+        print("[themes] Berater-Texte auf %d (neueste) begrenzt" % BERATER_CAP)
     return out
 
 
@@ -228,7 +236,7 @@ def main():
         b["themes"] = dict(sorted(b["themes"].items(), key=lambda kv: -kv[1]["count"]))
         # chronologisch absteigend (None-Daten ans Ende) — fuer Ampel/Trend/Lesen
         b["reviews"].sort(key=lambda r: (r.get("date") or "0000-00-00"), reverse=True)
-        b["reviews"] = b["reviews"][:300]
+        b["reviews"] = b["reviews"][:500]
 
     payload = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

@@ -360,7 +360,7 @@
         <tbody id="berKannibTableBody"></tbody>
       </table>
     </div>
-    <p id="berKannibFoot" class="text-xs text-gray-400 mt-3">Datenquelle: Crawl von 15 zuf&auml;llig ausgew&auml;hlten Berater-Subdomains, hochgerechnet auf gesch&auml;tzt 2.000 Berater. Stand: April 2026.</p>
+    <p id="berKannibFoot" class="text-xs text-gray-400 mt-3">Datenquelle: Crawl von 15 zuf&auml;llig ausgew&auml;hlten Berater-Subdomains, hochgerechnet auf 4.168 Berater mit Subdomain.</p>
   </div>
 
   <!-- ===== WIRKUNG AUF LLM-SICHTBARKEIT + HEBEL ===== -->
@@ -391,7 +391,7 @@
         <h4 class="font-semibold text-red-700 mb-2">&#10060; Problematisch</h4>
         <ul class="text-sm text-gray-700 space-y-2">
           <li>&#8226; <strong>robots: index, follow</strong> &mdash; alle Berater-Seiten werden voll indexiert</li>
-          <li>&#8226; <strong>Identisches Produkt-Template</strong> &mdash; ~2.000 Seiten mit gleichem Content = Duplicate/Thin Content</li>
+          <li>&#8226; <strong>Identisches Produkt-Template</strong> &mdash; ~4.168 Seiten mit gleichem Content = Duplicate/Thin Content</li>
           <li>&#8226; <strong>&laquo;Jetzt berechnen&raquo;-CTAs</strong> auf jeder Berater-Seite leiten in die Abschlussstrecke &mdash; Abschl&uuml;sse werden provisioniert</li>
           <li>&#8226; <strong>Kein Canonical-Tag</strong> auf ergo.de/produkte &mdash; Google weiss nicht, welche Seite die &laquo;richtige&raquo; ist</li>
           <li>&#8226; <strong>275 Links pro Seite</strong> (104 auf ergo.de) &mdash; Link-Equity wird massiv fragmentiert</li>
@@ -3876,7 +3876,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var pick=(sel&&sel.value)||brands[0];
     var bd=rt.by_brand[pick]||{themes:{},total:0,reviews:[]};
     var meta=document.getElementById('rtMeta');
-    if(meta) meta.textContent=(rt.reviews_classified||0)+' von '+(rt.reviews_total||0)+' Texten klassifiziert (Modell: '+(rt.model||'?')+') · Stand: '+((rt.generated_at||'').slice(0,10))+' · ERGO (Marke) = zentrale Profile, vergleichbar mit Wettbewerb · ERGO Berater = Google-Bewertungen der 261 Agentur-Stichprobe (separat).';
+    if(meta) meta.textContent=(rt.reviews_classified||0)+' von '+(rt.reviews_total||0)+' Texten klassifiziert (Modell: '+(rt.model||'?')+') · Stand: '+((rt.generated_at||'').slice(0,10))+' · ERGO (Marke) = zentrale Profile, vergleichbar mit Wettbewerb · ERGO Berater = Google-Bewertungen der Agentur-Stichprobe (separates, großes Sample).';
     var h='';
 
     // ===== Ampel: letzte 20 Bewertungen + Trend (vs. die 20 davor) =====
@@ -3897,6 +3897,19 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       h+='<div class="text-xs text-gray-400">(Vergleich: die 20 Bewertungen davor'+(a0!=null?(', Ø '+a0.toFixed(1)+'★')             :' — noch zu wenige')+')</div></div>';
     }
 
+    // ===== Einordnung: aggregierte Zufriedenheit + Repraesentativitaet =====
+    var __bs=(window.SENTIMENT_DATA&&window.SENTIMENT_DATA.by_source&&window.SENTIMENT_DATA.by_source[pick])||null;
+    var __agg=[];
+    if(__bs){['ekomi','trustpilot','google'].forEach(function(k){var sx=__bs[k];if(sx&&sx.score!=null)__agg.push({l:k.charAt(0).toUpperCase()+k.slice(1),v:sx.score,c:sx.count});});}
+    var __smallN=(bd.total||0)<20;
+    if(pick!=='ergo-berater' && (__smallN||__agg.length)){
+      h+='<div class="text-xs rounded-lg p-3 mb-4" style="background:#fffbeb;border:1px solid #fde68a;color:#92400e">';
+      h+='<b>Einordnung:</b> Die Themen beruhen auf frei-textlichen Google-/Trustpilot-Rezensionen der zentralen Marken-Profile — diese sind <b>über alle Versicherer hinweg beschwerde-lastig</b> (Kunden schreiben meist nur bei Problemen). ';
+      if(__agg.length){h+='Aggregierte Zufriedenheit '+(BN[pick]||pick)+': '+__agg.map(function(a){return a.l+' Ø '+a.v+'★'+(a.c?(' ('+a.c.toLocaleString("de-DE")+')'):'');}).join(' · ')+'. ';}
+      if(__smallN){h+='Die Freitext-Stichprobe ('+(bd.total||0)+') ist klein und <b>nicht repräsentativ</b>. ';}
+      if(pick==='ergo'){h+='Das große, überwiegend positive Sample liegt unter <b>„ERGO Berater (Agenturen)“</b>.';}
+      h+='</div>';
+    }
     // ===== Themen-Balken (klickbar -> Einzelbewertungen des Themas) =====
     var themes=Object.keys(bd.themes||{});
     if(!themes.length){ host.innerHTML=h+'<div class="text-sm text-gray-400 py-4">Keine klassifizierten Texte für diese Marke.</div>'; return; }

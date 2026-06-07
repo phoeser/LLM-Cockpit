@@ -412,7 +412,7 @@
 
   <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-4 mb-6">
     <strong class="text-yellow-900">Gesch&auml;tzter Impact auf Direktvertrieb</strong>
-    <p class="text-sm text-gray-700 mt-2">Bei ~2.000 Berater-Seiten mit je &Oslash; 17 Zahnzusatz-Nennungen und &laquo;Jetzt berechnen&raquo;-CTA: Wenn nur 5% der organischen Zahnzusatz-Besucher &uuml;ber eine Berater-Seite statt &uuml;ber ergo.de/zahnzusatzversicherung einsteigen, bedeutet das bei gesch&auml;tzt 10.000 monatlichen Visits eine Umleitung von ~500 potenziellen Direkt-Abschl&uuml;ssen in den provisionsbasierten Kanal. Auch f&uuml;r LLM-Antworten besteht das Risiko: ChatGPT/Gemini k&ouml;nnten eine Berater-Seite statt die Hauptproduktseite als Quelle verwenden.</p>
+    <p class="text-sm text-gray-700 mt-2" id="berImpactText">Bei 4.168 Berater-Subdomains mit je &Oslash; 93 Zahnzusatz-Nennungen und &laquo;Jetzt berechnen&raquo;-CTA: Wenn nur 5% der organischen Zahnzusatz-Besucher &uuml;ber eine Berater-Seite statt &uuml;ber ergo.de/zahnzusatzversicherung einsteigen, bedeutet das bei gesch&auml;tzt 10.000 monatlichen Visits eine Umleitung von ~500 potenziellen Direkt-Abschl&uuml;ssen in den provisionsbasierten Kanal. Auch f&uuml;r LLM-Antworten besteht das Risiko: ChatGPT/Gemini k&ouml;nnten eine Berater-Seite statt die Hauptproduktseite als Quelle verwenden.</p>
   </div>
 
   <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
@@ -1830,7 +1830,9 @@ function renderRatingsTables() {
       html += '</tr>';
     });
 
-    html += '</tbody></table></div></div>';
+    html += '</tbody></table></div>';
+    if (__ext && __ext._hinweis) html += '<p class="text-xs text-gray-400 mt-2">\u2139\ufe0f ' + __ext._hinweis + '</p>';
+    html += '</div>';
     container.innerHTML = html;
   });
 }
@@ -3134,15 +3136,17 @@ function buildGeoTab() {
         const color = EC[ev.event_type] || '#999';
         const time = (ev.timestamp||'').substring(11,16);
         const d = ev.detail || {};
+        var srcUrl = d.url || ev.url || '';
+        var srcLink = srcUrl ? (/^https?:\/\//.test(srcUrl) ? srcUrl : ('https://'+srcUrl)) : '';
         let desc = '';
         if (d.title) desc = d.title;
-        else if (d.url) desc = d.url.replace(/https?:\/\/(www\.)?/, '').substring(0,70);
+        else if (srcUrl) desc = srcUrl.replace(/https?:\/\/(www\.)?/, '').substring(0,70);
         else if (d.metric === 'total_subdomains') desc = 'Subdomains: ' + (d.old_count||0) + ' → ' + (d.new_count||0);
         else if (d.metric === 'average_rating') desc = 'Rating: ' + (d.old_value||0) + ' → ' + (d.new_value||0);
         else if (d.similarity !== undefined) desc = 'Similarity: ' + ((d.similarity||0)*100).toFixed(1) + '% | +' + (d.added_lines||0) + '/-' + (d.removed_lines||0) + ' Zeilen';
 
         var det = '';
-        if (d.url) det += '<div class="mb-1"><a href="' + d.url + '" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">' + d.url + '</a></div>';
+        if (srcLink) det += '<div class="mb-1"><a href="' + srcLink + '" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">\ud83d\udd17 ' + srcLink + '</a></div>';
         var al = d.added_lines, rl = d.removed_lines;
         if (Array.isArray(al) || Array.isArray(rl)) {
           det += '<div class="text-xs font-mono bg-gray-50 rounded p-2 max-h-56 overflow-auto">';
@@ -3171,6 +3175,7 @@ function buildGeoTab() {
         sh += '</div>';
         if (desc) sh += '<p class="text-xs text-gray-500 truncate mt-0.5">' + desc + '</p>';
         sh += '</div>';
+        if (srcLink) sh += '<a href="' + srcLink + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-blue-600 hover:underline flex-shrink-0 mt-0.5" title="Quelle \u00f6ffnen">\u2197 Quelle</a>';
         sh += '<span class="text-xs text-gray-400 flex-shrink-0">' + time + '</span>';
         sh += '</div>';
         sh += '<div id="' + eid + '" class="hidden px-8 pb-2">' + det + '</div>';
@@ -3798,7 +3803,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       press_mention:['Pressemitteilungen','Presse-Frequenz erhöhen (Newsroom)'],
       news_mention:['News-Erwähnungen (extern)','PR: externe Berichterstattung treiben'],
       review_change:['Bewertungs-Änderungen','Bewertungsmanagement (Google/Trustpilot/Check24)'],
-      review_volume:['Bewertungs-Volumen','Aktiv Kundenbewertungen einsammeln']
+      review_volume:['Bewertungs-Volumen (neue Reviews)','Aktiv Kundenbewertungen einsammeln']
     };
     var counts={};
     evs.forEach(function(e){
@@ -3809,6 +3814,15 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var d=String(e.timestamp||'').slice(0,10);
       if(d<cutoff)return;
       (counts[t]||(counts[t]={}))[b]=(counts[t][b]||0)+1;
+    });
+    // 2026-06-07: Neue Einzelbewertungen im Fenster als reale Review-Aktivität ergänzen
+    // (Aggregat-Delta-Events allein zeigten für ERGO faelschlich 0). Quelle: recent_reviews.
+    var __K2N={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
+    var __rr=(window.SENTIMENT_DATA&&window.SENTIMENT_DATA.recent_reviews)||[];
+    __rr.forEach(function(r){
+      var nm=__K2N[r.brand]; if(!nm) return;
+      var dd=String(r.crawl_date||r.date||'').slice(0,10); if(!dd||dd<cutoff) return;
+      (counts['review_volume']||(counts['review_volume']={}))[nm]=(counts['review_volume'][nm]||0)+1;
     });
     var impact=(window.CORRELATION_IMPACT&&window.CORRELATION_IMPACT.impact)||{};
     var conf=(window.CORRELATION_IMPACT&&window.CORRELATION_IMPACT.confidence)||null;
@@ -3839,7 +3853,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         +'</tr>';
     }).join('');
     var note=document.getElementById('driverGapNote');
-    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. Seiten-Tracking: ERGO, Allianz, AXA, Generali, HUK-Coburg.';
+    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Bewertungs-Volumen" zählt neue Einzelbewertungen aus dem Bewertungs-Archiv (Quellenabdeckung variiert je Marke). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. Seiten-Tracking: ERGO, Allianz, AXA, Generali, HUK-Coburg.';
   };
 
   // ===== Review-Themen-Cluster + Ampel + Einzelbewertungen (data/review_themes.json) =====
@@ -3964,6 +3978,13 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var __kat=(__td.produktkatalog||0)+(__td.minimal||0);
       var __pct=__ok?Math.round(__kat/__ok*100):0;
       __intro.innerHTML='Stichproben-Analyse von '+__ok+' Berater-Subdomains: <strong>'+__pct+'% sind Produkt-Kataloge bzw. Standard-Templates</strong> mit Online-Abschluss-CTAs — sie konkurrieren direkt mit ergo.de/produkte um dieselben Keywords.';
+    }
+    var __imp=document.getElementById('berImpactText');
+    var __cz=d.typology && d.typology.cannibalization && d.typology.cannibalization.zahnzusatz;
+    if(__imp && __cz){
+      var __zp=(d.totals||{}).with_subdomain||d.typology.cannibalization_base||4168;
+      var __zm=Math.round(__cz.avg_mentions||93);
+      __imp.innerHTML='Bei '+__zp.toLocaleString('de-DE')+' Berater-Subdomains mit je \u00d8 '+__zm+' Zahnzusatz-Nennungen und \u00abJetzt berechnen\u00bb-CTA: Wenn nur 5\u202f% der organischen Zahnzusatz-Besucher \u00fcber eine Berater-Seite statt \u00fcber ergo.de/zahnzusatzversicherung einsteigen, bedeutet das bei gesch\u00e4tzt 10.000 monatlichen Visits eine Umleitung von ~500 potenziellen Direkt-Abschl\u00fcssen in den provisionsbasierten Kanal. Auch f\u00fcr LLM-Antworten besteht das Risiko: ChatGPT/Gemini k\u00f6nnten eine Berater-Seite statt die Hauptproduktseite als Quelle verwenden.';
     }
   };
 })();

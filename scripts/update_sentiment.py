@@ -219,9 +219,9 @@ def post_json(url, data_dict, timeout=15):
 
 
 # ── 1. TRUSTPILOT ────────────────────────────────────────────────────────────
-def fetch_trustpilot_html(domain, timeout=20):
+def fetch_trustpilot_html(domain, timeout=20, page=1):
     """Spezieller Fetch fuer Trustpilot mit realistischen Browser-Headers."""
-    url = "https://de.trustpilot.com/review/" + domain
+    url = "https://de.trustpilot.com/review/" + domain + ("" if page <= 1 else ("?page=%d" % page))
     headers = {
         "User-Agent": UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -258,6 +258,70 @@ def fetch_trustpilot_html(domain, timeout=20):
                 _time.sleep(2 + attempt * 2)
     return None
 
+def _tp_extract_reviews(html, cap=40):
+    """Trustpilot-Einzelreviews robust extrahieren: zuerst __NEXT_DATA__
+    (props.pageProps.reviews — volle Texte ueber alle Bewertungsstufen),
+    sonst JSON-LD review[]-Fallback."""
+    out = []
+    seen = set()
+    def _add(title, body, rating, date, author):
+        title = (title or "").strip(); body = (body or "").strip()
+        if not (title or body):
+            return
+        key = (body[:80] or title[:60]).lower()
+        if key in seen:
+            return
+        seen.add(key)
+        try:
+            sc = float(rating) if rating not in (None, "") else None
+        except (ValueError, TypeError):
+            sc = None
+        out.append({"title": title[:120], "text": body[:400], "score": sc,
+                    "date": (date or "")[:10], "author": author or ""})
+    # 1) __NEXT_DATA__
+    try:
+        m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.DOTALL)
+        if m:
+            nd = json.loads(m.group(1))
+            revs = (((nd.get("props") or {}).get("pageProps") or {}).get("reviews")) or []
+            for rv in revs:
+                if not isinstance(rv, dict):
+                    continue
+                dts = rv.get("dates") or {}
+                cons = rv.get("consumer") or {}
+                _add(rv.get("title"), rv.get("text"), rv.get("rating"),
+                     dts.get("publishedDate") or dts.get("experiencedDate") or "",
+                     cons.get("displayName") if isinstance(cons, dict) else "")
+    except Exception:
+        pass
+    # 2) JSON-LD Fallback
+    if not out:
+        try:
+            for block in re.findall(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.DOTALL):
+                try:
+                    data = json.loads(block)
+                except Exception:
+                    continue
+                rvs = None
+                if isinstance(data, dict) and "review" in data:
+                    rvs = data["review"]
+                elif isinstance(data, dict) and "@graph" in data:
+                    for item in data["@graph"]:
+                        if isinstance(item, dict) and "review" in item:
+                            rvs = item["review"]; break
+                if rvs and isinstance(rvs, list):
+                    for rv in rvs:
+                        rr = rv.get("reviewRating") if isinstance(rv, dict) else None
+                        rating = rr.get("ratingValue") if isinstance(rr, dict) else None
+                        au = rv.get("author") if isinstance(rv, dict) else None
+                        _add(rv.get("name") or rv.get("headline"), rv.get("reviewBody"),
+                             rating, (rv.get("datePublished") or "")[:10],
+                             au.get("name") if isinstance(au, dict) else "")
+        except Exception:
+            pass
+    return out[:cap]
+
+
 def crawl_trustpilot(domain):
     """Trustpilot-Score via urllib (JSON-LD aus HTML) + neueste Reviews."""
     url = "https://de.trustpilot.com/review/" + domain
@@ -267,47 +331,23 @@ def crawl_trustpilot(domain):
     m_score = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
     m_count = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
 
-    # Neueste Reviews aus JSON-LD extrahieren
-    recent = []
-    try:
-        ld_blocks = re.findall(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.DOTALL)
-        for block in ld_blocks:
-            try:
-                data = json.loads(block)
-                reviews_list = None
-                if isinstance(data, dict) and "review" in data:
-                    reviews_list = data["review"]
-                elif isinstance(data, dict) and "@graph" in data:
-                    for item in data["@graph"]:
-                        if isinstance(item, dict) and "review" in item:
-                            reviews_list = item["review"]
-                            break
-                if reviews_list and isinstance(reviews_list, list):
-                    for rv in reviews_list[:8]:
-                        r_title = rv.get("name", rv.get("headline", ""))
-                        r_body = rv.get("reviewBody", "")
-                        r_rating = None
-                        if "reviewRating" in rv and isinstance(rv["reviewRating"], dict):
-                            try:
-                                r_rating = float(rv["reviewRating"].get("ratingValue", 0))
-                            except (ValueError, TypeError):
-                                pass
-                        r_date = rv.get("datePublished", "")[:10]
-                        r_author = ""
-                        if "author" in rv and isinstance(rv["author"], dict):
-                            r_author = rv["author"].get("name", "")
-                        if r_title or r_body:
-                            recent.append({
-                                "title": r_title[:120],
-                                "text": r_body[:200],
-                                "score": r_rating,
-                                "date": r_date,
-                                "author": r_author,
-                            })
-            except (json.JSONDecodeError, KeyError, TypeError):
-                continue
-    except Exception:
-        pass
+    # Neueste Reviews extrahieren (Seite 1) + bis zu 2 Folgeseiten fuer groessere Stichprobe
+    recent = _tp_extract_reviews(html)
+    seen_txt = {(r.get("text") or r.get("title") or "")[:80].lower() for r in recent}
+    for _pg in (2, 3):
+        try:
+            h2 = fetch_trustpilot_html(domain, page=_pg)
+        except Exception:
+            h2 = None
+        if not h2:
+            break
+        added = 0
+        for r in _tp_extract_reviews(h2):
+            k = (r.get("text") or r.get("title") or "")[:80].lower()
+            if k and k not in seen_txt:
+                seen_txt.add(k); recent.append(r); added += 1
+        if added == 0:
+            break
 
     if m_score:
         return {
@@ -370,35 +410,8 @@ def crawl_trustpilot_browser(brands_data):
                 m_s = re.search(r'"ratingValue":\s*"?([\d.]+)"?', html)
                 m_c = re.search(r'"reviewCount":\s*"?(\d+)"?', html)
                 if m_s:
-                    # Reviews extrahieren
-                    recent = []
-                    try:
-                        ld_blocks = re.findall(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.DOTALL)
-                        for block in ld_blocks:
-                            try:
-                                data = json.loads(block)
-                                rvs = None
-                                if isinstance(data, dict) and "review" in data:
-                                    rvs = data["review"]
-                                elif isinstance(data, dict) and "@graph" in data:
-                                    for item in data["@graph"]:
-                                        if isinstance(item, dict) and "review" in item:
-                                            rvs = item["review"]
-                                            break
-                                if rvs and isinstance(rvs, list):
-                                    for rv in rvs[:8]:
-                                        r_title = rv.get("name", rv.get("headline", ""))
-                                        r_body = rv.get("reviewBody", "")
-                                        r_rating = None
-                                        if "reviewRating" in rv and isinstance(rv["reviewRating"], dict):
-                                            try: r_rating = float(rv["reviewRating"].get("ratingValue", 0))
-                                            except: pass
-                                        r_date = rv.get("datePublished", "")[:10]
-                                        r_author = rv.get("author", {}).get("name", "") if isinstance(rv.get("author"), dict) else ""
-                                        if r_title or r_body:
-                                            recent.append({"title": r_title[:120], "text": r_body[:200], "score": r_rating, "date": r_date, "author": r_author})
-                            except: continue
-                    except: pass
+                    # Reviews extrahieren (__NEXT_DATA__ + JSON-LD-Fallback)
+                    recent = _tp_extract_reviews(html)
                     results[key] = {
                         "score": round(float(m_s.group(1)), 1),
                         "count": int(m_c.group(1)) if m_c else None,

@@ -66,7 +66,7 @@ def gemini_research(product_name: str, versicherer_names: list) -> dict:
 
     try:
         # Gemini 2.0 Flash mit Google Search Grounding
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s" % GEMINI_API_KEY
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=%s" % GEMINI_API_KEY
         payload = json.dumps({
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {

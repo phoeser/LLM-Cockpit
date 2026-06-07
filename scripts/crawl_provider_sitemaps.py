@@ -229,9 +229,17 @@ def crawl_provider(key, cfg):
     if all_urls:
         counts = {t: 0 for t, _ in CONTENT_RULES}
         counts["sonstige"] = 0
+        counts["konzern"] = 0
         sparten = {sp: 0 for sp in SPARTEN_RULES}
         sonstige_urls = []
         for u in all_urls:
+            # 2026-06-06: Seiten der internationalen Konzerndomain (.com) als eigene
+            # Gruppe "Konzern (Group)" ausweisen statt in die DE-Content-Kategorien
+            # zu mischen (gilt fuer alle Anbieter mit Konzern-.com).
+            _h = re.match(r"https?://([^/]+)", u)
+            if _h and _h.group(1).lower().endswith(".com"):
+                counts["konzern"] += 1
+                continue
             c = classify(u)
             counts[c] += 1
             if c == "sonstige":
@@ -258,6 +266,7 @@ def crawl_provider(key, cfg):
             "rechtliches": counts["rechtliches"], "unternehmen": counts["unternehmen"],
             "standorte": counts["standorte"], "medien": counts["medien"],
             "sonstige": counts["sonstige"],
+            "konzern": counts["konzern"],
             "sonstige_top_segments": top_segs,
             "sonstige_sample": sonstige_urls[:50],
             "sparten": dict(sorted(sparten.items(), key=lambda kv: -kv[1])),

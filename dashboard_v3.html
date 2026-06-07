@@ -363,6 +363,27 @@
     <p id="berKannibFoot" class="text-xs text-gray-400 mt-3">Datenquelle: Crawl von 15 zuf&auml;llig ausgew&auml;hlten Berater-Subdomains, hochgerechnet auf gesch&auml;tzt 2.000 Berater. Stand: April 2026.</p>
   </div>
 
+  <!-- ===== WIRKUNG AUF LLM-SICHTBARKEIT + HEBEL ===== -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">Wirkung auf die LLM-Sichtbarkeit von ergo.de &mdash; und was hilft</h3>
+    <p class="text-sm text-gray-700 mb-4">Rund <strong>4.168 Vermittler-Subdomains</strong> (gesch&auml;tzt 42.000&ndash;62.500 Unterseiten) spiegeln zu <strong>100&nbsp;%</strong> dieselben Produktthemen wie ergo.de &mdash; Haftpflicht (&#216;&nbsp;152 Nennungen/Seite), Reise (101), Zahnzusatz (93). Statt einer starken Autorit&auml;ts-Domain verteilt sich ERGOs Content auf tausende quasi-identische Templates. F&uuml;r generative KI wirkt das <strong>verw&auml;ssernd</strong>: LLMs b&uuml;ndeln Vertrauen und Zitate auf <em>eine</em> klare Quelle &mdash; zersplitterte Duplikate schw&auml;chen das Signal und kosten ergo.de potenziell Share of Voice.</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div class="text-sm font-bold text-emerald-800 mb-1">1. ergo.de kanonisieren</div>
+        <div class="text-xs text-gray-600">Berater-Produktseiten per <code>rel=canonical</code> auf die ergo.de-Originalseite verweisen. B&uuml;ndelt Ranking- und Zitiersignale auf die Hauptdomain, statt sie zu streuen.</div>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div class="text-sm font-bold text-emerald-800 mb-1">2. Berater-Seiten differenzieren</div>
+        <div class="text-xs text-gray-600">Standard-Produktkatalog durch <strong>lokalen, individuellen Content</strong> ersetzen (Person, Standort, Beratung). Reduziert Duplicate-Content und macht jede Seite eigenst&auml;ndig wertvoll.</div>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div class="text-sm font-bold text-emerald-800 mb-1">3. ergo.de-Assets st&auml;rken</div>
+        <div class="text-xs text-gray-600">Einzigartige, zitierf&auml;hige Inhalte auf ergo.de aufbauen (Glossar A&ndash;Z, FAQ mit Schema-Markup, Rechner), die die Vermittlerseiten nicht haben &mdash; macht ergo.de zur bevorzugten KI-Quelle.</div>
+      </div>
+    </div>
+    <p class="text-xs text-gray-400 mt-3">Lesart: Kannibalisierung ist hier ein Hebel mit doppelter Wirkung &mdash; weniger Streuung st&auml;rkt ergo.de, gezielte Differenzierung macht aus Risiko lokalen Mehrwert.</p>
+  </div>
+
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-3">Technische Befunde</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1036,6 +1057,7 @@ function providerTemplate(key) {
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Standorte</div><div class="text-2xl font-bold text-ergo-dark">${num(p.standorte)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechtliches</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechtliches)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Medien</div><div class="text-2xl font-bold text-ergo-dark">${num(p.medien)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow" title="Internationale Konzern-Domain (.com) — separat ausgewiesen, kein deutsches Produktgeschäft"><div class="text-xs text-gray-500 uppercase">Konzern (.com)</div><div class="text-2xl font-bold text-gray-500">${num(p.konzern)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.sonstige != null ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0)))}</div></div>
     </div>
@@ -1177,6 +1199,7 @@ function providerTemplate(key) {
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Standorte</div><div class="text-2xl font-bold text-ergo-dark">${num(p.standorte)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechtliches</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechtliches)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Medien</div><div class="text-2xl font-bold text-ergo-dark">${num(p.medien)}</div></div>
+      <div class="kpi-card bg-white rounded-xl p-4 shadow" title="Internationale Konzern-Domain (.com) — separat ausgewiesen, kein deutsches Produktgeschäft"><div class="text-xs text-gray-500 uppercase">Konzern (.com)</div><div class="text-2xl font-bold text-gray-500">${num(p.konzern)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.sonstige != null ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0)))}</div></div>
     </div>
@@ -3104,7 +3127,8 @@ function buildGeoTab() {
       sh += '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">' + evts.length + ' Events</span>';
       sh += '</div>';
       sh += '<div class="space-y-1.5">';
-      evts.forEach(ev => {
+      evts.forEach((ev, _ei) => {
+        const eid = 'csv_' + day.replace(/-/g,'') + '_' + _ei;
         const icon = EI[ev.event_type] || '📌';
         const color = EC[ev.event_type] || '#999';
         const time = (ev.timestamp||'').substring(11,16);
@@ -3116,7 +3140,27 @@ function buildGeoTab() {
         else if (d.metric === 'average_rating') desc = 'Rating: ' + (d.old_value||0) + ' → ' + (d.new_value||0);
         else if (d.similarity !== undefined) desc = 'Similarity: ' + ((d.similarity||0)*100).toFixed(1) + '% | +' + (d.added_lines||0) + '/-' + (d.removed_lines||0) + ' Zeilen';
 
-        sh += '<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors border-l-3" style="border-left:3px solid ' + color + '">';
+        var det = '';
+        if (d.url) det += '<div class="mb-1"><a href="' + d.url + '" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">' + d.url + '</a></div>';
+        var al = d.added_lines, rl = d.removed_lines;
+        if (Array.isArray(al) || Array.isArray(rl)) {
+          det += '<div class="text-xs font-mono bg-gray-50 rounded p-2 max-h-56 overflow-auto">';
+          (rl||[]).slice(0,30).forEach(function(l){ det += '<div class="text-red-700">- ' + (''+l).replace(/[<>&]/g,'') + '</div>'; });
+          (al||[]).slice(0,30).forEach(function(l){ det += '<div class="text-emerald-700">+ ' + (''+l).replace(/[<>&]/g,'') + '</div>'; });
+          det += '</div>';
+        }
+        var skip = {added_lines:1, removed_lines:1, url:1};
+        var fields = Object.keys(d).filter(function(k){ return !skip[k] && d[k]!=null && typeof d[k]!=='object'; });
+        if (fields.length) {
+          det += '<div class="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-600">';
+          fields.forEach(function(k){ det += '<span><b>' + k + ':</b> ' + (''+d[k]).replace(/[<>&]/g,'').slice(0,60) + '</span>'; });
+          det += '</div>';
+        }
+        if (ev.source) det += '<div class="mt-1 text-xs text-gray-400">Quelle: ' + ev.source + (ev.crawler?(' · '+ev.crawler):'') + '</div>';
+        if (!det) det = '<div class="text-xs text-gray-400">Keine weiteren Details gespeichert.</div>';
+        sh += '<div style="border-left:3px solid ' + color + '">';
+        sh += '<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="(function(el){var x=document.getElementById(\''+eid+'\');var a=el.querySelector(\'.cs-arr\');if(x){var h=x.classList.toggle(\'hidden\');if(a)a.textContent=h?\'▸\':\'▾\';}})(this)">';
+        sh += '<span class="cs-arr text-gray-400 flex-shrink-0 mt-0.5 text-xs">▸</span>';
         sh += '<span class="text-base flex-shrink-0 mt-0.5">' + icon + '</span>';
         sh += '<div class="flex-1 min-w-0">';
         sh += '<div class="flex items-center gap-2 flex-wrap">';
@@ -3127,6 +3171,8 @@ function buildGeoTab() {
         if (desc) sh += '<p class="text-xs text-gray-500 truncate mt-0.5">' + desc + '</p>';
         sh += '</div>';
         sh += '<span class="text-xs text-gray-400 flex-shrink-0">' + time + '</span>';
+        sh += '</div>';
+        sh += '<div id="' + eid + '" class="hidden px-8 pb-2">' + det + '</div>';
         sh += '</div>';
       });
       sh += '</div></div>';

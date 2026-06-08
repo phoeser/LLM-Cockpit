@@ -27,6 +27,45 @@ def _next_id(brand: str, event_type: str) -> str:
     return f"evt_{today}_{brand.lower().replace(' ', '_').replace('-', '_')}_{event_type}_{_seq:03d}"
 
 
+_SEEN_KEYS = None
+
+
+def _load_seen_keys():
+    """Lädt einmalig die vorhandenen Dedup-Schlüssel (Presse/News je URL),
+    um tägliche Re-Emissionen desselben Artikels zu verhindern."""
+    global _SEEN_KEYS
+    if _SEEN_KEYS is not None:
+        return _SEEN_KEYS
+    _SEEN_KEYS = set()
+    try:
+        if EVENTS_FILE.exists():
+            for line in EVENTS_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                k = _dedup_key(e)
+                if k:
+                    _SEEN_KEYS.add(k)
+    except Exception:
+        pass
+    return _SEEN_KEYS
+
+
+def _dedup_key(event):
+    """Stabiler Schlüssel nur für Presse/News (ein Artikel = ein Event, über alle Tage).
+    Andere Typen: kein Dedup (None) -> werden immer geschrieben."""
+    t = event.get("event_type")
+    if t in ("press_mention", "news_mention"):
+        url = event.get("url") or (event.get("detail") or {}).get("url") or (event.get("detail") or {}).get("title")
+        if url:
+            return (t, event.get("brand"), url)
+    return None
+
+
 def emit_event(
     event_type: str,
     brand: str,
@@ -76,6 +115,14 @@ def emit_event(
         # Relativ zu CWD (github-deployment/)
         pass
     events_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Idempotenz: Presse/News-Artikel nur EINMAL (verhindert tägliche Re-Emission)
+    _key = _dedup_key(event)
+    if _key is not None:
+        _seen = _load_seen_keys()
+        if _key in _seen:
+            return None
+        _seen.add(_key)
 
     with open(events_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(event, ensure_ascii=False) + "\n")

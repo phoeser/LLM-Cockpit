@@ -220,6 +220,128 @@ def confidence(n_measure_days):
     return ("belastbar", "Ausreichend Messpunkte fuer eine belastbare Aussage.")
 
 
+
+def _content_key(e):
+    """Stabiler Schluessel zur Dedup von Wieder-Emissionen.
+    Presse/News: ein Artikel = ein Event (ueber alle Tage). Sonst: pro Tag."""
+    d = e.get("detail") or {}
+    cid = e.get("url") or d.get("url") or d.get("title") or e.get("id")
+    t = e.get("event_type")
+    if t in ("press_mention", "news_mention"):
+        return (t, e.get("brand"), cid)
+    return (t, e.get("brand"), cid, _day(e.get("timestamp")))
+
+
+def dedup_impact_events(events):
+    """Behaelt je content_key die FRUEHESTE Instanz (entfernt taegliche Re-Emissionen
+    von Presse/News etc.). Liefert nur IMPACT_TYPES-Events zurueck."""
+    seen = {}
+    for e in events:
+        t = e.get("event_type")
+        if t not in IMPACT_TYPES:
+            continue
+        if e.get("crawler") == "update_domain_footprint" and t in ("page_new", "page_change"):
+            continue
+        if not e.get("brand") or not _day(e.get("timestamp")):
+            continue
+        k = _content_key(e)
+        ts = e.get("timestamp", "")
+        if k not in seen or ts < seen[k].get("timestamp", ""):
+            seen[k] = e
+    return list(seen.values())
+
+
+def _solve_ridge(Xs, Y, lam):
+    """Ridge per Normalengleichung (X'X + lam I) b = X'Y, Gauss-Jordan."""
+    n = len(Xs); m = len(Xs[0]) if Xs else 0
+    if n == 0 or m == 0:
+        return [0.0] * m
+    A = [[sum(Xs[i][a] * Xs[i][b] for i in range(n)) + (lam if a == b else 0.0)
+          for b in range(m)] for a in range(m)]
+    bv = [sum(Xs[i][a] * Y[i] for i in range(n)) for a in range(m)]
+    M = [A[k][:] + [bv[k]] for k in range(m)]
+    for c in range(m):
+        piv = max(range(c, m), key=lambda r: abs(M[r][c]))
+        M[c], M[piv] = M[piv], M[c]
+        pv = M[c][c]
+        if abs(pv) < 1e-12:
+            continue
+        M[c] = [v / pv for v in M[c]]
+        for r in range(m):
+            if r != c:
+                fct = M[r][c]
+                M[r] = [M[r][k] - fct * M[c][k] for k in range(m + 1)]
+    return [M[i][m] for i in range(m)]
+
+
+def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1):
+    """Regularisierte Panel-Regression (Marken-Fixed-Effects via Within-Transform):
+    schaetzt ALLE Event-Typen GLEICHZEITIG -> isolierter Effekt je Kategorie,
+    kontrolliert um die jeweils anderen Typen + markeneigene Trends.
+    95%-KI per Bootstrap (robust bei kleiner Stichprobe)."""
+    import random as _rnd
+    rnd = _rnd.Random(seed)
+    brands = sorted({p["brand"] for p in points_raw})
+    use = [t for t in IMPACT_TYPES
+           if sum(1 for p in points_raw if p["x"].get(t, 0) > 0) >= min_with]
+    if len(points_raw) < 8 or len(brands) < 2 or not use:
+        return {"available": False,
+                "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
+                "n_points": len(points_raw), "n_brands": len(brands),
+                "types_used": use, "coefficients": {}}
+    # Within-Brand-Transform (= Marken-Fixed-Effects)
+    from collections import defaultdict as _dd
+    by = _dd(list)
+    for p in points_raw:
+        by[p["brand"]].append(p)
+    ymean = {b: sum(p["y"] for p in ps) / len(ps) for b, ps in by.items()}
+    xmean = {b: {t: sum(p["x"].get(t, 0) for p in ps) / len(ps) for t in use}
+             for b, ps in by.items()}
+    X, Y = [], []
+    for p in points_raw:
+        Y.append(p["y"] - ymean[p["brand"]])
+        X.append([p["x"].get(t, 0) - xmean[p["brand"]][t] for t in use])
+    m = len(use)
+    sd = []
+    for j in range(m):
+        col = [X[i][j] for i in range(len(X))]
+        v = sum(c * c for c in col) / max(len(X) - 1, 1)
+        sd.append(v ** 0.5 if v > 1e-12 else 1.0)
+    Xs = [[X[i][j] / sd[j] for j in range(m)] for i in range(len(X))]
+    lam = len(Xs) * 0.5
+    beta = [b / sd[j] for j, b in enumerate(_solve_ridge(Xs, Y, lam))]
+    # Bootstrap-KI
+    boots = [[] for _ in range(m)]
+    idx = list(range(len(Xs)))
+    for _ in range(bootstrap):
+        smp = [rnd.choice(idx) for _ in idx]
+        bs = _solve_ridge([Xs[i] for i in smp], [Y[i] for i in smp], lam)
+        for j in range(m):
+            boots[j].append(bs[j] / sd[j])
+    coeffs = {}
+    for j, t in enumerate(use):
+        v = sorted(boots[j])
+        lo = v[int(0.025 * len(v))]; hi = v[min(int(0.975 * len(v)), len(v) - 1)]
+        nw = sum(1 for p in points_raw if p["x"].get(t, 0) > 0)
+        coeffs[t] = {
+            "label": TYPE_LABEL.get(t, t),
+            "coef_pp_per_event_day": round(beta[j], 4),
+            "ci95_low": round(lo, 4), "ci95_high": round(hi, 4),
+            "significant": bool(lo > 0 or hi < 0),
+            "n_with_event": nw,
+        }
+    coeffs = dict(sorted(coeffs.items(), key=lambda kv: -abs(kv[1]["coef_pp_per_event_day"])))
+    excluded = [t for t in IMPACT_TYPES if t not in use]
+    return {"available": True,
+            "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+            "lambda": round(lam, 2), "bootstrap": bootstrap,
+            "n_points": len(points_raw), "n_brands": len(brands),
+            "types_used": use, "types_excluded_too_few": excluded,
+            "coefficients": coeffs,
+            "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). "
+                    "Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."}
+
+
 def analyze(events, llm=None, brand_filter=None):
     # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
     sov = build_sov_series_from_history(llm=llm)
@@ -234,20 +356,12 @@ def analyze(events, llm=None, brand_filter=None):
     measure_days = sorted(mdays)
     conf_label, conf_note = confidence(len(measure_days))
 
-    # Event-Counts je (brand, day, type)
+    # Event-Counts je (brand, day, type) — DEDUPLIZIERT (Re-Emissionen entfernt)
     counts = {}
-    for e in events:
+    for e in dedup_impact_events(events):
         t = e.get("event_type")
-        if t not in IMPACT_TYPES:
-            continue
-        # Review-Fix 2026-06-04: historische Subdomain-Events des alten
-        # Domain-Footprint-Crawlers sind KEINE Inhaltsseiten -> ausschliessen
-        if e.get("crawler") == "update_domain_footprint" and t in ("page_new", "page_change"):
-            continue
         b = e.get("brand")
         day = _day(e.get("timestamp"))
-        if not b or not day:
-            continue
         counts.setdefault(b, {}).setdefault(day, {})
         counts[b][day][t] = counts[b][day].get(t, 0) + 1
 
@@ -338,9 +452,13 @@ def analyze(events, llm=None, brand_filter=None):
     # nach |Effekt| sortiert
     ordered = dict(sorted(results.items(),
                           key=lambda kv: -abs(kv[1]["avg_sov_effect_pp"] or 0)))
+    multivar = multivariate_impact(points_raw) if not brand_filter else {
+        "available": False, "note": "Multivariat nur ueber alle Marken (Within-FE).",
+        "coefficients": {}}
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE)",
+        "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
+        "multivariate": multivar,
         "sov_source": sov_source,
         "lag_days": LAG_DAYS,
         "sov_measure_days": len(measure_days),

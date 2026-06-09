@@ -284,7 +284,7 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1):
     brands = sorted({p["brand"] for p in points_raw})
     use = [t for t in IMPACT_TYPES
            if sum(1 for p in points_raw if p["x"].get(t, 0) > 0) >= min_with]
-    if len(points_raw) < 8 or len(brands) < 2 or not use:
+    if len(points_raw) < 8 or len(brands) < 1 or not use:
         return {"available": False,
                 "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
                 "n_points": len(points_raw), "n_brands": len(brands),
@@ -452,9 +452,8 @@ def analyze(events, llm=None, brand_filter=None):
     # nach |Effekt| sortiert
     ordered = dict(sorted(results.items(),
                           key=lambda kv: -abs(kv[1]["avg_sov_effect_pp"] or 0)))
-    multivar = multivariate_impact(points_raw) if not brand_filter else {
-        "available": False, "note": "Multivariat nur ueber alle Marken (Within-FE).",
-        "coefficients": {}}
+    # Multivariat: pooled (alle Marken, Within-FE) ODER einzelmarken-zentriert bei brand_filter.
+    multivar = multivariate_impact(points_raw, min_with=(4 if brand_filter else 6))
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
@@ -482,7 +481,7 @@ def main():
     for llm in list_llms_in_history():
         try:
             r = analyze(events, llm=llm)
-            by_llm[llm] = {k: r[k] for k in ("impact", "confidence", "confidence_note",
+            by_llm[llm] = {k: r[k] for k in ("impact", "multivariate", "confidence", "confidence_note",
                                              "sov_measure_days", "sov_measure_range",
                                              "n_intervals_total", "brands_with_sov") if k in r}
         except Exception as e:
@@ -494,7 +493,7 @@ def main():
     for b in res.get("brands_with_sov", []):
         try:
             rb = analyze(events, brand_filter=b)
-            by_brand[b] = {k: rb[k] for k in ("impact", "confidence", "confidence_note",
+            by_brand[b] = {k: rb[k] for k in ("impact", "multivariate", "confidence", "confidence_note",
                                               "sov_measure_days", "sov_measure_range",
                                               "n_intervals_total") if k in rb}
         except Exception as e:

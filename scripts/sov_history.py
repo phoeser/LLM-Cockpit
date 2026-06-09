@@ -79,6 +79,7 @@ def backfill_from_events(seen, out_lines):
 def main():
     rows = load_history()
     seen = existing_keys(rows)
+    seen_prod = {(r.get("date"), r.get("brand"), r.get("product")) for r in rows if r.get("product")}
     out_lines = []
 
     # Einmaliger Backfill, wenn Historie noch leer/klein
@@ -137,7 +138,29 @@ def main():
                         "avg_rank": None, "source": "snapshot_llm",
                     }, ensure_ascii=False))
                     added += 1
-            print("Snapshot %s: %d neue Messpunkte (inkl. per-LLM)" % (day, added))
+            # 2026-06-09: zusaetzlich SoV JE PRODUKT (Aggregation der Mentions ueber
+            # alle LLMs je Produkt) -> ermoeglicht spaetere Produktebenen-Korrelation.
+            for prod_key, prod in (snap.get("products") or {}).items():
+                pm = {}
+                for summ in (prod.get("summary_by_llm") or {}).values():
+                    for b in (summ.get("brands") or []):
+                        bn, mm = b.get("name"), b.get("mentions")
+                        if bn and mm is not None:
+                            pm[bn] = pm.get(bn, 0) + int(mm)
+                ptot = sum(pm.values())
+                if ptot <= 0:
+                    continue
+                for brand, mm in pm.items():
+                    if (day, brand, prod_key) in seen_prod:
+                        continue
+                    seen_prod.add((day, brand, prod_key))
+                    out_lines.append(json.dumps({
+                        "date": day, "brand": brand, "product": prod_key,
+                        "sov_pct": round(mm / ptot * 100.0, 2),
+                        "avg_rank": None, "source": "snapshot_product",
+                    }, ensure_ascii=False))
+                    added += 1
+            print("Snapshot %s: %d neue Messpunkte (inkl. per-LLM + per-Produkt)" % (day, added))
     else:
         print("WARN: data/geo_snapshot.json fehlt — nur Backfill")
 

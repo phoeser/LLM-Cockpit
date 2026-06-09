@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-06-09T08:27:28Z",
+  "generated_at": "2026-06-09T21:23:01Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
   "multivariate": {
     "available": true,
-    "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+    "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
     "lambda": 41.5,
     "bootstrap": 800,
     "n_points": 83,
@@ -14,63 +14,80 @@
       "press_mention",
       "news_mention",
       "review_change",
-      "review_volume"
+      "review_volume",
+      "media_sentiment"
     ],
     "types_excluded_too_few": [
       "domain_change",
       "price_change"
     ],
+    "exploratory": false,
     "coefficients": {
       "review_change": {
         "label": "Bewertungs-Aenderungen",
-        "coef_pp_per_event_day": -1.5026,
-        "ci95_low": -3.4022,
-        "ci95_high": -0.0398,
-        "significant": true,
+        "coef_pp_per_event_day": -1.0216,
+        "ci95_low": -2.2995,
+        "ci95_high": 0.053,
+        "p_value": 0.07,
+        "significant": false,
         "n_with_event": 8
+      },
+      "media_sentiment": {
+        "label": "Medien-Sentiment (netto +/−)",
+        "coef_pp_per_event_day": -0.7573,
+        "ci95_low": -1.424,
+        "ci95_high": -0.0164,
+        "p_value": 0.0425,
+        "significant": false,
+        "n_with_event": 19
       },
       "review_volume": {
         "label": "Bewertungs-Volumen",
-        "coef_pp_per_event_day": -0.2001,
-        "ci95_low": -1.3404,
-        "ci95_high": 0.8811,
+        "coef_pp_per_event_day": 0.1762,
+        "ci95_low": -0.5602,
+        "ci95_high": 0.8376,
+        "p_value": 0.71,
         "significant": false,
         "n_with_event": 13
       },
       "page_new": {
         "label": "Neue Seiten",
-        "coef_pp_per_event_day": -0.067,
-        "ci95_low": -0.2717,
-        "ci95_high": 0.0824,
+        "coef_pp_per_event_day": -0.0799,
+        "ci95_low": -0.2807,
+        "ci95_high": 0.0818,
+        "p_value": 0.2425,
         "significant": false,
         "n_with_event": 7
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "coef_pp_per_event_day": -0.0662,
-        "ci95_low": -0.2103,
-        "ci95_high": 0.0694,
+        "coef_pp_per_event_day": -0.0438,
+        "ci95_low": -0.1779,
+        "ci95_high": 0.0897,
+        "p_value": 0.5575,
         "significant": false,
         "n_with_event": 63
       },
       "press_mention": {
         "label": "Pressemitteilungen",
-        "coef_pp_per_event_day": -0.0229,
-        "ci95_low": -0.6312,
-        "ci95_high": 0.4602,
+        "coef_pp_per_event_day": 0.036,
+        "ci95_low": -0.5764,
+        "ci95_high": 0.5066,
+        "p_value": 0.8275,
         "significant": false,
         "n_with_event": 38
       },
       "page_change": {
         "label": "Seitenaenderungen (Wettbewerb)",
-        "coef_pp_per_event_day": -0.0074,
-        "ci95_low": -0.0261,
-        "ci95_high": 0.0065,
+        "coef_pp_per_event_day": -0.0161,
+        "ci95_low": -0.0357,
+        "ci95_high": 0.0078,
+        "p_value": 0.1875,
         "significant": false,
         "n_with_event": 38
       }
     },
-    "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+    "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
   },
   "sov_source": "sov_history",
   "lag_days": 0,
@@ -266,7 +283,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 10.0,
         "bootstrap": 800,
         "n_points": 20,
@@ -283,33 +300,37 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": false,
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.3887,
-            "ci95_low": -0.6718,
-            "ci95_high": 0.0104,
+            "coef_pp_per_event_day": -0.3892,
+            "ci95_low": -0.6729,
+            "ci95_high": 0.0099,
+            "p_value": 0.065,
             "significant": false,
             "n_with_event": 10
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.0145,
-            "ci95_low": -0.4397,
-            "ci95_high": 0.4192,
+            "coef_pp_per_event_day": -0.0157,
+            "ci95_low": -0.4406,
+            "ci95_high": 0.419,
+            "p_value": 0.9825,
             "significant": false,
             "n_with_event": 8
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": 0.0035,
-            "ci95_low": -0.0203,
-            "ci95_high": 0.0245,
+            "coef_pp_per_event_day": 0.0034,
+            "ci95_low": -0.0188,
+            "ci95_high": 0.0229,
+            "p_value": 0.875,
             "significant": false,
             "n_with_event": 8
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "unzureichend",
       "confidence_note": "Zu wenige SoV-Messpunkte fuer eine belastbare Aussage.",
@@ -410,7 +431,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 10.0,
         "bootstrap": 800,
         "n_points": 20,
@@ -427,33 +448,37 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": false,
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.333,
-            "ci95_low": -0.6888,
-            "ci95_high": 0.239,
+            "coef_pp_per_event_day": -0.3354,
+            "ci95_low": -0.6933,
+            "ci95_high": 0.238,
+            "p_value": 0.22,
             "significant": false,
             "n_with_event": 10
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.2235,
-            "ci95_low": -0.7598,
-            "ci95_high": 1.0519,
+            "coef_pp_per_event_day": 0.2194,
+            "ci95_low": -0.7695,
+            "ci95_high": 1.0489,
+            "p_value": 0.6125,
             "significant": false,
             "n_with_event": 8
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0166,
-            "ci95_low": -0.0483,
-            "ci95_high": 0.0223,
+            "coef_pp_per_event_day": -0.0151,
+            "ci95_low": -0.0448,
+            "ci95_high": 0.021,
+            "p_value": 0.4525,
             "significant": false,
             "n_with_event": 8
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "unzureichend",
       "confidence_note": "Zu wenige SoV-Messpunkte fuer eine belastbare Aussage.",
@@ -554,7 +579,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 10.0,
         "bootstrap": 800,
         "n_points": 20,
@@ -571,33 +596,37 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": false,
         "coefficients": {
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.4622,
+            "coef_pp_per_event_day": 0.4618,
             "ci95_low": -0.1013,
-            "ci95_high": 1.0285,
+            "ci95_high": 1.0271,
+            "p_value": 0.1425,
             "significant": false,
             "n_with_event": 8
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.3755,
-            "ci95_low": -1.1314,
-            "ci95_high": 0.3329,
+            "coef_pp_per_event_day": -0.3756,
+            "ci95_low": -1.1309,
+            "ci95_high": 0.3324,
+            "p_value": 0.405,
             "significant": false,
             "n_with_event": 10
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": 0.004,
-            "ci95_low": -0.0133,
-            "ci95_high": 0.0233,
+            "coef_pp_per_event_day": 0.0037,
+            "ci95_low": -0.0124,
+            "ci95_high": 0.0218,
+            "p_value": 0.7125,
             "significant": false,
             "n_with_event": 8
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "unzureichend",
       "confidence_note": "Zu wenige SoV-Messpunkte fuer eine belastbare Aussage.",
@@ -674,7 +703,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 9.0,
         "bootstrap": 800,
         "n_points": 18,
@@ -682,7 +711,8 @@
         "types_used": [
           "page_change",
           "press_mention",
-          "news_mention"
+          "news_mention",
+          "media_sentiment"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -691,33 +721,46 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": true,
         "coefficients": {
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.1219,
-            "ci95_low": -0.2988,
-            "ci95_high": 0.562,
+            "coef_pp_per_event_day": 0.1234,
+            "ci95_low": -0.3044,
+            "ci95_high": 0.5568,
+            "p_value": 0.555,
             "significant": false,
             "n_with_event": 7
           },
+          "media_sentiment": {
+            "label": "Medien-Sentiment (netto +/−)",
+            "coef_pp_per_event_day": -0.1,
+            "ci95_low": -0.9817,
+            "ci95_high": 1.0802,
+            "p_value": 0.91,
+            "significant": false,
+            "n_with_event": 5
+          },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": 0.0798,
-            "ci95_low": -0.1792,
-            "ci95_high": 0.3824,
+            "coef_pp_per_event_day": 0.0817,
+            "ci95_low": -0.1528,
+            "ci95_high": 0.3584,
+            "p_value": 0.4975,
             "significant": false,
             "n_with_event": 14
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": 0.0061,
-            "ci95_low": -0.0047,
-            "ci95_high": 0.0103,
+            "coef_pp_per_event_day": 0.0479,
+            "ci95_low": -0.0772,
+            "ci95_high": 0.0948,
+            "p_value": 0.425,
             "significant": false,
             "n_with_event": 12
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "moderat",
       "confidence_note": "Tendenz mit mittlerer Sicherheit.",
@@ -824,7 +867,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 8.5,
         "bootstrap": 800,
         "n_points": 17,
@@ -833,7 +876,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "domain_change"
+          "domain_change",
+          "media_sentiment"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -841,41 +885,55 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": true,
         "coefficients": {
-          "press_mention": {
-            "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.7241,
-            "ci95_low": -0.1885,
-            "ci95_high": 1.6797,
-            "significant": false,
-            "n_with_event": 7
-          },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
-            "coef_pp_per_event_day": 0.4988,
-            "ci95_low": -1.1424,
-            "ci95_high": 1.9793,
+            "coef_pp_per_event_day": 1.5628,
+            "ci95_low": -3.6864,
+            "ci95_high": 6.6059,
+            "p_value": 0.61,
             "significant": false,
             "n_with_event": 4
           },
-          "news_mention": {
-            "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.127,
-            "ci95_low": -0.3355,
-            "ci95_high": 0.1472,
+          "press_mention": {
+            "label": "Pressemitteilungen",
+            "coef_pp_per_event_day": 0.7148,
+            "ci95_low": -0.1715,
+            "ci95_high": 1.5748,
+            "p_value": 0.11,
             "significant": false,
-            "n_with_event": 15
+            "n_with_event": 7
+          },
+          "media_sentiment": {
+            "label": "Medien-Sentiment (netto +/−)",
+            "coef_pp_per_event_day": -0.6027,
+            "ci95_low": -1.5256,
+            "ci95_high": 0.5116,
+            "p_value": 0.2625,
+            "significant": false,
+            "n_with_event": 6
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0167,
-            "ci95_low": -0.1735,
-            "ci95_high": 0.059,
+            "coef_pp_per_event_day": -0.387,
+            "ci95_low": -0.8557,
+            "ci95_high": 0.1712,
+            "p_value": 0.3025,
             "significant": false,
             "n_with_event": 14
+          },
+          "news_mention": {
+            "label": "News-Erwaehnungen",
+            "coef_pp_per_event_day": 0.01,
+            "ci95_low": -0.2494,
+            "ci95_high": 0.2774,
+            "p_value": 0.9625,
+            "significant": false,
+            "n_with_event": 15
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "moderat",
       "confidence_note": "Tendenz mit mittlerer Sicherheit.",
@@ -943,7 +1001,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 8.0,
         "bootstrap": 800,
         "n_points": 16,
@@ -960,33 +1018,37 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": true,
         "coefficients": {
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.4071,
-            "ci95_low": -1.4736,
-            "ci95_high": 0.3536,
+            "coef_pp_per_event_day": -0.415,
+            "ci95_low": -1.4841,
+            "ci95_high": 0.3543,
+            "p_value": 0.495,
             "significant": false,
             "n_with_event": 10
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.0335,
-            "ci95_low": -0.3914,
-            "ci95_high": 0.2012,
+            "coef_pp_per_event_day": -0.032,
+            "ci95_low": -0.3822,
+            "ci95_high": 0.1986,
+            "p_value": 0.6225,
             "significant": false,
             "n_with_event": 11
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0132,
-            "ci95_low": -0.0291,
-            "ci95_high": 0.0082,
+            "coef_pp_per_event_day": -0.0117,
+            "ci95_low": -0.0264,
+            "ci95_high": 0.0092,
+            "p_value": 0.295,
             "significant": false,
             "n_with_event": 11
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "moderat",
       "confidence_note": "Tendenz mit mittlerer Sicherheit.",
@@ -1054,7 +1116,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 7.5,
         "bootstrap": 800,
         "n_points": 15,
@@ -1071,12 +1133,14 @@
           "review_volume",
           "price_change"
         ],
+        "exploratory": true,
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
             "coef_pp_per_event_day": 0.1727,
             "ci95_low": -0.2369,
             "ci95_high": 0.3826,
+            "p_value": 0.535,
             "significant": false,
             "n_with_event": 9
           },
@@ -1085,11 +1149,12 @@
             "coef_pp_per_event_day": -0.0701,
             "ci95_low": -0.6846,
             "ci95_high": 0.5985,
+            "p_value": 0.8775,
             "significant": false,
             "n_with_event": 9
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "moderat",
       "confidence_note": "Tendenz mit mittlerer Sicherheit.",
@@ -1170,7 +1235,7 @@
       },
       "multivariate": {
         "available": true,
-        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+        "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
         "lambda": 8.5,
         "bootstrap": 800,
         "n_points": 17,
@@ -1179,7 +1244,8 @@
           "press_mention",
           "news_mention",
           "review_change",
-          "review_volume"
+          "review_volume",
+          "media_sentiment"
         ],
         "types_excluded_too_few": [
           "page_change",
@@ -1187,41 +1253,55 @@
           "domain_change",
           "price_change"
         ],
+        "exploratory": true,
         "coefficients": {
+          "media_sentiment": {
+            "label": "Medien-Sentiment (netto +/−)",
+            "coef_pp_per_event_day": -1.5791,
+            "ci95_low": -2.8188,
+            "ci95_high": 0.2144,
+            "p_value": 0.1525,
+            "significant": false,
+            "n_with_event": 4
+          },
           "review_change": {
             "label": "Bewertungs-Aenderungen",
-            "coef_pp_per_event_day": -1.6355,
-            "ci95_low": -3.5622,
-            "ci95_high": 0.1432,
+            "coef_pp_per_event_day": -0.9328,
+            "ci95_low": -2.0145,
+            "ci95_high": 0.0991,
+            "p_value": 0.1125,
             "significant": false,
             "n_with_event": 6
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.4688,
-            "ci95_low": -2.0857,
-            "ci95_high": 1.0236,
+            "coef_pp_per_event_day": -0.4814,
+            "ci95_low": -1.9856,
+            "ci95_high": 0.796,
+            "p_value": 0.44,
             "significant": false,
             "n_with_event": 5
           },
-          "news_mention": {
-            "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.185,
-            "ci95_low": -0.4949,
-            "ci95_high": 0.1059,
-            "significant": false,
-            "n_with_event": 14
-          },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "coef_pp_per_event_day": -0.0993,
-            "ci95_low": -1.1509,
-            "ci95_high": 1.0216,
+            "coef_pp_per_event_day": 0.2471,
+            "ci95_low": -0.4918,
+            "ci95_high": 0.9668,
+            "p_value": 0.595,
             "significant": false,
             "n_with_event": 12
+          },
+          "news_mention": {
+            "label": "News-Erwaehnungen",
+            "coef_pp_per_event_day": -0.195,
+            "ci95_low": -0.4476,
+            "ci95_high": 0.139,
+            "p_value": 0.3675,
+            "significant": false,
+            "n_with_event": 14
           }
         },
-        "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."
+        "note": "EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). 'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), >=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."
       },
       "confidence": "moderat",
       "confidence_note": "Tendenz mit mittlerer Sicherheit.",

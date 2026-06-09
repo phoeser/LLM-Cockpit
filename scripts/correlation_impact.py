@@ -56,6 +56,7 @@ TYPE_LABEL = {
     "review_change": "Bewertungs-Aenderungen",
     "review_volume": "Bewertungs-Volumen",
     "price_change": "Preis-Aenderungen",
+    "media_sentiment": "Medien-Sentiment (netto +/−)",
 }
 
 
@@ -274,16 +275,19 @@ def _solve_ridge(Xs, Y, lam):
     return [M[i][m] for i in range(m)]
 
 
-def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1):
+def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1, candidate_types=None, feature_key="x"):
     """Regularisierte Panel-Regression (Marken-Fixed-Effects via Within-Transform):
     schaetzt ALLE Event-Typen GLEICHZEITIG -> isolierter Effekt je Kategorie,
     kontrolliert um die jeweils anderen Typen + markeneigene Trends.
     95%-KI per Bootstrap (robust bei kleiner Stichprobe)."""
     import random as _rnd
     rnd = _rnd.Random(seed)
+    cand = candidate_types or IMPACT_TYPES
+    def _xv(p, t):
+        return (p.get(feature_key) or p.get("x") or {}).get(t, 0)
     brands = sorted({p["brand"] for p in points_raw})
-    use = [t for t in IMPACT_TYPES
-           if sum(1 for p in points_raw if p["x"].get(t, 0) > 0) >= min_with]
+    use = [t for t in cand
+           if sum(1 for p in points_raw if _xv(p, t) != 0) >= min_with]
     if len(points_raw) < 8 or len(brands) < 1 or not use:
         return {"available": False,
                 "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
@@ -295,12 +299,12 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1):
     for p in points_raw:
         by[p["brand"]].append(p)
     ymean = {b: sum(p["y"] for p in ps) / len(ps) for b, ps in by.items()}
-    xmean = {b: {t: sum(p["x"].get(t, 0) for p in ps) / len(ps) for t in use}
+    xmean = {b: {t: sum(_xv(p, t) for p in ps) / len(ps) for t in use}
              for b, ps in by.items()}
     X, Y = [], []
     for p in points_raw:
         Y.append(p["y"] - ymean[p["brand"]])
-        X.append([p["x"].get(t, 0) - xmean[p["brand"]][t] for t in use])
+        X.append([_xv(p, t) - xmean[p["brand"]][t] for t in use])
     m = len(use)
     sd = []
     for j in range(m):
@@ -310,7 +314,7 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1):
     Xs = [[X[i][j] / sd[j] for j in range(m)] for i in range(len(X))]
     lam = len(Xs) * 0.5
     beta = [b / sd[j] for j, b in enumerate(_solve_ridge(Xs, Y, lam))]
-    # Bootstrap-KI
+    # Bootstrap-Verteilung je Koeffizient
     boots = [[] for _ in range(m)]
     idx = list(range(len(Xs)))
     for _ in range(bootstrap):
@@ -318,28 +322,55 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1):
         bs = _solve_ridge([Xs[i] for i in smp], [Y[i] for i in smp], lam)
         for j in range(m):
             boots[j].append(bs[j] / sd[j])
-    coeffs = {}
+    # Mindest-Datenbasis fuer "gesichert" (gegen Klein-n-Artefakte):
+    MIN_NWITH, MIN_NPTS, BH_Q = 10, 20, 0.10
+    enough_data = len(points_raw) >= MIN_NPTS
+    # 1) je Koeffizient: KI + zweiseitiger Bootstrap-p-Wert
+    pre = []
     for j, t in enumerate(use):
-        v = sorted(boots[j])
-        lo = v[int(0.025 * len(v))]; hi = v[min(int(0.975 * len(v)), len(v) - 1)]
-        nw = sum(1 for p in points_raw if p["x"].get(t, 0) > 0)
+        v = sorted(boots[j]); B = len(v)
+        lo = v[int(0.025 * B)]; hi = v[min(int(0.975 * B), B - 1)]
+        frac_neg = sum(1 for x in v if x < 0) / B
+        frac_pos = sum(1 for x in v if x > 0) / B
+        p = max(2.0 * min(frac_neg, frac_pos), 1.0 / B)
+        nw = sum(1 for pt in points_raw if _xv(pt, t) != 0)
+        pre.append({"t": t, "j": j, "lo": lo, "hi": hi, "p": p, "nw": nw})
+    # 2) Benjamini-Hochberg-Korrektur ueber die Koeffizienten DIESES Segments
+    order = sorted(range(len(pre)), key=lambda i: pre[i]["p"])
+    mtests = len(pre)
+    bh_pass = {i: False for i in range(len(pre))}
+    for rank, i in enumerate(order, start=1):
+        if pre[i]["p"] <= BH_Q * rank / mtests:
+            for k in order[:rank]:
+                bh_pass[k] = True
+    coeffs = {}
+    for i, r in enumerate(pre):
+        t = r["t"]
+        ci_excl0 = (r["lo"] > 0 or r["hi"] < 0)
+        sig = bool(ci_excl0 and bh_pass[i] and r["nw"] >= MIN_NWITH and enough_data)
         coeffs[t] = {
             "label": TYPE_LABEL.get(t, t),
-            "coef_pp_per_event_day": round(beta[j], 4),
-            "ci95_low": round(lo, 4), "ci95_high": round(hi, 4),
-            "significant": bool(lo > 0 or hi < 0),
-            "n_with_event": nw,
+            "coef_pp_per_event_day": round(beta[r["j"]], 4),
+            "ci95_low": round(r["lo"], 4), "ci95_high": round(r["hi"], 4),
+            "p_value": round(r["p"], 4),
+            "significant": sig,
+            "n_with_event": r["nw"],
         }
     coeffs = dict(sorted(coeffs.items(), key=lambda kv: -abs(kv[1]["coef_pp_per_event_day"])))
     excluded = [t for t in IMPACT_TYPES if t not in use]
+    exploratory = len(points_raw) < 20
     return {"available": True,
-            "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI)",
+            "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
             "lambda": round(lam, 2), "bootstrap": bootstrap,
             "n_points": len(points_raw), "n_brands": len(brands),
             "types_used": use, "types_excluded_too_few": excluded,
+            "exploratory": exploratory,
             "coefficients": coeffs,
-            "note": "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). "
-                    "Wird mit mehr SoV-Messtagen belastbarer; Signifikanz erst wenn KI die Null ausschliesst."}
+            "note": ("EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. "
+                     if exploratory else "")
+                    + "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). "
+                    "'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), "
+                    ">=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."}
 
 
 def analyze(events, llm=None, brand_filter=None):
@@ -356,14 +387,29 @@ def analyze(events, llm=None, brand_filter=None):
     measure_days = sorted(mdays)
     conf_label, conf_note = confidence(len(measure_days))
 
-    # Event-Counts je (brand, day, type) — DEDUPLIZIERT (Re-Emissionen entfernt)
+    # Event-Counts je (brand, day, type) — DEDUPLIZIERT (Re-Emissionen entfernt).
+    # Zusaetzlich (fuer das multivariate Modell): magnitude-gewichtete Summe je Typ
+    # + Netto-Medien-Sentiment (positive minus negative Presse/News).
     counts = {}
+    wmag = {}
+    senti = {}
     for e in dedup_impact_events(events):
         t = e.get("event_type")
         b = e.get("brand")
         day = _day(e.get("timestamp"))
         counts.setdefault(b, {}).setdefault(day, {})
         counts[b][day][t] = counts[b][day].get(t, 0) + 1
+        try:
+            mg = float(e.get("magnitude") or 1.0)
+        except (TypeError, ValueError):
+            mg = 1.0
+        wmag.setdefault(b, {}).setdefault(day, {})
+        wmag[b][day][t] = wmag[b][day].get(t, 0.0) + (mg if mg > 0 else 1.0)
+        if t in ("press_mention", "news_mention"):
+            sv = {"positive": 1, "negative": -1}.get(e.get("sentiment"), 0)
+            if sv:
+                senti.setdefault(b, {}).setdefault(day, 0)
+                senti[b][day] += sv
 
     # v2 (Review-Fixes 2026-06-04):
     #  - Intervalle ungleicher Laenge werden auf RATEN pro Tag normalisiert
@@ -379,14 +425,24 @@ def analyze(events, llm=None, brand_filter=None):
             end_day, end_pct = ser[i + 1]
             days = _days_between(start_day, end_day)
             cnt = {}
+            xmv = {}
             for t in IMPACT_TYPES:
                 c = 0
+                w = 0.0
                 for day, tc in bydays.items():
                     if start_day <= day < end_day:
                         c += tc.get(t, 0)
+                        w += (wmag.get(brand, {}).get(day, {}) or {}).get(t, 0.0)
                 cnt[t] = c / days
+                xmv[t] = w / days          # magnitude-gewichtete Rate
+            snet = 0
+            for day, sv in (senti.get(brand, {}) or {}).items():
+                if start_day <= day < end_day:
+                    sent_total = sv if not isinstance(sv, dict) else 0
+                    snet += sent_total
+            xmv["media_sentiment"] = snet / days
             points_raw.append({"brand": brand, "days": days,
-                               "y": (end_pct - start_pct) / days, "x": cnt})
+                               "y": (end_pct - start_pct) / days, "x": cnt, "xmv": xmv})
     # Marken-Isolierung (optional): nur Intervalle dieser Marke
     if brand_filter:
         points_raw = [p for p in points_raw if p["brand"] == brand_filter]
@@ -453,7 +509,9 @@ def analyze(events, llm=None, brand_filter=None):
     ordered = dict(sorted(results.items(),
                           key=lambda kv: -abs(kv[1]["avg_sov_effect_pp"] or 0)))
     # Multivariat: pooled (alle Marken, Within-FE) ODER einzelmarken-zentriert bei brand_filter.
-    multivar = multivariate_impact(points_raw, min_with=(4 if brand_filter else 6))
+    multivar = multivariate_impact(points_raw, min_with=(4 if brand_filter else 6),
+                                   candidate_types=IMPACT_TYPES + ["media_sentiment"],
+                                   feature_key="xmv")
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",

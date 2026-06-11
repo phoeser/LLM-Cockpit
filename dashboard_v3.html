@@ -2898,24 +2898,36 @@ function buildGeoTab() {
       if (mv && mv.available && mv.coefficients && Object.keys(mv.coefficients).length) {
         html += '<div style="margin-top:18px;padding-top:14px;border-top:2px solid #e2e8f0">';
         html += '<div style="font-weight:700;color:#1e293b;font-size:13px;margin-bottom:2px">🔬 Multivariates Modell — isolierte Effekte</div>';
-        html += '<div style="font-size:11px;color:#64748b;margin-bottom:8px">Alle Event-Typen <b>gleichzeitig</b> geschätzt (Panel-Regression mit Marken-Fixed-Effects + Ridge, Bootstrap-95%-KI). Zeigt den Beitrag jeder Kategorie <b>bereinigt um die anderen</b> — anders als der Einzelvergleich oben. Einheit: Pp pro zusätzliches Event/Tag.</div>';
+        html += '<div style="font-size:11px;color:#64748b;margin-bottom:8px">Alle Treiber <b>gleichzeitig</b> geschätzt (Bayes-Panel-Regression, Marken-+Zeit-Fixed-Effects, Partial Pooling). Zeigt den Beitrag jeder Kategorie <b>bereinigt um die anderen</b>. <b>P(&gt;0)</b> = Wahrscheinlichkeit eines positiven Effekts. Einheit: Pp pro zusätzliches Event/Tag.</div>';
         html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
-          + '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Koeffizient (Pp)</th><th style="padding:6px 8px;text-align:right">95%-KI (Bootstrap)</th><th style="padding:6px 8px;text-align:center">Aussagekraft</th><th style="padding:6px 8px;text-align:right">Interv. mit Event</th></tr></thead><tbody>';
+          + '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Koeffizient (Pp)</th><th style="padding:6px 8px;text-align:right">95%-Glaubw.-Intervall</th><th style="padding:6px 8px;text-align:right">P(&gt;0)</th><th style="padding:6px 8px;text-align:center">Aussagekraft</th><th style="padding:6px 8px;text-align:right">Interv. mit Event</th></tr></thead><tbody>';
         Object.keys(mv.coefficients).forEach(function(k){
           var r = mv.coefficients[k]; var b = r.coef_pp_per_event_day; var pos = (b||0) >= 0;
           var ciT = (r.ci95_low!=null && r.ci95_high!=null) ? ((r.ci95_low>0?'+':'')+r.ci95_low.toFixed(2)+' … '+(r.ci95_high>0?'+':'')+r.ci95_high.toFixed(2)) : '—';
-          var pTxt = (r.p_value!=null) ? (' <span style="font-size:9px;color:#94a3b8">p='+r.p_value.toFixed(2)+'</span>') : '';
-          var sg = (r.significant ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>' : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ Zufall mögl.</span>') + pTxt;
+          var pp = (r.prob_positive!=null) ? Math.round(r.prob_positive*100)+'%' : '—';
+          var sg = (r.significant ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>' : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ unsicher</span>');
           html += '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#1e293b">'+(r.label||k)+'</td>'
             + '<td style="padding:6px 8px;text-align:right;font-weight:600;color:'+(pos?'#15803d':'#b91c1c')+'">'+(pos?'+':'')+(b!=null?b.toFixed(3):'–')+'</td>'
             + '<td style="padding:6px 8px;text-align:right;color:#64748b;white-space:nowrap">'+ciT+'</td>'
+            + '<td style="padding:6px 8px;text-align:right;color:#475569">'+pp+'</td>'
             + '<td style="padding:6px 8px;text-align:center">'+sg+'</td>'
             + '<td style="padding:6px 8px;text-align:right;color:#475569">'+(r.n_with_event||0)+'</td></tr>';
         });
         html += '</tbody></table>';
         var exTxt = (mv.types_excluded_too_few && mv.types_excluded_too_few.length) ? (' · ausgelassen (zu wenige Events): '+mv.types_excluded_too_few.join(', ')) : '';
-        html += '<div style="margin-top:6px;font-size:11px;color:#94a3b8">'+mv.n_points+' Intervalle · '+mv.n_brands+' Marken · '+(mv.bootstrap||0)+' Bootstrap-Ziehungen'+exTxt+'. '+(mv.note||'')+'</div>';
-        if (mv.exploratory) html += '<div style="margin-top:8px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Explorativ: dieses Segment hat &lt;20 Intervalle — Einzeleffekte sind hier nicht gesichert, nur Tendenz. „Gesichert" verlangt ≥20 Intervalle, ≥10 mit Event und Mehrfachtest-Korrektur (Benjamini-Hochberg).</div>';
+        html += '<div style="margin-top:6px;font-size:11px;color:#94a3b8">'+mv.n_points+' Intervalle · '+mv.n_brands+' Marken'+(mv.pooled_prior?' · Partial Pooling':'')+exTxt+'. '+(mv.note||'')+'</div>';
+        if (mv.exploratory) html += '<div style="margin-top:8px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Explorativ: dieses Segment hat &lt;20 Intervalle/Messtage — Einzeleffekte sind hier nicht gesichert, nur Tendenz.</div>';
+        var vd = ci.validation;
+        if (vd) {
+          var fp = (vd.placebo_false_positive_rate!=null) ? (Math.round(vd.placebo_false_positive_rate*1000)/10)+'%' : '—';
+          var oos = (vd.out_of_sample && vd.out_of_sample.r2_oos_vs_baseline!=null) ? vd.out_of_sample.r2_oos_vs_baseline.toFixed(2) : '—';
+          var oosGood = vd.out_of_sample && vd.out_of_sample.r2_oos_vs_baseline > 0;
+          html += '<div style="margin-top:10px;font-size:11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px;color:#334155">'
+            + '<b>Modell-Validierung:</b> Placebo-Falsch-Positiv-Rate <b>'+fp+'</b> (Ziel ≈5 % — niedriger = konservativ/ehrlich). '
+            + 'Out-of-Sample-Güte <b style="color:'+(oosGood?'#15803d':'#b91c1c')+'">r²='+oos+'</b> ggü. Marken-Basislinie — '
+            + (oosGood ? 'die Treiber verbessern die SoV-Vorhersage.' : 'die Treiber verbessern die Vorhersage <b>noch nicht</b> (zu wenige Messtage; wächst mit der Zeit).')
+            + '</div>';
+        }
         html += '</div>';
       } else if (mv && !mv.available && !bpick && !pick) {
         html += '<div style="margin-top:14px;font-size:11px;color:#94a3b8">🔬 Multivariates Modell: '+(mv.note||'noch nicht verfügbar')+'</div>';

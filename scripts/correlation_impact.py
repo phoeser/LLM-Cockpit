@@ -46,6 +46,7 @@ LAG_DAYS = 0
 IMPACT_TYPES = [
     "page_change", "page_new", "press_mention", "news_mention",
     "domain_change", "review_change", "review_volume", "price_change",
+    "wikipedia_change", "portal_rank_change", "rating_status_change",
 ]
 TYPE_LABEL = {
     "page_change": "Seitenaenderungen (Wettbewerb)",
@@ -56,6 +57,9 @@ TYPE_LABEL = {
     "review_change": "Bewertungs-Aenderungen",
     "review_volume": "Bewertungs-Volumen",
     "price_change": "Preis-Aenderungen",
+    "wikipedia_change": "Wikipedia-Aenderungen",
+    "portal_rank_change": "Portal-Rang (Check24)",
+    "rating_status_change": "Testsieger-/Rating-Status",
     "media_sentiment": "Medien-Sentiment (netto +/−)",
 }
 

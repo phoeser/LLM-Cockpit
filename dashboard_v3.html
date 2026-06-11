@@ -2738,8 +2738,16 @@ function buildGeoTab() {
       var badge = document.getElementById('impactStudyBadge');
       var ciRoot = window.CORRELATION_IMPACT;
       var sel = document.getElementById('impactLlmSel');
-      if (sel && ciRoot && ciRoot.by_llm && sel.options.length <= 1) {
-        Object.keys(ciRoot.by_llm).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+      if (sel && ciRoot && sel.options.length <= 1) {
+        if (ciRoot.by_grounding && ciRoot.by_grounding.grounded) {
+          var og=document.createElement('option'); og.value='__grounded__';
+          og.textContent='Web-gestützt ('+(ciRoot.grounded_llms||[]).join(', ')+')'; sel.appendChild(og);
+        }
+        if (ciRoot.by_grounding && ciRoot.by_grounding.ungrounded) {
+          var ou=document.createElement('option'); ou.value='__ungrounded__';
+          ou.textContent='Nicht web-gestützt ('+(ciRoot.ungrounded_llms||[]).join(', ')+')'; sel.appendChild(ou);
+        }
+        if (ciRoot.by_llm) Object.keys(ciRoot.by_llm).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
       }
       var bsel = document.getElementById('impactBrandSel');
       if (bsel && ciRoot && ciRoot.by_brand && bsel.options.length <= 1) {
@@ -2755,7 +2763,13 @@ function buildGeoTab() {
         if (sel) sel.disabled = true;
       } else {
         if (sel) sel.disabled = false;
-        if (pick && ciRoot && ciRoot.by_llm && ciRoot.by_llm[pick]) { ci = ciRoot.by_llm[pick]; scopeNote = 'LLM: ' + pick + ' · '; }
+        if (pick === '__grounded__' && ciRoot.by_grounding && ciRoot.by_grounding.grounded) {
+          ci = ciRoot.by_grounding.grounded; scopeNote = 'Web-gestützte LLMs · ';
+        } else if (pick === '__ungrounded__' && ciRoot.by_grounding && ciRoot.by_grounding.ungrounded) {
+          ci = ciRoot.by_grounding.ungrounded; scopeNote = 'Nicht web-gestützte LLMs · ';
+        } else if (pick && ciRoot && ciRoot.by_llm && ciRoot.by_llm[pick]) {
+          ci = ciRoot.by_llm[pick]; scopeNote = 'LLM: ' + pick + ' · ';
+        }
       }
       if (ci && ciRoot && !ci.generated_at) ci.generated_at = ciRoot.generated_at;
       if (ci && ciRoot && !ci.sov_source) ci.sov_source = ciRoot.sov_source;

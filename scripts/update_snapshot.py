@@ -68,6 +68,94 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
     sys.exit("FEHLER: latest.json konnte nicht geladen werden (alle Pfade/Token fehlgeschlagen).")
 
 
+# ── Zitierte-Quellen-Auswertung (Roadmap Punkt 2) ───────────────────────────
+# latest.json enthaelt je Antwort 'sources'; wir aggregieren, WELCHE Quellen die
+# LLMs ziehen (Treiber der Sichtbarkeit). Grounding-Redirects sind Rauschen.
+from urllib.parse import urlparse as _urlparse
+
+_SOURCE_NOISE = ("vertexaisearch.cloud.google.com", "grounding-api-redirect",
+                 "googleapis.com", "google.com/search", "bing.com/search")
+
+# Unsere 10 Haupt-Marken: Domain -> Anzeigename
+_BRAND_DOMAINS = {
+    "ergo.de": "ERGO", "ergo.com": "ERGO",
+    "allianz.de": "Allianz", "allianz.com": "Allianz", "allianzdirect.de": "Allianz",
+    "huk.de": "HUK-Coburg", "huk24.de": "HUK-Coburg", "huk-coburg.de": "HUK-Coburg",
+    "axa.de": "AXA", "axa.com": "AXA",
+    "generali.de": "Generali", "generali.com": "Generali",
+    "signal-iduna.de": "Signal Iduna",
+    "ruv.de": "R+V", "devk.de": "DEVK", "hannoversche.de": "Hannoversche",
+    "cosmosdirekt.de": "Cosmos Direkt",
+}
+# Bekannte Portale / Vergleichs- / Verbraucher- / Test-Quellen
+_PORTAL_DOMAINS = {
+    "check24.de", "verivox.de", "finanztip.de", "verbraucherzentrale.de",
+    "test.de", "stiftung-warentest.de", "focus.de", "focus-money.de",
+    "handelsblatt.com", "wikipedia.org", "de.wikipedia.org", "transparent-beraten.de",
+    "versicherungsbote.de", "morgenundmorgen.com", "franke-bornberg.de", "dfsi-institut.de",
+    " assekurata.de".strip(), "biallo.de", "finanztest.de", "ariva.de", "wiwo.de",
+}
+_PORTAL_HINTS = ("vergleich", "test-", "-test", "-experten", "ratgeber", "tarif",
+                 "finanz", "versicherung-", "-versicherung", "bestattung")
+
+
+def _src_domain(url):
+    try:
+        n = _urlparse(url if str(url).startswith("http") else "http://" + str(url)).netloc.lower()
+        return n[4:] if n.startswith("www.") else n
+    except Exception:
+        return ""
+
+
+def _classify_source(domain):
+    """-> (kategorie, label). Kategorien: eigen | wettbewerber | portal | sonstige."""
+    if domain in _BRAND_DOMAINS:
+        b = _BRAND_DOMAINS[domain]
+        return ("eigen" if b == "ERGO" else "wettbewerber", b)
+    if domain in _PORTAL_DOMAINS or any(h in domain for h in _PORTAL_HINTS):
+        return ("portal", domain)
+    # generische .de mit insurer-typischem Namen? -> sonstige (kein Rateschluss)
+    return ("sonstige", domain)
+
+
+def _aggregate_cited_sources(per_llm_list, top_n=15):
+    """Aggregiert zitierte Domains ueber alle Antworten eines Produkts.
+    Liefert overall + je LLM + Kategorie-Summe (Anteile in %)."""
+    from collections import Counter
+    overall = Counter()
+    by_llm = {}
+    cat = Counter()
+    total = 0
+    for pl in (per_llm_list or []):
+        llm = pl.get("llm")
+        cc = Counter()
+        for r in (pl.get("results") or []):
+            for srow in (r.get("sources") or []):
+                u = srow.get("url") if isinstance(srow, dict) else srow
+                dom = _src_domain(u)
+                if not dom or any(nz in dom for nz in _SOURCE_NOISE):
+                    continue
+                overall[dom] += 1
+                cc[dom] += 1
+                cat[_classify_source(dom)[0]] += 1
+                total += 1
+        if cc:
+            by_llm[llm] = [{"domain": d, "count": n, "category": _classify_source(d)[0]}
+                           for d, n in cc.most_common(top_n)]
+    if not total:
+        return None
+    def _fmt(counter, n):
+        return [{"domain": d, "count": c, "share": round(c / total * 100, 1),
+                 "category": _classify_source(d)[0]} for d, c in counter.most_common(n)]
+    return {
+        "total": total,
+        "overall": _fmt(overall, top_n),
+        "by_llm": by_llm,
+        "by_category": {k: {"count": v, "share": round(v / total * 100, 1)}
+                        for k, v in cat.most_common()},
+    }
+
+
 def transform_to_dashboard_format(geo: dict) -> dict:
     """Verkleinere geo-Snapshot zu der Form, die das Dashboard erwartet."""
     out = {
@@ -82,9 +170,11 @@ def transform_to_dashboard_format(geo: dict) -> dict:
         "products": {},
     }
     for pid, pdata in geo.get("products", {}).items():
+        cs = _aggregate_cited_sources(pdata.get("per_llm"))
         out["products"][pid] = {
             "name": pdata.get("name"),
             "url": pdata.get("url"),
+            "cited_sources": cs,
             "summary_by_llm": {
                 llm: {
                     "prompts_total": s.get("prompts_total", 0),
@@ -93,6 +183,28 @@ def transform_to_dashboard_format(geo: dict) -> dict:
                 for llm, s in pdata.get("summary_by_llm", {}).items()
             },
         }
+    # Gesamt-Quellen ueber alle Produkte
+    try:
+        from collections import Counter as _C
+        _ov = _C(); _cat = _C(); _tot = 0
+        for _p in out["products"].values():
+            _cs = _p.get("cited_sources")
+            if not _cs:
+                continue
+            for _row in _cs.get("overall", []):
+                _ov[_row["domain"]] += _row["count"]; _tot += _row["count"]
+            for _k, _v in _cs.get("by_category", {}).items():
+                _cat[_k] += _v.get("count", 0)
+        if _tot:
+            out["cited_sources_overall"] = {
+                "total": _tot,
+                "overall": [{"domain": d, "count": c, "share": round(c / _tot * 100, 1),
+                             "category": _classify_source(d)[0]} for d, c in _ov.most_common(20)],
+                "by_category": {k: {"count": v, "share": round(v / _tot * 100, 1)}
+                                for k, v in _cat.most_common()},
+            }
+    except Exception as _e:
+        print("WARN cited_sources_overall:", str(_e)[:80])
     es = geo.get("impact", {}).get("executive_summary", "")
     # Executive-Summary sanitizen: Newlines/Tabs durch Leerzeichen ersetzen,
     # damit der JSON-String in JS-Code eingebettet werden kann

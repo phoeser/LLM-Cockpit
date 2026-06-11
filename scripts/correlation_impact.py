@@ -103,6 +103,40 @@ def build_sov_series_from_history(llm=None):
     return {b: sorted(m.items()) for b, m in series.items()}
 
 
+# Web-gestuetzte (grounded) LLMs — verifiziert aus geo-visibility-tool/analyzer/llm_clients.py:
+#   gemini (googleSearch-Tool) + perplexity (Sonar, Web-Suche integriert) = grounded;
+#   chatgpt (gpt-4o-mini ohne Suche) + grok = ungrounded (nur Trainingsstand).
+# Grounded reagieren schnell auf Content/Presse, ungrounded erst beim naechsten Modell-Update.
+GROUNDED_LLMS = {"gemini", "perplexity"}
+
+
+def build_sov_series_for_llms(llm_set):
+    """SoV je Marke gemittelt ueber die LLMs in llm_set (z.B. alle grounded).
+    Mittelt die per-LLM-SoV pro (Tag, Marke)."""
+    if not HISTORY_FILE.exists() or not llm_set:
+        return {}
+    series = {}
+    for line in HISTORY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        llm = r.get("llm")
+        if not llm or llm not in llm_set:
+            continue
+        day, brand, pct = r.get("date"), r.get("brand"), r.get("sov_pct")
+        if not day or not brand or pct is None:
+            continue
+        series.setdefault(brand, {}).setdefault(day, []).append(float(pct))
+    out = {}
+    for b, m in series.items():
+        out[b] = sorted((d, sum(v) / len(v)) for d, v in m.items())
+    return out
+
+
 def list_llms_in_history():
     out = set()
     if not HISTORY_FILE.exists():
@@ -293,18 +327,29 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1, candidate
                 "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
                 "n_points": len(points_raw), "n_brands": len(brands),
                 "types_used": use, "coefficients": {}}
-    # Within-Brand-Transform (= Marken-Fixed-Effects)
-    from collections import defaultdict as _dd
-    by = _dd(list)
-    for p in points_raw:
-        by[p["brand"]].append(p)
-    ymean = {b: sum(p["y"] for p in ps) / len(ps) for b, ps in by.items()}
-    xmean = {b: {t: sum(_xv(p, t) for p in ps) / len(ps) for t in use}
-             for b, ps in by.items()}
-    X, Y = [], []
-    for p in points_raw:
-        Y.append(p["y"] - ymean[p["brand"]])
-        X.append([_xv(p, t) - xmean[p["brand"]][t] for t in use])
+    # Zwei-Wege-Within-Transform (= Marken- UND Zeit-Fixed-Effects):
+    # y~ = y - mean_brand - mean_time + mean_grand  (analog je Prädiktor).
+    # Zeit-FE fangen marktweite Schocks ab (z.B. LLM-Modell-Updates), die alle Marken
+    # gleichzeitig treffen — verhindert Scheinkorrelationen.
+    n_all = len(points_raw)
+    def _grand(getter):
+        return sum(getter(p) for p in points_raw) / n_all
+    def _group_means(getter, key):
+        acc, cnt = {}, {}
+        for p in points_raw:
+            k = p.get(key)
+            acc[k] = acc.get(k, 0.0) + getter(p)
+            cnt[k] = cnt.get(k, 0) + 1
+        return {k: acc[k] / cnt[k] for k in acc}
+    def _twoway(getter):
+        gm = _grand(getter)
+        bm = _group_means(getter, "brand")
+        tm = _group_means(getter, "time")
+        return [getter(p) - bm.get(p["brand"], gm) - tm.get(p.get("time"), gm) + gm
+                for p in points_raw]
+    Y = _twoway(lambda p: p["y"])
+    Xcols = [_twoway((lambda tt: (lambda p: _xv(p, tt)))(t)) for t in use]
+    X = [[Xcols[j][i] for j in range(len(use))] for i in range(n_all)]
     m = len(use)
     sd = []
     for j in range(m):
@@ -323,8 +368,9 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1, candidate
         for j in range(m):
             boots[j].append(bs[j] / sd[j])
     # Mindest-Datenbasis fuer "gesichert" (gegen Klein-n-Artefakte):
-    MIN_NWITH, MIN_NPTS, BH_Q = 10, 20, 0.10
-    enough_data = len(points_raw) >= MIN_NPTS
+    MIN_NWITH, MIN_NPTS, MIN_TIMES, BH_Q = 10, 20, 12, 0.10
+    n_times = len({p.get("time") for p in points_raw})
+    enough_data = len(points_raw) >= MIN_NPTS and n_times >= MIN_TIMES
     # 1) je Koeffizient: KI + zweiseitiger Bootstrap-p-Wert
     pre = []
     for j, t in enumerate(use):
@@ -358,9 +404,9 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1, candidate
         }
     coeffs = dict(sorted(coeffs.items(), key=lambda kv: -abs(kv[1]["coef_pp_per_event_day"])))
     excluded = [t for t in IMPACT_TYPES if t not in use]
-    exploratory = len(points_raw) < 20
+    exploratory = len(points_raw) < 20 or n_times < 12
     return {"available": True,
-            "method": "Panel-Ridge (within-brand FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
+            "method": "Panel-Ridge (Marken- + Zeit-FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
             "lambda": round(lam, 2), "bootstrap": bootstrap,
             "n_points": len(points_raw), "n_brands": len(brands),
             "types_used": use, "types_excluded_too_few": excluded,
@@ -370,14 +416,18 @@ def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1, candidate
                      if exploratory else "")
                     + "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). "
                     "'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), "
-                    ">=10 Intervalle mit Event und >=20 Intervalle gesamt. Wird mit mehr SoV-Messtagen belastbarer."}
+                    ">=10 Intervalle mit Event, >=20 Intervalle und >=12 SoV-Messtage. Wird mit mehr Messtagen belastbarer."}
 
 
-def analyze(events, llm=None, brand_filter=None):
+def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None):
     # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
-    sov = build_sov_series_from_history(llm=llm)
-    sov_source = "sov_history" if llm is None else ("sov_history_llm:" + llm)
-    if not sov and llm is None:
+    if llm_set is not None:
+        sov = build_sov_series_for_llms(llm_set)
+        sov_source = "sov_history_grounding:" + (scope_label or ",".join(sorted(llm_set)))
+    else:
+        sov = build_sov_series_from_history(llm=llm)
+        sov_source = "sov_history" if llm is None else ("sov_history_llm:" + llm)
+    if not sov and llm is None and llm_set is None:
         sov = build_sov_series(events)
         sov_source = "sov_change_events"
     mdays = set()
@@ -441,7 +491,7 @@ def analyze(events, llm=None, brand_filter=None):
                     sent_total = sv if not isinstance(sv, dict) else 0
                     snet += sent_total
             xmv["media_sentiment"] = snet / days
-            points_raw.append({"brand": brand, "days": days,
+            points_raw.append({"brand": brand, "days": days, "time": start_day,
                                "y": (end_pct - start_pct) / days, "x": cnt, "xmv": xmv})
     # Marken-Isolierung (optional): nur Intervalle dieser Marke
     if brand_filter:
@@ -557,6 +607,27 @@ def main():
         except Exception as e:
             print("WARN per-Brand (%s): %s" % (b, str(e)[:80]))
     res["by_brand"] = by_brand
+    # 2026-06-11: Impact getrennt nach web-gestuetzten (grounded) vs. nicht
+    # web-gestuetzten (ungrounded) LLMs — Treiber wirken dort fundamental anders.
+    all_llms = set(list_llms_in_history())
+    grounded = all_llms & GROUNDED_LLMS
+    ungrounded = all_llms - GROUNDED_LLMS
+    by_grounding = {}
+    for label, lset in (("grounded", grounded), ("ungrounded", ungrounded)):
+        if not lset:
+            continue
+        try:
+            rg = analyze(events, llm_set=lset, scope_label=label)
+            rg_out = {k: rg[k] for k in ("impact", "multivariate", "confidence", "confidence_note",
+                                         "sov_measure_days", "sov_measure_range",
+                                         "n_intervals_total", "brands_with_sov") if k in rg}
+            rg_out["llms"] = sorted(lset)
+            by_grounding[label] = rg_out
+        except Exception as e:
+            print("WARN by_grounding (%s): %s" % (label, str(e)[:80]))
+    res["by_grounding"] = by_grounding
+    res["grounded_llms"] = sorted(grounded)
+    res["ungrounded_llms"] = sorted(ungrounded)
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK: %s (Konfidenz=%s, SoV-Messtage=%d, Intervalle=%d)"

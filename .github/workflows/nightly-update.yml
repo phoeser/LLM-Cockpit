@@ -81,6 +81,10 @@ jobs:
         run: python scripts/update_prices.py
         continue-on-error: true
 
+      - name: Treiber-Tracker (Wikipedia, Check24-Rang, Testsieger-Status)
+        run: python scripts/track_drivers.py
+        continue-on-error: true
+
       - name: SoV-Historie aufzeichnen + Korrelations-/Impact-Analyse
         run: |
           python scripts/sov_history.py
@@ -111,6 +115,7 @@ jobs:
           git add data/press_history.json 2>/dev/null || true
           git add data/sov_history.jsonl 2>/dev/null || true
           git add data/correlation_impact.json 2>/dev/null || true
+          git add data/driver_state.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
           git commit -m "data: nightly update (alle Daten + Events)"
           for i in 1 2 3; do

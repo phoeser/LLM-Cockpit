@@ -499,6 +499,12 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4" id="geoProductCards"></div>
   </div>
 
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Top-Quellen der LLM-Antworten</h3>
+    <p class="text-xs text-gray-500 mb-3">Welche Webquellen die LLMs tatsächlich zitieren/heranziehen — der direkteste Treiber der Sichtbarkeit. Grounding-Redirects herausgefiltert. Folgt der LLM-Auswahl oben.</p>
+    <div id="geoCitedSources"></div>
+  </div>
+
   
 
   <div class="bg-white rounded-xl p-6 shadow mb-6">
@@ -2387,6 +2393,59 @@ function geoRankingForLlm(data, llm) {
     citation_rate: a._citeCnt ? a._cite / a._citeCnt : null
   })).sort((x,y) => y.share_of_voice - x.share_of_voice);
 }
+function buildGeoCitedSources(data, geoSel){
+  var host=document.getElementById('geoCitedSources'); if(!host) return;
+  var CATLBL={eigen:'ERGO (eigen)',wettbewerber:'Wettbewerber',portal:'Portale/Vergleich',sonstige:'Sonstige'};
+  var CATCOL={eigen:'#DC0028',wettbewerber:'#003781',portal:'#00BFA5',sonstige:'#9CA3AF'};
+  var prods=data.products||{};
+  var agg={}, cat={}, total=0;
+  function add(d,c,k){ if(!d)return; agg[d]=(agg[d]||0)+c; k=k||'sonstige'; cat[k]=(cat[k]||0)+c; total+=c; }
+  if(geoSel==='__all__'){
+    var ov=data.cited_sources_overall;
+    if(ov && ov.overall){ ov.overall.forEach(function(r){ add(r.domain,r.count,r.category); }); }
+    else { Object.values(prods).forEach(function(p){ (p.cited_sources&&p.cited_sources.overall||[]).forEach(function(r){ add(r.domain,r.count,r.category); }); }); }
+  } else {
+    Object.values(prods).forEach(function(p){ ((p.cited_sources&&p.cited_sources.by_llm||{})[geoSel]||[]).forEach(function(r){ add(r.domain,r.count,r.category); }); });
+  }
+  if(!total){ host.innerHTML='<div class="text-sm text-gray-400 py-3">Für diese Auswahl liegen noch keine zitierten Quellen vor (entsteht mit dem nächsten echten Mess-Lauf).</div>'; return; }
+  var rows=Object.keys(agg).map(function(d){return {domain:d,count:agg[d]};}).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+  var catOf={}; Object.keys(agg).forEach(function(d){}); // category lookup via rows below
+  // category lookup: rebuild from rows using nearest known (we stored only counts in agg); recompute category per domain
+  function catFor(d){
+    // mirror server logic lightly for badge color
+    var own=['ergo.de','ergo.com']; if(own.indexOf(d)>=0) return 'eigen';
+    var comp=['allianz.de','allianz.com','allianzdirect.de','huk.de','huk24.de','huk-coburg.de','axa.de','axa.com','generali.de','generali.com','signal-iduna.de','ruv.de','devk.de','hannoversche.de','cosmosdirekt.de'];
+    if(comp.indexOf(d)>=0) return 'wettbewerber';
+    var portalsHints=['vergleich','test-','-test','-experten','ratgeber','tarif','finanz','versicherung-','-versicherung','bestattung'];
+    var portalsExact=['check24.de','verivox.de','finanztip.de','verbraucherzentrale.de','test.de','stiftung-warentest.de','focus.de','focus-money.de','wikipedia.org','de.wikipedia.org','transparent-beraten.de','versicherungsbote.de','morgenundmorgen.com','biallo.de'];
+    if(portalsExact.indexOf(d)>=0) return 'portal';
+    for(var i=0;i<portalsHints.length;i++){ if(d.indexOf(portalsHints[i])>=0) return 'portal'; }
+    return 'sonstige';
+  }
+  // category summary bar
+  var catOrder=['eigen','wettbewerber','portal','sonstige'];
+  var h='<div class="flex flex-wrap gap-4 mb-3 text-sm">';
+  catOrder.forEach(function(k){ if(!cat[k]) return; var pct=Math.round(cat[k]/total*100);
+    h+='<div class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+CATCOL[k]+'"></span><b>'+CATLBL[k]+':</b> '+pct+'%</div>'; });
+  h+='</div>';
+  // insight line
+  var ergoPct=Math.round((cat['eigen']||0)/total*100), portalPct=Math.round((cat['portal']||0)/total*100), compPct=Math.round((cat['wettbewerber']||0)/total*100);
+  h+='<div class="text-xs rounded-lg p-3 mb-3" style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412">ERGO wird in <b>'+ergoPct+'%</b> der zitierten Quellen herangezogen, Wettbewerber in <b>'+compPct+'%</b>, Portale/Vergleichsseiten in <b>'+portalPct+'%</b>. Hebel: dort präsent/empfohlen sein, wo die LLMs zitieren (v.a. Portale).</div>';
+  // table
+  h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0"><th style="padding:5px 8px">#</th><th style="padding:5px 8px">Quelle (Domain)</th><th style="padding:5px 8px">Kategorie</th><th style="padding:5px 8px;text-align:right">Zitate</th><th style="padding:5px 8px;text-align:right">Anteil</th></tr></thead><tbody>';
+  rows.forEach(function(r,i){ var k=catFor(r.domain); var own=(k==='eigen');
+    h+='<tr style="border-bottom:1px solid #f1f5f9'+(own?';background:#fef2f2':'')+'"><td style="padding:5px 8px;color:#94a3b8">'+(i+1)+'</td>'
+      +'<td style="padding:5px 8px;'+(own?'font-weight:700;color:#dc0028':'color:#1e293b')+'">'+r.domain+'</td>'
+      +'<td style="padding:5px 8px"><span style="font-size:10px;padding:1px 7px;border-radius:8px;color:#fff;background:'+CATCOL[k]+'">'+CATLBL[k]+'</span></td>'
+      +'<td style="padding:5px 8px;text-align:right;font-weight:600">'+r.count+'</td>'
+      +'<td style="padding:5px 8px;text-align:right;color:#64748b">'+Math.round(r.count/total*100)+'%</td></tr>';
+  });
+  h+='</tbody></table>';
+  h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">Basis: '+total+' Quellen-Zitate'+(geoSel==='__all__'?' (alle LLMs)':' ('+geoSel+')')+'. „Sonstige" enthält u.a. weitere Versicherer ausserhalb des Kernsets.</div>';
+  host.innerHTML=h;
+}
+
+
 function buildGeoTab() {
   const data = GEO_SNAPSHOT;
   // ===== LLM-Auswahl (alle vs. einzelne) =====
@@ -2418,6 +2477,7 @@ function buildGeoTab() {
   }
   // Effektives Ranking je nach Auswahl (ersetzt RANKING in allen Render-Bloecken)
   const RANKING = geoRankingForLlm(data, geoSel);
+  try { buildGeoCitedSources(data, geoSel); } catch(e){ console.warn("citedSources:", e.message); }
   // Status-Badge
   const badge = document.getElementById('geoStatusBadge');
   if (badge) {

@@ -313,117 +313,213 @@ def _solve_ridge(Xs, Y, lam):
     return [M[i][m] for i in range(m)]
 
 
-def multivariate_impact(points_raw, min_with=6, bootstrap=800, seed=1, candidate_types=None, feature_key="x"):
-    """Regularisierte Panel-Regression (Marken-Fixed-Effects via Within-Transform):
-    schaetzt ALLE Event-Typen GLEICHZEITIG -> isolierter Effekt je Kategorie,
-    kontrolliert um die jeweils anderen Typen + markeneigene Trends.
-    95%-KI per Bootstrap (robust bei kleiner Stichprobe)."""
-    import random as _rnd
-    rnd = _rnd.Random(seed)
+import math as _math
+
+
+def _norm_cdf(z):
+    return 0.5 * (1.0 + _math.erf(z / _math.sqrt(2.0)))
+
+
+def _mat_inv(A):
+    n = len(A)
+    M = [list(A[i]) + [1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
+    for c in range(n):
+        piv = max(range(c, n), key=lambda r: abs(M[r][c]))
+        M[c], M[piv] = M[piv], M[c]
+        d = M[c][c] or 1e-12
+        M[c] = [v / d for v in M[c]]
+        for r in range(n):
+            if r != c and M[r][c]:
+                fct = M[r][c]
+                M[r] = [M[r][k] - fct * M[c][k] for k in range(2 * n)]
+    return [row[n:] for row in M]
+
+
+def _design(points_raw, use, feature_key, twoway=True):
+    """Zwei-Wege-Within-Transform (Marke + Zeit) + Standardisierung. Liefert Y, Xs, sd."""
+    n = len(points_raw)
+    def xv(p, t):
+        return (p.get(feature_key) or p.get("x") or {}).get(t, 0)
+    def grand(g):
+        return sum(g(p) for p in points_raw) / n
+    def gmeans(g, key):
+        acc, cnt = {}, {}
+        for p in points_raw:
+            k = p.get(key); acc[k] = acc.get(k, 0.0) + g(p); cnt[k] = cnt.get(k, 0) + 1
+        return {k: acc[k] / cnt[k] for k in acc}
+    def tw(g):
+        gm = grand(g); bm = gmeans(g, "brand"); tm = gmeans(g, "time") if twoway else {}
+        return [g(p) - bm.get(p["brand"], gm) - (tm.get(p.get("time"), gm) - gm if twoway else 0)
+                for p in points_raw]
+    Y = tw(lambda p: p["y"])
+    Xc = [tw((lambda tt: (lambda p: xv(p, tt)))(t)) for t in use]
+    X = [[Xc[j][i] for j in range(len(use))] for i in range(n)]
+    sd = []
+    for j in range(len(use)):
+        col = [X[i][j] for i in range(n)]
+        v = sum(c * c for c in col) / max(n - 1, 1)
+        sd.append(v ** 0.5 if v > 1e-12 else 1.0)
+    Xs = [[X[i][j] / sd[j] for j in range(len(use))] for i in range(n)]
+    return Y, Xs, sd
+
+
+def _ridge_posterior(Xs, Y, lam, center=None):
+    """Analytisches Bayes-Posterior der ridge-Regression.
+    Rueckgabe: beta (Posterior-Mittel, standardisiert), Ainv, sigma2."""
+    n = len(Xs); m = len(Xs[0]) if Xs else 0
+    A = [[sum(Xs[i][a] * Xs[i][b] for i in range(n)) + (lam if a == b else 0.0)
+          for b in range(m)] for a in range(m)]
+    rhs = [sum(Xs[i][a] * Y[i] for i in range(n)) for a in range(m)]
+    if center:
+        for a in range(m):
+            rhs[a] += lam * center[a]
+    Ainv = _mat_inv(A)
+    beta = [sum(Ainv[a][b] * rhs[b] for b in range(m)) for a in range(m)]
+    yhat = [sum(Xs[i][a] * beta[a] for a in range(m)) for i in range(n)]
+    ss = sum((Y[i] - yhat[i]) ** 2 for i in range(n))
+    sig2 = ss / max(n - m, 1)
+    return beta, Ainv, sig2
+
+
+def multivariate_impact(points_raw, min_with=6, candidate_types=None, feature_key="x",
+                        prior_mean=None, **_kw):
+    """Bayesianische Panel-Regression (Marken- + Zeit-Fixed-Effects).
+    - Schaetzt alle Treiber GLEICHZEITIG (isolierte Effekte).
+    - Analytisches Posterior -> Glaubwuerdigkeitsintervall + P(Effekt>0).
+    - Partial Pooling: prior_mean (= Gesamteffekt) zieht Segment-Schaetzer zum
+      gemeinsamen Wert (leiht Staerke; stabilisiert duenne Segmente)."""
     cand = candidate_types or IMPACT_TYPES
     def _xv(p, t):
         return (p.get(feature_key) or p.get("x") or {}).get(t, 0)
     brands = sorted({p["brand"] for p in points_raw})
-    use = [t for t in cand
-           if sum(1 for p in points_raw if _xv(p, t) != 0) >= min_with]
+    use = [t for t in cand if sum(1 for p in points_raw if _xv(p, t) != 0) >= min_with]
     if len(points_raw) < 8 or len(brands) < 1 or not use:
         return {"available": False,
                 "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
                 "n_points": len(points_raw), "n_brands": len(brands),
                 "types_used": use, "coefficients": {}}
-    # Zwei-Wege-Within-Transform (= Marken- UND Zeit-Fixed-Effects):
-    # y~ = y - mean_brand - mean_time + mean_grand  (analog je Prädiktor).
-    # Zeit-FE fangen marktweite Schocks ab (z.B. LLM-Modell-Updates), die alle Marken
-    # gleichzeitig treffen — verhindert Scheinkorrelationen.
-    n_all = len(points_raw)
-    def _grand(getter):
-        return sum(getter(p) for p in points_raw) / n_all
-    def _group_means(getter, key):
-        acc, cnt = {}, {}
-        for p in points_raw:
-            k = p.get(key)
-            acc[k] = acc.get(k, 0.0) + getter(p)
-            cnt[k] = cnt.get(k, 0) + 1
-        return {k: acc[k] / cnt[k] for k in acc}
-    def _twoway(getter):
-        gm = _grand(getter)
-        bm = _group_means(getter, "brand")
-        tm = _group_means(getter, "time")
-        return [getter(p) - bm.get(p["brand"], gm) - tm.get(p.get("time"), gm) + gm
-                for p in points_raw]
-    Y = _twoway(lambda p: p["y"])
-    Xcols = [_twoway((lambda tt: (lambda p: _xv(p, tt)))(t)) for t in use]
-    X = [[Xcols[j][i] for j in range(len(use))] for i in range(n_all)]
+    Y, Xs, sd = _design(points_raw, use, feature_key)
     m = len(use)
-    sd = []
-    for j in range(m):
-        col = [X[i][j] for i in range(len(X))]
-        v = sum(c * c for c in col) / max(len(X) - 1, 1)
-        sd.append(v ** 0.5 if v > 1e-12 else 1.0)
-    Xs = [[X[i][j] / sd[j] for j in range(m)] for i in range(len(X))]
     lam = len(Xs) * 0.5
-    beta = [b / sd[j] for j, b in enumerate(_solve_ridge(Xs, Y, lam))]
-    # Bootstrap-Verteilung je Koeffizient
-    boots = [[] for _ in range(m)]
-    idx = list(range(len(Xs)))
-    for _ in range(bootstrap):
-        smp = [rnd.choice(idx) for _ in idx]
-        bs = _solve_ridge([Xs[i] for i in smp], [Y[i] for i in smp], lam)
-        for j in range(m):
-            boots[j].append(bs[j] / sd[j])
-    # Mindest-Datenbasis fuer "gesichert" (gegen Klein-n-Artefakte):
-    MIN_NWITH, MIN_NPTS, MIN_TIMES, BH_Q = 10, 20, 12, 0.10
+    center = None
+    if prior_mean:
+        center = [(prior_mean.get(use[j], 0.0)) * sd[j] for j in range(m)]
+    beta, Ainv, sig2 = _ridge_posterior(Xs, Y, lam, center)
+
+    MIN_NWITH, MIN_NPTS, MIN_TIMES = 10, 20, 12
     n_times = len({p.get("time") for p in points_raw})
     enough_data = len(points_raw) >= MIN_NPTS and n_times >= MIN_TIMES
-    # 1) je Koeffizient: KI + zweiseitiger Bootstrap-p-Wert
-    pre = []
-    for j, t in enumerate(use):
-        v = sorted(boots[j]); B = len(v)
-        lo = v[int(0.025 * B)]; hi = v[min(int(0.975 * B), B - 1)]
-        frac_neg = sum(1 for x in v if x < 0) / B
-        frac_pos = sum(1 for x in v if x > 0) / B
-        p = max(2.0 * min(frac_neg, frac_pos), 1.0 / B)
-        nw = sum(1 for pt in points_raw if _xv(pt, t) != 0)
-        pre.append({"t": t, "j": j, "lo": lo, "hi": hi, "p": p, "nw": nw})
-    # 2) Benjamini-Hochberg-Korrektur ueber die Koeffizienten DIESES Segments
-    order = sorted(range(len(pre)), key=lambda i: pre[i]["p"])
-    mtests = len(pre)
-    bh_pass = {i: False for i in range(len(pre))}
-    for rank, i in enumerate(order, start=1):
-        if pre[i]["p"] <= BH_Q * rank / mtests:
-            for k in order[:rank]:
-                bh_pass[k] = True
+
     coeffs = {}
-    for i, r in enumerate(pre):
-        t = r["t"]
-        ci_excl0 = (r["lo"] > 0 or r["hi"] < 0)
-        sig = bool(ci_excl0 and bh_pass[i] and r["nw"] >= MIN_NWITH and enough_data)
+    for j, t in enumerate(use):
+        mu = beta[j] / sd[j]
+        var = max(sig2 * Ainv[j][j], 0.0)
+        sigma = (var ** 0.5) / sd[j]
+        if sigma > 1e-12:
+            p_pos = _norm_cdf(mu / sigma)
+        else:
+            p_pos = 1.0 if mu > 0 else 0.0
+        p_dir = max(p_pos, 1.0 - p_pos)
+        nw = sum(1 for pt in points_raw if _xv(pt, t) != 0)
         coeffs[t] = {
             "label": TYPE_LABEL.get(t, t),
-            "coef_pp_per_event_day": round(beta[r["j"]], 4),
-            "ci95_low": round(r["lo"], 4), "ci95_high": round(r["hi"], 4),
-            "p_value": round(r["p"], 4),
-            "significant": sig,
-            "n_with_event": r["nw"],
+            "coef_pp_per_event_day": round(mu, 4),
+            "ci95_low": round(mu - 1.96 * sigma, 4),
+            "ci95_high": round(mu + 1.96 * sigma, 4),
+            "prob_positive": round(p_pos, 3),
+            "prob_direction": round(p_dir, 3),
+            "significant": bool(p_dir >= 0.975 and nw >= MIN_NWITH and enough_data),
+            "n_with_event": nw,
         }
     coeffs = dict(sorted(coeffs.items(), key=lambda kv: -abs(kv[1]["coef_pp_per_event_day"])))
     excluded = [t for t in IMPACT_TYPES if t not in use]
-    exploratory = len(points_raw) < 20 or n_times < 12
+    exploratory = len(points_raw) < MIN_NPTS or n_times < MIN_TIMES
     return {"available": True,
-            "method": "Panel-Ridge (Marken- + Zeit-FE, standardisiert, Bootstrap-95%-KI, BH-korrigiert)",
-            "lambda": round(lam, 2), "bootstrap": bootstrap,
+            "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+            "lambda": round(lam, 2),
+            "pooled_prior": bool(prior_mean),
             "n_points": len(points_raw), "n_brands": len(brands),
             "types_used": use, "types_excluded_too_few": excluded,
             "exploratory": exploratory,
             "coefficients": coeffs,
-            "note": ("EXPLORATIV: zu wenige Intervalle (<20) fuer gesicherte Aussagen in diesem Segment. "
+            "note": ("EXPLORATIV: zu wenige Intervalle/Messtage fuer gesicherte Aussagen. "
                      if exploratory else "")
-                    + "Isolierter Effekt je Kategorie (alle gleichzeitig geschaetzt). "
-                    "'Gesichert' erfordert: KI ohne Null, Bootstrap-p nach Benjamini-Hochberg (q=0.10), "
-                    ">=10 Intervalle mit Event, >=20 Intervalle und >=12 SoV-Messtage. Wird mit mehr Messtagen belastbarer."}
+                    + "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). "
+                    "P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. "
+                    "'Gesichert' = P(Richtung) >= 97,5 %, >=10 Intervalle mit Event, "
+                    ">=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling "
+                    "zum Gesamteffekt stabilisiert."}
 
 
-def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None):
+def _placebo_fpr(points_raw, use, feature_key, n_perm=200, seed=7, thr=0.975):
+    """Permutationstest: y wird zufaellig gemischt -> es sollte (fast) nichts
+    'gesichert' sein. Liefert die Falsch-Positiv-Rate (erwartet ~5 %)."""
+    import random as _r
+    rnd = _r.Random(seed)
+    Y, Xs, sd = _design(points_raw, use, feature_key)
+    n, m = len(Y), len(use)
+    if n < 12 or m == 0:
+        return None
+    lam = n * 0.5
+    hits = 0; total = 0
+    for _ in range(n_perm):
+        Yp = Y[:]; rnd.shuffle(Yp)
+        beta, Ainv, sig2 = _ridge_posterior(Xs, Yp, lam)
+        for j in range(m):
+            sigma = (max(sig2 * Ainv[j][j], 0.0) ** 0.5) / sd[j]
+            mu = beta[j] / sd[j]
+            if sigma > 1e-12:
+                pd = max(_norm_cdf(mu / sigma), 1 - _norm_cdf(mu / sigma))
+                if pd >= thr:
+                    hits += 1
+            total += 1
+    return round(hits / total, 4) if total else None
+
+
+def _oos_skill(points_raw, use, feature_key):
+    """Leave-one-time-out: sagt y der ausgelassenen Messperiode aus Marken-Basis +
+    Treiber-Effekten (Training) voraus. skill = 1 - SSE_modell/SSE_naiv (>0 = besser
+    als die reine Marken-Basislinie)."""
+    times = sorted({p.get("time") for p in points_raw})
+    if len(times) < 6 or not use:
+        return None
+    sse_m = 0.0; sse_n = 0.0; n_test = 0
+    for hold in times:
+        train = [p for p in points_raw if p.get("time") != hold]
+        test = [p for p in points_raw if p.get("time") == hold]
+        if len(train) < 10 or not test:
+            continue
+        # Marken-Basis (Mittel je Marke) aus Training
+        bm, bc = {}, {}
+        for p in train:
+            bm[p["brand"]] = bm.get(p["brand"], 0.0) + p["y"]; bc[p["brand"]] = bc.get(p["brand"], 0) + 1
+        gmean = sum(p["y"] for p in train) / len(train)
+        base = {b: bm[b] / bc[b] for b in bm}
+        # Treiber-Effekte (brand-demeaned ridge auf Training)
+        Yt, Xt, sdt = _design(train, use, feature_key, twoway=False)
+        beta, _A, _s = _ridge_posterior(Xt, Yt, n=None) if False else _ridge_posterior(Xt, Yt, len(Xt) * 0.5)
+        def xv(p, t):
+            return (p.get(feature_key) or p.get("x") or {}).get(t, 0)
+        # mittlere x je Marke (Training) fuer Within-Korrektur der Vorhersage
+        xbar = {}
+        for t in use:
+            for b in base:
+                vals = [xv(p, t) for p in train if p["brand"] == b]
+                xbar[(b, t)] = sum(vals) / len(vals) if vals else 0.0
+        for p in test:
+            b = p["brand"]
+            pred = base.get(b, gmean)
+            for j, t in enumerate(use):
+                pred += (beta[j] / sdt[j]) * (xv(p, t) - xbar.get((b, t), 0.0))
+            sse_m += (p["y"] - pred) ** 2
+            sse_n += (p["y"] - base.get(b, gmean)) ** 2
+            n_test += 1
+    if n_test < 5 or sse_n <= 0:
+        return None
+    return {"r2_oos_vs_baseline": round(1 - sse_m / sse_n, 3), "n_test": n_test}
+
+
+def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None, prior_mean=None, validate=False):
     # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
     if llm_set is not None:
         sov = build_sov_series_for_llms(llm_set)
@@ -565,11 +661,25 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None)
     # Multivariat: pooled (alle Marken, Within-FE) ODER einzelmarken-zentriert bei brand_filter.
     multivar = multivariate_impact(points_raw, min_with=(4 if brand_filter else 6),
                                    candidate_types=IMPACT_TYPES + ["media_sentiment"],
-                                   feature_key="xmv")
+                                   feature_key="xmv", prior_mean=prior_mean)
+    # Validierung (nur Gesamtmodell): Placebo-Falsch-Positiv-Rate + Out-of-Sample-Skill
+    validation = None
+    if validate and multivar.get("available"):
+        _use = multivar.get("types_used") or []
+        try:
+            validation = {
+                "placebo_false_positive_rate": _placebo_fpr(points_raw, _use, "xmv"),
+                "out_of_sample": _oos_skill(points_raw, _use, "xmv"),
+                "note": "Placebo: erwartet ~0,05 (zufaellige Daten erzeugen kaum 'gesicherte' Effekte). "
+                        "Out-of-Sample r2>0 = Treiber sagen SoV besser voraus als die reine Marken-Basislinie.",
+            }
+        except Exception as _e:
+            validation = {"error": str(_e)[:120]}
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
         "multivariate": multivar,
+        "validation": validation,
         "sov_source": sov_source,
         "lag_days": LAG_DAYS,
         "sov_measure_days": len(measure_days),
@@ -587,12 +697,14 @@ def main():
     if not events:
         print("Keine Events — Abbruch")
         return 0
-    res = analyze(events)
+    res = analyze(events, validate=True)
+    _prior = {t: c.get('coef_pp_per_event_day', 0.0)
+              for t, c in ((res.get('multivariate') or {}).get('coefficients') or {}).items()} or None
     # 2026-06-04: zusaetzlich Impact je LLM (fuer die LLM-Auswahl im Dashboard)
     by_llm = {}
     for llm in list_llms_in_history():
         try:
-            r = analyze(events, llm=llm)
+            r = analyze(events, llm=llm, prior_mean=_prior)
             by_llm[llm] = {k: r[k] for k in ("impact", "multivariate", "confidence", "confidence_note",
                                              "sov_measure_days", "sov_measure_range",
                                              "n_intervals_total", "brands_with_sov") if k in r}
@@ -604,7 +716,7 @@ def main():
     by_brand = {}
     for b in res.get("brands_with_sov", []):
         try:
-            rb = analyze(events, brand_filter=b)
+            rb = analyze(events, brand_filter=b, prior_mean=_prior)
             by_brand[b] = {k: rb[k] for k in ("impact", "multivariate", "confidence", "confidence_note",
                                               "sov_measure_days", "sov_measure_range",
                                               "n_intervals_total") if k in rb}
@@ -621,7 +733,7 @@ def main():
         if not lset:
             continue
         try:
-            rg = analyze(events, llm_set=lset, scope_label=label)
+            rg = analyze(events, llm_set=lset, scope_label=label, prior_mean=_prior)
             rg_out = {k: rg[k] for k in ("impact", "multivariate", "confidence", "confidence_note",
                                          "sov_measure_days", "sov_measure_range",
                                          "n_intervals_total", "brands_with_sov") if k in rg}

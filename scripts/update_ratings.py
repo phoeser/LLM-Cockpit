@@ -94,12 +94,19 @@ def scrape_finanztip(product: str, url: str) -> list:
     ]
 
     text_lower = text.lower()
+
+    # Review-Fix 2026-06-12: Wortgrenzen-Matching — Aliase wie "ideal"/"europa"/
+    # "dialog" matchten vorher als Substring in normalen Woertern
+    # ("idealerweise", "Dialogfenster") -> falsche "Empfohlen"-Urteile.
+    def _alias_in(alias, t):
+        return re.search(r"(?<![a-zäöüß0-9])" + re.escape(alias) + r"(?![a-zäöüß0-9])", t) is not None
+
     for pattern in patterns:
         for m in re.finditer(pattern, text_lower):
             snippet = m.group(1)
             # Suche nach bekannten Versicherern im Snippet
             for alias, brand in BRAND_ALIASES.items():
-                if alias in snippet:
+                if _alias_in(alias, snippet):
                     empfohlen.add(brand)
 
     # Pattern 2: Suche in strukturierten Listen/Tabellen
@@ -109,7 +116,7 @@ def scrape_finanztip(product: str, url: str) -> list:
                           r')', text_lower):
         snippet = m.group(0)
         for alias, brand in BRAND_ALIASES.items():
-            if alias in snippet:
+            if _alias_in(alias, snippet):
                 empfohlen.add(brand)
 
     print(f"  Finanztip/{product}: {len(empfohlen)} empfohlene Marken: {', '.join(sorted(empfohlen)) or 'keine gefunden'}")
@@ -138,7 +145,9 @@ def update_finanztip_ratings(ratings: dict) -> bool:
                 # Nur ueberschreiben wenn vorher auch schon ein Wert da war
                 if old not in ("Nicht getestet", "—", None):
                     v["finanztip"] = "Nicht empfohlen"
-            if v["finanztip"] != old:
+            # Review-Fix 2026-06-12: get() statt [] — fehlt der Key und wurde
+            # nichts gesetzt, crashte der Vergleich mit KeyError.
+            if v.get("finanztip", old) != old:
                 changed = True
                 print(f"    {name}: '{old}' -> '{v['finanztip']}'")
 

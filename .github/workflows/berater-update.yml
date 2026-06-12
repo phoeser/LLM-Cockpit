@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: berater-update
+  # Review-Fix 2026-06-12: gemeinsame Gruppe aller Workflows, die auf main
+  # committen (vorher eigene Gruppe -> Push-Race mit Nightly/Weekly moeglich)
+  group: repo-writes
   cancel-in-progress: false
 
 permissions:
@@ -13,6 +15,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout LLM-Cockpit-Repo
         uses: actions/checkout@v4

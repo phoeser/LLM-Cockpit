@@ -10,6 +10,11 @@ concurrency:
   group: repo-writes
   cancel-in-progress: false
 
+# Review-Fix 2026-06-12: explizite Schreibrechte (fehlte als einziger
+# schreibender Workflow — bei restriktivem Repo-Default schlaegt der Push fehl)
+permissions:
+  contents: write
+
 jobs:
   fetch-reviews:
     runs-on: ubuntu-latest
@@ -40,6 +45,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/berater_reviews.json 2>/dev/null || true
           git add data/brand_reviews.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "data: berater google reviews (einmalig)"
-          git pull --rebase origin main || true
-          git push origin main
+          if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
+          git commit -m "data: berater google reviews"
+          # Review-Fix 2026-06-12: Push-Retry wie im Nightly (vorher nackter Push)
+          for i in 1 2 3; do
+            git pull --rebase origin main || git rebase --abort 2>/dev/null || true
+            if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
+            echo "Push fehlgeschlagen, Versuch $i"; sleep 10
+          done
+          echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1

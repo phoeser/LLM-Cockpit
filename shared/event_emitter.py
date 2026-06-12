@@ -20,11 +20,16 @@ _seq = 0
 
 
 def _next_id(brand: str, event_type: str) -> str:
-    """Generiert eine eindeutige Event-ID."""
+    """Generiert eine eindeutige Event-ID.
+
+    Review-Fix 2026-06-12: Uhrzeit (HHMMSS) in der ID — vorher kollidierten
+    IDs deterministisch bei Re-Runs am selben Tag (_seq startet je Prozess
+    bei 0) sowie mit dem eigenen _seq-Zaehler in merge_geo_page_events.py.
+    """
     global _seq
     _seq += 1
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    return f"evt_{today}_{brand.lower().replace(' ', '_').replace('-', '_')}_{event_type}_{_seq:03d}"
+    now = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return f"evt_{now}_{brand.lower().replace(' ', '_').replace('-', '_')}_{event_type}_{_seq:03d}"
 
 
 _SEEN_KEYS = None

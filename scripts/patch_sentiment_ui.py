@@ -18,6 +18,12 @@ if not template.exists():
 
 content = template.read_text(encoding="utf-8")
 
+# Review-Fix 2026-06-12: Idempotenz-Guard — ein zweiter Lauf duplizierte
+# HTML-Section und JS-Funktion (doppelte Element-IDs, kaputtes Dashboard).
+if "SENTIMENT QUELLEN-DETAILS" in content:
+    print("Bereits gepatcht (SENTIMENT QUELLEN-DETAILS vorhanden) — nichts zu tun.")
+    raise SystemExit(0)
+
 # ── 1) Neue HTML-Section nach dem Sentiment-Chart einfuegen ──────────────
 NEW_SECTION = '''
   <!-- ===== SENTIMENT QUELLEN-DETAILS ===== -->

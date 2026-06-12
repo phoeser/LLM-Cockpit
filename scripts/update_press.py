@@ -342,6 +342,10 @@ def main():
         existing_keys.add(k)
 
     new_count = 0
+    # Review-Fix 2026-06-12: wirklich NEUE Artikel je Brand sammeln (Basis fuer
+    # Event-Emission; vorher wurde gegen die auf 80 Artikel gekappte .previous.json
+    # verglichen -> Artikel ab Position 81 jede Nacht erneut als Event emittiert).
+    new_by_brand = {}
     for brand in BRANDS:
         key = brand["key"]
         name = brand["name"]
@@ -361,6 +365,7 @@ def main():
                     "crawl_date": today,
                 })
                 existing_keys.add(dedup_key)
+                new_by_brand.setdefault(key, []).append(a)
                 new_count += 1
 
     # Nach Datum sortieren (neueste zuerst)
@@ -381,28 +386,15 @@ def main():
     # ── Event-Emission für Korrelations-Engine ───────────────────────────
     if HAS_EVENTS:
         print("\n--- Event-Emission ---")
-        prev_data = load_previous_data(json_path)
-        prev_articles = prev_data.get("articles", {})
         event_count = 0
-        
+
         for brand in BRANDS:
             key = brand["key"]
             name = brand["name"]
-            current_articles = all_brands.get(key, [])
-            previous_articles = prev_articles.get(key, [])
-            
-            # Vorherige Titel sammeln für Vergleich
-            prev_titles = set()
-            for a in previous_articles:
-                norm = re.sub(r'[^a-zäöü0-9]', '', a.get("title", "").lower())[:60]
-                prev_titles.add(norm)
-            
-            # Neue Artikel finden (nicht in vorherigem Crawl)
-            new_articles = []
-            for a in current_articles:
-                norm = re.sub(r'[^a-zäöü0-9]', '', a.get("title", "").lower())[:60]
-                if norm not in prev_titles and a.get("date"):
-                    new_articles.append(a)
+            # Review-Fix 2026-06-12: "neu" = neu gegenueber der ungekappten
+            # press_history.json (Dedup-Set), nicht gegenueber der auf 80
+            # Artikel gekappten .previous.json (verursachte Phantom-Events).
+            new_articles = [a for a in new_by_brand.get(key, []) if a.get("date")]
             
             if new_articles:
                 for article in new_articles[:10]:  # Max 10 Events pro Brand

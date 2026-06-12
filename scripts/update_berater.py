@@ -629,9 +629,15 @@ def main():
                 if isinstance(v, dict):
                     return v.get("percent", 0) or 0
                 return v or 0
-            for type_name in ["individuell", "angepasst", "produktkatalog", "minimal"]:
-                curr_pct = _type_val(curr_types, type_name)
-                prev_pct = _type_val(prev_types, type_name)
+            # Review-Fix 2026-06-12: type_distribution enthaelt Counts — fuer den
+            # ">2% Shift"-Vergleich und die Event-Felder (old_pct/new_pct) auf
+            # echte Prozentwerte normalisieren (vorher: Counts als "Prozent").
+            _type_names = ["individuell", "angepasst", "produktkatalog", "minimal"]
+            _curr_sum = sum(_type_val(curr_types, n) for n in _type_names) or 1
+            _prev_sum = sum(_type_val(prev_types, n) for n in _type_names) or 1
+            for type_name in _type_names:
+                curr_pct = round(100.0 * _type_val(curr_types, type_name) / _curr_sum, 1)
+                prev_pct = round(100.0 * _type_val(prev_types, type_name) / _prev_sum, 1)
                 if abs(curr_pct - prev_pct) > 2:  # >2% Shift
                     emit_event(
                         event_type="berater_shift",
@@ -648,14 +654,18 @@ def main():
                     )
                     event_count += 1
         
-        # Daten für nächsten Vergleich sichern
-        save_for_comparison(out_path)
         print("  %d Events emittiert" % event_count)
 
     payload = dict(agg)
     payload["vermittler"] = rows
     out_path = out_dir / "berater_data.json"
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Review-Fix 2026-06-12: .previous.json erst NACH dem Schreiben des neuen
+    # Stands sichern. Vorher wurde der Stand N-1 als previous gesichert, waehrend
+    # der Vergleich oben gegen N-2 lief -> jede Aenderung wurde in zwei
+    # aufeinanderfolgenden Laeufen doppelt als berater_shift-Event emittiert.
+    if HAS_EVENTS:
+        save_for_comparison(out_path)
     print("OK Geschrieben: %s (%d bytes)" % (out_path, out_path.stat().st_size))
     t = agg["totals"]
     print("   Total: %d Vermittler" % t["vermittler"])

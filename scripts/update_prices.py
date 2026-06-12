@@ -599,7 +599,9 @@ def emit_price_events(old_data, new_data):
     BN = {"ergo": "ERGO", "allianz": "Allianz", "axa": "AXA", "huk": "HUK-Coburg",
           "generali": "Generali", "signal-iduna": "Signal Iduna", "ruv": "R+V",
           "devk": "DEVK", "hannoversche": "Hannoversche", "cosmosdirekt": "Cosmos Direkt"}
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    # Review-Fix 2026-06-12: korrektes ISO-Format (vorher %H-%M-%S mit
+    # Bindestrichen -> ungueltige Timestamps in price_change-Events)
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     lines = []
     for pk, prod in (new_data.get("products") or {}).items():
         old_prod = (old_data.get("products") or {}).get(pk, {})
@@ -620,7 +622,7 @@ def emit_price_events(old_data, new_data):
                     "timestamp": ts, "event_type": "price_change",
                     "brand": BN.get(bk, bk), "product": pk,
                     "source": "check24", "crawler": "update_prices",
-                    "magnitude": round(abs(pct) / 10.0, 3),
+                    "magnitude": round(min(abs(pct) / 10.0, 2.0), 3),  # Review-Fix 2026-06-12: Cap 2.0 wie emit_event()
                     "detail": {"metric": "monthly_premium", "product": pk, "age": age,
                                "old_price": op_, "new_price": np_, "change_pct": round(pct, 1),
                                "direction": "up" if pct > 0 else "down"},

@@ -7,7 +7,9 @@ Ersetzt StatiCrypt + inject_password_fix.py komplett.
 Verwendung:
     python scripts/encrypt_dashboard.py <passwort>
     # oder via Umgebungsvariable:
-    DASHBOARD_PASSWORD=LLM2026 python scripts/encrypt_dashboard.py
+    DASHBOARD_PASSWORD=<geheim> python scripts/encrypt_dashboard.py
+    (Review-Fix 2026-06-12: echtes Passwort nie hier im oeffentlichen
+     Docstring nennen — nur im GitHub Secret DASHBOARD_PASSWORD.)
 """
 import sys
 import os

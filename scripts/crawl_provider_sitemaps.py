@@ -178,7 +178,12 @@ def collect_urls(sitemap_url, seen_sitemaps, depth=0):
         return []
     tag = root.tag.lower()
     urls = []
-    locs = [e.text.strip() for e in root.iter() if e.tag.lower().endswith("loc") and e.text]
+    # Review-Fix 2026-06-12: nur echte Sitemap-<loc> zaehlen — endswith("loc")
+    # matchte auch image:loc / video:content_loc / thumbnail_loc -> URL-Zahlen
+    # bei Anbietern mit Bild-/Video-Sitemaps aufgeblaeht.
+    _SM_NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}loc"
+    locs = [e.text.strip() for e in root.iter()
+            if e.text and (e.tag == _SM_NS or e.tag == "loc")]
     if tag.endswith("sitemapindex"):
         for child in locs:
             time.sleep(0.3)

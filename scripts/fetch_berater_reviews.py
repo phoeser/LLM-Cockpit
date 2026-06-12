@@ -206,6 +206,15 @@ def main():
             details = places_get_reviews(place_id)
             time.sleep(DELAY_BETWEEN)
             
+            if details:
+                # Review-Fix 2026-06-12: rating/review_count aus den frischen
+                # Details uebernehmen — vorher blieben beide bei wiederverwendeter
+                # place_id dauerhaft auf dem Erst-Crawl-Stand ("or 1" machte
+                # zudem aus echten 0 Reviews persistent 1).
+                if details.get("rating") is not None:
+                    rating = details["rating"]
+                if details.get("userRatingCount") is not None:
+                    review_count = details["userRatingCount"]
             if details and details.get("reviews"):
                 reviews = [format_review(r) for r in details["reviews"][:MAX_REVIEWS]]
                 stats["with_reviews"] += 1

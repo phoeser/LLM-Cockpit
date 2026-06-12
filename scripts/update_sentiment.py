@@ -16,6 +16,7 @@ import json
 import re
 import os
 import sys
+import time  # Review-Fix 2026-06-12: crawl_franke_bornberg nutzte time.sleep ohne Import (NameError im Retry-Pfad)
 import gzip
 import urllib.request
 import urllib.parse

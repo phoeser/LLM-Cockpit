@@ -37,6 +37,13 @@ def fetch_subdomains(domain):
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
             txt = r.read().decode("utf-8", errors="ignore")
+        # Review-Fix 2026-06-12: hackertarget liefert Fehler/Quota-Texte mit
+        # HTTP 200 ("API count exceeded...", "error check your search parameter")
+        # -> wurde als "0 Subdomains" geparst und umging den Stale-Schutz.
+        low = txt.strip().lower()
+        if low.startswith("error") or "api count exceeded" in low:
+            sys.stderr.write("  WARN " + domain + ": API-Fehlertext: " + low[:60] + "\n")
+            return None
         subs = set()
         for line in txt.splitlines():
             host = line.split(",", 1)[0].strip().lower()

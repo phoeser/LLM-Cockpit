@@ -155,6 +155,12 @@ def fetch_geo_page_events() -> list:
         print(f"[merge_geo] FEHLER beim Laden des Trees: {e}")
         return []
 
+    # Review-Fix 2026-06-12: Trees-API liefert bei grossen Repos einen
+    # unvollstaendigen Baum mit truncated=true — sonst stiller Eventverlust.
+    if tree.get("truncated"):
+        print("[merge_geo] WARNUNG: Trees-API truncated=true — Dateibaum unvollstaendig, "
+              "Events koennten fehlen! (Fallback auf Contents-API erwaegen)")
+
     event_files = []
     for item in tree.get("tree", []):
         path = item.get("path", "")

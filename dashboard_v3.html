@@ -742,6 +742,13 @@
     <div id="corrImpactStudy"></div>
   </div>
 
+  <!-- Maßnahmen-Wirkung (DiD) -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">🎯 Maßnahmen-Wirkung (kausal, Difference-in-Differences)</h3>
+    <p class="text-xs text-gray-500 mb-3">Schätzt den <b>kausalen</b> SoV-Effekt datierter Maßnahmen gegen die anderen Marken als Kontrollgruppe. Eigene Maßnahmen in <code>data/interventions.json</code> taggen; „auto" = erkannte Aktivitäts-Spitzen.</p>
+    <div id="corrInterventions"></div>
+  </div>
+
   <!-- Tages-Heatmap -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
@@ -1989,7 +1996,7 @@ function buildPressTab() {
       if (__rest.length) {
         __restHtml = '<div id="pressRestArticles" class="hidden">' + __rest.map(a => renderArticleCard(a, true)).join('') + '</div>'
           + '<button id="pressMoreBtn" class="mt-3 px-4 py-2 text-sm font-semibold text-ergo-red border border-ergo-red rounded hover:bg-red-50" '
-          + 'onclick="var r=document.getElementById(\'pressRestArticles\');var b=document.getElementById(\'pressMoreBtn\');var h=r.classList.toggle(\'hidden\');b.textContent=h?\'' + __rest.length + ' weitere anzeigen\':\'Weniger anzeigen\';">' + __rest.length + ' weitere anzeigen</button>';
+          + 'onclick="var r=document.getElementById(\'pressRestArticles\');var b=document.getElementById(\'pressMoreBtn\');var h=r.classList.toggle(\'hidden\');b.textContent=h?(\'+ __rest.length + \' weitere anzeigen\'):\'Weniger anzeigen\';">' + __rest.length + ' weitere anzeigen</button>';
       }
       articleAllList.innerHTML = '<p class="text-xs text-gray-400 mb-2">' + allArticles.length + ' Artikel (20 sichtbar)</p>' + __first.map(a => renderArticleCard(a, true)).join('') + __restHtml;
     }
@@ -2935,8 +2942,36 @@ function buildGeoTab() {
       el.innerHTML = html;
     }
 
+    function buildInterventions(){
+      var host=document.getElementById('corrInterventions'); if(!host) return;
+      var d=window.INTERVENTIONS;
+      if(!d || !d.results || !d.results.length){
+        host.innerHTML='<div class="text-sm text-gray-400 py-2">Noch keine auswertbaren Maßnahmen. Trage datierte Maßnahmen in <code>data/interventions.json</code> ein — der nächste Nightly-Lauf misst ihre Wirkung.</div>';
+        return;
+      }
+      var h='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+        +'<th style="padding:6px 8px">Datum</th><th style="padding:6px 8px">Marke</th><th style="padding:6px 8px">Maßnahme</th>'
+        +'<th style="padding:6px 8px;text-align:right">Effekt (Pp)</th><th style="padding:6px 8px;text-align:center">Sicherheit</th><th style="padding:6px 8px">Quelle</th></tr></thead><tbody>';
+      d.results.forEach(function(r){
+        var pos=(r.did_pp||0)>=0; var strong=(r.p_placebo!=null && r.p_placebo<0.1);
+        var sig = strong
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">deutlich (p='+r.p_placebo.toFixed(2)+')</span>'
+          : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">unsicher (p='+(r.p_placebo!=null?r.p_placebo.toFixed(2):'?')+')</span>';
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#475569">'+r.date+'</td>'
+          +'<td style="padding:6px 8px;font-weight:600">'+r.brand+'</td>'
+          +'<td style="padding:6px 8px;color:#1e293b">'+(r.label||'')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+(pos?'#15803d':'#b91c1c')+'">'+(pos?'+':'')+r.did_pp+'</td>'
+          +'<td style="padding:6px 8px;text-align:center">'+sig+'</td>'
+          +'<td style="padding:6px 8px;color:#94a3b8;font-size:11px">'+(r.source||'')+'</td></tr>';
+      });
+      h+='</tbody></table>';
+      h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">'+(d.note||'')+' · Fenster: ±'+(d.window_days||7)+' Tage · '+(d.measure_days||0)+' Messtage gesamt.</div>';
+      host.innerHTML=h;
+    }
+
     function renderCorrelationTab() {
     try { renderImpactStudy(); } catch(e){ console.warn('impactStudy:', e.message); }
+    try { buildInterventions(); } catch(e){ console.warn('interventions:', e.message); }
     const EI = { review_change:'⭐', press_mention:'📰', news_mention:'🗞️', page_change:'🌐', page_new:'🆕', domain_change:'🔗', sov_change:'📈', berater_shift:'👥', review_volume:'📊', rating_update:'🏆', wikipedia_change:'📚', portal_rank_change:'🛒', rating_status_change:'🏅' };
     const EC = { review_change:'#f59e0b', press_mention:'#3b82f6', news_mention:'#6366f1', page_change:'#8b5cf6', page_new:'#06b6d4', domain_change:'#14b8a6', sov_change:'#ef4444', berater_shift:'#ec4899', review_volume:'#f59e0b', rating_update:'#10b981', wikipedia_change:'#0ea5e9', portal_rank_change:'#f97316', rating_status_change:'#eab308' };
     const EN = { review_change:'Bewertungen', press_mention:'Presse', news_mention:'News', page_change:'Seitenänderungen', page_new:'Neue Seiten', domain_change:'Domain', sov_change:'SoV', berater_shift:'Berater', review_volume:'Review-Volumen', rating_update:'Rating-Update', wikipedia_change:'Wikipedia', portal_rank_change:'Portal-Rang', rating_status_change:'Testsieger-Status' };
@@ -3414,7 +3449,8 @@ function buildGeoTab() {
         __v3_loadEvents(),
         __v3_loadJSON('data/correlation_impact.json'),
         __v3_loadJSONL('data/sov_history.jsonl'),
-        __v3_loadJSON('data/review_themes.json')
+        __v3_loadJSON('data/review_themes.json'),
+        __v3_loadJSON('data/intervention_results.json')
       ]);
       GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
@@ -3426,6 +3462,7 @@ function buildGeoTab() {
       window.CORRELATION_IMPACT = res[10] || null;
       window.SOV_HISTORY = res[11] || [];
       window.REVIEW_THEMES = res[12] || null;
+      window.INTERVENTIONS = res[13] || null;
       // v3: gecrawlte Anbieter-URLs in PROVIDERS einmischen (#11)
       try {
         var __pc = window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.providers;

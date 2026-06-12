@@ -47,10 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
           GEO_REPO: phoeser/geo-visibility-tool
         run: python scripts/update_snapshot.py
-        # Review-Fix 2026-06-12: war der einzige Crawler-Step ohne
-        # continue-on-error — ein GEO-API-Ausfall killte den ganzen Nightly
-        # (kompletter Daten-Lueckentag). Snapshot bleibt dann auf dem Vortag.
-        continue-on-error: true
 
       - name: Aktualisiere Sentiment-Daten (4 Quellen)
         env:
@@ -89,14 +85,11 @@ jobs:
         run: python scripts/track_drivers.py
         continue-on-error: true
 
-      - name: Korrelations-Engine Smoke-/Placebo-Test (Review-Fix 2026-06-12)
-        run: python scripts/test_correlation_smoke.py
-        continue-on-error: true
-
       - name: SoV-Historie aufzeichnen + Korrelations-/Impact-Analyse
         run: |
           python scripts/sov_history.py
           python scripts/correlation_impact.py
+          python scripts/intervention_analysis.py
         continue-on-error: true
 
       - name: Daten-Dateien zurueck in main committen
@@ -120,9 +113,12 @@ jobs:
           git add data/geo_page_changes.json 2>/dev/null || true
           git add data/ratings_external.json 2>/dev/null || true
           git add data/price_comparison.json 2>/dev/null || true
+          git add data/press_history.json 2>/dev/null || true
           git add data/sov_history.jsonl 2>/dev/null || true
           git add data/correlation_impact.json 2>/dev/null || true
           git add data/driver_state.json 2>/dev/null || true
+          git add data/intervention_results.json 2>/dev/null || true
+          git add data/interventions.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
           git commit -m "data: nightly update (alle Daten + Events)"
           for i in 1 2 3; do

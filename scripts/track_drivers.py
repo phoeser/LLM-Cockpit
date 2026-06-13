@@ -124,6 +124,33 @@ def rating_status():
     return out
 
 
+def _rating_score(sig):
+    """Numerischer Qualitaets-Score aus der Rating-Signatur ft=..|wt=..|mm=..|dfsi=.."""
+    if not sig:
+        return 0.0
+    parts = dict(p.split("=", 1) for p in sig.split("|") if "=" in p)
+    sc = 0.0
+    ft = (parts.get("ft") or "").lower()
+    if "empfohlen" in ft and "nicht" not in ft:
+        sc += 2
+    elif "nicht empfohlen" in ft:
+        sc -= 1
+    wt = (parts.get("wt") or "").lower()
+    for kw, v in (("sehr gut", 3), ("gut", 2), ("befriedigend", 1), ("nicht empfohlen", -1)):
+        if kw in wt:
+            sc += v; break
+    mm = parts.get("mm") or ""
+    try:
+        sc += float(mm)
+    except (TypeError, ValueError):
+        pass
+    dfsi = (parts.get("dfsi") or "").lower()
+    for kw, v in (("hervorragend", 4), ("sehr gut", 3), ("gut", 2), ("befriedigend", 1)):
+        if kw in dfsi:
+            sc += v; break
+    return sc
+
+
 def main():
     state = load_state()
     new_state = {}
@@ -145,6 +172,7 @@ def main():
                 emit_event(event_type="wikipedia_change", brand=name, source="wikipedia",
                            crawler="track_drivers",
                            magnitude=min(abs(dlen) / 1000.0, 2.0) or 0.5,
+                           sentiment=("positive" if dlen > 0 else "negative" if dlen < 0 else "neutral"),
                            detail={"metric": "article_length", "old": pv.get("length"),
                                    "new": cur.get("length"), "delta": dlen})
             n += 1
@@ -164,6 +192,7 @@ def main():
             emit_event(event_type="portal_rank_change", brand=name, source="check24",
                        crawler="track_drivers", product=prod,
                        magnitude=min(abs(pv - cur) * 0.4, 2.0),
+                       sentiment=("positive" if cur < pv else "negative"),
                        detail={"metric": "check24_price_rank", "old_rank": pv,
                                "new_rank": cur, "direction": "up" if cur < pv else "down"})
         n += 1
@@ -180,9 +209,11 @@ def main():
         prod, bkey = k.split("|", 1)
         name = BRANDS[bkey][0]
         if HAS_EVENTS:
+            _ds = _rating_score(cur) - _rating_score(pv)
             emit_event(event_type="rating_status_change", brand=name, source="ratings_external",
                        crawler="track_drivers", product=prod, magnitude=0.8,
-                       detail={"metric": "test_status", "old": pv, "new": cur})
+                       sentiment=("positive" if _ds > 0 else "negative" if _ds < 0 else "neutral"),
+                       detail={"metric": "test_status", "old": pv, "new": cur, "score_delta": round(_ds, 2)})
         n += 1
 
     STATE.parent.mkdir(parents=True, exist_ok=True)

@@ -49,6 +49,8 @@ IMPACT_TYPES = [
     "domain_change", "review_change", "review_volume", "price_change",
     "wikipedia_change", "portal_rank_change", "rating_status_change",
 ]
+# Treiber mit Valenz: Feature wird vorzeichenbehaftet (positiv/negativ aus Event-Sentiment)
+SIGNED_DRIVER_TYPES = {"wikipedia_change", "portal_rank_change", "rating_status_change"}
 TYPE_LABEL = {
     "page_change": "Seitenaenderungen (Wettbewerb)",
     "page_new": "Neue Seiten",
@@ -58,9 +60,9 @@ TYPE_LABEL = {
     "review_change": "Bewertungs-Aenderungen",
     "review_volume": "Bewertungs-Volumen",
     "price_change": "Preis-Aenderungen",
-    "wikipedia_change": "Wikipedia-Aenderungen",
-    "portal_rank_change": "Portal-Rang (Check24)",
-    "rating_status_change": "Testsieger-/Rating-Status",
+    "wikipedia_change": "Wikipedia-Ausbau (±)",
+    "portal_rank_change": "Portal-Rang Check24 (±)",
+    "rating_status_change": "Testsieger-/Rating-Trend (±)",
     "media_sentiment": "Medien-Sentiment (netto +/−)",
     "review_sentiment": "Bewertungs-Sentiment (netto +/−)",
 }
@@ -594,7 +596,10 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
         except (TypeError, ValueError):
             mg = 1.0
         wmag.setdefault(b, {}).setdefault(day, {})
-        wmag[b][day][t] = wmag[b][day].get(t, 0.0) + (mg if mg > 0 else 1.0)
+        _sgn = 1.0
+        if t in SIGNED_DRIVER_TYPES:
+            _sgn = {"positive": 1.0, "negative": -1.0}.get(e.get("sentiment"), 0.0)
+        wmag[b][day][t] = wmag[b][day].get(t, 0.0) + (mg if mg > 0 else 1.0) * _sgn
         if t in ("press_mention", "news_mention"):
             sv = {"positive": 1, "negative": -1}.get(e.get("sentiment"), 0)
             if sv:

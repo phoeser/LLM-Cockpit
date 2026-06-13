@@ -456,6 +456,7 @@
       </select>
       <span class="text-xs text-gray-500" id="geoLlmHint"></span>
     </div>
+    <div class="mt-3 flex items-center gap-2 flex-wrap" id="geoBrandFilter"></div>
   </div>
 
   <div id="geoDryRunWarning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-4 mb-6 text-sm">
@@ -2453,6 +2454,25 @@ function buildGeoCitedSources(data, geoSel){
 }
 
 
+function geoBrandActive(name){ return !window.geoBrandSet || window.geoBrandSet.has(name); }
+function geoToggleBrand(name){ if(!window.geoBrandSet) window.geoBrandSet=new Set(window.geoBrandAllNames||[]); if(window.geoBrandSet.has(name)) window.geoBrandSet.delete(name); else window.geoBrandSet.add(name); buildGeoTab(); if(window.buildGeoSovTime) buildGeoSovTime(); }
+function geoSetAllBrands(on){ window.geoBrandSet = on ? new Set(window.geoBrandAllNames||[]) : new Set(); buildGeoTab(); if(window.buildGeoSovTime) buildGeoSovTime(); }
+function geoRenderBrandFilter(names){
+  var host=document.getElementById('geoBrandFilter'); if(!host) return;
+  window.geoBrandAllNames=names;
+  if(!window.geoBrandSet) window.geoBrandSet=new Set(names);
+  var COL=(typeof GEO_BRAND_COLORS!=='undefined')?GEO_BRAND_COLORS:{};
+  var allOn=names.every(function(n){return window.geoBrandSet.has(n);});
+  var h='<span class="text-sm font-semibold text-ergo-dark">Anbieter:</span>';
+  h+='<button onclick="geoSetAllBrands(true)" class="px-3 py-1 text-xs rounded-full border transition '+(allOn?'bg-ergo-red text-white border-ergo-red':'text-gray-600 border-gray-300 hover:border-ergo-red')+'">Alle</button>';
+  names.forEach(function(n){
+    var on=window.geoBrandSet.has(n); var col=COL[n]||'#666';
+    h+='<label class="px-3 py-1 text-xs rounded-full border cursor-pointer transition" style="'+(on?('background:'+col+';border-color:'+col+';color:#fff'):'color:#64748b')+'"><input type="checkbox" '+(on?'checked':'')+' onchange="geoToggleBrand(\''+n.replace(/'/g,"\\'")+'\')" style="display:none">'+n+'</label>';
+  });
+  if(names.length>5){ h+='<span class="text-xs text-gray-400 ml-1" title="SoV ist der Anteil unter den gemessenen Marken — durch die Erweiterung sinken alle Prozentwerte rechnerisch; frühere Werte (5 Marken) sind nicht 1:1 vergleichbar.">· SoV-Basis: '+names.length+' Marken</span>'; }
+  host.innerHTML=h;
+}
+
 function buildGeoTab() {
   const data = GEO_SNAPSHOT;
   // ===== LLM-Auswahl (alle vs. einzelne) =====
@@ -2483,7 +2503,10 @@ function buildGeoTab() {
     }
   }
   // Effektives Ranking je nach Auswahl (ersetzt RANKING in allen Render-Bloecken)
-  const RANKING = geoRankingForLlm(data, geoSel);
+  const RANKING_ALL = geoRankingForLlm(data, geoSel);
+  geoRenderBrandFilter(RANKING_ALL.map(function(r){return r.name;}));
+  let RANKING = RANKING_ALL.filter(function(r){ return geoBrandActive(r.name); });
+  if (!RANKING.length) RANKING = RANKING_ALL;
   try { buildGeoCitedSources(data, geoSel); } catch(e){ console.warn("citedSources:", e.message); }
   // Status-Badge
   const badge = document.getElementById('geoStatusBadge');
@@ -2499,9 +2522,9 @@ function buildGeoTab() {
   if (warn) warn.classList.toggle('hidden', !data.dry_run);
 
   // KPI-Kacheln
-  const ergo = RANKING.find(r => r.name === 'ERGO');
-  const top = RANKING[0];
-  const ergoRank = RANKING.findIndex(r => r.name === 'ERGO') + 1;
+  const ergo = RANKING_ALL.find(r => r.name === 'ERGO');
+  const top = RANKING_ALL[0];
+  const ergoRank = RANKING_ALL.findIndex(r => r.name === 'ERGO') + 1;
   if (!ergo) { document.getElementById('geoKpiRow').innerHTML = '<p class="text-red-500 col-span-4">ERGO nicht im Ranking gefunden</p>'; return; }
   const kpis = [
     { val: ((ergo.share_of_voice || 0) * 100).toFixed(1) + '%', label: 'Share of Voice ERGO', color: '#DC0028' },
@@ -2560,7 +2583,7 @@ function buildGeoTab() {
       if (!winner) return '';
       const winnerCls = winner.name === 'ERGO' ? 'border-green-500' : 'border-red-500';
 
-      let rows = ranking.map((r, i) => {
+      let rows = ranking.filter(function(r){return geoBrandActive(r.name);}).map((r, i) => {
         const isErgo = r.name === 'ERGO';
         return `<tr class="${isErgo ? 'font-bold bg-red-50' : ''} border-b">
           <td class="px-2 py-1">${i+1}</td>
@@ -2595,9 +2618,9 @@ function buildGeoTab() {
     const hasError = !summary || /nicht verf|nicht generiert|client nicht|error|fehler/i.test(summary);
     if (hasError) {
       // Generiere intelligente Summary aus den Daten
-      const ergo = RANKING.find(r => r.name === 'ERGO');
-      const top = RANKING[0];
-      const ergoRank = RANKING.findIndex(r => r.name === 'ERGO') + 1;
+      const ergo = RANKING_ALL.find(r => r.name === 'ERGO');
+      const top = RANKING_ALL[0];
+      const ergoRank = RANKING_ALL.findIndex(r => r.name === 'ERGO') + 1;
       const totalBrands = RANKING.length;
       const ergoSoV = ((ergo.share_of_voice || 0) * 100).toFixed(1);
       const ergoRankAvg = ergo.avg_rank != null ? ergo.avg_rank.toFixed(1) : 'n/a';
@@ -3750,7 +3773,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     // Tägliche Veränderung (letzter vs. vorletzter Messpunkt) je Marke — grafisch +/-
     var deltaHost = document.getElementById('geoSovDelta');
     if(deltaHost){
-      var chips = Object.keys(byBrand).map(function(b){
+      var chips = Object.keys(byBrand).filter(function(b){return geoBrandActive(b);}).map(function(b){
         var vals = dates.map(function(d){ return byBrand[b][d]; }).filter(function(v){ return v!=null; });
         if(vals.length<2) return '';
         var delta = vals[vals.length-1] - vals[vals.length-2];
@@ -3761,7 +3784,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       }).filter(Boolean).join('');
       deltaHost.innerHTML = chips || '<span class="text-xs text-gray-400">Noch keine zwei Messpunkte für einen Tagesvergleich.</span>';
     }
-    var ds = Object.keys(byBrand).map(function(b){
+    var ds = Object.keys(byBrand).filter(function(b){return geoBrandActive(b);}).map(function(b){
       return { label:b, borderColor: COL[b]||'#888', backgroundColor:'transparent',
         data: dates.map(function(d){ return byBrand[b][d]!=null ? byBrand[b][d] : null; }),
         spanGaps:true, tension:0.25, borderWidth: b==='ERGO'?3:1.5, pointRadius:2 };

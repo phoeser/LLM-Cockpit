@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-13T07:24:44Z",
+  "generated_at": "2026-06-13T07:36:50Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
   "multivariate": {
     "available": true,
@@ -15,8 +15,9 @@
       "news_mention",
       "review_change",
       "review_volume",
-      "media_sentiment",
-      "review_sentiment"
+      "media_positive",
+      "review_positive",
+      "review_negative"
     ],
     "types_excluded_too_few": [
       "domain_change",
@@ -29,81 +30,91 @@
     "coefficients": {
       "review_change": {
         "label": "Bewertungs-Aenderungen",
-        "coef_pp_per_event_day": -1.2362,
-        "ci95_low": -2.5964,
-        "ci95_high": 0.124,
-        "prob_positive": 0.037,
-        "prob_direction": 0.963,
+        "coef_pp_per_event_day": -1.2311,
+        "ci95_low": -2.6077,
+        "ci95_high": 0.1456,
+        "prob_positive": 0.04,
+        "prob_direction": 0.96,
         "significant": false,
         "n_with_event": 9
       },
-      "media_sentiment": {
-        "label": "Medien-Sentiment (netto +/−)",
-        "coef_pp_per_event_day": -0.7915,
-        "ci95_low": -2.0333,
-        "ci95_high": 0.4503,
-        "prob_positive": 0.106,
-        "prob_direction": 0.894,
+      "media_positive": {
+        "label": "Positive Presse/News",
+        "coef_pp_per_event_day": -0.7021,
+        "ci95_low": -2.1143,
+        "ci95_high": 0.7102,
+        "prob_positive": 0.165,
+        "prob_direction": 0.835,
         "significant": false,
-        "n_with_event": 20
+        "n_with_event": 17
       },
       "review_volume": {
         "label": "Bewertungs-Volumen",
-        "coef_pp_per_event_day": 0.3085,
-        "ci95_low": -0.9218,
-        "ci95_high": 1.5388,
-        "prob_positive": 0.688,
-        "prob_direction": 0.688,
+        "coef_pp_per_event_day": 0.323,
+        "ci95_low": -0.9282,
+        "ci95_high": 1.5741,
+        "prob_positive": 0.694,
+        "prob_direction": 0.694,
         "significant": false,
         "n_with_event": 13
       },
+      "review_negative": {
+        "label": "Negative Bewertungen",
+        "coef_pp_per_event_day": 0.2236,
+        "ci95_low": -0.2121,
+        "ci95_high": 0.6593,
+        "prob_positive": 0.843,
+        "prob_direction": 0.843,
+        "significant": false,
+        "n_with_event": 36
+      },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "coef_pp_per_event_day": -0.2406,
-        "ci95_low": -0.6219,
-        "ci95_high": 0.1408,
-        "prob_positive": 0.108,
-        "prob_direction": 0.892,
+        "coef_pp_per_event_day": -0.2207,
+        "ci95_low": -0.6044,
+        "ci95_high": 0.1629,
+        "prob_positive": 0.13,
+        "prob_direction": 0.87,
         "significant": false,
         "n_with_event": 70
       },
-      "review_sentiment": {
-        "label": "Bewertungs-Sentiment (netto +/−)",
-        "coef_pp_per_event_day": -0.107,
-        "ci95_low": -0.2603,
-        "ci95_high": 0.0464,
-        "prob_positive": 0.086,
-        "prob_direction": 0.914,
+      "review_positive": {
+        "label": "Positive Bewertungen",
+        "coef_pp_per_event_day": -0.0915,
+        "ci95_low": -0.2437,
+        "ci95_high": 0.0606,
+        "prob_positive": 0.119,
+        "prob_direction": 0.881,
         "significant": false,
-        "n_with_event": 40
+        "n_with_event": 26
       },
       "press_mention": {
         "label": "Pressemitteilungen",
-        "coef_pp_per_event_day": -0.0502,
-        "ci95_low": -0.635,
-        "ci95_high": 0.5346,
-        "prob_positive": 0.433,
-        "prob_direction": 0.567,
+        "coef_pp_per_event_day": -0.0486,
+        "ci95_low": -0.6399,
+        "ci95_high": 0.5427,
+        "prob_positive": 0.436,
+        "prob_direction": 0.564,
         "significant": false,
         "n_with_event": 43
       },
       "page_new": {
         "label": "Neue Seiten",
-        "coef_pp_per_event_day": 0.0429,
-        "ci95_low": -0.3912,
-        "ci95_high": 0.4771,
-        "prob_positive": 0.577,
-        "prob_direction": 0.577,
+        "coef_pp_per_event_day": 0.0419,
+        "ci95_low": -0.3961,
+        "ci95_high": 0.4799,
+        "prob_positive": 0.574,
+        "prob_direction": 0.574,
         "significant": false,
         "n_with_event": 7
       },
       "page_change": {
         "label": "Seitenaenderungen (Wettbewerb)",
-        "coef_pp_per_event_day": -0.0193,
-        "ci95_low": -0.0501,
-        "ci95_high": 0.0115,
-        "prob_positive": 0.11,
-        "prob_direction": 0.89,
+        "coef_pp_per_event_day": -0.0205,
+        "ci95_low": -0.0518,
+        "ci95_high": 0.0109,
+        "prob_positive": 0.1,
+        "prob_direction": 0.9,
         "significant": false,
         "n_with_event": 41
       }
@@ -111,9 +122,9 @@
     "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=10 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
   },
   "validation": {
-    "placebo_false_positive_rate": 0.0175,
+    "placebo_false_positive_rate": 0.0206,
     "out_of_sample": {
-      "r2_oos_vs_baseline": -0.041,
+      "r2_oos_vs_baseline": -0.057,
       "n_test": 93
     },
     "note": "Placebo: erwartet ~0,05 (zufaellige Daten erzeugen kaum 'gesicherte' Effekte). Out-of-Sample r2>0 = Treiber sagen SoV besser voraus als die reine Marken-Basislinie."
@@ -321,7 +332,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -337,41 +349,51 @@
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.6153,
-            "ci95_low": -1.0695,
-            "ci95_high": -0.1611,
-            "prob_positive": 0.004,
-            "prob_direction": 0.996,
+            "coef_pp_per_event_day": -0.5419,
+            "ci95_low": -1.0181,
+            "ci95_high": -0.0656,
+            "prob_positive": 0.013,
+            "prob_direction": 0.987,
             "significant": false,
             "n_with_event": 17
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.0394,
-            "ci95_low": -0.1678,
-            "ci95_high": 0.0889,
-            "prob_positive": 0.274,
-            "prob_direction": 0.726,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.2839,
+            "ci95_low": -0.1942,
+            "ci95_high": 0.762,
+            "prob_positive": 0.878,
+            "prob_direction": 0.878,
             "significant": false,
-            "n_with_event": 25
+            "n_with_event": 23
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.036,
+            "ci95_low": -0.1613,
+            "ci95_high": 0.0893,
+            "prob_positive": 0.287,
+            "prob_direction": 0.713,
+            "significant": false,
+            "n_with_event": 21
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.0245,
-            "ci95_low": -0.7605,
-            "ci95_high": 0.8095,
-            "prob_positive": 0.524,
-            "prob_direction": 0.524,
+            "coef_pp_per_event_day": 0.0133,
+            "ci95_low": -0.7807,
+            "ci95_high": 0.8073,
+            "prob_positive": 0.513,
+            "prob_direction": 0.513,
             "significant": false,
             "n_with_event": 14
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0059,
-            "ci95_low": -0.0274,
-            "ci95_high": 0.0155,
-            "prob_positive": 0.294,
-            "prob_direction": 0.706,
+            "coef_pp_per_event_day": -0.0074,
+            "ci95_low": -0.0291,
+            "ci95_high": 0.0144,
+            "prob_positive": 0.253,
+            "prob_direction": 0.747,
             "significant": false,
             "n_with_event": 11
           }
@@ -486,7 +508,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -502,41 +525,51 @@
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -1.0078,
-            "ci95_low": -1.6266,
-            "ci95_high": -0.389,
-            "prob_positive": 0.001,
-            "prob_direction": 0.999,
+            "coef_pp_per_event_day": -0.9338,
+            "ci95_low": -1.5861,
+            "ci95_high": -0.2815,
+            "prob_positive": 0.003,
+            "prob_direction": 0.997,
             "significant": false,
             "n_with_event": 17
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.3748,
+            "ci95_low": -0.28,
+            "ci95_high": 1.0297,
+            "prob_positive": 0.869,
+            "prob_direction": 0.869,
+            "significant": false,
+            "n_with_event": 23
+          },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.1684,
-            "ci95_low": -0.9012,
-            "ci95_high": 1.2379,
-            "prob_positive": 0.621,
-            "prob_direction": 0.621,
+            "coef_pp_per_event_day": 0.1621,
+            "ci95_low": -0.9254,
+            "ci95_high": 1.2497,
+            "prob_positive": 0.615,
+            "prob_direction": 0.615,
             "significant": false,
             "n_with_event": 14
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.1435,
-            "ci95_low": -0.3185,
-            "ci95_high": 0.0314,
-            "prob_positive": 0.054,
-            "prob_direction": 0.946,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.1327,
+            "ci95_low": -0.3044,
+            "ci95_high": 0.0389,
+            "prob_positive": 0.065,
+            "prob_direction": 0.935,
             "significant": false,
-            "n_with_event": 25
+            "n_with_event": 21
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0184,
-            "ci95_low": -0.0477,
-            "ci95_high": 0.0109,
-            "prob_positive": 0.109,
-            "prob_direction": 0.891,
+            "coef_pp_per_event_day": -0.0201,
+            "ci95_low": -0.0499,
+            "ci95_high": 0.0097,
+            "prob_positive": 0.093,
+            "prob_direction": 0.907,
             "significant": false,
             "n_with_event": 11
           }
@@ -651,7 +684,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -665,43 +699,53 @@
         ],
         "exploratory": true,
         "coefficients": {
-          "news_mention": {
-            "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.2363,
-            "ci95_low": -0.9314,
-            "ci95_high": 0.4587,
-            "prob_positive": 0.253,
-            "prob_direction": 0.747,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.4785,
+            "ci95_low": -0.2459,
+            "ci95_high": 1.2028,
+            "prob_positive": 0.902,
+            "prob_direction": 0.902,
             "significant": false,
-            "n_with_event": 17
+            "n_with_event": 23
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.2059,
-            "ci95_low": -0.9954,
-            "ci95_high": 1.4071,
-            "prob_positive": 0.632,
-            "prob_direction": 0.632,
+            "coef_pp_per_event_day": 0.1921,
+            "ci95_low": -1.0109,
+            "ci95_high": 1.395,
+            "prob_positive": 0.623,
+            "prob_direction": 0.623,
             "significant": false,
             "n_with_event": 14
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.1443,
-            "ci95_low": -0.3408,
-            "ci95_high": 0.0521,
-            "prob_positive": 0.075,
-            "prob_direction": 0.925,
+          "news_mention": {
+            "label": "News-Erwaehnungen",
+            "coef_pp_per_event_day": -0.134,
+            "ci95_low": -0.8555,
+            "ci95_high": 0.5875,
+            "prob_positive": 0.358,
+            "prob_direction": 0.642,
             "significant": false,
-            "n_with_event": 25
+            "n_with_event": 17
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.1315,
+            "ci95_low": -0.3214,
+            "ci95_high": 0.0584,
+            "prob_positive": 0.087,
+            "prob_direction": 0.913,
+            "significant": false,
+            "n_with_event": 21
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0051,
-            "ci95_low": -0.038,
-            "ci95_high": 0.0278,
-            "prob_positive": 0.381,
-            "prob_direction": 0.619,
+            "coef_pp_per_event_day": -0.0072,
+            "ci95_low": -0.0402,
+            "ci95_high": 0.0257,
+            "prob_positive": 0.334,
+            "prob_direction": 0.666,
             "significant": false,
             "n_with_event": 11
           }
@@ -792,8 +836,7 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "media_sentiment",
-          "review_sentiment"
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -807,41 +850,31 @@
         ],
         "exploratory": false,
         "coefficients": {
-          "media_sentiment": {
-            "label": "Medien-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.7915,
-            "ci95_low": -0.7915,
-            "ci95_high": -0.7915,
-            "prob_positive": 0.0,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.2236,
+            "ci95_low": 0.2236,
+            "ci95_high": 0.2236,
+            "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 5
+            "n_with_event": 9
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.2406,
-            "ci95_low": -0.2406,
-            "ci95_high": -0.2406,
+            "coef_pp_per_event_day": -0.2207,
+            "ci95_low": -0.2207,
+            "ci95_high": -0.2207,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": true,
             "n_with_event": 15
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.107,
-            "ci95_low": -0.107,
-            "ci95_high": -0.107,
-            "prob_positive": 0.0,
-            "prob_direction": 1.0,
-            "significant": true,
-            "n_with_event": 10
-          },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.0502,
-            "ci95_low": -0.0502,
-            "ci95_high": -0.0502,
+            "coef_pp_per_event_day": -0.0486,
+            "ci95_low": -0.0486,
+            "ci95_high": -0.0486,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -849,9 +882,9 @@
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0193,
-            "ci95_low": -0.0193,
-            "ci95_high": -0.0193,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -975,8 +1008,8 @@
           "press_mention",
           "news_mention",
           "domain_change",
-          "media_sentiment",
-          "review_sentiment"
+          "media_positive",
+          "review_positive"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -989,11 +1022,11 @@
         ],
         "exploratory": true,
         "coefficients": {
-          "media_sentiment": {
-            "label": "Medien-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.7915,
-            "ci95_low": -0.7915,
-            "ci95_high": -0.7915,
+          "media_positive": {
+            "label": "Positive Presse/News",
+            "coef_pp_per_event_day": -0.7021,
+            "ci95_low": -0.7021,
+            "ci95_high": -0.7021,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1001,19 +1034,19 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.2406,
-            "ci95_low": -0.2406,
-            "ci95_high": -0.2406,
+            "coef_pp_per_event_day": -0.2207,
+            "ci95_low": -0.2207,
+            "ci95_high": -0.2207,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 17
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.107,
-            "ci95_low": -0.107,
-            "ci95_high": -0.107,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0915,
+            "ci95_low": -0.0915,
+            "ci95_high": -0.0915,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1021,9 +1054,9 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.0502,
-            "ci95_low": -0.0502,
-            "ci95_high": -0.0502,
+            "coef_pp_per_event_day": -0.0486,
+            "ci95_low": -0.0486,
+            "ci95_high": -0.0486,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1031,9 +1064,9 @@
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0193,
-            "ci95_low": -0.0193,
-            "ci95_high": -0.0193,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1140,7 +1173,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -1154,31 +1188,41 @@
         ],
         "exploratory": true,
         "coefficients": {
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.2236,
+            "ci95_low": 0.2236,
+            "ci95_high": 0.2236,
+            "prob_positive": 1.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 8
+          },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.2406,
-            "ci95_low": -0.2406,
-            "ci95_high": -0.2406,
+            "coef_pp_per_event_day": -0.2207,
+            "ci95_low": -0.2207,
+            "ci95_high": -0.2207,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 13
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.107,
-            "ci95_low": -0.107,
-            "ci95_high": -0.107,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0915,
+            "ci95_low": -0.0915,
+            "ci95_high": -0.0915,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 8
+            "n_with_event": 6
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.0502,
-            "ci95_low": -0.0502,
-            "ci95_high": -0.0502,
+            "coef_pp_per_event_day": -0.0486,
+            "ci95_low": -0.0486,
+            "ci95_high": -0.0486,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1186,9 +1230,9 @@
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0193,
-            "ci95_low": -0.0193,
-            "ci95_high": -0.0193,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1271,7 +1315,8 @@
         "types_used": [
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_change",
@@ -1286,31 +1331,41 @@
         ],
         "exploratory": true,
         "coefficients": {
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.2236,
+            "ci95_low": 0.2236,
+            "ci95_high": 0.2236,
+            "prob_positive": 1.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 11
+          },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.2406,
-            "ci95_low": -0.2406,
-            "ci95_high": -0.2406,
+            "coef_pp_per_event_day": -0.2207,
+            "ci95_low": -0.2207,
+            "ci95_high": -0.2207,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 10
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.107,
-            "ci95_low": -0.107,
-            "ci95_high": -0.107,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0915,
+            "ci95_low": -0.0915,
+            "ci95_high": -0.0915,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 10
+            "n_with_event": 6
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.0502,
-            "ci95_low": -0.0502,
-            "ci95_high": -0.0502,
+            "coef_pp_per_event_day": -0.0486,
+            "ci95_low": -0.0486,
+            "ci95_high": -0.0486,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1408,8 +1463,9 @@
           "news_mention",
           "review_change",
           "review_volume",
-          "media_sentiment",
-          "review_sentiment"
+          "media_positive",
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_change",
@@ -1424,19 +1480,19 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Aenderungen",
-            "coef_pp_per_event_day": -1.2362,
-            "ci95_low": -1.2362,
-            "ci95_high": -1.2362,
+            "coef_pp_per_event_day": -1.2311,
+            "ci95_low": -1.2311,
+            "ci95_high": -1.2311,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 6
           },
-          "media_sentiment": {
-            "label": "Medien-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.7915,
-            "ci95_low": -0.7915,
-            "ci95_high": -0.7915,
+          "media_positive": {
+            "label": "Positive Presse/News",
+            "coef_pp_per_event_day": -0.7021,
+            "ci95_low": -0.7021,
+            "ci95_high": -0.7021,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1444,29 +1500,39 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "coef_pp_per_event_day": 0.3085,
-            "ci95_low": 0.3085,
-            "ci95_high": 0.3085,
+            "coef_pp_per_event_day": 0.323,
+            "ci95_low": 0.323,
+            "ci95_high": 0.323,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 12
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.2236,
+            "ci95_low": 0.2236,
+            "ci95_high": 0.2236,
+            "prob_positive": 1.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 5
+          },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.2406,
-            "ci95_low": -0.2406,
-            "ci95_high": -0.2406,
+            "coef_pp_per_event_day": -0.2207,
+            "ci95_low": -0.2207,
+            "ci95_high": -0.2207,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 15
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.107,
-            "ci95_low": -0.107,
-            "ci95_high": -0.107,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0915,
+            "ci95_low": -0.0915,
+            "ci95_high": -0.0915,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1474,9 +1540,9 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": -0.0502,
-            "ci95_low": -0.0502,
-            "ci95_high": -0.0502,
+            "coef_pp_per_event_day": -0.0486,
+            "ci95_low": -0.0486,
+            "ci95_high": -0.0486,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1588,7 +1654,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -1604,41 +1671,51 @@
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.6221,
-            "ci95_low": -1.1737,
-            "ci95_high": -0.0705,
-            "prob_positive": 0.014,
-            "prob_direction": 0.986,
+            "coef_pp_per_event_day": -0.5339,
+            "ci95_low": -1.1085,
+            "ci95_high": 0.0407,
+            "prob_positive": 0.034,
+            "prob_direction": 0.966,
             "significant": false,
             "n_with_event": 17
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.4266,
+            "ci95_low": -0.1502,
+            "ci95_high": 1.0035,
+            "prob_positive": 0.926,
+            "prob_direction": 0.926,
+            "significant": false,
+            "n_with_event": 23
+          },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.1871,
-            "ci95_low": -0.7663,
-            "ci95_high": 1.1405,
-            "prob_positive": 0.65,
-            "prob_direction": 0.65,
+            "coef_pp_per_event_day": 0.1771,
+            "ci95_low": -0.7809,
+            "ci95_high": 1.1351,
+            "prob_positive": 0.641,
+            "prob_direction": 0.641,
             "significant": false,
             "n_with_event": 14
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.1439,
-            "ci95_low": -0.2999,
-            "ci95_high": 0.012,
-            "prob_positive": 0.035,
-            "prob_direction": 0.965,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.1321,
+            "ci95_low": -0.2833,
+            "ci95_high": 0.0191,
+            "prob_positive": 0.043,
+            "prob_direction": 0.957,
             "significant": false,
-            "n_with_event": 25
+            "n_with_event": 21
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0117,
-            "ci95_low": -0.0378,
-            "ci95_high": 0.0144,
-            "prob_positive": 0.189,
-            "prob_direction": 0.811,
+            "coef_pp_per_event_day": -0.0137,
+            "ci95_low": -0.0399,
+            "ci95_high": 0.0126,
+            "prob_positive": 0.154,
+            "prob_direction": 0.846,
             "significant": false,
             "n_with_event": 11
           }
@@ -1757,7 +1834,8 @@
           "page_change",
           "press_mention",
           "news_mention",
-          "review_sentiment"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -1773,41 +1851,51 @@
         "coefficients": {
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "coef_pp_per_event_day": -0.6153,
-            "ci95_low": -1.0695,
-            "ci95_high": -0.1611,
-            "prob_positive": 0.004,
-            "prob_direction": 0.996,
+            "coef_pp_per_event_day": -0.5419,
+            "ci95_low": -1.0181,
+            "ci95_high": -0.0656,
+            "prob_positive": 0.013,
+            "prob_direction": 0.987,
             "significant": false,
             "n_with_event": 17
           },
-          "review_sentiment": {
-            "label": "Bewertungs-Sentiment (netto +/−)",
-            "coef_pp_per_event_day": -0.0394,
-            "ci95_low": -0.1678,
-            "ci95_high": 0.0889,
-            "prob_positive": 0.274,
-            "prob_direction": 0.726,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.2839,
+            "ci95_low": -0.1942,
+            "ci95_high": 0.762,
+            "prob_positive": 0.878,
+            "prob_direction": 0.878,
             "significant": false,
-            "n_with_event": 25
+            "n_with_event": 23
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.036,
+            "ci95_low": -0.1613,
+            "ci95_high": 0.0893,
+            "prob_positive": 0.287,
+            "prob_direction": 0.713,
+            "significant": false,
+            "n_with_event": 21
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "coef_pp_per_event_day": 0.0245,
-            "ci95_low": -0.7605,
-            "ci95_high": 0.8095,
-            "prob_positive": 0.524,
-            "prob_direction": 0.524,
+            "coef_pp_per_event_day": 0.0133,
+            "ci95_low": -0.7807,
+            "ci95_high": 0.8073,
+            "prob_positive": 0.513,
+            "prob_direction": 0.513,
             "significant": false,
             "n_with_event": 14
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0059,
-            "ci95_low": -0.0274,
-            "ci95_high": 0.0155,
-            "prob_positive": 0.294,
-            "prob_direction": 0.706,
+            "coef_pp_per_event_day": -0.0074,
+            "ci95_low": -0.0291,
+            "ci95_high": 0.0144,
+            "prob_positive": 0.253,
+            "prob_direction": 0.747,
             "significant": false,
             "n_with_event": 11
           }

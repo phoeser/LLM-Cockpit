@@ -38,6 +38,7 @@ from datetime import datetime, timezone
 
 EVENTS_FILE = Path("shared/events.jsonl")
 HISTORY_FILE = Path("data/sov_history.jsonl")  # dichte SoV-Messreihe (Vorrang)
+REVIEW_HISTORY_FILE = Path("data/review_history.json")
 OUT_FILE = Path("data/correlation_impact.json")
 
 # Optionaler Lag in Tagen: Wirkung tritt evtl. verzoegert auf. 0 = gleiches Intervall.
@@ -61,6 +62,7 @@ TYPE_LABEL = {
     "portal_rank_change": "Portal-Rang (Check24)",
     "rating_status_change": "Testsieger-/Rating-Status",
     "media_sentiment": "Medien-Sentiment (netto +/−)",
+    "review_sentiment": "Bewertungs-Sentiment (netto +/−)",
 }
 
 
@@ -519,6 +521,44 @@ def _oos_skill(points_raw, use, feature_key):
     return {"r2_oos_vs_baseline": round(1 - sse_m / sse_n, 3), "n_test": n_test}
 
 
+_BKEY2NAME = {"ergo": "ERGO", "allianz": "Allianz", "axa": "AXA", "huk": "HUK-Coburg",
+             "generali": "Generali", "signal-iduna": "Signal Iduna", "ruv": "R+V",
+             "devk": "DEVK", "hannoversche": "Hannoversche", "cosmosdirekt": "Cosmos Direkt"}
+
+
+def review_sentiment_by_day():
+    """Netto-Bewertungs-Sentiment je (Marke, Tag) aus echten Einzel-Reviews:
+    +1 je Review >=4 Sterne, -1 je Review <=2, 0 bei 3. Schliesst eKomi-Aggregate
+    und Berater-Agentur-Reviews aus (zentrale Markensicht, marktvergleichbar)."""
+    out = {}
+    if not REVIEW_HISTORY_FILE.exists():
+        return out
+    try:
+        rows = json.loads(REVIEW_HISTORY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return out
+    for r in rows:
+        src = r.get("source") or ""
+        if src in ("eKomi", "Google (Berater)"):
+            continue
+        if "Aggregiertes Rating" in (r.get("text") or ""):
+            continue
+        sc = r.get("score")
+        if sc is None:
+            continue
+        try:
+            sc = float(sc)
+        except (TypeError, ValueError):
+            continue
+        name = _BKEY2NAME.get(r.get("brand"))
+        day = (r.get("date") or r.get("crawl_date") or "")[:10]
+        if not name or not day:
+            continue
+        sign = 1 if sc >= 4 else (-1 if sc <= 2 else 0)
+        out.setdefault(name, {})[day] = out.setdefault(name, {}).get(day, 0) + sign
+    return out
+
+
 def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None, prior_mean=None, validate=False):
     # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
     if llm_set is not None:
@@ -567,6 +607,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
     #    (verhindert Scheinkorrelation durch markenspezifische Trends)
     #  - Spearman statt nur Pearson (robust bei nullinflationierten Counts)
     #  - Standardfehler (SE) des Effekts + Konfidenz JE TYP (aus n_with)
+    review_senti = review_sentiment_by_day()
     points_raw = []
     for brand, ser in sov.items():
         bydays = counts.get(brand, {})
@@ -591,6 +632,11 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
                     sent_total = sv if not isinstance(sv, dict) else 0
                     snet += sent_total
             xmv["media_sentiment"] = snet / days
+            rnet = 0
+            for day, rv in (review_senti.get(brand, {}) or {}).items():
+                if start_day <= day < end_day:
+                    rnet += rv
+            xmv["review_sentiment"] = rnet / days
             points_raw.append({"brand": brand, "days": days, "time": start_day,
                                "y": (end_pct - start_pct) / days, "x": cnt, "xmv": xmv})
     # Marken-Isolierung (optional): nur Intervalle dieser Marke
@@ -660,7 +706,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
                           key=lambda kv: -abs(kv[1]["avg_sov_effect_pp"] or 0)))
     # Multivariat: pooled (alle Marken, Within-FE) ODER einzelmarken-zentriert bei brand_filter.
     multivar = multivariate_impact(points_raw, min_with=(4 if brand_filter else 6),
-                                   candidate_types=IMPACT_TYPES + ["media_sentiment"],
+                                   candidate_types=IMPACT_TYPES + ["media_sentiment", "review_sentiment"],
                                    feature_key="xmv", prior_mean=prior_mean)
     # Validierung (nur Gesamtmodell): Placebo-Falsch-Positiv-Rate + Out-of-Sample-Skill
     validation = None

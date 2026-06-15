@@ -412,7 +412,7 @@ def multivariate_impact(points_raw, min_with=6, candidate_types=None, feature_ke
         center = [(prior_mean.get(use[j], 0.0)) * sd[j] for j in range(m)]
     beta, Ainv, sig2 = _ridge_posterior(Xs, Y, lam, center)
 
-    MIN_NWITH, MIN_NPTS, MIN_TIMES = 10, 20, 12
+    MIN_NWITH, MIN_NPTS, MIN_TIMES = 15, 20, 12
     n_times = len({p.get("time") for p in points_raw})
     enough_data = len(points_raw) >= MIN_NPTS and n_times >= MIN_TIMES
 
@@ -452,7 +452,7 @@ def multivariate_impact(points_raw, min_with=6, candidate_types=None, feature_ke
                      if exploratory else "")
                     + "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). "
                     "P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. "
-                    "'Gesichert' = P(Richtung) >= 97,5 %, >=10 Intervalle mit Event, "
+                    "'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, "
                     ">=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling "
                     "zum Gesamteffekt stabilisiert."}
 

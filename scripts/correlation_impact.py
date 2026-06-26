@@ -51,6 +51,13 @@ IMPACT_TYPES = [
 ]
 # Treiber mit Valenz: Feature wird vorzeichenbehaftet (positiv/negativ aus Event-Sentiment)
 SIGNED_DRIVER_TYPES = {"wikipedia_change", "portal_rank_change", "rating_status_change"}
+# 2026-06-26 Fix: Die signierte Presse-Aufteilung (media_positive/negative) ERSETZT im
+# multivariaten Modell die ungezeichneten press_mention/news_mention; analog ersetzt die
+# review_positive/negative-Aufteilung das ungezeichnete review_volume. Beides zusammen ist
+# kollinear (positiv+negativ+neutral ~ Presse+News) und erzeugt instabile, scheinbar
+# vertauschte Vorzeichen. One-at-a-time-Tabelle (results) zeigt Presse/News weiterhin.
+_MV_TYPES = [t for t in IMPACT_TYPES if t not in ("press_mention", "news_mention", "review_volume")] \
+    + ["media_positive", "media_negative", "review_positive", "review_negative"]
 TYPE_LABEL = {
     "page_change": "Seitenaenderungen (Wettbewerb)",
     "page_new": "Neue Seiten",
@@ -63,8 +70,8 @@ TYPE_LABEL = {
     "wikipedia_change": "Wikipedia-Ausbau (±)",
     "portal_rank_change": "Portal-Rang Check24 (±)",
     "rating_status_change": "Testsieger-/Rating-Trend (±)",
-    "media_positive": "Positive Presse/News",
-    "media_negative": "Negative Presse/News",
+    "media_positive": "Presse/News: Produkt/Strategie",
+    "media_negative": "Presse/News: Schaden/Leistung",
     "review_positive": "Positive Bewertungen",
     "review_negative": "Negative Bewertungen",
 }
@@ -720,7 +727,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
                           key=lambda kv: -abs(kv[1]["avg_sov_effect_pp"] or 0)))
     # Multivariat: pooled (alle Marken, Within-FE) ODER einzelmarken-zentriert bei brand_filter.
     multivar = multivariate_impact(points_raw, min_with=(4 if brand_filter else 6),
-                                   candidate_types=IMPACT_TYPES + ["media_positive", "media_negative", "review_positive", "review_negative"],
+                                   candidate_types=_MV_TYPES,
                                    feature_key="xmv", prior_mean=prior_mean)
     # Validierung (nur Gesamtmodell): Placebo-Falsch-Positiv-Rate + Out-of-Sample-Skill
     validation = None

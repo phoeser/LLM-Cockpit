@@ -64,7 +64,7 @@ TYPE_LABEL = {
     "press_mention": "Pressemitteilungen",
     "news_mention": "News-Erwaehnungen",
     "domain_change": "Domain-/Subdomain-Aenderungen",
-    "review_change": "Bewertungs-Aenderungen",
+    "review_change": "Bewertungs-Trend (±)",
     "review_volume": "Bewertungs-Volumen",
     "price_change": "Preis-Aenderungen",
     "wikipedia_change": "Wikipedia-Ausbau (±)",
@@ -611,6 +611,22 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
         _sgn = 1.0
         if t in SIGNED_DRIVER_TYPES:
             _sgn = {"positive": 1.0, "negative": -1.0}.get(e.get("sentiment"), 0.0)
+        elif t == "review_change":
+            # 2026-06-26: Bewertungs-Aenderung vorzeichenbehaftet -> Richtung der
+            # Durchschnitts-Bewertung aus dem Event-Detail (Delta). Wirkt direkt auf
+            # bestehende Events (old_value/new_value/change bereits vorhanden).
+            _d = e.get("detail") or {}
+            _chg = _d.get("change")
+            if _chg is None and _d.get("new_value") is not None and _d.get("old_value") is not None:
+                try:
+                    _chg = float(_d["new_value"]) - float(_d["old_value"])
+                except (TypeError, ValueError):
+                    _chg = None
+            try:
+                _chg = float(_chg)
+            except (TypeError, ValueError):
+                _chg = 0.0
+            _sgn = 1.0 if _chg > 0 else (-1.0 if _chg < 0 else 0.0)
         wmag[b][day][t] = wmag[b][day].get(t, 0.0) + (mg if mg > 0 else 1.0) * _sgn
         if t in ("press_mention", "news_mention"):
             sn = e.get("sentiment")

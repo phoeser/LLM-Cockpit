@@ -118,6 +118,12 @@ def _is_noise(ev: dict) -> bool:
     sim = ev.get("similarity")
     added = ev.get("added_lines_count") or len(ev.get("added_lines") or [])
     removed = ev.get("removed_lines_count") or len(ev.get("removed_lines") or [])
+    _al = ev.get("added_lines") or []
+    _rl = ev.get("removed_lines") or []
+    if _al and _rl:
+        from collections import Counter as _C
+        if not (_C(_al) - _C(_rl)) and not (_C(_rl) - _C(_al)):
+            return True  # reine Umsortierung (entfernt == hinzugefuegt) -> Rauschen
     return (
         isinstance(sim, (int, float))
         and sim >= NOISE_SIMILARITY

@@ -65,7 +65,8 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
             print(f"   Fehler bei {url}: {exc}")
             continue
 
-    sys.exit("FEHLER: latest.json konnte nicht geladen werden (alle Pfade/Token fehlgeschlagen).")
+    print("WARN: latest.json nicht ladbar (alle Pfade/Token) -- behalte letzten Stand, kein Abbruch.")
+    return None
 
 
 # ── Zitierte-Quellen-Auswertung (Roadmap Punkt 2) ───────────────────────────
@@ -244,6 +245,9 @@ def main():
 
     print(f"-> Hole latest.json aus {repo} ...")
     geo = fetch_latest_geo_snapshot(repo, token)
+    if geo is None:
+        print("WARN: Kein neuer GEO-Snapshot -- Nightly laeuft mit letztem Stand weiter (kein Abbruch).")
+        return
     print(f"   Run-ID: {geo.get('run_id')}, dry_run={geo.get('dry_run')}")
 
     snapshot = transform_to_dashboard_format(geo)

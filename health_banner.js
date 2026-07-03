@@ -1,0 +1,142 @@
+/* ============================================================
+   ERGO LLM-Cockpit — Health-/Frische-Banner
+   Zweck: sichtbar warnen, wenn ein LLM keine Daten mehr liefert
+   (typisch: API-Guthaben aufgebraucht oder Key/Modell ungueltig)
+   oder wenn der Snapshot ueberaltert ist.
+   Eigenstaendig, keine Abhaengigkeit vom Dashboard-Code.
+   Liest data/geo_snapshot.json (dieselbe Datei wie das Dashboard).
+   Einbindung: <script src="health_banner.js"></script> vor </body>.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  var MAX_AGE_DAYS = 2;               // ab hier gilt der Snapshot als veraltet
+  var SNAP_URL = "data/geo_snapshot.json";
+  var LLM_NAMES = { chatgpt: "ChatGPT", gemini: "Gemini", perplexity: "Perplexity", claude: "Claude", grok: "Grok" };
+  var LLM_HINT = {
+    chatgpt: "OpenAI-Guthaben pruefen: platform.openai.com/settings/organization/billing",
+    perplexity: "Perplexity-API-Guthaben pruefen: perplexity.ai/settings/api",
+    gemini: "Google-/Gemini-API-Key & Kontingent pruefen",
+    claude: "Anthropic-API-Key & Guthaben pruefen",
+    grok: "xAI-API-Key & Guthaben pruefen"
+  };
+
+  function ready(fn) {
+    if (document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
+  }
+
+  function parseDate(s) {
+    if (!s) return null;
+    s = String(s).trim();
+    // run_id-Form "2026-05-30T00-17-37Z" -> ISO mit Doppelpunkten
+    var m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})Z?$/);
+    if (m) s = m[1] + "T" + m[2] + ":" + m[3] + ":" + m[4] + "Z";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += "T00:00:00Z";
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function fmtDate(d) {
+    if (!d) return "unbekannt";
+    try { return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }); }
+    catch (e) { return d.toISOString().slice(0, 10); }
+  }
+
+  function analyze(g) {
+    var out = { broken: [], allZero: false, ageDays: null, snapDate: null, ok: true };
+    if (!g || !g.products) return out;
+
+    var llms = (Array.isArray(g.llms) && g.llms.length) ? g.llms.slice() : null;
+    if (!llms) {
+      llms = [];
+      for (var pid0 in g.products) {
+        var sbl0 = g.products[pid0].summary_by_llm || {};
+        for (var k in sbl0) if (llms.indexOf(k) < 0) llms.push(k);
+      }
+    }
+
+    var totals = {};
+    llms.forEach(function (l) { totals[l] = 0; });
+    for (var pid in g.products) {
+      var sbl = g.products[pid].summary_by_llm || {};
+      llms.forEach(function (l) {
+        var brands = (sbl[l] && sbl[l].brands) || [];
+        brands.forEach(function (b) { totals[l] += (b.mentions || 0); });
+      });
+    }
+
+    var anyData = llms.some(function (l) { return totals[l] > 0; });
+    out.allZero = !anyData;
+    out.broken = anyData ? llms.filter(function (l) { return totals[l] === 0; }) : [];
+
+    out.snapDate = parseDate(g.finished_at || g.started_at || g.run_id);
+    if (out.snapDate) out.ageDays = Math.round((Date.now() - out.snapDate.getTime()) / 86400000 * 10) / 10;
+
+    var stale = (out.ageDays === null) || (out.ageDays > MAX_AGE_DAYS);
+    out.stale = stale;
+    out.ok = (out.broken.length === 0) && !out.allZero && !stale;
+    return out;
+  }
+
+  function render(a) {
+    if (a.ok) return;
+
+    // Dismiss nur fuer diesen Snapshot-Stand (kommt bei neuen Daten wieder)
+    var key = "ergo_health_dismiss_" + (a.snapDate ? a.snapDate.toISOString().slice(0, 16) : "na")
+      + "_" + a.broken.join("-") + (a.stale ? "_stale" : "") + (a.allZero ? "_zero" : "");
+    try { if (sessionStorage.getItem(key) === "1") return; } catch (e) {}
+
+    var critical = a.allZero || a.broken.length > 0;
+    var bg = critical ? "#DC0028" : "#B45309";      // ERGO-Rot bzw. Bernstein
+    var msgs = [];
+
+    if (a.allZero) {
+      msgs.push("Der letzte LLM-Lauf (Snapshot vom " + fmtDate(a.snapDate) +
+        ") enthaelt fuer ALLE Anbieter 0 Nennungen — der Lauf ist vermutlich fehlgeschlagen. Bitte GitHub-Actions-Lauf pruefen.");
+    } else if (a.broken.length) {
+      a.broken.forEach(function (l) {
+        var name = LLM_NAMES[l] || l;
+        var hint = LLM_HINT[l] || "API-Key & Guthaben pruefen";
+        msgs.push(name + " liefert keine Daten (0 Nennungen im Lauf vom " + fmtDate(a.snapDate) +
+          "). Wahrscheinlich API-Guthaben aufgebraucht oder Key/Modell ungueltig. → " + hint + ".");
+      });
+    }
+    if (a.stale && !a.allZero) {
+      msgs.push("Die LLM-Daten sind " + (a.ageDays !== null ? a.ageDays + " Tage" : "sehr") +
+        " alt (Snapshot vom " + fmtDate(a.snapDate) + "). Der naechtliche Lauf hat evtl. nicht aktualisiert.");
+    }
+
+    var bar = document.createElement("div");
+    bar.setAttribute("role", "alert");
+    bar.style.cssText = "position:sticky;top:0;left:0;right:0;z-index:99999;background:" + bg +
+      ";color:#fff;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;" +
+      "box-shadow:0 2px 8px rgba(0,0,0,.25);padding:10px 44px 10px 16px;font-size:13.5px;line-height:1.45;";
+
+    var inner = "<strong style=\"font-weight:700\">" + (critical ? "⚠️ Datenpipeline-Warnung" : "⏳ Daten veraltet") +
+      "</strong> &nbsp;" + msgs.map(function (m) {
+        return "<span style=\"display:inline-block;margin:2px 10px 2px 0\">" + m + "</span>";
+      }).join("");
+    bar.innerHTML = inner;
+
+    var x = document.createElement("button");
+    x.textContent = "✕";
+    x.title = "Ausblenden";
+    x.style.cssText = "position:absolute;top:6px;right:10px;background:transparent;border:0;color:#fff;" +
+      "font-size:16px;cursor:pointer;line-height:1;padding:4px;width:auto;margin:0;box-shadow:none;text-transform:none;letter-spacing:normal;";
+    x.onclick = function () {
+      try { sessionStorage.setItem(key, "1"); } catch (e) {}
+      bar.parentNode && bar.parentNode.removeChild(bar);
+    };
+    bar.appendChild(x);
+
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+
+  ready(function () {
+    fetch(SNAP_URL + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (g) { if (g) render(analyze(g)); })
+      .catch(function () { /* still: kein falscher Alarm bei Netzfehler */ });
+  });
+})();

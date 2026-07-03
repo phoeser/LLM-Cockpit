@@ -9,8 +9,6 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Review-Fix 2026-06-04: gemeinsame Gruppe fuer ALLE Workflows, die auf main
-  # committen -> serielle Ausfuehrung statt Push-Races
   group: repo-writes
   cancel-in-progress: false
 
@@ -92,6 +90,10 @@ jobs:
           python scripts/intervention_analysis.py
         continue-on-error: true
 
+      - name: Pipeline-Health schreiben (Frische je Daten-Element)
+        run: python scripts/pipeline_health.py --write
+        continue-on-error: true
+
       - name: Daten-Dateien zurueck in main committen
         run: |
           git config user.name "github-actions[bot]"
@@ -117,6 +119,7 @@ jobs:
           git add data/sov_history.jsonl 2>/dev/null || true
           git add data/correlation_impact.json 2>/dev/null || true
           git add data/driver_state.json 2>/dev/null || true
+          git add data/pipeline_health.json 2>/dev/null || true
           git add data/intervention_results.json 2>/dev/null || true
           git add data/interventions.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
@@ -133,3 +136,6 @@ jobs:
         with:
           dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
           commit-message: "chore: nightly dashboard update"
+
+      - name: Frische-Alarm (Run wird ROT, wenn Daten veraltet sind)
+        run: python scripts/pipeline_health.py --check

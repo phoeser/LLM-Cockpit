@@ -775,12 +775,110 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
     }
 
 
+
+# ── Zitations-Footprint als Level-Treiber (Schicht A, 2026-07-03) ──────────
+# Footprint = wie oft die eigene Domain einer Marke in den von den LLMs
+# zitierten Quellen auftaucht (Level/Stock). Zellen = Marke x Thema aus
+# geo_snapshot.json. Liefert rohe Korrelation + isolierten Within-FE-Effekt.
+GEO_SNAPSHOT_FILE = Path("data/geo_snapshot.json")
+FP_BRAND_DOMAINS = {
+    "ergo.de": "ERGO", "ergo.com": "ERGO", "ergodirekt.de": "ERGO",
+    "allianz.de": "Allianz", "allianzdirect.de": "Allianz",
+    "huk.de": "HUK-Coburg", "huk24.de": "HUK-Coburg", "huk-coburg.de": "HUK-Coburg",
+    "axa.de": "AXA", "generali.de": "Generali", "signal-iduna.de": "Signal Iduna",
+    "cosmosdirekt.de": "CosmosDirekt", "cosmos-direkt.de": "CosmosDirekt",
+    "hannoversche.de": "Hannoversche", "ruv.de": "R+V", "devk.de": "DEVK",
+}
+
+
+def _fp_dom2brand(d):
+    d = str(d or "").replace("www.", "")
+    return FP_BRAND_DOMAINS.get(d)
+
+
+def footprint_level_analysis():
+    """Zitations-Footprint (eigene Domain in LLM-Quellen) als Level-Treiber der
+    Sichtbarkeit. Roh-Korrelation + isolierter Effekt (Marken-+Themen-FE)."""
+    try:
+        g = json.loads(GEO_SNAPSHOT_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    products = g.get("products") or {}
+    if not products:
+        return None
+    llms = g.get("llms") or []
+    if not llms:
+        for pd in products.values():
+            for k in (pd.get("summary_by_llm") or {}):
+                if k not in llms:
+                    llms.append(k)
+    grounded = [l for l in llms if l in GROUNDED_LLMS]
+    ungrounded = [l for l in llms if l not in GROUNDED_LLMS]
+    cells = []
+    for pid, pd in products.items():
+        cs = pd.get("cited_sources") or {}
+        cc = {}
+        for row in (cs.get("overall") or []):
+            b = _fp_dom2brand(row.get("domain"))
+            if b:
+                cc[b] = cc.get(b, 0) + (row.get("count") or 0)
+        sbl = pd.get("summary_by_llm") or {}
+        sov = {}
+        for eng in llms:
+            for br in ((sbl.get(eng) or {}).get("brands") or []):
+                sov.setdefault(br.get("name"), {})[eng] = br.get("share_of_voice") or 0.0
+        for b in set(list(sov.keys()) + list(cc.keys())):
+            s = sov.get(b, {})
+            gv = [s.get(e, 0.0) for e in grounded]
+            uv = [s.get(e, 0.0) for e in ungrounded]
+            cells.append({"brand": b, "time": pid, "footprint": cc.get(b, 0),
+                          "sov_g": 100.0 * (sum(gv) / len(gv) if gv else 0.0),
+                          "sov_u": 100.0 * (sum(uv) / len(uv) if uv else 0.0)})
+    if len(cells) < 6:
+        return {"available": False, "n_cells": len(cells),
+                "note": "Zu wenige Marke-x-Thema-Zellen fuer die Footprint-Analyse."}
+
+    def _target(key):
+        xs = [c["footprint"] for c in cells]
+        ys = [c[key] for c in cells]
+        r = pearson(xs, ys)
+        rho = spearman(xs, ys)
+        pts = [{"brand": c["brand"], "time": c["time"], "y": c[key],
+                "x": {"footprint": float(c["footprint"])}} for c in cells]
+        within = multivariate_impact(pts, min_with=3, candidate_types=["footprint"], feature_key="x")
+        return {"pearson_r": round(r, 3) if r is not None else None,
+                "spearman_r": round(rho, 3) if rho is not None else None,
+                "within_fe": within}
+
+    per_topic = {}
+    for pid in products:
+        sub = [c for c in cells if c["time"] == pid]
+        if len(sub) >= 3:
+            rr = pearson([c["footprint"] for c in sub], [c["sov_g"] for c in sub])
+            per_topic[pid] = {"name": products[pid].get("name"),
+                              "pearson_r": round(rr, 3) if rr is not None else None, "n": len(sub)}
+    return {"available": True, "n_cells": len(cells),
+            "n_brands": len({c["brand"] for c in cells}),
+            "n_topics": len({c["time"] for c in cells}),
+            "grounded": _target("sov_g"), "ungrounded": _target("sov_u"),
+            "per_topic_grounded": per_topic,
+            "note": ("Zitations-Footprint = wie oft die eigene Domain einer Marke in den von den LLMs "
+                     "zitierten Quellen auftaucht (Level, kein Ereignis). 'pearson_r' = roher Zusammenhang "
+                     "ueber alle Marke-x-Thema-Zellen. 'within_fe' = isolierter Effekt mit Marken- UND "
+                     "Themen-Fixed-Effects (Identifikation ueber Within-Marke-across-Themen-Variation; "
+                     "kontrolliert generische Markenprominenz). Quelle: data/geo_snapshot.json.")}
+
+
 def main():
     events = load_events()
     if not events:
         print("Keine Events — Abbruch")
         return 0
     res = analyze(events, validate=True)
+    try:
+        res["footprint_analysis"] = footprint_level_analysis()
+    except Exception as _e:
+        print("WARN footprint_analysis:", str(_e)[:120])
     _prior = {t: c.get('coef_pp_per_event_day', 0.0)
               for t, c in ((res.get('multivariate') or {}).get('coefficients') or {}).items()} or None
     # 2026-06-04: zusaetzlich Impact je LLM (fuer die LLM-Auswahl im Dashboard)

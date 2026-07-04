@@ -869,6 +869,78 @@ def footprint_level_analysis():
                      "kontrolliert generische Markenprominenz). Quelle: data/geo_snapshot.json.")}
 
 
+
+
+# ── Zitationsanteil je Kategorie + normalisierter cite_share-Treiber (Schritt b, 2026-07-04) ──
+def citation_category_analysis():
+    """Zitationsanteil je Marke (normalisiert) als Treiber + Kategorien-Mix je Thema."""
+    try:
+        g = json.loads(GEO_SNAPSHOT_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    products = g.get("products") or {}
+    if not products:
+        return None
+    llms = g.get("llms") or []
+    if not llms:
+        for pd in products.values():
+            for k in (pd.get("summary_by_llm") or {}):
+                if k not in llms:
+                    llms.append(k)
+    grounded = [l for l in llms if l in GROUNDED_LLMS]
+    ungrounded = [l for l in llms if l not in GROUNDED_LLMS]
+    topic_mix = {}
+    for pid, pd in products.items():
+        cs = pd.get("cited_sources") or {}
+        bc = cs.get("by_category") or {}
+        shares = {k: round((v or {}).get("share", 0), 1) for k, v in bc.items()}
+        portal = (bc.get("portal") or {}).get("share", 0)
+        topic_mix[pid] = {"name": pd.get("name"), "total_citations": cs.get("total") or 0,
+                          "shares_pct": shares, "portal_dominated": bool(portal >= 30)}
+    cells = []
+    for pid, pd in products.items():
+        cs = pd.get("cited_sources") or {}
+        total = cs.get("total") or 0
+        cc = {}
+        for row in (cs.get("overall") or []):
+            b = _fp_dom2brand(row.get("domain"))
+            if b:
+                cc[b] = cc.get(b, 0) + (row.get("count") or 0)
+        sbl = pd.get("summary_by_llm") or {}
+        sov = {}
+        for eng in llms:
+            for br in ((sbl.get(eng) or {}).get("brands") or []):
+                sov.setdefault(br.get("name"), {})[eng] = br.get("share_of_voice") or 0.0
+        for b in set(list(sov.keys()) + list(cc.keys())):
+            s = sov.get(b, {})
+            gv = [s.get(e, 0.0) for e in grounded]
+            uv = [s.get(e, 0.0) for e in ungrounded]
+            share = (100.0 * cc.get(b, 0) / total) if total else 0.0
+            cells.append({"brand": b, "time": pid, "cite_share": share,
+                          "sov_g": 100.0 * (sum(gv) / len(gv) if gv else 0.0),
+                          "sov_u": 100.0 * (sum(uv) / len(uv) if uv else 0.0)})
+    if len(cells) < 6:
+        return {"available": False, "n_cells": len(cells), "topic_citation_mix": topic_mix,
+                "note": "Zu wenige Zellen fuer den cite_share-Treiber."}
+
+    def _t(key):
+        xs = [c["cite_share"] for c in cells]
+        ys = [c[key] for c in cells]
+        r = pearson(xs, ys); rho = spearman(xs, ys)
+        pts = [{"brand": c["brand"], "time": c["time"], "y": c[key],
+                "x": {"cite_share": c["cite_share"]}} for c in cells]
+        within = multivariate_impact(pts, min_with=3, candidate_types=["cite_share"], feature_key="x")
+        return {"pearson_r": round(r, 3) if r is not None else None,
+                "spearman_r": round(rho, 3) if rho is not None else None, "within_fe": within}
+    return {"available": True, "n_cells": len(cells),
+            "topic_citation_mix": topic_mix,
+            "cite_share_grounded": _t("sov_g"), "cite_share_ungrounded": _t("sov_u"),
+            "note": ("Zitationsanteil je Marke = eigene-Domain-Zitate / alle Zitate im Thema (normalisiert, "
+                     "ueber Themen vergleichbar). topic_citation_mix = je Thema Verteilung eigen/wettbewerber/"
+                     "portal/sonstige + Flag portal_dominated (>=30% Portal), erklaert wo eigener Footprint "
+                     "wenig bewegt (z.B. Reise). Quelle: data/geo_snapshot.json.")}
+
+
 def main():
     events = load_events()
     if not events:
@@ -879,6 +951,10 @@ def main():
         res["footprint_analysis"] = footprint_level_analysis()
     except Exception as _e:
         print("WARN footprint_analysis:", str(_e)[:120])
+    try:
+        res["citation_category"] = citation_category_analysis()
+    except Exception as _e:
+        print("WARN citation_category:", str(_e)[:120])
     _prior = {t: c.get('coef_pp_per_event_day', 0.0)
               for t, c in ((res.get('multivariate') or {}).get('coefficients') or {}).items()} or None
     # 2026-06-04: zusaetzlich Impact je LLM (fuer die LLM-Auswahl im Dashboard)

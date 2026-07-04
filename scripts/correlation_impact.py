@@ -783,7 +783,9 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
 GEO_SNAPSHOT_FILE = Path("data/geo_snapshot.json")
 FP_BRAND_DOMAINS = {
     "ergo.de": "ERGO", "ergo.com": "ERGO", "ergodirekt.de": "ERGO",
+    "ergo-reiseversicherung.de": "ERGO",
     "allianz.de": "Allianz", "allianzdirect.de": "Allianz",
+    "allianz-reiseversicherung.de": "Allianz",
     "huk.de": "HUK-Coburg", "huk24.de": "HUK-Coburg", "huk-coburg.de": "HUK-Coburg",
     "axa.de": "AXA", "generali.de": "Generali", "signal-iduna.de": "Signal Iduna",
     "cosmosdirekt.de": "CosmosDirekt", "cosmos-direkt.de": "CosmosDirekt",

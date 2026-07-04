@@ -943,6 +943,134 @@ def citation_category_analysis():
                      "wenig bewegt (z.B. Reise). Quelle: data/geo_snapshot.json.")}
 
 
+
+
+# ── Level-Modell (Mundlak / Correlated Random Effects) — Schicht A, 2026-07-05 ──
+# Erklaert das SoV-NIVEAU (Stock) statt kurzfristiger Bewegungen. Zerlegt den
+# Zitations-Footprint (cite_share) in einen WITHIN-Effekt (bewegt eigener Content
+# im Thema die Sichtbarkeit?) und einen BETWEEN-Effekt (Marken-Mittel des Footprints
+# — erklaert den Autoritaets-/Marken-Vorsprung, warum Allianz > ERGO, statt ihn wie
+# ein reiner Marken-FE zu verstecken). Themen-Fixed-Effects bleiben drin.
+def _mundlak_fit(cells, xkey, ykey, min_cells=10):
+    brands = sorted({c["brand"] for c in cells})
+    topics = sorted({c["topic"] for c in cells})
+    n = len(cells)
+    if n < min_cells or len(brands) < 3 or len(topics) < 2:
+        return {"available": False, "n_cells": n,
+                "note": "Zu wenige Zellen fuer das Level-Modell."}
+    xb = {}; cb = {}
+    for c in cells:
+        xb[c["brand"]] = xb.get(c["brand"], 0.0) + c[xkey]; cb[c["brand"]] = cb.get(c["brand"], 0) + 1
+    xbar = {b: xb[b] / cb[b] for b in xb}
+    yb = {}; cy = {}
+    for c in cells:
+        yb[c["brand"]] = yb.get(c["brand"], 0.0) + c[ykey]; cy[c["brand"]] = cy.get(c["brand"], 0) + 1
+    ybar = {b: yb[b] / cy[b] for b in yb}
+    W = [c[xkey] - xbar[c["brand"]] for c in cells]
+    B = [xbar[c["brand"]] for c in cells]
+    Y = [c[ykey] for c in cells]
+    def _tdm(v):
+        tm = {}; tc = {}
+        for c, val in zip(cells, v):
+            tm[c["topic"]] = tm.get(c["topic"], 0.0) + val; tc[c["topic"]] = tc.get(c["topic"], 0) + 1
+        tmean = {t: tm[t] / tc[t] for t in tm}
+        return [val - tmean[c["topic"]] for c, val in zip(cells, v)]
+    Yc = _tdm(Y); cols = [_tdm(W), _tdm(B)]
+    sd = []
+    for col in cols:
+        v = sum(x * x for x in col) / max(n - 1, 1)
+        sd.append(v ** 0.5 if v > 1e-12 else 1.0)
+    Xs = [[cols[j][i] / sd[j] for j in range(2)] for i in range(n)]
+    lam = n * 0.1
+    beta, Ainv, sig2 = _ridge_posterior(Xs, Yc, lam)
+    eff = {}
+    for j, nm in enumerate(("within", "between")):
+        mu = beta[j] / sd[j]
+        sigma = (max(sig2 * Ainv[j][j], 0.0) ** 0.5) / sd[j]
+        pdir = max(_norm_cdf(mu / sigma), 1.0 - _norm_cdf(mu / sigma)) if sigma > 1e-12 else 1.0
+        eff[nm] = {"coef_pp_sov_per_pp_citeshare": round(mu, 3),
+                   "ci95_low": round(mu - 1.96 * sigma, 3), "ci95_high": round(mu + 1.96 * sigma, 3),
+                   "prob_direction": round(pdir, 3), "significant": bool(pdir >= 0.975)}
+    yhat = [sum(Xs[i][j] * beta[j] for j in range(2)) for i in range(n)]
+    sse = sum((Yc[i] - yhat[i]) ** 2 for i in range(n)); sst = sum(v * v for v in Yc)
+    r2 = round(1 - sse / sst, 3) if sst > 0 else None
+    r_raw = pearson([c[xkey] for c in cells], [c[ykey] for c in cells])
+    bb = eff["between"]["coef_pp_sov_per_pp_citeshare"]
+    lead = max(ybar, key=lambda b: ybar[b])
+    gaps = {}
+    for b in brands:
+        if b == lead:
+            continue
+        actual = ybar[lead] - ybar[b]; expl = bb * (xbar[lead] - xbar[b])
+        gaps[b] = {"vs": lead, "actual_gap_pp": round(actual, 2),
+                   "explained_by_footprint_pp": round(expl, 2),
+                   "share_explained": round(expl / actual, 2) if abs(actual) > 1e-6 else None}
+    auth = sorted(brands, key=lambda b: -xbar[b])
+    return {"available": True, "n_cells": n, "n_brands": len(brands), "n_topics": len(topics),
+            "exploratory": bool(len(topics) < 12),
+            "raw_pearson_r": round(r_raw, 3) if r_raw is not None else None,
+            "within_effect": eff["within"], "between_effect": eff["between"],
+            "r2_within_topics": r2, "leader": lead, "gap_decomposition": gaps,
+            "authority_ranking": [{"brand": b, "mean_cite_share_pct": round(xbar[b], 2),
+                                   "mean_sov_pct": round(ybar[b], 2)} for b in auth]}
+
+
+def level_model_mundlak():
+    """Level-Modell (Mundlak): erklaert das SoV-NIVEAU aus dem Zitations-Footprint,
+    getrennt fuer grounded (Gemini/Perplexity) und ungrounded (ChatGPT)."""
+    try:
+        g = json.loads(GEO_SNAPSHOT_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    products = g.get("products") or {}
+    if not products:
+        return None
+    llms = g.get("llms") or []
+    if not llms:
+        for pd in products.values():
+            for k in (pd.get("summary_by_llm") or {}):
+                if k not in llms:
+                    llms.append(k)
+    grounded = [l for l in llms if l in GROUNDED_LLMS]
+    ungrounded = [l for l in llms if l not in GROUNDED_LLMS]
+    cells_g = []; cells_u = []
+    for pid, pd in products.items():
+        cs = pd.get("cited_sources") or {}
+        total = cs.get("total") or 0
+        cc = {}
+        for row in (cs.get("overall") or []):
+            b = _fp_dom2brand(row.get("domain"))
+            if b:
+                cc[b] = cc.get(b, 0) + (row.get("count") or 0)
+        sbl = pd.get("summary_by_llm") or {}
+        sov = {}
+        for eng in llms:
+            for br in ((sbl.get(eng) or {}).get("brands") or []):
+                nm = br.get("name")
+                if nm:
+                    sov.setdefault(nm, {})[eng] = br.get("share_of_voice") or 0.0
+        for b in sov:
+            s = sov[b]
+            gv = [s.get(e, 0.0) for e in grounded]
+            uv = [s.get(e, 0.0) for e in ungrounded]
+            share = (100.0 * cc.get(b, 0) / total) if total else 0.0
+            cells_g.append({"brand": b, "topic": pid, "cite_share": share,
+                            "sov": 100.0 * (sum(gv) / len(gv) if gv else 0.0)})
+            cells_u.append({"brand": b, "topic": pid, "cite_share": share,
+                            "sov": 100.0 * (sum(uv) / len(uv) if uv else 0.0)})
+    return {"available": True, "driver": "cite_share",
+            "grounded": _mundlak_fit(cells_g, "cite_share", "sov"),
+            "ungrounded": _mundlak_fit(cells_u, "cite_share", "sov"),
+            "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
+                     "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
+                     "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "
+                     "ueber Themen, Themen-FE kontrolliert). BETWEEN = Marken-Mittel des Footprints; erklaert den "
+                     "Autoritaets-/Marken-Vorsprung (warum Allianz sichtbarer ist) statt ihn wie ein reiner "
+                     "Marken-FE zu verstecken. gap_decomposition = Anteil des SoV-Abstands zum Marktfuehrer, der "
+                     "durch Footprint erklaert ist. coef-Einheit = Pp SoV je Pp Zitationsanteil. Mit 6 Themen "
+                     "explorativ. Quelle: data/geo_snapshot.json.")}
+
+
 def main():
     events = load_events()
     if not events:
@@ -957,6 +1085,10 @@ def main():
         res["citation_category"] = citation_category_analysis()
     except Exception as _e:
         print("WARN citation_category:", str(_e)[:120])
+    try:
+        res["level_model"] = level_model_mundlak()
+    except Exception as _e:
+        print("WARN level_model:", str(_e)[:120])
     _prior = {t: c.get('coef_pp_per_event_day', 0.0)
               for t, c in ((res.get('multivariate') or {}).get('coefficients') or {}).items()} or None
     # 2026-06-04: zusaetzlich Impact je LLM (fuer die LLM-Auswahl im Dashboard)

@@ -135,6 +135,30 @@
     }
   }
 
+
+  // Mittelstark aufraeumen: Alt-Titel ausblenden; Monitoring-Bloecke einklappen.
+  function tidy(host){
+    // 1) doppelten Alt-Titelblock ausblenden
+    [].slice.call(host.children).forEach(function(el){
+      if(el.id!=="korrSynth" && el.id!=="korrDetails" && /^\uD83D\uDD17\s*Korrelation/.test((el.innerText||"").trim())) el.style.display="none";
+    });
+    if(document.getElementById("korrDetails")) return; // schon eingeklappt
+    var kids=[].slice.call(host.children);
+    var toCollapse=[];
+    [/Event-Stream/,/Tagesübersicht/,/Mention-Tracking/].forEach(function(rx){
+      var b=kids.filter(function(el){ return el.id!=="korrSynth" && el.id!=="korrDetails" && rx.test((el.innerText||"").slice(0,80)); })[0];
+      if(b && toCollapse.indexOf(b)<0) toCollapse.push(b);
+    });
+    if(toCollapse.length){
+      var det=document.createElement("details"); det.id="korrDetails";
+      det.className="bg-white rounded-xl shadow mb-6";
+      det.style.cssText="padding:6px 18px";
+      det.innerHTML='<summary style="cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;padding:12px 0">Weitere Details / Monitoring anzeigen (Event-Stream, Tagesübersicht, Mention-Tracking)</summary>';
+      toCollapse[0].parentNode.insertBefore(det, toCollapse[0]);
+      toCollapse.forEach(function(b){ b.style.display=""; det.appendChild(b); });
+    }
+  }
+
   function build(){
     var host=document.querySelector('section[data-content="korrelation"]');
     if(!host) return false;
@@ -142,6 +166,7 @@
     if(!C || !C.level_model) return false;
     renderPanel(host,C);
     relabelEventStudy(host);
+    tidy(host);
     return true;
   }
 

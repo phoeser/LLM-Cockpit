@@ -38,7 +38,7 @@
       : '<span style="font-size:10px;font-weight:700;color:#8a6d00;background:#fdf3d7;border-radius:4px;padding:1px 6px">explorativ</span>';
   }
 
-  function seg() { return mode === "g" ? lm.grounded : lm.ungrounded; }
+  function seg() { return mode === "g" ? lm.grounded : (mode === "u" ? lm.ungrounded : lm.combined); }
 
   function renderStats() {
     var m = seg();
@@ -134,7 +134,7 @@
     if (!al || !er) { box.innerHTML = ""; return; }
     var gEr = (m.gap_decomposition || {})["ERGO"];
     var share = gEr && gEr.share_explained != null ? Math.round(gEr.share_explained * 100) : null;
-    var modeLbl = mode === "g" ? "grounded (Web-Suche)" : "ungrounded (Trainingswissen)";
+    var modeLbl = mode === "g" ? "grounded (Web-Suche)" : (mode === "u" ? "ungrounded (Trainingswissen)" : "kombiniert (alle LLMs)");
     box.innerHTML =
       '<b>Lesebeispiel · ' + modeLbl + ':</b> ' + lead + ' ist mit Ø ' + al.mean_sov_pct.toFixed(0) +
       ' % Sichtbarkeit Marktführer — der rote Balkenanteil zeigt, dass der Großteil davon auf den hohen ' +
@@ -161,6 +161,7 @@
       '<div id="lmToggle" style="display:flex;gap:6px;margin-bottom:12px">' +
         '<button data-m="g" class="lm-btn" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #dc0028;background:#dc0028;color:#fff;cursor:pointer">grounded (Web-Suche)</button>' +
         '<button data-m="u" class="lm-btn" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#282d37;cursor:pointer">ungrounded (Trainingswissen)</button>' +
+        '<button data-m="c" class="lm-btn" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#282d37;cursor:pointer">beides (alle LLMs)</button>' +
       '</div>' +
       '<div id="lmStats" style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:14px"></div>' +
       '<div style="position:relative;width:100%;height:320px"><canvas id="lmCanvas"></canvas></div>' +

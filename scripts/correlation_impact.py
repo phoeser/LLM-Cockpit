@@ -1033,7 +1033,7 @@ def level_model_mundlak():
                     llms.append(k)
     grounded = [l for l in llms if l in GROUNDED_LLMS]
     ungrounded = [l for l in llms if l not in GROUNDED_LLMS]
-    cells_g = []; cells_u = []
+    cells_g = []; cells_u = []; cells_c = []
     for pid, pd in products.items():
         cs = pd.get("cited_sources") or {}
         total = cs.get("total") or 0
@@ -1058,9 +1058,13 @@ def level_model_mundlak():
                             "sov": 100.0 * (sum(gv) / len(gv) if gv else 0.0)})
             cells_u.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(uv) / len(uv) if uv else 0.0)})
+            av = [s.get(e, 0.0) for e in llms]
+            cells_c.append({"brand": b, "topic": pid, "cite_share": share,
+                            "sov": 100.0 * (sum(av) / len(av) if av else 0.0)})
     return {"available": True, "driver": "cite_share",
             "grounded": _mundlak_fit(cells_g, "cite_share", "sov"),
             "ungrounded": _mundlak_fit(cells_u, "cite_share", "sov"),
+            "combined": _mundlak_fit(cells_c, "cite_share", "sov"),
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

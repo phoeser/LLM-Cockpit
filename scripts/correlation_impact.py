@@ -951,6 +951,36 @@ def citation_category_analysis():
 # im Thema die Sichtbarkeit?) und einen BETWEEN-Effekt (Marken-Mittel des Footprints
 # — erklaert den Autoritaets-/Marken-Vorsprung, warum Allianz > ERGO, statt ihn wie
 # ein reiner Marken-FE zu verstecken). Themen-Fixed-Effects bleiben drin.
+def _mundlak_between_coef(cells, xkey, ykey):
+    """Nur der Between-Koeffizient (fuer Leave-one-brand-out-Robustheit)."""
+    brands = sorted({c["brand"] for c in cells})
+    topics = sorted({c["topic"] for c in cells})
+    n = len(cells)
+    if n < 8 or len(brands) < 3 or len(topics) < 2:
+        return None
+    xb = {}; cb = {}
+    for c in cells:
+        xb[c["brand"]] = xb.get(c["brand"], 0.0) + c[xkey]; cb[c["brand"]] = cb.get(c["brand"], 0) + 1
+    xbar = {b: xb[b] / cb[b] for b in xb}
+    W = [c[xkey] - xbar[c["brand"]] for c in cells]
+    B = [xbar[c["brand"]] for c in cells]
+    Y = [c[ykey] for c in cells]
+    def _tdm(v):
+        tm = {}; tc = {}
+        for c, val in zip(cells, v):
+            tm[c["topic"]] = tm.get(c["topic"], 0.0) + val; tc[c["topic"]] = tc.get(c["topic"], 0) + 1
+        tmean = {t: tm[t] / tc[t] for t in tm}
+        return [val - tmean[c["topic"]] for c, val in zip(cells, v)]
+    Yc = _tdm(Y); cols = [_tdm(W), _tdm(B)]
+    sd = []
+    for col in cols:
+        v = sum(x * x for x in col) / max(n - 1, 1)
+        sd.append(v ** 0.5 if v > 1e-12 else 1.0)
+    Xs = [[cols[j][i] / sd[j] for j in range(2)] for i in range(n)]
+    beta, Ainv, sig2 = _ridge_posterior(Xs, Yc, n * 0.1)
+    return beta[1] / sd[1]
+
+
 def _mundlak_fit(cells, xkey, ykey, min_cells=10):
     brands = sorted({c["brand"] for c in cells})
     topics = sorted({c["topic"] for c in cells})
@@ -1006,11 +1036,18 @@ def _mundlak_fit(cells, xkey, ykey, min_cells=10):
                    "explained_by_footprint_pp": round(expl, 2),
                    "share_explained": round(expl / actual, 2) if abs(actual) > 1e-6 else None}
     auth = sorted(brands, key=lambda b: -xbar[b])
+    _loo = []
+    for _drop in brands:
+        _bc = _mundlak_between_coef([c for c in cells if c["brand"] != _drop], xkey, ykey)
+        if _bc is not None:
+            _loo.append(round(_bc, 3))
+    _blo = ({"min": min(_loo), "max": max(_loo),
+            "sign_stable": bool(all(x > 0 for x in _loo) or all(x < 0 for x in _loo))} if _loo else None)
     return {"available": True, "n_cells": n, "n_brands": len(brands), "n_topics": len(topics),
             "exploratory": bool(len(topics) < 12),
             "raw_pearson_r": round(r_raw, 3) if r_raw is not None else None,
             "within_effect": eff["within"], "between_effect": eff["between"],
-            "r2_within_topics": r2, "leader": lead, "gap_decomposition": gaps,
+            "r2_within_topics": r2, "leader": lead, "between_loo": _blo, "gap_decomposition": gaps,
             "authority_ranking": [{"brand": b, "mean_cite_share_pct": round(xbar[b], 2),
                                    "mean_sov_pct": round(ybar[b], 2)} for b in auth]}
 

@@ -165,8 +165,7 @@
     var C=window.CORRELATION_IMPACT;
     if(!C || !C.level_model) return false;
     renderPanel(host,C);
-    relabelEventStudy(host);
-    tidy(host);
+    [0,400,1000,2000,3500].forEach(function(d){ setTimeout(function(){ relabelEventStudy(host); tidy(host); }, d); });
     return true;
   }
 

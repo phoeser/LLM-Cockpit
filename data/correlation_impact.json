@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-05T00:27:23Z",
+  "generated_at": "2026-07-05T08:03:09Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
   "multivariate": {
     "available": true,
     "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-    "lambda": 86.0,
+    "lambda": 89.5,
     "pooled_prior": false,
-    "n_points": 172,
+    "n_points": 179,
     "n_brands": 8,
     "types_used": [
       "page_change",
@@ -31,91 +31,91 @@
     "coefficients": {
       "media_positive": {
         "label": "Presse/News: Produkt/Strategie",
-        "coef_pp_per_event_day": -0.4971,
-        "ci95_low": -1.4934,
-        "ci95_high": 0.4992,
-        "prob_positive": 0.164,
-        "prob_direction": 0.836,
+        "coef_pp_per_event_day": -0.5416,
+        "ci95_low": -1.5334,
+        "ci95_high": 0.4502,
+        "prob_positive": 0.142,
+        "prob_direction": 0.858,
         "significant": false,
         "n_with_event": 25
       },
       "media_negative": {
         "label": "Presse/News: Schaden/Leistung",
-        "coef_pp_per_event_day": 0.3769,
-        "ci95_low": -1.2444,
-        "ci95_high": 1.9982,
-        "prob_positive": 0.676,
-        "prob_direction": 0.676,
+        "coef_pp_per_event_day": 0.356,
+        "ci95_low": -1.1628,
+        "ci95_high": 1.8747,
+        "prob_positive": 0.677,
+        "prob_direction": 0.677,
         "significant": false,
-        "n_with_event": 12
+        "n_with_event": 13
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "coef_pp_per_event_day": 0.1888,
-        "ci95_low": -0.4506,
-        "ci95_high": 0.8282,
-        "prob_positive": 0.719,
-        "prob_direction": 0.719,
+        "coef_pp_per_event_day": 0.2156,
+        "ci95_low": -0.4212,
+        "ci95_high": 0.8524,
+        "prob_positive": 0.747,
+        "prob_direction": 0.747,
+        "significant": false,
+        "n_with_event": 18
+      },
+      "review_negative": {
+        "label": "Negative Bewertungen",
+        "coef_pp_per_event_day": -0.0289,
+        "ci95_low": -0.4347,
+        "ci95_high": 0.3768,
+        "prob_positive": 0.444,
+        "prob_direction": 0.556,
         "significant": false,
         "n_with_event": 18
       },
       "review_positive": {
         "label": "Positive Bewertungen",
-        "coef_pp_per_event_day": 0.0608,
-        "ci95_low": -0.0732,
-        "ci95_high": 0.1947,
-        "prob_positive": 0.813,
-        "prob_direction": 0.813,
+        "coef_pp_per_event_day": 0.0256,
+        "ci95_low": -0.0964,
+        "ci95_high": 0.1475,
+        "prob_positive": 0.659,
+        "prob_direction": 0.659,
         "significant": false,
-        "n_with_event": 16
-      },
-      "review_negative": {
-        "label": "Negative Bewertungen",
-        "coef_pp_per_event_day": -0.0153,
-        "ci95_low": -0.4315,
-        "ci95_high": 0.4009,
-        "prob_positive": 0.471,
-        "prob_direction": 0.529,
-        "significant": false,
-        "n_with_event": 14
+        "n_with_event": 19
       },
       "page_new": {
         "label": "Neue Seiten",
-        "coef_pp_per_event_day": -0.0071,
-        "ci95_low": -0.0198,
-        "ci95_high": 0.0055,
-        "prob_positive": 0.135,
-        "prob_direction": 0.865,
+        "coef_pp_per_event_day": -0.0066,
+        "ci95_low": -0.0194,
+        "ci95_high": 0.0062,
+        "prob_positive": 0.157,
+        "prob_direction": 0.843,
         "significant": false,
         "n_with_event": 18
       },
       "page_change": {
         "label": "Seitenaenderungen (Wettbewerb)",
-        "coef_pp_per_event_day": -0.0055,
-        "ci95_low": -0.0241,
-        "ci95_high": 0.013,
-        "prob_positive": 0.279,
-        "prob_direction": 0.721,
+        "coef_pp_per_event_day": -0.0053,
+        "ci95_low": -0.0237,
+        "ci95_high": 0.0132,
+        "prob_positive": 0.287,
+        "prob_direction": 0.713,
         "significant": false,
-        "n_with_event": 73
+        "n_with_event": 74
       }
     },
     "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
   },
   "validation": {
-    "placebo_false_positive_rate": 0.02,
+    "placebo_false_positive_rate": 0.025,
     "out_of_sample": {
-      "r2_oos_vs_baseline": -0.068,
-      "n_test": 172
+      "r2_oos_vs_baseline": -0.046,
+      "n_test": 179
     },
     "note": "Placebo: erwartet ~0,05 (zufaellige Daten erzeugen kaum 'gesicherte' Effekte). Out-of-Sample r2>0 = Treiber sagen SoV besser voraus als die reine Marken-Basislinie."
   },
   "sov_source": "sov_history",
   "lag_days": 0,
-  "sov_measure_days": 33,
+  "sov_measure_days": 34,
   "sov_measure_range": [
     "2026-05-14",
-    "2026-07-04"
+    "2026-07-05"
   ],
   "brands_with_sov": [
     "AXA",
@@ -127,129 +127,129 @@
     "HUK-Coburg",
     "Signal Iduna"
   ],
-  "n_intervals_total": 172,
+  "n_intervals_total": 179,
   "confidence": "belastbar",
   "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
   "impact": {
     "domain_change": {
       "label": "Domain-/Subdomain-Aenderungen",
-      "pearson_r": 0.091,
-      "spearman_r": 0.085,
-      "avg_sov_effect_pp": 1.565,
-      "effect_se_pp": 3.335,
-      "ci95_low_pp": -9.047,
-      "ci95_high_pp": 12.176,
+      "pearson_r": 0.084,
+      "spearman_r": 0.078,
+      "avg_sov_effect_pp": 1.468,
+      "effect_se_pp": 3.334,
+      "ci95_low_pp": -9.142,
+      "ci95_high_pp": 12.079,
       "significant": false,
-      "n_intervals": 172,
+      "n_intervals": 179,
       "n_with_event": 4,
       "type_confidence": "unzureichend"
     },
     "review_change": {
       "label": "Bewertungs-Trend (±)",
-      "pearson_r": -0.203,
-      "spearman_r": -0.089,
-      "avg_sov_effect_pp": -1.126,
-      "effect_se_pp": 0.699,
-      "ci95_low_pp": -2.594,
-      "ci95_high_pp": 0.342,
+      "pearson_r": -0.188,
+      "spearman_r": -0.068,
+      "avg_sov_effect_pp": -1.025,
+      "effect_se_pp": 0.695,
+      "ci95_low_pp": -2.485,
+      "ci95_high_pp": 0.436,
       "significant": false,
-      "n_intervals": 172,
+      "n_intervals": 179,
       "n_with_event": 19,
       "type_confidence": "moderat"
     },
     "news_mention": {
       "label": "News-Erwaehnungen",
-      "pearson_r": -0.017,
-      "spearman_r": 0.011,
-      "avg_sov_effect_pp": 0.619,
-      "effect_se_pp": 0.412,
-      "ci95_low_pp": -0.187,
-      "ci95_high_pp": 1.426,
+      "pearson_r": -0.025,
+      "spearman_r": -0.006,
+      "avg_sov_effect_pp": 0.473,
+      "effect_se_pp": 0.397,
+      "ci95_low_pp": -0.305,
+      "ci95_high_pp": 1.252,
       "significant": false,
-      "n_intervals": 172,
-      "n_with_event": 116,
+      "n_intervals": 179,
+      "n_with_event": 119,
       "type_confidence": "belastbar"
     },
     "wikipedia_change": {
       "label": "Wikipedia-Ausbau (±)",
       "pearson_r": 0.012,
-      "spearman_r": 0.036,
-      "avg_sov_effect_pp": 0.42,
+      "spearman_r": 0.032,
+      "avg_sov_effect_pp": 0.423,
       "effect_se_pp": null,
       "ci95_low_pp": null,
       "ci95_high_pp": null,
       "significant": null,
-      "n_intervals": 172,
+      "n_intervals": 179,
       "n_with_event": 1,
       "type_confidence": "unzureichend"
     },
     "press_mention": {
       "label": "Pressemitteilungen",
-      "pearson_r": -0.036,
-      "spearman_r": -0.085,
-      "avg_sov_effect_pp": -0.394,
-      "effect_se_pp": 0.397,
-      "ci95_low_pp": -1.173,
-      "ci95_high_pp": 0.384,
+      "pearson_r": -0.038,
+      "spearman_r": -0.093,
+      "avg_sov_effect_pp": -0.4,
+      "effect_se_pp": 0.388,
+      "ci95_low_pp": -1.161,
+      "ci95_high_pp": 0.362,
       "significant": false,
-      "n_intervals": 172,
+      "n_intervals": 179,
       "n_with_event": 72,
       "type_confidence": "belastbar"
     },
     "review_volume": {
       "label": "Bewertungs-Volumen",
-      "pearson_r": -0.048,
-      "spearman_r": 0.013,
-      "avg_sov_effect_pp": -0.327,
-      "effect_se_pp": 0.721,
-      "ci95_low_pp": -1.827,
-      "ci95_high_pp": 1.173,
+      "pearson_r": -0.056,
+      "spearman_r": 0.012,
+      "avg_sov_effect_pp": -0.394,
+      "effect_se_pp": 0.712,
+      "ci95_low_pp": -1.871,
+      "ci95_high_pp": 1.083,
       "significant": false,
-      "n_intervals": 172,
-      "n_with_event": 22,
+      "n_intervals": 179,
+      "n_with_event": 23,
       "type_confidence": "belastbar"
     },
     "page_change": {
       "label": "Seitenaenderungen (Wettbewerb)",
-      "pearson_r": -0.039,
-      "spearman_r": -0.032,
-      "avg_sov_effect_pp": -0.171,
-      "effect_se_pp": 0.416,
-      "ci95_low_pp": -0.987,
-      "ci95_high_pp": 0.645,
+      "pearson_r": -0.026,
+      "spearman_r": -0.026,
+      "avg_sov_effect_pp": -0.156,
+      "effect_se_pp": 0.409,
+      "ci95_low_pp": -0.958,
+      "ci95_high_pp": 0.646,
       "significant": false,
-      "n_intervals": 172,
-      "n_with_event": 73,
+      "n_intervals": 179,
+      "n_with_event": 74,
       "type_confidence": "belastbar"
     },
     "page_new": {
       "label": "Neue Seiten",
       "pearson_r": -0.052,
-      "spearman_r": -0.004,
-      "avg_sov_effect_pp": -0.071,
+      "spearman_r": -0.005,
+      "avg_sov_effect_pp": -0.066,
       "effect_se_pp": 0.432,
-      "ci95_low_pp": -0.982,
-      "ci95_high_pp": 0.84,
+      "ci95_low_pp": -0.979,
+      "ci95_high_pp": 0.846,
       "significant": false,
-      "n_intervals": 172,
+      "n_intervals": 179,
       "n_with_event": 18,
       "type_confidence": "moderat"
     }
   },
   "footprint_analysis": {
     "available": true,
-    "n_cells": 45,
+    "n_cells": 46,
     "n_brands": 10,
     "n_topics": 6,
     "grounded": {
-      "pearson_r": 0.683,
-      "spearman_r": 0.645,
+      "pearson_r": 0.715,
+      "spearman_r": 0.642,
       "within_fe": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 22.5,
+        "lambda": 23.0,
         "pooled_prior": false,
-        "n_points": 45,
+        "n_points": 46,
         "n_brands": 10,
         "types_used": [
           "footprint"
@@ -271,27 +271,27 @@
         "coefficients": {
           "footprint": {
             "label": "footprint",
-            "coef_pp_per_event_day": 0.0962,
-            "ci95_low": -0.0188,
-            "ci95_high": 0.2111,
-            "prob_positive": 0.95,
-            "prob_direction": 0.95,
+            "coef_pp_per_event_day": 0.095,
+            "ci95_low": -0.0101,
+            "ci95_high": 0.2,
+            "prob_positive": 0.962,
+            "prob_direction": 0.962,
             "significant": false,
-            "n_with_event": 29
+            "n_with_event": 30
           }
         },
         "note": "EXPLORATIV: zu wenige Intervalle/Messtage fuer gesicherte Aussagen. Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
       }
     },
     "ungrounded": {
-      "pearson_r": 0.771,
-      "spearman_r": 0.757,
+      "pearson_r": 0.8,
+      "spearman_r": 0.774,
       "within_fe": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 22.5,
+        "lambda": 23.0,
         "pooled_prior": false,
-        "n_points": 45,
+        "n_points": 46,
         "n_brands": 10,
         "types_used": [
           "footprint"
@@ -313,13 +313,13 @@
         "coefficients": {
           "footprint": {
             "label": "footprint",
-            "coef_pp_per_event_day": 0.2629,
-            "ci95_low": 0.1112,
-            "ci95_high": 0.4145,
+            "coef_pp_per_event_day": 0.2912,
+            "ci95_low": 0.1526,
+            "ci95_high": 0.4297,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 29
+            "n_with_event": 30
           }
         },
         "note": "EXPLORATIV: zu wenige Intervalle/Messtage fuer gesicherte Aussagen. Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -328,32 +328,32 @@
     "per_topic_grounded": {
       "zahnzusatz": {
         "name": "Zahnzusatzversicherung",
-        "pearson_r": 0.73,
+        "pearson_r": 0.806,
         "n": 7
       },
       "sterbegeld": {
         "name": "Sterbegeldversicherung",
-        "pearson_r": 0.772,
+        "pearson_r": 0.803,
         "n": 7
       },
       "risikoleben": {
         "name": "Risikolebensversicherung",
-        "pearson_r": 0.898,
+        "pearson_r": 0.91,
         "n": 9
       },
       "berufsunfaehigkeit": {
         "name": "Berufsunfähigkeitsversicherung",
-        "pearson_r": 0.754,
-        "n": 7
+        "pearson_r": 0.733,
+        "n": 8
       },
       "reise": {
         "name": "Reiseversicherung",
-        "pearson_r": 0.89,
+        "pearson_r": 0.911,
         "n": 7
       },
       "rechtsschutz": {
         "name": "Rechtsschutzversicherung",
-        "pearson_r": 0.82,
+        "pearson_r": 0.866,
         "n": 8
       }
     },
@@ -361,84 +361,84 @@
   },
   "citation_category": {
     "available": true,
-    "n_cells": 45,
+    "n_cells": 46,
     "topic_citation_mix": {
       "zahnzusatz": {
         "name": "Zahnzusatzversicherung",
-        "total_citations": 1008,
+        "total_citations": 1009,
         "shares_pct": {
-          "sonstige": 48.1,
-          "portal": 24.9,
+          "sonstige": 48.4,
           "wettbewerber": 24.8,
+          "portal": 24.7,
           "eigen": 2.2
         },
         "portal_dominated": false
       },
       "sterbegeld": {
         "name": "Sterbegeldversicherung",
-        "total_citations": 448,
+        "total_citations": 441,
         "shares_pct": {
-          "sonstige": 45.1,
-          "wettbewerber": 31.7,
-          "portal": 18.8,
-          "eigen": 4.5
+          "sonstige": 45.4,
+          "wettbewerber": 30.2,
+          "portal": 20.4,
+          "eigen": 4.1
         },
         "portal_dominated": false
       },
       "risikoleben": {
         "name": "Risikolebensversicherung",
-        "total_citations": 453,
+        "total_citations": 444,
         "shares_pct": {
-          "sonstige": 42.2,
-          "wettbewerber": 33.6,
-          "portal": 17.4,
-          "eigen": 6.8
+          "sonstige": 41.9,
+          "wettbewerber": 35.8,
+          "portal": 16.9,
+          "eigen": 5.4
         },
         "portal_dominated": false
       },
       "berufsunfaehigkeit": {
         "name": "Berufsunfähigkeitsversicherung",
-        "total_citations": 433,
+        "total_citations": 436,
         "shares_pct": {
-          "sonstige": 47.8,
-          "portal": 25.2,
-          "wettbewerber": 24.0,
+          "sonstige": 45.0,
+          "portal": 27.3,
+          "wettbewerber": 24.8,
           "eigen": 3.0
         },
         "portal_dominated": false
       },
       "reise": {
         "name": "Reiseversicherung",
-        "total_citations": 458,
+        "total_citations": 461,
         "shares_pct": {
-          "sonstige": 76.9,
-          "portal": 11.4,
-          "wettbewerber": 9.4,
-          "eigen": 2.4
+          "sonstige": 77.0,
+          "portal": 10.8,
+          "wettbewerber": 9.1,
+          "eigen": 3.0
         },
         "portal_dominated": false
       },
       "rechtsschutz": {
         "name": "Rechtsschutzversicherung",
-        "total_citations": 424,
+        "total_citations": 437,
         "shares_pct": {
-          "sonstige": 51.2,
-          "wettbewerber": 28.5,
-          "portal": 19.1,
-          "eigen": 1.2
+          "sonstige": 50.1,
+          "wettbewerber": 29.5,
+          "portal": 18.5,
+          "eigen": 1.8
         },
         "portal_dominated": false
       }
     },
     "cite_share_grounded": {
-      "pearson_r": 0.781,
-      "spearman_r": 0.68,
+      "pearson_r": 0.809,
+      "spearman_r": 0.658,
       "within_fe": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 22.5,
+        "lambda": 23.0,
         "pooled_prior": false,
-        "n_points": 45,
+        "n_points": 46,
         "n_brands": 10,
         "types_used": [
           "cite_share"
@@ -460,27 +460,27 @@
         "coefficients": {
           "cite_share": {
             "label": "cite_share",
-            "coef_pp_per_event_day": 1.1088,
-            "ci95_low": 0.2901,
-            "ci95_high": 1.9275,
-            "prob_positive": 0.996,
-            "prob_direction": 0.996,
+            "coef_pp_per_event_day": 1.1064,
+            "ci95_low": 0.3213,
+            "ci95_high": 1.8915,
+            "prob_positive": 0.997,
+            "prob_direction": 0.997,
             "significant": false,
-            "n_with_event": 29
+            "n_with_event": 30
           }
         },
         "note": "EXPLORATIV: zu wenige Intervalle/Messtage fuer gesicherte Aussagen. Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
       }
     },
     "cite_share_ungrounded": {
-      "pearson_r": 0.854,
-      "spearman_r": 0.763,
+      "pearson_r": 0.881,
+      "spearman_r": 0.779,
       "within_fe": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 22.5,
+        "lambda": 23.0,
         "pooled_prior": false,
-        "n_points": 45,
+        "n_points": 46,
         "n_brands": 10,
         "types_used": [
           "cite_share"
@@ -502,13 +502,13 @@
         "coefficients": {
           "cite_share": {
             "label": "cite_share",
-            "coef_pp_per_event_day": 2.6864,
-            "ci95_low": 1.7235,
-            "ci95_high": 3.6492,
+            "coef_pp_per_event_day": 3.1431,
+            "ci95_low": 2.3173,
+            "ci95_high": 3.9689,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 29
+            "n_with_event": 30
           }
         },
         "note": "EXPLORATIV: zu wenige Intervalle/Messtage fuer gesicherte Aussagen. Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -525,96 +525,96 @@
       "n_brands": 7,
       "n_topics": 6,
       "exploratory": true,
-      "raw_pearson_r": 0.815,
+      "raw_pearson_r": 0.844,
       "within_effect": {
-        "coef_pp_sov_per_pp_citeshare": 1.551,
-        "ci95_low": 0.34,
-        "ci95_high": 2.763,
-        "prob_direction": 0.994,
+        "coef_pp_sov_per_pp_citeshare": 1.525,
+        "ci95_low": 0.385,
+        "ci95_high": 2.664,
+        "prob_direction": 0.996,
         "significant": true
       },
       "between_effect": {
-        "coef_pp_sov_per_pp_citeshare": 3.089,
-        "ci95_low": 2.451,
-        "ci95_high": 3.727,
+        "coef_pp_sov_per_pp_citeshare": 3.138,
+        "ci95_low": 2.572,
+        "ci95_high": 3.704,
         "prob_direction": 1.0,
         "significant": true
       },
-      "r2_within_topics": 0.725,
+      "r2_within_topics": 0.774,
       "leader": "Allianz",
       "gap_decomposition": {
         "AXA": {
           "vs": "Allianz",
-          "actual_gap_pp": 31.07,
-          "explained_by_footprint_pp": 26.18,
-          "share_explained": 0.84
+          "actual_gap_pp": 32.54,
+          "explained_by_footprint_pp": 27.57,
+          "share_explained": 0.85
         },
         "CosmosDirekt": {
           "vs": "Allianz",
-          "actual_gap_pp": 27.69,
-          "explained_by_footprint_pp": 24.76,
-          "share_explained": 0.89
+          "actual_gap_pp": 29.79,
+          "explained_by_footprint_pp": 26.76,
+          "share_explained": 0.9
         },
         "ERGO": {
           "vs": "Allianz",
-          "actual_gap_pp": 18.4,
-          "explained_by_footprint_pp": 15.75,
-          "share_explained": 0.86
+          "actual_gap_pp": 20.07,
+          "explained_by_footprint_pp": 17.71,
+          "share_explained": 0.88
         },
         "Generali": {
           "vs": "Allianz",
-          "actual_gap_pp": 35.39,
-          "explained_by_footprint_pp": 27.16,
-          "share_explained": 0.77
+          "actual_gap_pp": 36.96,
+          "explained_by_footprint_pp": 29.24,
+          "share_explained": 0.79
         },
         "HUK-Coburg": {
           "vs": "Allianz",
-          "actual_gap_pp": 12.61,
-          "explained_by_footprint_pp": 4.05,
-          "share_explained": 0.32
+          "actual_gap_pp": 15.97,
+          "explained_by_footprint_pp": 6.84,
+          "share_explained": 0.43
         },
         "Signal Iduna": {
           "vs": "Allianz",
-          "actual_gap_pp": 31.55,
-          "explained_by_footprint_pp": 18.63,
-          "share_explained": 0.59
+          "actual_gap_pp": 32.27,
+          "explained_by_footprint_pp": 22.22,
+          "share_explained": 0.69
         }
       },
       "authority_ranking": [
         {
           "brand": "Allianz",
-          "mean_cite_share_pct": 9.05,
-          "mean_sov_pct": 36.67
+          "mean_cite_share_pct": 9.58,
+          "mean_sov_pct": 38.23
         },
         {
           "brand": "HUK-Coburg",
-          "mean_cite_share_pct": 7.74,
-          "mean_sov_pct": 24.07
+          "mean_cite_share_pct": 7.4,
+          "mean_sov_pct": 22.26
         },
         {
           "brand": "ERGO",
-          "mean_cite_share_pct": 3.95,
-          "mean_sov_pct": 18.28
+          "mean_cite_share_pct": 3.94,
+          "mean_sov_pct": 18.16
         },
         {
           "brand": "Signal Iduna",
-          "mean_cite_share_pct": 3.02,
-          "mean_sov_pct": 5.13
+          "mean_cite_share_pct": 2.5,
+          "mean_sov_pct": 5.96
         },
         {
           "brand": "CosmosDirekt",
-          "mean_cite_share_pct": 1.03,
-          "mean_sov_pct": 8.98
+          "mean_cite_share_pct": 1.05,
+          "mean_sov_pct": 8.44
         },
         {
           "brand": "AXA",
-          "mean_cite_share_pct": 0.57,
-          "mean_sov_pct": 5.6
+          "mean_cite_share_pct": 0.79,
+          "mean_sov_pct": 5.69
         },
         {
           "brand": "Generali",
           "mean_cite_share_pct": 0.26,
-          "mean_sov_pct": 1.28
+          "mean_sov_pct": 1.27
         }
       ]
     },
@@ -624,96 +624,96 @@
       "n_brands": 7,
       "n_topics": 6,
       "exploratory": true,
-      "raw_pearson_r": 0.882,
+      "raw_pearson_r": 0.911,
       "within_effect": {
-        "coef_pp_sov_per_pp_citeshare": 3.805,
-        "ci95_low": 2.608,
-        "ci95_high": 5.001,
+        "coef_pp_sov_per_pp_citeshare": 4.411,
+        "ci95_low": 3.423,
+        "ci95_high": 5.4,
         "prob_direction": 1.0,
         "significant": true
       },
       "between_effect": {
-        "coef_pp_sov_per_pp_citeshare": 3.457,
-        "ci95_low": 2.827,
-        "ci95_high": 4.087,
+        "coef_pp_sov_per_pp_citeshare": 3.291,
+        "ci95_low": 2.801,
+        "ci95_high": 3.782,
         "prob_direction": 1.0,
         "significant": true
       },
-      "r2_within_topics": 0.809,
+      "r2_within_topics": 0.872,
       "leader": "Allianz",
       "gap_decomposition": {
         "AXA": {
           "vs": "Allianz",
-          "actual_gap_pp": 34.31,
-          "explained_by_footprint_pp": 29.3,
-          "share_explained": 0.85
+          "actual_gap_pp": 33.34,
+          "explained_by_footprint_pp": 28.92,
+          "share_explained": 0.87
         },
         "CosmosDirekt": {
           "vs": "Allianz",
-          "actual_gap_pp": 37.03,
-          "explained_by_footprint_pp": 27.7,
-          "share_explained": 0.75
+          "actual_gap_pp": 36.34,
+          "explained_by_footprint_pp": 28.06,
+          "share_explained": 0.77
         },
         "ERGO": {
           "vs": "Allianz",
-          "actual_gap_pp": 22.58,
-          "explained_by_footprint_pp": 17.63,
-          "share_explained": 0.78
+          "actual_gap_pp": 22.4,
+          "explained_by_footprint_pp": 18.57,
+          "share_explained": 0.83
         },
         "Generali": {
           "vs": "Allianz",
-          "actual_gap_pp": 35.54,
-          "explained_by_footprint_pp": 30.39,
-          "share_explained": 0.86
+          "actual_gap_pp": 34.31,
+          "explained_by_footprint_pp": 30.66,
+          "share_explained": 0.89
         },
         "HUK-Coburg": {
           "vs": "Allianz",
-          "actual_gap_pp": 12.52,
-          "explained_by_footprint_pp": 4.53,
-          "share_explained": 0.36
+          "actual_gap_pp": 13.03,
+          "explained_by_footprint_pp": 7.18,
+          "share_explained": 0.55
         },
         "Signal Iduna": {
           "vs": "Allianz",
-          "actual_gap_pp": 25.34,
-          "explained_by_footprint_pp": 20.85,
-          "share_explained": 0.82
+          "actual_gap_pp": 25.65,
+          "explained_by_footprint_pp": 23.3,
+          "share_explained": 0.91
         }
       },
       "authority_ranking": [
         {
           "brand": "Allianz",
-          "mean_cite_share_pct": 9.05,
-          "mean_sov_pct": 38.19
+          "mean_cite_share_pct": 9.58,
+          "mean_sov_pct": 37.87
         },
         {
           "brand": "HUK-Coburg",
-          "mean_cite_share_pct": 7.74,
-          "mean_sov_pct": 25.67
+          "mean_cite_share_pct": 7.4,
+          "mean_sov_pct": 24.83
         },
         {
           "brand": "ERGO",
-          "mean_cite_share_pct": 3.95,
-          "mean_sov_pct": 15.61
+          "mean_cite_share_pct": 3.94,
+          "mean_sov_pct": 15.47
         },
         {
           "brand": "Signal Iduna",
-          "mean_cite_share_pct": 3.02,
-          "mean_sov_pct": 12.85
+          "mean_cite_share_pct": 2.5,
+          "mean_sov_pct": 12.22
         },
         {
           "brand": "CosmosDirekt",
-          "mean_cite_share_pct": 1.03,
-          "mean_sov_pct": 1.15
+          "mean_cite_share_pct": 1.05,
+          "mean_sov_pct": 1.53
         },
         {
           "brand": "AXA",
-          "mean_cite_share_pct": 0.57,
-          "mean_sov_pct": 3.88
+          "mean_cite_share_pct": 0.79,
+          "mean_sov_pct": 4.53
         },
         {
           "brand": "Generali",
           "mean_cite_share_pct": 0.26,
-          "mean_sov_pct": 2.65
+          "mean_sov_pct": 3.55
         }
       ]
     },
@@ -724,226 +724,25 @@
       "impact": {
         "press_mention": {
           "label": "Pressemitteilungen",
-          "pearson_r": 0.112,
-          "spearman_r": 0.127,
-          "avg_sov_effect_pp": 0.705,
-          "effect_se_pp": 0.345,
-          "ci95_low_pp": 0.028,
-          "ci95_high_pp": 1.382,
+          "pearson_r": 0.103,
+          "spearman_r": 0.108,
+          "avg_sov_effect_pp": 0.647,
+          "effect_se_pp": 0.324,
+          "ci95_low_pp": 0.011,
+          "ci95_high_pp": 1.283,
           "significant": true,
-          "n_intervals": 102,
+          "n_intervals": 109,
           "n_with_event": 42,
           "type_confidence": "belastbar"
         },
         "review_change": {
           "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.202,
+          "pearson_r": -0.198,
           "spearman_r": 0.014,
-          "avg_sov_effect_pp": -0.481,
-          "effect_se_pp": 0.685,
-          "ci95_low_pp": -1.961,
-          "ci95_high_pp": 0.999,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 14,
-          "type_confidence": "moderat"
-        },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": -0.081,
-          "spearman_r": 0.075,
-          "avg_sov_effect_pp": -0.437,
-          "effect_se_pp": 0.92,
-          "ci95_low_pp": -2.519,
-          "ci95_high_pp": 1.644,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 10,
-          "type_confidence": "moderat"
-        },
-        "news_mention": {
-          "label": "News-Erwaehnungen",
-          "pearson_r": 0.008,
-          "spearman_r": -0.053,
-          "avg_sov_effect_pp": 0.365,
-          "effect_se_pp": 0.407,
-          "ci95_low_pp": -0.433,
-          "ci95_high_pp": 1.162,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 58,
-          "type_confidence": "belastbar"
-        },
-        "page_new": {
-          "label": "Neue Seiten",
-          "pearson_r": 0.282,
-          "spearman_r": -0.056,
-          "avg_sov_effect_pp": 0.295,
-          "effect_se_pp": 0.623,
-          "ci95_low_pp": -1.051,
-          "ci95_high_pp": 1.642,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 14,
-          "type_confidence": "moderat"
-        },
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": -0.004,
-          "spearman_r": -0.033,
-          "avg_sov_effect_pp": -0.165,
-          "effect_se_pp": 0.43,
-          "ci95_low_pp": -1.008,
-          "ci95_high_pp": 0.678,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 42,
-          "type_confidence": "belastbar"
-        },
-        "wikipedia_change": {
-          "label": "Wikipedia-Ausbau (±)",
-          "pearson_r": -0.0,
-          "spearman_r": -0.032,
-          "avg_sov_effect_pp": -0.005,
-          "effect_se_pp": null,
-          "ci95_low_pp": null,
-          "ci95_high_pp": null,
-          "significant": null,
-          "n_intervals": 102,
-          "n_with_event": 1,
-          "type_confidence": "unzureichend"
-        }
-      },
-      "multivariate": {
-        "available": true,
-        "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 51.0,
-        "pooled_prior": true,
-        "n_points": 102,
-        "n_brands": 8,
-        "types_used": [
-          "page_change",
-          "page_new",
-          "review_change",
-          "media_positive",
-          "media_negative",
-          "review_positive",
-          "review_negative"
-        ],
-        "types_excluded_too_few": [
-          "press_mention",
-          "news_mention",
-          "domain_change",
-          "review_volume",
-          "price_change",
-          "wikipedia_change",
-          "portal_rank_change",
-          "rating_status_change"
-        ],
-        "exploratory": false,
-        "coefficients": {
-          "review_change": {
-            "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.1951,
-            "ci95_low": -0.6706,
-            "ci95_high": 0.2804,
-            "prob_positive": 0.211,
-            "prob_direction": 0.789,
-            "significant": false,
-            "n_with_event": 14
-          },
-          "media_negative": {
-            "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.0863,
-            "ci95_low": -1.3446,
-            "ci95_high": 1.5172,
-            "prob_positive": 0.547,
-            "prob_direction": 0.547,
-            "significant": false,
-            "n_with_event": 7
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0665,
-            "ci95_low": -0.0352,
-            "ci95_high": 0.1681,
-            "prob_positive": 0.9,
-            "prob_direction": 0.9,
-            "significant": false,
-            "n_with_event": 11
-          },
-          "media_positive": {
-            "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.0619,
-            "ci95_low": -0.8975,
-            "ci95_high": 1.0214,
-            "prob_positive": 0.55,
-            "prob_direction": 0.55,
-            "significant": false,
-            "n_with_event": 11
-          },
-          "page_new": {
-            "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0078,
-            "ci95_low": -0.0008,
-            "ci95_high": 0.0164,
-            "prob_positive": 0.962,
-            "prob_direction": 0.962,
-            "significant": false,
-            "n_with_event": 14
-          },
-          "page_change": {
-            "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0045,
-            "ci95_low": -0.0171,
-            "ci95_high": 0.0081,
-            "prob_positive": 0.243,
-            "prob_direction": 0.757,
-            "significant": false,
-            "n_with_event": 42
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0013,
-            "ci95_low": -0.3002,
-            "ci95_high": 0.3028,
-            "prob_positive": 0.503,
-            "prob_direction": 0.503,
-            "significant": false,
-            "n_with_event": 11
-          }
-        },
-        "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
-      },
-      "confidence": "moderat",
-      "confidence_note": "Tendenz mit mittlerer Sicherheit.",
-      "sov_measure_days": 18,
-      "sov_measure_range": [
-        "2026-06-05",
-        "2026-07-04"
-      ],
-      "n_intervals_total": 102,
-      "brands_with_sov": [
-        "AXA",
-        "Allianz",
-        "Cosmos Direkt",
-        "CosmosDirekt",
-        "ERGO",
-        "Generali",
-        "HUK-Coburg",
-        "Signal Iduna"
-      ]
-    },
-    "gemini": {
-      "impact": {
-        "review_change": {
-          "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.263,
-          "spearman_r": -0.193,
-          "avg_sov_effect_pp": -1.054,
-          "effect_se_pp": 0.558,
-          "ci95_low_pp": -2.259,
-          "ci95_high_pp": 0.152,
+          "avg_sov_effect_pp": -0.467,
+          "effect_se_pp": 0.682,
+          "ci95_low_pp": -1.939,
+          "ci95_high_pp": 1.005,
           "significant": false,
           "n_intervals": 109,
           "n_with_event": 14,
@@ -951,74 +750,61 @@
         },
         "review_volume": {
           "label": "Bewertungs-Volumen",
-          "pearson_r": -0.06,
-          "spearman_r": -0.001,
-          "avg_sov_effect_pp": -0.23,
-          "effect_se_pp": 0.711,
-          "ci95_low_pp": -1.815,
-          "ci95_high_pp": 1.354,
+          "pearson_r": -0.08,
+          "spearman_r": 0.049,
+          "avg_sov_effect_pp": -0.414,
+          "effect_se_pp": 0.834,
+          "ci95_low_pp": -2.272,
+          "ci95_high_pp": 1.444,
           "significant": false,
           "n_intervals": 109,
           "n_with_event": 11,
           "type_confidence": "moderat"
         },
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": 0.014,
-          "spearman_r": -0.005,
-          "avg_sov_effect_pp": -0.224,
-          "effect_se_pp": 0.417,
-          "ci95_low_pp": -1.041,
-          "ci95_high_pp": 0.593,
+        "news_mention": {
+          "label": "News-Erwaehnungen",
+          "pearson_r": 0.007,
+          "spearman_r": -0.069,
+          "avg_sov_effect_pp": 0.335,
+          "effect_se_pp": 0.379,
+          "ci95_low_pp": -0.407,
+          "ci95_high_pp": 1.078,
           "significant": false,
           "n_intervals": 109,
-          "n_with_event": 43,
-          "type_confidence": "belastbar"
-        },
-        "press_mention": {
-          "label": "Pressemitteilungen",
-          "pearson_r": -0.028,
-          "spearman_r": -0.014,
-          "avg_sov_effect_pp": 0.211,
-          "effect_se_pp": 0.371,
-          "ci95_low_pp": -0.517,
-          "ci95_high_pp": 0.939,
-          "significant": false,
-          "n_intervals": 109,
-          "n_with_event": 43,
+          "n_with_event": 61,
           "type_confidence": "belastbar"
         },
         "page_new": {
           "label": "Neue Seiten",
-          "pearson_r": 0.21,
-          "spearman_r": -0.013,
-          "avg_sov_effect_pp": 0.168,
-          "effect_se_pp": 0.457,
-          "ci95_low_pp": -0.819,
-          "ci95_high_pp": 1.154,
+          "pearson_r": 0.268,
+          "spearman_r": -0.087,
+          "avg_sov_effect_pp": 0.167,
+          "effect_se_pp": 0.627,
+          "ci95_low_pp": -1.187,
+          "ci95_high_pp": 1.522,
           "significant": false,
           "n_intervals": 109,
           "n_with_event": 14,
           "type_confidence": "moderat"
         },
-        "news_mention": {
-          "label": "News-Erwaehnungen",
-          "pearson_r": -0.066,
-          "spearman_r": -0.044,
-          "avg_sov_effect_pp": 0.071,
-          "effect_se_pp": 0.365,
-          "ci95_low_pp": -0.645,
-          "ci95_high_pp": 0.787,
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.003,
+          "spearman_r": -0.022,
+          "avg_sov_effect_pp": -0.159,
+          "effect_se_pp": 0.418,
+          "ci95_low_pp": -0.979,
+          "ci95_high_pp": 0.661,
           "significant": false,
           "n_intervals": 109,
-          "n_with_event": 63,
+          "n_with_event": 43,
           "type_confidence": "belastbar"
         },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
-          "pearson_r": -0.001,
-          "spearman_r": -0.003,
-          "avg_sov_effect_pp": -0.018,
+          "pearson_r": -0.002,
+          "spearman_r": -0.031,
+          "avg_sov_effect_pp": -0.048,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
@@ -1056,75 +842,75 @@
         ],
         "exploratory": false,
         "coefficients": {
-          "media_positive": {
-            "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.7867,
-            "ci95_low": -1.7984,
-            "ci95_high": 0.225,
-            "prob_positive": 0.064,
-            "prob_direction": 0.936,
+          "review_change": {
+            "label": "Bewertungs-Trend (±)",
+            "coef_pp_per_event_day": -0.1588,
+            "ci95_low": -0.618,
+            "ci95_high": 0.3003,
+            "prob_positive": 0.249,
+            "prob_direction": 0.751,
             "significant": false,
-            "n_with_event": 11
+            "n_with_event": 14
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.2651,
-            "ci95_low": -1.2453,
-            "ci95_high": 1.7756,
-            "prob_positive": 0.635,
-            "prob_direction": 0.635,
+            "coef_pp_per_event_day": 0.1276,
+            "ci95_low": -1.1357,
+            "ci95_high": 1.3908,
+            "prob_positive": 0.578,
+            "prob_direction": 0.578,
             "significant": false,
-            "n_with_event": 7
+            "n_with_event": 8
+          },
+          "media_positive": {
+            "label": "Presse/News: Produkt/Strategie",
+            "coef_pp_per_event_day": 0.0875,
+            "ci95_low": -0.8383,
+            "ci95_high": 1.0133,
+            "prob_positive": 0.573,
+            "prob_direction": 0.573,
+            "significant": false,
+            "n_with_event": 11
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.1573,
-            "ci95_low": -0.4552,
-            "ci95_high": 0.1407,
-            "prob_positive": 0.15,
-            "prob_direction": 0.85,
+            "coef_pp_per_event_day": 0.0431,
+            "ci95_low": -0.2413,
+            "ci95_high": 0.3274,
+            "prob_positive": 0.617,
+            "prob_direction": 0.617,
             "significant": false,
-            "n_with_event": 14
+            "n_with_event": 15
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0818,
-            "ci95_low": -0.014,
-            "ci95_high": 0.1776,
-            "prob_positive": 0.953,
-            "prob_direction": 0.953,
+            "coef_pp_per_event_day": 0.0324,
+            "ci95_low": -0.0564,
+            "ci95_high": 0.1212,
+            "prob_positive": 0.763,
+            "prob_direction": 0.763,
             "significant": false,
-            "n_with_event": 16
-          },
-          "page_change": {
-            "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.008,
-            "ci95_low": -0.0213,
-            "ci95_high": 0.0053,
-            "prob_positive": 0.12,
-            "prob_direction": 0.88,
-            "significant": false,
-            "n_with_event": 43
+            "n_with_event": 14
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0028,
-            "ci95_low": -0.0062,
-            "ci95_high": 0.0117,
-            "prob_positive": 0.728,
-            "prob_direction": 0.728,
+            "coef_pp_per_event_day": 0.01,
+            "ci95_low": 0.0015,
+            "ci95_high": 0.0184,
+            "prob_positive": 0.99,
+            "prob_direction": 0.99,
             "significant": false,
             "n_with_event": 14
           },
-          "review_change": {
-            "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0009,
-            "ci95_low": -0.5028,
-            "ci95_high": 0.501,
-            "prob_positive": 0.499,
-            "prob_direction": 0.501,
+          "page_change": {
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "coef_pp_per_event_day": -0.0044,
+            "ci95_low": -0.0166,
+            "ci95_high": 0.0077,
+            "prob_positive": 0.238,
+            "prob_direction": 0.762,
             "significant": false,
-            "n_with_event": 14
+            "n_with_event": 43
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -1134,7 +920,7 @@
       "sov_measure_days": 19,
       "sov_measure_range": [
         "2026-06-05",
-        "2026-07-04"
+        "2026-07-05"
       ],
       "n_intervals_total": 109,
       "brands_with_sov": [
@@ -1148,96 +934,96 @@
         "Signal Iduna"
       ]
     },
-    "perplexity": {
+    "gemini": {
       "impact": {
+        "review_change": {
+          "label": "Bewertungs-Trend (±)",
+          "pearson_r": -0.248,
+          "spearman_r": -0.169,
+          "avg_sov_effect_pp": -0.985,
+          "effect_se_pp": 0.559,
+          "ci95_low_pp": -2.193,
+          "ci95_high_pp": 0.222,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 14,
+          "type_confidence": "moderat"
+        },
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": -0.067,
+          "spearman_r": -0.023,
+          "avg_sov_effect_pp": -0.278,
+          "effect_se_pp": 0.659,
+          "ci95_low_pp": -1.729,
+          "ci95_high_pp": 1.173,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 12,
+          "type_confidence": "moderat"
+        },
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.01,
+          "spearman_r": -0.005,
+          "avg_sov_effect_pp": -0.236,
+          "effect_se_pp": 0.406,
+          "ci95_low_pp": -1.032,
+          "ci95_high_pp": 0.56,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 44,
+          "type_confidence": "belastbar"
+        },
+        "press_mention": {
+          "label": "Pressemitteilungen",
+          "pearson_r": -0.031,
+          "spearman_r": -0.012,
+          "avg_sov_effect_pp": 0.181,
+          "effect_se_pp": 0.362,
+          "ci95_low_pp": -0.528,
+          "ci95_high_pp": 0.889,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 43,
+          "type_confidence": "belastbar"
+        },
         "page_new": {
           "label": "Neue Seiten",
-          "pearson_r": 0.123,
-          "spearman_r": 0.14,
-          "avg_sov_effect_pp": 0.704,
-          "effect_se_pp": 0.537,
-          "ci95_low_pp": -0.466,
-          "ci95_high_pp": 1.874,
+          "pearson_r": 0.192,
+          "spearman_r": -0.054,
+          "avg_sov_effect_pp": 0.01,
+          "effect_se_pp": 0.472,
+          "ci95_low_pp": -1.009,
+          "ci95_high_pp": 1.03,
           "significant": false,
-          "n_intervals": 88,
-          "n_with_event": 13,
+          "n_intervals": 116,
+          "n_with_event": 14,
           "type_confidence": "moderat"
         },
         "news_mention": {
           "label": "News-Erwaehnungen",
-          "pearson_r": 0.027,
-          "spearman_r": 0.05,
-          "avg_sov_effect_pp": 0.543,
-          "effect_se_pp": 0.514,
-          "ci95_low_pp": -0.465,
-          "ci95_high_pp": 1.551,
+          "pearson_r": -0.074,
+          "spearman_r": -0.062,
+          "avg_sov_effect_pp": 0.0,
+          "effect_se_pp": 0.348,
+          "ci95_low_pp": -0.682,
+          "ci95_high_pp": 0.683,
           "significant": false,
-          "n_intervals": 88,
-          "n_with_event": 49,
-          "type_confidence": "belastbar"
-        },
-        "review_change": {
-          "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.148,
-          "spearman_r": -0.048,
-          "avg_sov_effect_pp": -0.494,
-          "effect_se_pp": 0.665,
-          "ci95_low_pp": -1.943,
-          "ci95_high_pp": 0.954,
-          "significant": false,
-          "n_intervals": 88,
-          "n_with_event": 13,
-          "type_confidence": "moderat"
-        },
-        "press_mention": {
-          "label": "Pressemitteilungen",
-          "pearson_r": -0.128,
-          "spearman_r": -0.125,
-          "avg_sov_effect_pp": -0.442,
-          "effect_se_pp": 0.509,
-          "ci95_low_pp": -1.44,
-          "ci95_high_pp": 0.556,
-          "significant": false,
-          "n_intervals": 88,
-          "n_with_event": 38,
-          "type_confidence": "belastbar"
-        },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": -0.086,
-          "spearman_r": 0.042,
-          "avg_sov_effect_pp": -0.423,
-          "effect_se_pp": 0.951,
-          "ci95_low_pp": -2.616,
-          "ci95_high_pp": 1.77,
-          "significant": false,
-          "n_intervals": 88,
-          "n_with_event": 9,
-          "type_confidence": "vorlaeufig"
-        },
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": 0.016,
-          "spearman_r": 0.04,
-          "avg_sov_effect_pp": -0.283,
-          "effect_se_pp": 0.5,
-          "ci95_low_pp": -1.264,
-          "ci95_high_pp": 0.698,
-          "significant": false,
-          "n_intervals": 88,
-          "n_with_event": 39,
+          "n_intervals": 116,
+          "n_with_event": 66,
           "type_confidence": "belastbar"
         },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
-          "pearson_r": -0.004,
-          "spearman_r": -0.027,
-          "avg_sov_effect_pp": -0.098,
+          "pearson_r": 0.0,
+          "spearman_r": 0.001,
+          "avg_sov_effect_pp": 0.0,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
           "significant": null,
-          "n_intervals": 88,
+          "n_intervals": 116,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         }
@@ -1245,9 +1031,9 @@
       "multivariate": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 44.0,
+        "lambda": 58.0,
         "pooled_prior": true,
-        "n_points": 88,
+        "n_points": 116,
         "n_brands": 8,
         "types_used": [
           "page_change",
@@ -1272,71 +1058,285 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.7075,
-            "ci95_low": -0.6088,
-            "ci95_high": 2.0238,
-            "prob_positive": 0.854,
-            "prob_direction": 0.854,
+            "coef_pp_per_event_day": -0.8292,
+            "ci95_low": -1.8271,
+            "ci95_high": 0.1687,
+            "prob_positive": 0.052,
+            "prob_direction": 0.948,
+            "significant": false,
+            "n_with_event": 11
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.1242,
+            "ci95_low": -0.4136,
+            "ci95_high": 0.1652,
+            "prob_positive": 0.2,
+            "prob_direction": 0.8,
+            "significant": false,
+            "n_with_event": 18
+          },
+          "media_negative": {
+            "label": "Presse/News: Schaden/Leistung",
+            "coef_pp_per_event_day": 0.1211,
+            "ci95_low": -1.2401,
+            "ci95_high": 1.4823,
+            "prob_positive": 0.569,
+            "prob_direction": 0.569,
+            "significant": false,
+            "n_with_event": 8
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0491,
+            "ci95_low": -0.038,
+            "ci95_high": 0.1362,
+            "prob_positive": 0.865,
+            "prob_direction": 0.865,
+            "significant": false,
+            "n_with_event": 19
+          },
+          "review_change": {
+            "label": "Bewertungs-Trend (±)",
+            "coef_pp_per_event_day": 0.0467,
+            "ci95_low": -0.4487,
+            "ci95_high": 0.542,
+            "prob_positive": 0.573,
+            "prob_direction": 0.573,
+            "significant": false,
+            "n_with_event": 14
+          },
+          "page_change": {
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "coef_pp_per_event_day": -0.0081,
+            "ci95_low": -0.0212,
+            "ci95_high": 0.005,
+            "prob_positive": 0.113,
+            "prob_direction": 0.887,
+            "significant": false,
+            "n_with_event": 44
+          },
+          "page_new": {
+            "label": "Neue Seiten",
+            "coef_pp_per_event_day": 0.0048,
+            "ci95_low": -0.0042,
+            "ci95_high": 0.0138,
+            "prob_positive": 0.852,
+            "prob_direction": 0.852,
+            "significant": false,
+            "n_with_event": 14
+          }
+        },
+        "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
+      },
+      "confidence": "moderat",
+      "confidence_note": "Tendenz mit mittlerer Sicherheit.",
+      "sov_measure_days": 20,
+      "sov_measure_range": [
+        "2026-06-05",
+        "2026-07-05"
+      ],
+      "n_intervals_total": 116,
+      "brands_with_sov": [
+        "AXA",
+        "Allianz",
+        "Cosmos Direkt",
+        "CosmosDirekt",
+        "ERGO",
+        "Generali",
+        "HUK-Coburg",
+        "Signal Iduna"
+      ]
+    },
+    "perplexity": {
+      "impact": {
+        "review_change": {
+          "label": "Bewertungs-Trend (±)",
+          "pearson_r": -0.14,
+          "spearman_r": -0.026,
+          "avg_sov_effect_pp": -0.463,
+          "effect_se_pp": 0.657,
+          "ci95_low_pp": -1.895,
+          "ci95_high_pp": 0.969,
+          "significant": false,
+          "n_intervals": 95,
+          "n_with_event": 13,
+          "type_confidence": "moderat"
+        },
+        "press_mention": {
+          "label": "Pressemitteilungen",
+          "pearson_r": -0.131,
+          "spearman_r": -0.118,
+          "avg_sov_effect_pp": -0.46,
+          "effect_se_pp": 0.49,
+          "ci95_low_pp": -1.419,
+          "ci95_high_pp": 0.5,
+          "significant": false,
+          "n_intervals": 95,
+          "n_with_event": 38,
+          "type_confidence": "belastbar"
+        },
+        "page_new": {
+          "label": "Neue Seiten",
+          "pearson_r": 0.097,
+          "spearman_r": 0.08,
+          "avg_sov_effect_pp": 0.455,
+          "effect_se_pp": 0.563,
+          "ci95_low_pp": -0.771,
+          "ci95_high_pp": 1.681,
+          "significant": false,
+          "n_intervals": 95,
+          "n_with_event": 13,
+          "type_confidence": "moderat"
+        },
+        "news_mention": {
+          "label": "News-Erwaehnungen",
+          "pearson_r": 0.011,
+          "spearman_r": 0.015,
+          "avg_sov_effect_pp": 0.412,
+          "effect_se_pp": 0.487,
+          "ci95_low_pp": -0.542,
+          "ci95_high_pp": 1.366,
+          "significant": false,
+          "n_intervals": 95,
+          "n_with_event": 52,
+          "type_confidence": "belastbar"
+        },
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": -0.082,
+          "spearman_r": 0.029,
+          "avg_sov_effect_pp": -0.399,
+          "effect_se_pp": 0.855,
+          "ci95_low_pp": -2.333,
+          "ci95_high_pp": 1.536,
+          "significant": false,
+          "n_intervals": 95,
+          "n_with_event": 10,
+          "type_confidence": "moderat"
+        },
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.05,
+          "spearman_r": 0.074,
+          "avg_sov_effect_pp": -0.219,
+          "effect_se_pp": 0.479,
+          "ci95_low_pp": -1.159,
+          "ci95_high_pp": 0.721,
+          "significant": false,
+          "n_intervals": 95,
+          "n_with_event": 40,
+          "type_confidence": "belastbar"
+        },
+        "wikipedia_change": {
+          "label": "Wikipedia-Ausbau (±)",
+          "pearson_r": -0.004,
+          "spearman_r": -0.019,
+          "avg_sov_effect_pp": -0.094,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "significant": null,
+          "n_intervals": 95,
+          "n_with_event": 1,
+          "type_confidence": "unzureichend"
+        }
+      },
+      "multivariate": {
+        "available": true,
+        "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+        "lambda": 47.5,
+        "pooled_prior": true,
+        "n_points": 95,
+        "n_brands": 8,
+        "types_used": [
+          "page_change",
+          "page_new",
+          "review_change",
+          "media_positive",
+          "media_negative",
+          "review_positive",
+          "review_negative"
+        ],
+        "types_excluded_too_few": [
+          "press_mention",
+          "news_mention",
+          "domain_change",
+          "review_volume",
+          "price_change",
+          "wikipedia_change",
+          "portal_rank_change",
+          "rating_status_change"
+        ],
+        "exploratory": false,
+        "coefficients": {
+          "media_positive": {
+            "label": "Presse/News: Produkt/Strategie",
+            "coef_pp_per_event_day": 0.7168,
+            "ci95_low": -0.5784,
+            "ci95_high": 2.012,
+            "prob_positive": 0.861,
+            "prob_direction": 0.861,
             "significant": false,
             "n_with_event": 11
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": -0.4471,
-            "ci95_low": -2.4032,
-            "ci95_high": 1.5091,
-            "prob_positive": 0.327,
-            "prob_direction": 0.673,
-            "significant": false,
-            "n_with_event": 7
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.1409,
-            "ci95_low": -0.5632,
-            "ci95_high": 0.2815,
-            "prob_positive": 0.257,
-            "prob_direction": 0.743,
-            "significant": false,
-            "n_with_event": 10
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.1137,
-            "ci95_low": -0.0318,
-            "ci95_high": 0.2593,
-            "prob_positive": 0.937,
-            "prob_direction": 0.937,
+            "coef_pp_per_event_day": -0.429,
+            "ci95_low": -2.1966,
+            "ci95_high": 1.3386,
+            "prob_positive": 0.317,
+            "prob_direction": 0.683,
             "significant": false,
             "n_with_event": 8
           },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0717,
+            "ci95_low": -0.0563,
+            "ci95_high": 0.1997,
+            "prob_positive": 0.864,
+            "prob_direction": 0.864,
+            "significant": false,
+            "n_with_event": 12
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0682,
+            "ci95_low": -0.4733,
+            "ci95_high": 0.3369,
+            "prob_positive": 0.371,
+            "prob_direction": 0.629,
+            "significant": false,
+            "n_with_event": 14
+          },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.0109,
-            "ci95_low": -0.6733,
-            "ci95_high": 0.6951,
-            "prob_positive": 0.512,
-            "prob_direction": 0.512,
+            "coef_pp_per_event_day": 0.049,
+            "ci95_low": -0.6257,
+            "ci95_high": 0.7237,
+            "prob_positive": 0.557,
+            "prob_direction": 0.557,
             "significant": false,
             "n_with_event": 12
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0038,
-            "ci95_low": -0.0238,
-            "ci95_high": 0.0162,
-            "prob_positive": 0.355,
-            "prob_direction": 0.645,
+            "coef_pp_per_event_day": -0.0028,
+            "ci95_low": -0.0225,
+            "ci95_high": 0.0169,
+            "prob_positive": 0.389,
+            "prob_direction": 0.611,
             "significant": false,
-            "n_with_event": 39
+            "n_with_event": 40
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": -0.0025,
-            "ci95_low": -0.0143,
-            "ci95_high": 0.0094,
-            "prob_positive": 0.341,
-            "prob_direction": 0.659,
+            "coef_pp_per_event_day": -0.0005,
+            "ci95_low": -0.0124,
+            "ci95_high": 0.0113,
+            "prob_positive": 0.465,
+            "prob_direction": 0.535,
             "significant": false,
             "n_with_event": 13
           }
@@ -1345,12 +1345,12 @@
       },
       "confidence": "moderat",
       "confidence_note": "Tendenz mit mittlerer Sicherheit.",
-      "sov_measure_days": 16,
+      "sov_measure_days": 17,
       "sov_measure_range": [
         "2026-06-05",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 88,
+      "n_intervals_total": 95,
       "brands_with_sov": [
         "AXA",
         "Allianz",
@@ -1369,21 +1369,220 @@
         "news_mention": {
           "label": "News-Erwaehnungen",
           "pearson_r": 0.134,
-          "spearman_r": 0.121,
-          "avg_sov_effect_pp": 0.524,
-          "effect_se_pp": 0.825,
-          "ci95_low_pp": -1.427,
-          "ci95_high_pp": 2.476,
+          "spearman_r": 0.124,
+          "avg_sov_effect_pp": 0.515,
+          "effect_se_pp": 0.823,
+          "ci95_low_pp": -1.431,
+          "ci95_high_pp": 2.461,
           "significant": false,
-          "n_intervals": 32,
-          "n_with_event": 24,
+          "n_intervals": 33,
+          "n_with_event": 25,
           "type_confidence": "belastbar"
         },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
           "pearson_r": 0.052,
-          "spearman_r": 0.088,
-          "avg_sov_effect_pp": 0.431,
+          "spearman_r": 0.093,
+          "avg_sov_effect_pp": 0.434,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "significant": null,
+          "n_intervals": 33,
+          "n_with_event": 1,
+          "type_confidence": "unzureichend"
+        },
+        "press_mention": {
+          "label": "Pressemitteilungen",
+          "pearson_r": -0.007,
+          "spearman_r": 0.112,
+          "avg_sov_effect_pp": 0.411,
+          "effect_se_pp": 0.518,
+          "ci95_low_pp": -0.709,
+          "ci95_high_pp": 1.53,
+          "significant": false,
+          "n_intervals": 33,
+          "n_with_event": 14,
+          "type_confidence": "moderat"
+        },
+        "page_new": {
+          "label": "Neue Seiten",
+          "pearson_r": -0.026,
+          "spearman_r": -0.015,
+          "avg_sov_effect_pp": -0.161,
+          "effect_se_pp": 0.273,
+          "ci95_low_pp": -3.625,
+          "ci95_high_pp": 3.303,
+          "significant": false,
+          "n_intervals": 33,
+          "n_with_event": 2,
+          "type_confidence": "unzureichend"
+        },
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.115,
+          "spearman_r": 0.078,
+          "avg_sov_effect_pp": 0.077,
+          "effect_se_pp": 0.513,
+          "ci95_low_pp": -1.031,
+          "ci95_high_pp": 1.185,
+          "significant": false,
+          "n_intervals": 33,
+          "n_with_event": 19,
+          "type_confidence": "moderat"
+        }
+      },
+      "multivariate": {
+        "available": true,
+        "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+        "lambda": 16.5,
+        "pooled_prior": true,
+        "n_points": 33,
+        "n_brands": 1,
+        "types_used": [
+          "page_change",
+          "media_positive",
+          "media_negative",
+          "review_negative"
+        ],
+        "types_excluded_too_few": [
+          "page_new",
+          "press_mention",
+          "news_mention",
+          "domain_change",
+          "review_change",
+          "review_volume",
+          "price_change",
+          "wikipedia_change",
+          "portal_rank_change",
+          "rating_status_change"
+        ],
+        "exploratory": false,
+        "coefficients": {
+          "media_positive": {
+            "label": "Presse/News: Produkt/Strategie",
+            "coef_pp_per_event_day": -0.5416,
+            "ci95_low": -0.5416,
+            "ci95_high": -0.5416,
+            "prob_positive": 0.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 4
+          },
+          "media_negative": {
+            "label": "Presse/News: Schaden/Leistung",
+            "coef_pp_per_event_day": 0.356,
+            "ci95_low": 0.356,
+            "ci95_high": 0.356,
+            "prob_positive": 1.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 6
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0289,
+            "ci95_low": -0.0289,
+            "ci95_high": -0.0289,
+            "prob_positive": 0.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 4
+          },
+          "page_change": {
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "coef_pp_per_event_day": -0.0053,
+            "ci95_low": -0.0053,
+            "ci95_high": -0.0053,
+            "prob_positive": 0.0,
+            "prob_direction": 1.0,
+            "significant": true,
+            "n_with_event": 19
+          }
+        },
+        "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
+      },
+      "confidence": "belastbar",
+      "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
+      "sov_measure_days": 34,
+      "sov_measure_range": [
+        "2026-05-14",
+        "2026-07-05"
+      ],
+      "n_intervals_total": 33
+    },
+    "Allianz": {
+      "impact": {
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.033,
+          "spearman_r": -0.025,
+          "avg_sov_effect_pp": -2.626,
+          "effect_se_pp": 1.942,
+          "ci95_low_pp": -8.017,
+          "ci95_high_pp": 2.766,
+          "significant": false,
+          "n_intervals": 32,
+          "n_with_event": 27,
+          "type_confidence": "belastbar"
+        },
+        "domain_change": {
+          "label": "Domain-/Subdomain-Aenderungen",
+          "pearson_r": 0.189,
+          "spearman_r": 0.164,
+          "avg_sov_effect_pp": 1.641,
+          "effect_se_pp": 3.353,
+          "ci95_low_pp": -9.03,
+          "ci95_high_pp": 12.311,
+          "significant": false,
+          "n_intervals": 32,
+          "n_with_event": 4,
+          "type_confidence": "unzureichend"
+        },
+        "press_mention": {
+          "label": "Pressemitteilungen",
+          "pearson_r": 0.235,
+          "spearman_r": -0.008,
+          "avg_sov_effect_pp": 0.804,
+          "effect_se_pp": 1.186,
+          "ci95_low_pp": -1.839,
+          "ci95_high_pp": 3.447,
+          "significant": false,
+          "n_intervals": 32,
+          "n_with_event": 11,
+          "type_confidence": "moderat"
+        },
+        "news_mention": {
+          "label": "News-Erwaehnungen",
+          "pearson_r": 0.053,
+          "spearman_r": -0.054,
+          "avg_sov_effect_pp": 0.706,
+          "effect_se_pp": 1.339,
+          "ci95_low_pp": -2.46,
+          "ci95_high_pp": 3.872,
+          "significant": false,
+          "n_intervals": 32,
+          "n_with_event": 24,
+          "type_confidence": "belastbar"
+        },
+        "page_new": {
+          "label": "Neue Seiten",
+          "pearson_r": -0.199,
+          "spearman_r": -0.046,
+          "avg_sov_effect_pp": -0.464,
+          "effect_se_pp": 1.593,
+          "ci95_low_pp": -7.316,
+          "ci95_high_pp": 6.389,
+          "significant": false,
+          "n_intervals": 32,
+          "n_with_event": 3,
+          "type_confidence": "unzureichend"
+        },
+        "review_change": {
+          "label": "Bewertungs-Trend (±)",
+          "pearson_r": 0.013,
+          "spearman_r": 0.01,
+          "avg_sov_effect_pp": 0.217,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
@@ -1392,44 +1591,18 @@
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         },
-        "press_mention": {
-          "label": "Pressemitteilungen",
-          "pearson_r": -0.008,
-          "spearman_r": 0.108,
-          "avg_sov_effect_pp": 0.415,
-          "effect_se_pp": 0.53,
-          "ci95_low_pp": -0.729,
-          "ci95_high_pp": 1.559,
-          "significant": false,
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": 0.013,
+          "spearman_r": 0.01,
+          "avg_sov_effect_pp": 0.217,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "significant": null,
           "n_intervals": 32,
-          "n_with_event": 14,
-          "type_confidence": "moderat"
-        },
-        "page_new": {
-          "label": "Neue Seiten",
-          "pearson_r": -0.027,
-          "spearman_r": -0.015,
-          "avg_sov_effect_pp": -0.164,
-          "effect_se_pp": 0.281,
-          "ci95_low_pp": -3.741,
-          "ci95_high_pp": 3.412,
-          "significant": false,
-          "n_intervals": 32,
-          "n_with_event": 2,
+          "n_with_event": 1,
           "type_confidence": "unzureichend"
-        },
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": 0.114,
-          "spearman_r": 0.086,
-          "avg_sov_effect_pp": 0.073,
-          "effect_se_pp": 0.537,
-          "ci95_low_pp": -1.096,
-          "ci95_high_pp": 1.243,
-          "significant": false,
-          "n_intervals": 32,
-          "n_with_event": 19,
-          "type_confidence": "moderat"
         }
       },
       "multivariate": {
@@ -1441,14 +1614,15 @@
         "n_brands": 1,
         "types_used": [
           "page_change",
+          "domain_change",
           "media_positive",
-          "media_negative"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
           "press_mention",
           "news_mention",
-          "domain_change",
           "review_change",
           "review_volume",
           "price_change",
@@ -1460,19 +1634,29 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.4971,
-            "ci95_low": -0.4971,
-            "ci95_high": -0.4971,
+            "coef_pp_per_event_day": -0.5416,
+            "ci95_low": -0.5416,
+            "ci95_high": -0.5416,
+            "prob_positive": 0.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 8
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0289,
+            "ci95_low": -0.0289,
+            "ci95_high": -0.0289,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 4
           },
-          "media_negative": {
-            "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.3769,
-            "ci95_low": 0.3769,
-            "ci95_high": 0.3769,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0256,
+            "ci95_low": 0.0256,
+            "ci95_high": 0.0256,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1480,175 +1664,13 @@
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0055,
-            "ci95_low": -0.0055,
-            "ci95_high": -0.0055,
+            "coef_pp_per_event_day": -0.0053,
+            "ci95_low": -0.0053,
+            "ci95_high": -0.0053,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": true,
-            "n_with_event": 19
-          }
-        },
-        "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
-      },
-      "confidence": "belastbar",
-      "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
-      "sov_measure_range": [
-        "2026-05-14",
-        "2026-07-04"
-      ],
-      "n_intervals_total": 32
-    },
-    "Allianz": {
-      "impact": {
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": -0.136,
-          "spearman_r": -0.116,
-          "avg_sov_effect_pp": -2.752,
-          "effect_se_pp": 1.943,
-          "ci95_low_pp": -8.145,
-          "ci95_high_pp": 2.641,
-          "significant": false,
-          "n_intervals": 31,
-          "n_with_event": 26,
-          "type_confidence": "belastbar"
-        },
-        "domain_change": {
-          "label": "Domain-/Subdomain-Aenderungen",
-          "pearson_r": 0.205,
-          "spearman_r": 0.183,
-          "avg_sov_effect_pp": 1.755,
-          "effect_se_pp": 3.353,
-          "ci95_low_pp": -8.915,
-          "ci95_high_pp": 12.424,
-          "significant": false,
-          "n_intervals": 31,
-          "n_with_event": 4,
-          "type_confidence": "unzureichend"
-        },
-        "news_mention": {
-          "label": "News-Erwaehnungen",
-          "pearson_r": 0.084,
-          "spearman_r": 0.01,
-          "avg_sov_effect_pp": 1.192,
-          "effect_se_pp": 1.402,
-          "ci95_low_pp": -2.239,
-          "ci95_high_pp": 4.623,
-          "significant": false,
-          "n_intervals": 31,
-          "n_with_event": 24,
-          "type_confidence": "belastbar"
-        },
-        "press_mention": {
-          "label": "Pressemitteilungen",
-          "pearson_r": 0.26,
-          "spearman_r": 0.025,
-          "avg_sov_effect_pp": 0.962,
-          "effect_se_pp": 1.19,
-          "ci95_low_pp": -1.689,
-          "ci95_high_pp": 3.613,
-          "significant": false,
-          "n_intervals": 31,
-          "n_with_event": 11,
-          "type_confidence": "moderat"
-        },
-        "page_new": {
-          "label": "Neue Seiten",
-          "pearson_r": -0.197,
-          "spearman_r": -0.031,
-          "avg_sov_effect_pp": -0.363,
-          "effect_se_pp": 1.596,
-          "ci95_low_pp": -7.231,
-          "ci95_high_pp": 6.506,
-          "significant": false,
-          "n_intervals": 31,
-          "n_with_event": 3,
-          "type_confidence": "unzureichend"
-        },
-        "review_change": {
-          "label": "Bewertungs-Trend (±)",
-          "pearson_r": 0.019,
-          "spearman_r": 0.02,
-          "avg_sov_effect_pp": 0.313,
-          "effect_se_pp": null,
-          "ci95_low_pp": null,
-          "ci95_high_pp": null,
-          "significant": null,
-          "n_intervals": 31,
-          "n_with_event": 1,
-          "type_confidence": "unzureichend"
-        },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": 0.019,
-          "spearman_r": 0.02,
-          "avg_sov_effect_pp": 0.313,
-          "effect_se_pp": null,
-          "ci95_low_pp": null,
-          "ci95_high_pp": null,
-          "significant": null,
-          "n_intervals": 31,
-          "n_with_event": 1,
-          "type_confidence": "unzureichend"
-        }
-      },
-      "multivariate": {
-        "available": true,
-        "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 15.5,
-        "pooled_prior": true,
-        "n_points": 31,
-        "n_brands": 1,
-        "types_used": [
-          "page_change",
-          "domain_change",
-          "media_positive",
-          "review_positive"
-        ],
-        "types_excluded_too_few": [
-          "page_new",
-          "press_mention",
-          "news_mention",
-          "review_change",
-          "review_volume",
-          "price_change",
-          "wikipedia_change",
-          "portal_rank_change",
-          "rating_status_change"
-        ],
-        "exploratory": false,
-        "coefficients": {
-          "media_positive": {
-            "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.4971,
-            "ci95_low": -0.4971,
-            "ci95_high": -0.4971,
-            "prob_positive": 0.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 8
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0608,
-            "ci95_low": 0.0608,
-            "ci95_high": 0.0608,
-            "prob_positive": 1.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 4
-          },
-          "page_change": {
-            "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0055,
-            "ci95_low": -0.0055,
-            "ci95_high": -0.0055,
-            "prob_positive": 0.0,
-            "prob_direction": 1.0,
-            "significant": true,
-            "n_with_event": 26
+            "n_with_event": 27
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -1665,12 +1687,12 @@
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 31
+      "n_intervals_total": 32
     },
     "Cosmos Direkt": {
       "impact": {
@@ -1737,10 +1759,10 @@
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
       "n_intervals_total": 8
     },
@@ -1750,12 +1772,12 @@
           "label": "Neue Seiten",
           "pearson_r": null,
           "spearman_r": null,
-          "avg_sov_effect_pp": null,
+          "avg_sov_effect_pp": 1.13,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
           "significant": null,
-          "n_intervals": 1,
+          "n_intervals": 2,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         }
@@ -1763,107 +1785,107 @@
       "multivariate": {
         "available": false,
         "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
-        "n_points": 1,
+        "n_points": 2,
         "n_brands": 1,
         "types_used": [],
         "coefficients": {}
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 1
+      "n_intervals_total": 2
     },
     "ERGO": {
       "impact": {
         "review_change": {
           "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.131,
-          "spearman_r": -0.226,
-          "avg_sov_effect_pp": -2.762,
+          "pearson_r": -0.133,
+          "spearman_r": -0.225,
+          "avg_sov_effect_pp": -2.796,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
           "significant": null,
-          "n_intervals": 30,
+          "n_intervals": 31,
+          "n_with_event": 1,
+          "type_confidence": "unzureichend"
+        },
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": -0.074,
+          "spearman_r": -0.184,
+          "avg_sov_effect_pp": -1.562,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "significant": null,
+          "n_intervals": 31,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         },
         "page_change": {
           "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": -0.113,
-          "spearman_r": 0.022,
-          "avg_sov_effect_pp": 1.715,
-          "effect_se_pp": 1.3,
-          "ci95_low_pp": -1.146,
-          "ci95_high_pp": 4.576,
+          "pearson_r": -0.117,
+          "spearman_r": -0.004,
+          "avg_sov_effect_pp": 1.551,
+          "effect_se_pp": 1.273,
+          "ci95_low_pp": -1.222,
+          "ci95_high_pp": 4.325,
           "significant": false,
-          "n_intervals": 30,
+          "n_intervals": 31,
           "n_with_event": 18,
           "type_confidence": "moderat"
         },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": -0.072,
-          "spearman_r": -0.183,
-          "avg_sov_effect_pp": -1.527,
-          "effect_se_pp": null,
-          "ci95_low_pp": null,
-          "ci95_high_pp": null,
-          "significant": null,
-          "n_intervals": 30,
-          "n_with_event": 1,
-          "type_confidence": "unzureichend"
-        },
         "press_mention": {
           "label": "Pressemitteilungen",
-          "pearson_r": -0.066,
-          "spearman_r": 0.104,
-          "avg_sov_effect_pp": -1.374,
-          "effect_se_pp": 1.52,
-          "ci95_low_pp": -4.686,
-          "ci95_high_pp": 1.938,
+          "pearson_r": -0.073,
+          "spearman_r": 0.066,
+          "avg_sov_effect_pp": -1.397,
+          "effect_se_pp": 1.431,
+          "ci95_low_pp": -4.489,
+          "ci95_high_pp": 1.695,
           "significant": false,
-          "n_intervals": 30,
+          "n_intervals": 31,
           "n_with_event": 17,
           "type_confidence": "moderat"
         },
         "page_new": {
           "label": "Neue Seiten",
-          "pearson_r": 0.106,
-          "spearman_r": -0.132,
-          "avg_sov_effect_pp": -0.78,
-          "effect_se_pp": 1.109,
-          "ci95_low_pp": -3.631,
-          "ci95_high_pp": 2.071,
+          "pearson_r": 0.104,
+          "spearman_r": -0.143,
+          "avg_sov_effect_pp": -0.818,
+          "effect_se_pp": 1.082,
+          "ci95_low_pp": -3.601,
+          "ci95_high_pp": 1.965,
           "significant": false,
-          "n_intervals": 30,
+          "n_intervals": 31,
           "n_with_event": 6,
           "type_confidence": "vorlaeufig"
         },
         "news_mention": {
           "label": "News-Erwaehnungen",
-          "pearson_r": -0.166,
-          "spearman_r": -0.209,
-          "avg_sov_effect_pp": -0.143,
-          "effect_se_pp": 1.054,
-          "ci95_low_pp": -2.637,
-          "ci95_high_pp": 2.35,
+          "pearson_r": -0.16,
+          "spearman_r": -0.179,
+          "avg_sov_effect_pp": -0.094,
+          "effect_se_pp": 1.017,
+          "ci95_low_pp": -2.5,
+          "ci95_high_pp": 2.312,
           "significant": false,
-          "n_intervals": 30,
-          "n_with_event": 22,
+          "n_intervals": 31,
+          "n_with_event": 23,
           "type_confidence": "belastbar"
         }
       },
       "multivariate": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 15.0,
+        "lambda": 15.5,
         "pooled_prior": true,
-        "n_points": 30,
+        "n_points": 31,
         "n_brands": 1,
         "types_used": [
           "page_change",
@@ -1886,9 +1908,9 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.4971,
-            "ci95_low": -0.4971,
-            "ci95_high": -0.4971,
+            "coef_pp_per_event_day": -0.5416,
+            "ci95_low": -0.5416,
+            "ci95_high": -0.5416,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1896,9 +1918,9 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0608,
-            "ci95_low": 0.0608,
-            "ci95_high": 0.0608,
+            "coef_pp_per_event_day": 0.0256,
+            "ci95_low": 0.0256,
+            "ci95_high": 0.0256,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1906,9 +1928,9 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": -0.0071,
-            "ci95_low": -0.0071,
-            "ci95_high": -0.0071,
+            "coef_pp_per_event_day": -0.0066,
+            "ci95_low": -0.0066,
+            "ci95_high": -0.0066,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -1916,9 +1938,9 @@
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0055,
-            "ci95_low": -0.0055,
-            "ci95_high": -0.0055,
+            "coef_pp_per_event_day": -0.0053,
+            "ci95_low": -0.0053,
+            "ci95_high": -0.0053,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -1929,77 +1951,77 @@
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 30
+      "n_intervals_total": 31
     },
     "Generali": {
       "impact": {
         "page_new": {
           "label": "Neue Seiten",
-          "pearson_r": 0.093,
-          "spearman_r": 0.151,
-          "avg_sov_effect_pp": 0.992,
-          "effect_se_pp": 0.89,
-          "ci95_low_pp": -1.84,
-          "ci95_high_pp": 3.824,
+          "pearson_r": 0.092,
+          "spearman_r": 0.154,
+          "avg_sov_effect_pp": 0.98,
+          "effect_se_pp": 0.887,
+          "ci95_low_pp": -1.841,
+          "ci95_high_pp": 3.801,
           "significant": false,
-          "n_intervals": 29,
+          "n_intervals": 30,
           "n_with_event": 4,
           "type_confidence": "unzureichend"
         },
         "page_change": {
           "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": -0.1,
-          "spearman_r": -0.287,
-          "avg_sov_effect_pp": -0.762,
-          "effect_se_pp": 0.373,
-          "ci95_low_pp": -2.365,
-          "ci95_high_pp": 0.841,
+          "pearson_r": -0.101,
+          "spearman_r": -0.291,
+          "avg_sov_effect_pp": -0.765,
+          "effect_se_pp": 0.364,
+          "ci95_low_pp": -2.33,
+          "ci95_high_pp": 0.799,
           "significant": false,
-          "n_intervals": 29,
+          "n_intervals": 30,
           "n_with_event": 3,
           "type_confidence": "unzureichend"
         },
         "review_change": {
           "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.155,
-          "spearman_r": -0.284,
-          "avg_sov_effect_pp": -0.736,
-          "effect_se_pp": 0.5,
-          "ci95_low_pp": -2.887,
-          "ci95_high_pp": 1.415,
+          "pearson_r": -0.156,
+          "spearman_r": -0.289,
+          "avg_sov_effect_pp": -0.74,
+          "effect_se_pp": 0.493,
+          "ci95_low_pp": -2.861,
+          "ci95_high_pp": 1.382,
           "significant": false,
-          "n_intervals": 29,
+          "n_intervals": 30,
           "n_with_event": 3,
           "type_confidence": "unzureichend"
         },
         "press_mention": {
           "label": "Pressemitteilungen",
-          "pearson_r": 0.038,
-          "spearman_r": -0.02,
-          "avg_sov_effect_pp": 0.112,
-          "effect_se_pp": 0.572,
-          "ci95_low_pp": -1.123,
-          "ci95_high_pp": 1.346,
+          "pearson_r": 0.034,
+          "spearman_r": -0.038,
+          "avg_sov_effect_pp": 0.096,
+          "effect_se_pp": 0.538,
+          "ci95_low_pp": -1.057,
+          "ci95_high_pp": 1.25,
           "significant": false,
-          "n_intervals": 29,
+          "n_intervals": 30,
           "n_with_event": 15,
           "type_confidence": "moderat"
         },
         "news_mention": {
           "label": "News-Erwaehnungen",
-          "pearson_r": 0.123,
-          "spearman_r": -0.088,
-          "avg_sov_effect_pp": -0.039,
-          "effect_se_pp": 0.546,
-          "ci95_low_pp": -1.219,
-          "ci95_high_pp": 1.141,
+          "pearson_r": 0.12,
+          "spearman_r": -0.103,
+          "avg_sov_effect_pp": -0.048,
+          "effect_se_pp": 0.519,
+          "ci95_low_pp": -1.17,
+          "ci95_high_pp": 1.073,
           "significant": false,
-          "n_intervals": 29,
+          "n_intervals": 30,
           "n_with_event": 14,
           "type_confidence": "moderat"
         }
@@ -2007,9 +2029,9 @@
       "multivariate": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 14.5,
+        "lambda": 15.0,
         "pooled_prior": true,
-        "n_points": 29,
+        "n_points": 30,
         "n_brands": 1,
         "types_used": [
           "page_new"
@@ -2030,9 +2052,9 @@
         "coefficients": {
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": -0.0071,
-            "ci95_low": -0.0071,
-            "ci95_high": -0.0071,
+            "coef_pp_per_event_day": -0.0066,
+            "ci95_low": -0.0066,
+            "ci95_high": -0.0066,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -2043,106 +2065,107 @@
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 29
+      "n_intervals_total": 30
     },
     "HUK-Coburg": {
       "impact": {
         "review_change": {
           "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.517,
-          "spearman_r": -0.303,
-          "avg_sov_effect_pp": -2.201,
-          "effect_se_pp": 1.115,
-          "ci95_low_pp": -4.631,
-          "ci95_high_pp": 0.229,
+          "pearson_r": -0.464,
+          "spearman_r": -0.257,
+          "avg_sov_effect_pp": -1.924,
+          "effect_se_pp": 1.132,
+          "ci95_low_pp": -4.391,
+          "ci95_high_pp": 0.544,
           "significant": false,
-          "n_intervals": 31,
+          "n_intervals": 32,
           "n_with_event": 13,
           "type_confidence": "moderat"
         },
         "press_mention": {
           "label": "Pressemitteilungen",
-          "pearson_r": -0.151,
-          "spearman_r": -0.258,
-          "avg_sov_effect_pp": -1.351,
-          "effect_se_pp": 1.385,
-          "ci95_low_pp": -4.545,
-          "ci95_high_pp": 1.842,
+          "pearson_r": -0.121,
+          "spearman_r": -0.22,
+          "avg_sov_effect_pp": -1.145,
+          "effect_se_pp": 1.389,
+          "ci95_low_pp": -4.348,
+          "ci95_high_pp": 2.059,
           "significant": false,
-          "n_intervals": 31,
+          "n_intervals": 32,
           "n_with_event": 9,
           "type_confidence": "vorlaeufig"
         },
         "page_change": {
           "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": 0.029,
-          "spearman_r": 0.07,
-          "avg_sov_effect_pp": -1.179,
-          "effect_se_pp": 2.037,
-          "ci95_low_pp": -6.834,
-          "ci95_high_pp": 4.476,
+          "pearson_r": 0.044,
+          "spearman_r": 0.08,
+          "avg_sov_effect_pp": -1.01,
+          "effect_se_pp": 2.038,
+          "ci95_low_pp": -6.669,
+          "ci95_high_pp": 4.648,
           "significant": false,
-          "n_intervals": 31,
+          "n_intervals": 32,
           "n_with_event": 5,
           "type_confidence": "vorlaeufig"
         },
-        "news_mention": {
-          "label": "News-Erwaehnungen",
-          "pearson_r": -0.061,
-          "spearman_r": 0.074,
-          "avg_sov_effect_pp": 1.015,
-          "effect_se_pp": 1.399,
-          "ci95_low_pp": -2.149,
-          "ci95_high_pp": 4.18,
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": -0.164,
+          "spearman_r": -0.099,
+          "avg_sov_effect_pp": -0.915,
+          "effect_se_pp": 1.062,
+          "ci95_low_pp": -3.282,
+          "ci95_high_pp": 1.452,
           "significant": false,
-          "n_intervals": 31,
+          "n_intervals": 32,
           "n_with_event": 21,
           "type_confidence": "belastbar"
         },
         "page_new": {
           "label": "Neue Seiten",
-          "pearson_r": 0.043,
-          "spearman_r": 0.082,
-          "avg_sov_effect_pp": 0.738,
+          "pearson_r": 0.05,
+          "spearman_r": 0.088,
+          "avg_sov_effect_pp": 0.878,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
           "significant": null,
-          "n_intervals": 31,
+          "n_intervals": 32,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": -0.139,
-          "spearman_r": -0.061,
-          "avg_sov_effect_pp": -0.72,
-          "effect_se_pp": 1.07,
-          "ci95_low_pp": -3.104,
-          "ci95_high_pp": 1.665,
+        "news_mention": {
+          "label": "News-Erwaehnungen",
+          "pearson_r": -0.058,
+          "spearman_r": 0.044,
+          "avg_sov_effect_pp": 0.803,
+          "effect_se_pp": 1.405,
+          "ci95_low_pp": -2.376,
+          "ci95_high_pp": 3.981,
           "significant": false,
-          "n_intervals": 31,
-          "n_with_event": 20,
+          "n_intervals": 32,
+          "n_with_event": 22,
           "type_confidence": "belastbar"
         }
       },
       "multivariate": {
         "available": true,
         "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 15.5,
+        "lambda": 16.0,
         "pooled_prior": true,
-        "n_points": 31,
+        "n_points": 32,
         "n_brands": 1,
         "types_used": [
           "page_change",
           "review_change",
           "media_positive",
-          "review_positive"
+          "review_positive",
+          "review_negative"
         ],
         "types_excluded_too_few": [
           "page_new",
@@ -2159,9 +2182,9 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.4971,
-            "ci95_low": -0.4971,
-            "ci95_high": -0.4971,
+            "coef_pp_per_event_day": -0.5416,
+            "ci95_low": -0.5416,
+            "ci95_high": -0.5416,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -2169,29 +2192,39 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1888,
-            "ci95_low": 0.1888,
-            "ci95_high": 0.1888,
+            "coef_pp_per_event_day": 0.2156,
+            "ci95_low": 0.2156,
+            "ci95_high": 0.2156,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 13
           },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0608,
-            "ci95_low": 0.0608,
-            "ci95_high": 0.0608,
-            "prob_positive": 1.0,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0289,
+            "ci95_low": -0.0289,
+            "ci95_high": -0.0289,
+            "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 4
           },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0256,
+            "ci95_low": 0.0256,
+            "ci95_high": 0.0256,
+            "prob_positive": 1.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 5
+          },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0055,
-            "ci95_low": -0.0055,
-            "ci95_high": -0.0055,
+            "coef_pp_per_event_day": -0.0053,
+            "ci95_low": -0.0053,
+            "ci95_high": -0.0053,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -2202,64 +2235,64 @@
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 31
+      "n_intervals_total": 32
     },
     "Signal Iduna": {
       "impact": {
         "press_mention": {
           "label": "Pressemitteilungen",
-          "pearson_r": -0.202,
-          "spearman_r": -0.294,
-          "avg_sov_effect_pp": -0.393,
-          "effect_se_pp": 0.368,
-          "ci95_low_pp": -5.065,
-          "ci95_high_pp": 4.279,
+          "pearson_r": -0.241,
+          "spearman_r": -0.324,
+          "avg_sov_effect_pp": -0.533,
+          "effect_se_pp": 0.359,
+          "ci95_low_pp": -5.093,
+          "ci95_high_pp": 4.027,
           "significant": false,
-          "n_intervals": 10,
+          "n_intervals": 11,
           "n_with_event": 2,
           "type_confidence": "unzureichend"
         },
         "news_mention": {
           "label": "News-Erwaehnungen",
-          "pearson_r": -0.01,
-          "spearman_r": 0.162,
-          "avg_sov_effect_pp": 0.285,
-          "effect_se_pp": null,
-          "ci95_low_pp": null,
-          "ci95_high_pp": null,
-          "significant": null,
-          "n_intervals": 10,
+          "pearson_r": -0.216,
+          "spearman_r": -0.057,
+          "avg_sov_effect_pp": -0.515,
+          "effect_se_pp": 0.857,
+          "ci95_low_pp": -11.404,
+          "ci95_high_pp": 10.374,
+          "significant": false,
+          "n_intervals": 11,
           "n_with_event": 9,
           "type_confidence": "vorlaeufig"
         },
         "page_new": {
           "label": "Neue Seiten",
-          "pearson_r": -0.099,
-          "spearman_r": -0.058,
-          "avg_sov_effect_pp": -0.274,
+          "pearson_r": -0.132,
+          "spearman_r": -0.1,
+          "avg_sov_effect_pp": -0.405,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
           "significant": null,
-          "n_intervals": 10,
+          "n_intervals": 11,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         },
         "page_change": {
           "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": -0.073,
-          "spearman_r": 0.058,
-          "avg_sov_effect_pp": -0.202,
+          "pearson_r": -0.109,
+          "spearman_r": 0.0,
+          "avg_sov_effect_pp": -0.334,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
           "significant": null,
-          "n_intervals": 10,
+          "n_intervals": 11,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
         }
@@ -2267,19 +2300,19 @@
       "multivariate": {
         "available": false,
         "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
-        "n_points": 10,
+        "n_points": 11,
         "n_brands": 1,
         "types_used": [],
         "coefficients": {}
       },
       "confidence": "belastbar",
       "confidence_note": "Ausreichend Messpunkte fuer eine belastbare Aussage.",
-      "sov_measure_days": 33,
+      "sov_measure_days": 34,
       "sov_measure_range": [
         "2026-05-14",
-        "2026-07-04"
+        "2026-07-05"
       ],
-      "n_intervals_total": 10
+      "n_intervals_total": 11
     }
   },
   "by_grounding": {
@@ -2287,22 +2320,305 @@
       "impact": {
         "review_change": {
           "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.216,
-          "spearman_r": -0.116,
-          "avg_sov_effect_pp": -0.735,
-          "effect_se_pp": 0.537,
-          "ci95_low_pp": -1.894,
-          "ci95_high_pp": 0.424,
+          "pearson_r": -0.205,
+          "spearman_r": -0.101,
+          "avg_sov_effect_pp": -0.69,
+          "effect_se_pp": 0.534,
+          "ci95_low_pp": -1.844,
+          "ci95_high_pp": 0.464,
           "significant": false,
-          "n_intervals": 109,
+          "n_intervals": 116,
           "n_with_event": 14,
           "type_confidence": "moderat"
         },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
-          "pearson_r": -0.021,
+          "pearson_r": -0.02,
           "spearman_r": -0.049,
-          "avg_sov_effect_pp": -0.404,
+          "avg_sov_effect_pp": -0.386,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "significant": null,
+          "n_intervals": 116,
+          "n_with_event": 1,
+          "type_confidence": "unzureichend"
+        },
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": -0.065,
+          "spearman_r": 0.004,
+          "avg_sov_effect_pp": -0.24,
+          "effect_se_pp": 0.655,
+          "ci95_low_pp": -1.682,
+          "ci95_high_pp": 1.201,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 12,
+          "type_confidence": "moderat"
+        },
+        "press_mention": {
+          "label": "Pressemitteilungen",
+          "pearson_r": -0.096,
+          "spearman_r": -0.076,
+          "avg_sov_effect_pp": -0.193,
+          "effect_se_pp": 0.352,
+          "ci95_low_pp": -0.883,
+          "ci95_high_pp": 0.497,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 43,
+          "type_confidence": "belastbar"
+        },
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.041,
+          "spearman_r": 0.027,
+          "avg_sov_effect_pp": -0.192,
+          "effect_se_pp": 0.369,
+          "ci95_low_pp": -0.915,
+          "ci95_high_pp": 0.531,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 44,
+          "type_confidence": "belastbar"
+        },
+        "news_mention": {
+          "label": "News-Erwaehnungen",
+          "pearson_r": -0.04,
+          "spearman_r": -0.043,
+          "avg_sov_effect_pp": 0.17,
+          "effect_se_pp": 0.343,
+          "ci95_low_pp": -0.503,
+          "ci95_high_pp": 0.843,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 66,
+          "type_confidence": "belastbar"
+        },
+        "page_new": {
+          "label": "Neue Seiten",
+          "pearson_r": 0.158,
+          "spearman_r": 0.014,
+          "avg_sov_effect_pp": 0.153,
+          "effect_se_pp": 0.464,
+          "ci95_low_pp": -0.849,
+          "ci95_high_pp": 1.154,
+          "significant": false,
+          "n_intervals": 116,
+          "n_with_event": 14,
+          "type_confidence": "moderat"
+        }
+      },
+      "multivariate": {
+        "available": true,
+        "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+        "lambda": 58.0,
+        "pooled_prior": true,
+        "n_points": 116,
+        "n_brands": 8,
+        "types_used": [
+          "page_change",
+          "page_new",
+          "review_change",
+          "media_positive",
+          "media_negative",
+          "review_positive",
+          "review_negative"
+        ],
+        "types_excluded_too_few": [
+          "press_mention",
+          "news_mention",
+          "domain_change",
+          "review_volume",
+          "price_change",
+          "wikipedia_change",
+          "portal_rank_change",
+          "rating_status_change"
+        ],
+        "exploratory": false,
+        "coefficients": {
+          "media_negative": {
+            "label": "Presse/News: Schaden/Leistung",
+            "coef_pp_per_event_day": -0.183,
+            "ci95_low": -1.4991,
+            "ci95_high": 1.1332,
+            "prob_positive": 0.393,
+            "prob_direction": 0.607,
+            "significant": false,
+            "n_with_event": 8
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0981,
+            "ci95_low": -0.3779,
+            "ci95_high": 0.1816,
+            "prob_positive": 0.246,
+            "prob_direction": 0.754,
+            "significant": false,
+            "n_with_event": 18
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0648,
+            "ci95_low": -0.0194,
+            "ci95_high": 0.1491,
+            "prob_positive": 0.934,
+            "prob_direction": 0.934,
+            "significant": false,
+            "n_with_event": 19
+          },
+          "media_positive": {
+            "label": "Presse/News: Produkt/Strategie",
+            "coef_pp_per_event_day": -0.0629,
+            "ci95_low": -1.0278,
+            "ci95_high": 0.902,
+            "prob_positive": 0.449,
+            "prob_direction": 0.551,
+            "significant": false,
+            "n_with_event": 11
+          },
+          "review_change": {
+            "label": "Bewertungs-Trend (±)",
+            "coef_pp_per_event_day": 0.0276,
+            "ci95_low": -0.4513,
+            "ci95_high": 0.5066,
+            "prob_positive": 0.545,
+            "prob_direction": 0.545,
+            "significant": false,
+            "n_with_event": 14
+          },
+          "page_change": {
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "coef_pp_per_event_day": -0.0044,
+            "ci95_low": -0.017,
+            "ci95_high": 0.0083,
+            "prob_positive": 0.25,
+            "prob_direction": 0.75,
+            "significant": false,
+            "n_with_event": 44
+          },
+          "page_new": {
+            "label": "Neue Seiten",
+            "coef_pp_per_event_day": 0.0021,
+            "ci95_low": -0.0066,
+            "ci95_high": 0.0109,
+            "prob_positive": 0.684,
+            "prob_direction": 0.684,
+            "significant": false,
+            "n_with_event": 14
+          }
+        },
+        "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
+      },
+      "confidence": "moderat",
+      "confidence_note": "Tendenz mit mittlerer Sicherheit.",
+      "sov_measure_days": 20,
+      "sov_measure_range": [
+        "2026-06-05",
+        "2026-07-05"
+      ],
+      "n_intervals_total": 116,
+      "brands_with_sov": [
+        "AXA",
+        "Allianz",
+        "Cosmos Direkt",
+        "CosmosDirekt",
+        "ERGO",
+        "Generali",
+        "HUK-Coburg",
+        "Signal Iduna"
+      ],
+      "llms": [
+        "gemini",
+        "perplexity"
+      ]
+    },
+    "ungrounded": {
+      "impact": {
+        "press_mention": {
+          "label": "Pressemitteilungen",
+          "pearson_r": 0.103,
+          "spearman_r": 0.108,
+          "avg_sov_effect_pp": 0.647,
+          "effect_se_pp": 0.324,
+          "ci95_low_pp": 0.011,
+          "ci95_high_pp": 1.283,
+          "significant": true,
+          "n_intervals": 109,
+          "n_with_event": 42,
+          "type_confidence": "belastbar"
+        },
+        "review_change": {
+          "label": "Bewertungs-Trend (±)",
+          "pearson_r": -0.198,
+          "spearman_r": 0.014,
+          "avg_sov_effect_pp": -0.467,
+          "effect_se_pp": 0.682,
+          "ci95_low_pp": -1.939,
+          "ci95_high_pp": 1.005,
+          "significant": false,
+          "n_intervals": 109,
+          "n_with_event": 14,
+          "type_confidence": "moderat"
+        },
+        "review_volume": {
+          "label": "Bewertungs-Volumen",
+          "pearson_r": -0.08,
+          "spearman_r": 0.049,
+          "avg_sov_effect_pp": -0.414,
+          "effect_se_pp": 0.834,
+          "ci95_low_pp": -2.272,
+          "ci95_high_pp": 1.444,
+          "significant": false,
+          "n_intervals": 109,
+          "n_with_event": 11,
+          "type_confidence": "moderat"
+        },
+        "news_mention": {
+          "label": "News-Erwaehnungen",
+          "pearson_r": 0.007,
+          "spearman_r": -0.069,
+          "avg_sov_effect_pp": 0.335,
+          "effect_se_pp": 0.379,
+          "ci95_low_pp": -0.407,
+          "ci95_high_pp": 1.078,
+          "significant": false,
+          "n_intervals": 109,
+          "n_with_event": 61,
+          "type_confidence": "belastbar"
+        },
+        "page_new": {
+          "label": "Neue Seiten",
+          "pearson_r": 0.268,
+          "spearman_r": -0.087,
+          "avg_sov_effect_pp": 0.167,
+          "effect_se_pp": 0.627,
+          "ci95_low_pp": -1.187,
+          "ci95_high_pp": 1.522,
+          "significant": false,
+          "n_intervals": 109,
+          "n_with_event": 14,
+          "type_confidence": "moderat"
+        },
+        "page_change": {
+          "label": "Seitenaenderungen (Wettbewerb)",
+          "pearson_r": 0.003,
+          "spearman_r": -0.022,
+          "avg_sov_effect_pp": -0.159,
+          "effect_se_pp": 0.418,
+          "ci95_low_pp": -0.979,
+          "ci95_high_pp": 0.661,
+          "significant": false,
+          "n_intervals": 109,
+          "n_with_event": 43,
+          "type_confidence": "belastbar"
+        },
+        "wikipedia_change": {
+          "label": "Wikipedia-Ausbau (±)",
+          "pearson_r": -0.002,
+          "spearman_r": -0.031,
+          "avg_sov_effect_pp": -0.048,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
@@ -2310,71 +2626,6 @@
           "n_intervals": 109,
           "n_with_event": 1,
           "type_confidence": "unzureichend"
-        },
-        "page_new": {
-          "label": "Neue Seiten",
-          "pearson_r": 0.181,
-          "spearman_r": 0.063,
-          "avg_sov_effect_pp": 0.337,
-          "effect_se_pp": 0.446,
-          "ci95_low_pp": -0.626,
-          "ci95_high_pp": 1.299,
-          "significant": false,
-          "n_intervals": 109,
-          "n_with_event": 14,
-          "type_confidence": "moderat"
-        },
-        "news_mention": {
-          "label": "News-Erwaehnungen",
-          "pearson_r": -0.026,
-          "spearman_r": -0.019,
-          "avg_sov_effect_pp": 0.266,
-          "effect_se_pp": 0.36,
-          "ci95_low_pp": -0.439,
-          "ci95_high_pp": 0.97,
-          "significant": false,
-          "n_intervals": 109,
-          "n_with_event": 63,
-          "type_confidence": "belastbar"
-        },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": -0.062,
-          "spearman_r": 0.021,
-          "avg_sov_effect_pp": -0.222,
-          "effect_se_pp": 0.713,
-          "ci95_low_pp": -1.81,
-          "ci95_high_pp": 1.366,
-          "significant": false,
-          "n_intervals": 109,
-          "n_with_event": 11,
-          "type_confidence": "moderat"
-        },
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": 0.024,
-          "spearman_r": 0.01,
-          "avg_sov_effect_pp": -0.213,
-          "effect_se_pp": 0.379,
-          "ci95_low_pp": -0.956,
-          "ci95_high_pp": 0.529,
-          "significant": false,
-          "n_intervals": 109,
-          "n_with_event": 43,
-          "type_confidence": "belastbar"
-        },
-        "press_mention": {
-          "label": "Pressemitteilungen",
-          "pearson_r": -0.094,
-          "spearman_r": -0.081,
-          "avg_sov_effect_pp": -0.178,
-          "effect_se_pp": 0.362,
-          "ci95_low_pp": -0.888,
-          "ci95_high_pp": 0.532,
-          "significant": false,
-          "n_intervals": 109,
-          "n_with_event": 43,
-          "type_confidence": "belastbar"
         }
       },
       "multivariate": {
@@ -2405,75 +2656,75 @@
         ],
         "exploratory": false,
         "coefficients": {
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.1395,
-            "ci95_low": -0.427,
-            "ci95_high": 0.148,
-            "prob_positive": 0.171,
-            "prob_direction": 0.829,
+          "review_change": {
+            "label": "Bewertungs-Trend (±)",
+            "coef_pp_per_event_day": -0.1588,
+            "ci95_low": -0.618,
+            "ci95_high": 0.3003,
+            "prob_positive": 0.249,
+            "prob_direction": 0.751,
             "significant": false,
             "n_with_event": 14
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": -0.1133,
-            "ci95_low": -1.5709,
-            "ci95_high": 1.3442,
-            "prob_positive": 0.439,
-            "prob_direction": 0.561,
+            "coef_pp_per_event_day": 0.1276,
+            "ci95_low": -1.1357,
+            "ci95_high": 1.3908,
+            "prob_positive": 0.578,
+            "prob_direction": 0.578,
             "significant": false,
-            "n_with_event": 7
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0955,
-            "ci95_low": 0.0031,
-            "ci95_high": 0.1879,
-            "prob_positive": 0.979,
-            "prob_direction": 0.979,
-            "significant": true,
-            "n_with_event": 16
+            "n_with_event": 8
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.046,
-            "ci95_low": -1.0222,
-            "ci95_high": 0.9303,
-            "prob_positive": 0.463,
-            "prob_direction": 0.537,
+            "coef_pp_per_event_day": 0.0875,
+            "ci95_low": -0.8383,
+            "ci95_high": 1.0133,
+            "prob_positive": 0.573,
+            "prob_direction": 0.573,
             "significant": false,
             "n_with_event": 11
           },
-          "review_change": {
-            "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0137,
-            "ci95_low": -0.498,
-            "ci95_high": 0.4706,
-            "prob_positive": 0.478,
-            "prob_direction": 0.522,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.0431,
+            "ci95_low": -0.2413,
+            "ci95_high": 0.3274,
+            "prob_positive": 0.617,
+            "prob_direction": 0.617,
+            "significant": false,
+            "n_with_event": 15
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0324,
+            "ci95_low": -0.0564,
+            "ci95_high": 0.1212,
+            "prob_positive": 0.763,
+            "prob_direction": 0.763,
+            "significant": false,
+            "n_with_event": 14
+          },
+          "page_new": {
+            "label": "Neue Seiten",
+            "coef_pp_per_event_day": 0.01,
+            "ci95_low": 0.0015,
+            "ci95_high": 0.0184,
+            "prob_positive": 0.99,
+            "prob_direction": 0.99,
             "significant": false,
             "n_with_event": 14
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0046,
-            "ci95_low": -0.0174,
-            "ci95_high": 0.0083,
-            "prob_positive": 0.243,
-            "prob_direction": 0.757,
+            "coef_pp_per_event_day": -0.0044,
+            "ci95_low": -0.0166,
+            "ci95_high": 0.0077,
+            "prob_positive": 0.238,
+            "prob_direction": 0.762,
             "significant": false,
             "n_with_event": 43
-          },
-          "page_new": {
-            "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0003,
-            "ci95_low": -0.0083,
-            "ci95_high": 0.009,
-            "prob_positive": 0.529,
-            "prob_direction": 0.529,
-            "significant": false,
-            "n_with_event": 14
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -2483,227 +2734,9 @@
       "sov_measure_days": 19,
       "sov_measure_range": [
         "2026-06-05",
-        "2026-07-04"
+        "2026-07-05"
       ],
       "n_intervals_total": 109,
-      "brands_with_sov": [
-        "AXA",
-        "Allianz",
-        "Cosmos Direkt",
-        "CosmosDirekt",
-        "ERGO",
-        "Generali",
-        "HUK-Coburg",
-        "Signal Iduna"
-      ],
-      "llms": [
-        "gemini",
-        "perplexity"
-      ]
-    },
-    "ungrounded": {
-      "impact": {
-        "press_mention": {
-          "label": "Pressemitteilungen",
-          "pearson_r": 0.112,
-          "spearman_r": 0.127,
-          "avg_sov_effect_pp": 0.705,
-          "effect_se_pp": 0.345,
-          "ci95_low_pp": 0.028,
-          "ci95_high_pp": 1.382,
-          "significant": true,
-          "n_intervals": 102,
-          "n_with_event": 42,
-          "type_confidence": "belastbar"
-        },
-        "review_change": {
-          "label": "Bewertungs-Trend (±)",
-          "pearson_r": -0.202,
-          "spearman_r": 0.014,
-          "avg_sov_effect_pp": -0.481,
-          "effect_se_pp": 0.685,
-          "ci95_low_pp": -1.961,
-          "ci95_high_pp": 0.999,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 14,
-          "type_confidence": "moderat"
-        },
-        "review_volume": {
-          "label": "Bewertungs-Volumen",
-          "pearson_r": -0.081,
-          "spearman_r": 0.075,
-          "avg_sov_effect_pp": -0.437,
-          "effect_se_pp": 0.92,
-          "ci95_low_pp": -2.519,
-          "ci95_high_pp": 1.644,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 10,
-          "type_confidence": "moderat"
-        },
-        "news_mention": {
-          "label": "News-Erwaehnungen",
-          "pearson_r": 0.008,
-          "spearman_r": -0.053,
-          "avg_sov_effect_pp": 0.365,
-          "effect_se_pp": 0.407,
-          "ci95_low_pp": -0.433,
-          "ci95_high_pp": 1.162,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 58,
-          "type_confidence": "belastbar"
-        },
-        "page_new": {
-          "label": "Neue Seiten",
-          "pearson_r": 0.282,
-          "spearman_r": -0.056,
-          "avg_sov_effect_pp": 0.295,
-          "effect_se_pp": 0.623,
-          "ci95_low_pp": -1.051,
-          "ci95_high_pp": 1.642,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 14,
-          "type_confidence": "moderat"
-        },
-        "page_change": {
-          "label": "Seitenaenderungen (Wettbewerb)",
-          "pearson_r": -0.004,
-          "spearman_r": -0.033,
-          "avg_sov_effect_pp": -0.165,
-          "effect_se_pp": 0.43,
-          "ci95_low_pp": -1.008,
-          "ci95_high_pp": 0.678,
-          "significant": false,
-          "n_intervals": 102,
-          "n_with_event": 42,
-          "type_confidence": "belastbar"
-        },
-        "wikipedia_change": {
-          "label": "Wikipedia-Ausbau (±)",
-          "pearson_r": -0.0,
-          "spearman_r": -0.032,
-          "avg_sov_effect_pp": -0.005,
-          "effect_se_pp": null,
-          "ci95_low_pp": null,
-          "ci95_high_pp": null,
-          "significant": null,
-          "n_intervals": 102,
-          "n_with_event": 1,
-          "type_confidence": "unzureichend"
-        }
-      },
-      "multivariate": {
-        "available": true,
-        "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
-        "lambda": 51.0,
-        "pooled_prior": true,
-        "n_points": 102,
-        "n_brands": 8,
-        "types_used": [
-          "page_change",
-          "page_new",
-          "review_change",
-          "media_positive",
-          "media_negative",
-          "review_positive",
-          "review_negative"
-        ],
-        "types_excluded_too_few": [
-          "press_mention",
-          "news_mention",
-          "domain_change",
-          "review_volume",
-          "price_change",
-          "wikipedia_change",
-          "portal_rank_change",
-          "rating_status_change"
-        ],
-        "exploratory": false,
-        "coefficients": {
-          "review_change": {
-            "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.1951,
-            "ci95_low": -0.6706,
-            "ci95_high": 0.2804,
-            "prob_positive": 0.211,
-            "prob_direction": 0.789,
-            "significant": false,
-            "n_with_event": 14
-          },
-          "media_negative": {
-            "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.0863,
-            "ci95_low": -1.3446,
-            "ci95_high": 1.5172,
-            "prob_positive": 0.547,
-            "prob_direction": 0.547,
-            "significant": false,
-            "n_with_event": 7
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0665,
-            "ci95_low": -0.0352,
-            "ci95_high": 0.1681,
-            "prob_positive": 0.9,
-            "prob_direction": 0.9,
-            "significant": false,
-            "n_with_event": 11
-          },
-          "media_positive": {
-            "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.0619,
-            "ci95_low": -0.8975,
-            "ci95_high": 1.0214,
-            "prob_positive": 0.55,
-            "prob_direction": 0.55,
-            "significant": false,
-            "n_with_event": 11
-          },
-          "page_new": {
-            "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0078,
-            "ci95_low": -0.0008,
-            "ci95_high": 0.0164,
-            "prob_positive": 0.962,
-            "prob_direction": 0.962,
-            "significant": false,
-            "n_with_event": 14
-          },
-          "page_change": {
-            "label": "Seitenaenderungen (Wettbewerb)",
-            "coef_pp_per_event_day": -0.0045,
-            "ci95_low": -0.0171,
-            "ci95_high": 0.0081,
-            "prob_positive": 0.243,
-            "prob_direction": 0.757,
-            "significant": false,
-            "n_with_event": 42
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0013,
-            "ci95_low": -0.3002,
-            "ci95_high": 0.3028,
-            "prob_positive": 0.503,
-            "prob_direction": 0.503,
-            "significant": false,
-            "n_with_event": 11
-          }
-        },
-        "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
-      },
-      "confidence": "moderat",
-      "confidence_note": "Tendenz mit mittlerer Sicherheit.",
-      "sov_measure_days": 18,
-      "sov_measure_range": [
-        "2026-06-05",
-        "2026-07-04"
-      ],
-      "n_intervals_total": 102,
       "brands_with_sov": [
         "AXA",
         "Allianz",

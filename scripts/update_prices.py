@@ -80,6 +80,24 @@ PRODUCTS = {
             "c24api_insure_date={insure_date}"
         ),
     },
+    "krankenhauszusatz": {
+        "name": "Krankenhauszusatzversicherung",
+        "params": "Profil: gesetzlich versichert, Leistung Chefarzt + Ein-/Zweibettzimmer, stabiler Beitrag im Alter — guenstigster Tarif je Anbieter (ERGO-Gruppe = DKV)",
+        "flow": "deeplink",
+        "brand_overrides": [["dkv", "ergo"]],
+        "url_tpl": (
+            "https://zusatz.check24.de/krankenhaus/app/vergleichsergebnis/?&"
+            "c24api_insure_date={insure_date}&c24api_birthdate={birth_de}&"
+            "c24api_single_double_room=double&c24api_currentinsurancetype=by_law&"
+            "c24api_sortfield=price&c24api_sortorder=asc&c24api_paymentperiod=month&"
+            "c24api_fee_stays_stable_in_maturity=yes&c24api_no_waiting=no&"
+            "c24api_ambulant_surgery=no&c24api_no_max_payrate=no&"
+            "c24api_health_questions_not_needed=no&c24api_illness_accident=yes&"
+            "c24api_chief_physician=yes&c24api_customer_feedback=no&"
+            "c24api_private_clinic_handling=no&c24api_pre_post_treatment=no&"
+            "c24api_stay_with_kid=no&c24api_product_id=1&providers="
+        ),
+    },
 }
 
 def _birth_for_age(years):
@@ -505,7 +523,13 @@ def crawl_product_prices(product_key, product_config):
                     # Auf unsere Brands mappen
                     profile_data = {}
                     for c24_name, data in raw.items():
-                        brand_key = map_brand(c24_name)
+                        brand_key = None
+                        for _sub, _bk in (product_config.get("brand_overrides") or []):
+                            if _sub in c24_name.lower():
+                                brand_key = _bk
+                                break
+                        if not brand_key:
+                            brand_key = map_brand(c24_name)
                         entry = {
                             "price": data["price"],
                             "grade": data.get("grade"),

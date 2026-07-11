@@ -98,6 +98,42 @@ PRODUCTS = {
             "c24api_stay_with_kid=no&c24api_product_id=1&providers="
         ),
     },
+    "haftpflicht": {
+        "name": "Privathaftpflichtversicherung",
+        "params": "Profil: Single, Deckungssumme 50 Mio EUR, PLZ 10115, monatliche Zahlweise — guenstigster Tarif je Anbieter",
+        "flow": "deeplink",
+        "url_tpl": (
+            "https://privathaftpflicht.check24.de/privathaftpflicht/vergleichsergebnis/?"
+            "coinsured=1&birthdate={birth_de}&zipcode=10115&city=&protection_level=none&"
+            "amountinsuredchildren=-1&childrenunder7or10=no&public_service=no&sortorder=asc&"
+            "min_insure_sum=50&max_costsharing=0&paymentperiod=month&grade=4&"
+            "insure_date={insure_date_de}&from_ipss=yes"
+        ),
+    },
+    "hausrat": {
+        "name": "Hausratversicherung",
+        "params": "Profil: 70 qm Wohnflaeche, PLZ 10115, Versicherungssumme 45.500 EUR, ohne Zusatzbausteine — guenstigster Tarif je Anbieter",
+        "flow": "deeplink",
+        "url_tpl": (
+            "https://hausratversicherungen.check24.de/hausrat/vergleichsergebnis/?"
+            "squaremeter=70&zipcode=10115&birthdate={birth_iso}&insurancesum=45500&"
+            "paymentperiod=year&module_glass=no&building_type=3&module_elementary=no&"
+            "module_elementary_city=Berlin&bike_insurance_sum=0&activity_source=landingPage"
+        ),
+    },
+    "rechtsschutz": {
+        "name": "Rechtsschutzversicherung",
+        "params": "Profil: Single, Bausteine Privat+Beruf+Verkehr, Selbstbeteiligung 150 EUR, PLZ 10115, monatlich — guenstigster Tarif je Anbieter",
+        "flow": "deeplink",
+        "url_tpl": (
+            "https://rechtsschutz.check24.de/rsv/vergleichsergebnis/?"
+            "performance_filter_selected=true&gradefilter=5&min_stars=0&paymentperiod=month&"
+            "costsharing=150&maritalstatus=single&employmentstatus=employee&"
+            "birthdate={birth_de}&zipcode=10115&stiftung_warentest=yes&"
+            "module_priv=yes&module_job=yes&module_traffic=yes&module_living=no&"
+            "module_rental=no&sortfield=price&sortorder=asc"
+        ),
+    },
 }
 
 def _birth_for_age(years):
@@ -190,6 +226,15 @@ JS_EXTRACT_CHIPS = """() => {
         }
     });
     return out;
+}"""
+
+JS_EXTRACT_BRANDS = """() => {
+    var TARGETS={allianz:/allianz/i, axa:/(^|[^a-z])axa($|[^a-z])/i, ergo:/ergo/i, dkv:/dkv/i, generali:/generali/i, 'signal-iduna':/signal[-_ ]?iduna/i, huk:/huk/i, cosmosdirekt:/cosmos/i};
+    var found={};
+    function tag(name, price){ for(var k in TARGETS){ if(TARGETS[k].test(name)){ if(!(k in found)||price<found[k].price) found[k]={price:price}; } } }
+    document.querySelectorAll('img[alt]').forEach(function(im){ var alt=(im.getAttribute('alt')||'').trim(); if(!alt) return; var node=im; for(var i=0;i<6&&node;i++){ node=node.parentElement; if(!node)break; var t=node.textContent||''; if(/\\d,\\d{2}\\s*\u20ac/.test(t)){ var m=t.match(/(\\d{1,3}(?:\\.\\d{3})?,\\d{2})\\s*\u20ac/); if(m) tag(alt, parseFloat(m[1].replace('.','').replace(',','.'))); break; } } });
+    document.querySelectorAll('*').forEach(function(el){ if(el.children.length) return; var t=(el.textContent||'').trim(); if(!t||t.length>18) return; var hit=false; for(var k in TARGETS){ if(TARGETS[k].test(t)) hit=true; } if(!hit) return; var node=el; for(var i=0;i<6&&node;i++){ node=node.parentElement; if(!node)break; var tt=node.textContent||''; if(/ab\\s*\\d/.test(tt)&&/\\d,\\d{2}\\s*\u20ac/.test(tt)){ var m=tt.match(/(\\d{1,3}(?:\\.\\d{3})?,\\d{2})\\s*\u20ac/); if(m) tag(t, parseFloat(m[1].replace('.','').replace(',','.'))); break; } } });
+    return found;
 }"""
 
 # ZAHN-TILES: Tarif-Kacheln der Zahn-Ergebnisseite (Top-Anbieter) mit Tarifname
@@ -335,7 +380,7 @@ def _dismiss_overlays(page):
     except Exception as e:
         print("    [overlay] cookie-remove: %s" % str(e)[:60])
     try:
-        btn = page.get_by_role("button", name=re.compile(r"OK,?\s*verstanden", re.I))
+        btn = page.get_by_role("button", name=re.compile(r"OK,?\s*(verstanden|Infos erhalten)", re.I))
         if btn.count() > 0:
             btn.first.click(timeout=3000)
             page.wait_for_timeout(1500)
@@ -435,9 +480,13 @@ def crawl_product_prices(product_key, product_config):
             for profile in AGE_PROFILES:
                 b = profile["birth"]
                 birth_de = "%s.%s.%s" % (b[6:8], b[4:6], b[0:4])  # YYYYMMDD -> DD.MM.YYYY
+                _fnm = _first_of_next_month()
+                _fnm_de = "%s.%s.%s" % (_fnm[8:10], _fnm[5:7], _fnm[0:4])
                 url = product_config["url_tpl"].format(
-                    birth=b, birth_de=birth_de, insure_date=_first_of_next_month(),
-                    inception=_first_of_next_month().replace("-", ""),
+                    birth=b, birth_de=birth_de,
+                    birth_iso="%s-%s-%s" % (b[0:4], b[4:6], b[6:8]),
+                    insure_date=_fnm, insure_date_de=_fnm_de,
+                    inception=_fnm.replace("-", ""),
                 )
                 print("  [%s] %s: %s" % (product_key, profile["label"], url[:90]))
 
@@ -509,6 +558,22 @@ def crawl_product_prices(product_key, product_config):
                         _dismiss_overlays(page)
                         raw = page.evaluate(JS_EXTRACT_CHIPS) or page.evaluate(JS_EXTRACT)
                         src = "retry"
+
+                    # Zusatz-Extraktor: Marken-Text + Logo-alt (fuer App-Frontends wie
+                    # zusatz.check24.de, wo die Standard-Chips keinen Anbieternamen liefern)
+                    raw = raw or {}
+                    try:
+                        braw = page.evaluate(JS_EXTRACT_BRANDS) or {}
+                    except Exception as be:
+                        braw = {}
+                        print("    [brands] %s" % str(be)[:80])
+                    for _bk, _bv in braw.items():
+                        _pr = _bv.get("price")
+                        if _pr is None:
+                            continue
+                        if _bk not in raw or raw[_bk].get("price") is None or _pr < raw[_bk]["price"]:
+                            raw[_bk] = {"price": _pr, "grade": None, "gradeLabel": None,
+                                        "customerScore": None, "customerCount": None}
 
                     # Diagnose erfassen, wenn 0 Tarife (zeigt, woran der Crawl haengt)
                     diag = None

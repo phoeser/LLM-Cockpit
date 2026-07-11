@@ -19,15 +19,22 @@
     "generali":"Generali","signal-iduna":"Signal Iduna","cosmosdirekt":"CosmosDirekt",
     "ruv":"R+V","devk":"DEVK","hannoversche":"Hannoversche"
   };
-  // die 6 in der Sichtbarkeit abgefragten Produkte (Reihenfolge + Anzeigename)
+  // alle Produkte aus den LLM-Sichtbarkeits-Prompts (geo-visibility config, Reihenfolge + Anzeigename)
   var SICHT = [
     ["zahnzusatz","Zahnzusatzversicherung"],
     ["sterbegeld","Sterbegeldversicherung"],
     ["risikoleben","Risikolebensversicherung"],
     ["berufsunfaehigkeit","Berufsunfähigkeitsversicherung"],
     ["reise","Reiseversicherung"],
-    ["rechtsschutz","Rechtsschutzversicherung"]
+    ["rechtsschutz","Rechtsschutzversicherung"],
+    ["haftpflicht","Privathaftpflichtversicherung"],
+    ["hausrat","Hausratversicherung"],
+    ["kfz","Kfz-Versicherung"],
+    ["unfall","Unfallversicherung"],
+    ["krankenhauszusatz","Krankenhauszusatzversicherung"]
   ];
+  // nur Wettbewerber aus DIESEM Projekt (geo-visibility config.competitors) + ERGO
+  var ALLOWED = ["ergo","allianz","axa","generali","signal-iduna","cosmosdirekt","huk","huk-coburg"];
 
   var data = null, profile = "age_50";
 
@@ -77,6 +84,7 @@
     var rows=[];
     Object.keys(brands).forEach(function(k){
       if(k.indexOf("_other_")===0) return;
+      if(ALLOWED.indexOf(k)<0) return;
       var nm = BRAND_NAME[k]; if(!nm) return;
       var b=brands[k];
       rows.push({key:k, name:nm, b:b, price: (b.price==null?Infinity:b.price)});

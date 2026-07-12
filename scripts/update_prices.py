@@ -721,7 +721,7 @@ def emit_price_events(old_data, new_data):
 
 
 VERIVOX_CARD_RE = re.compile(
-    r"([^\n]+)\nTarif vergleichen[\s\S]*?Tarifnote\s*\n?\s*(\d{1,3}(?:\.\d{3})?,\d{2})\s*€\s*\n?\s*(?:jährlich|monatlich)"
+    r"([^\n]+)\n[ \t]*Tarif vergleichen[\s\S]{0,1400}?(\d{1,3}(?:\.\d{3})?,\d{2})\s*€"
 )
 
 
@@ -820,12 +820,12 @@ def crawl_verivox_phv(product_config):
                         page.wait_for_timeout(8000)
                     try:
                         page.wait_for_function(
-                            "() => ((document.querySelector('main')||document.body).innerText.match(/Tarifnote/g)||[]).length >= 2",
+                            "() => (((document.querySelector('main')||document.body).innerText).split('jährlich').length - 1) >= 3",
                             timeout=25000,
                         )
                     except Exception:
                         page.wait_for_timeout(6000)
-                    page.wait_for_timeout(2500)
+                    page.wait_for_timeout(1500)
                     try:
                         page.get_by_text(re.compile(r"mind\.\s*50\s*Mio")).first.click(timeout=8000)
                         page.wait_for_timeout(4000)
@@ -836,7 +836,22 @@ def crawl_verivox_phv(product_config):
                         page.wait_for_timeout(4000)
                     except Exception as e:
                         print("    [vx] AlleLaden: %s" % str(e)[:60])
+                    try:
+                        page.wait_for_function(
+                            "() => (((document.querySelector('main')||document.body).innerText).split('jährlich').length - 1) >= 3",
+                            timeout=20000,
+                        )
+                    except Exception:
+                        page.wait_for_timeout(5000)
                     acc = {}
+                    # erster Griff an aktueller Position (Top-Karten)
+                    try:
+                        _t0 = page.evaluate("(document.querySelector('main')||document.body).innerText")
+                        for _m in VERIVOX_CARD_RE.finditer(_t0):
+                            _nm=_m.group(1).strip(); _pr=float(_m.group(2).replace(".","").replace(",","."))
+                            if _nm and (_nm not in acc or _pr < acc[_nm]): acc[_nm]=_pr
+                    except Exception:
+                        pass
                     try:
                         page.evaluate("window.scrollTo(0,0)")
                         page.wait_for_timeout(600)
@@ -846,10 +861,7 @@ def crawl_verivox_phv(product_config):
                         while y <= H and guard < 90:
                             page.evaluate("window.scrollTo(0, arguments[0])", y)
                             page.wait_for_timeout(320)
-                            try:
-                                txt = page.locator("main").inner_text(timeout=5000)
-                            except Exception:
-                                txt = page.evaluate("(document.querySelector('main')||document.body).innerText")
+                            txt = page.evaluate("(document.querySelector('main')||document.body).innerText")
                             for m in VERIVOX_CARD_RE.finditer(txt):
                                 nm = m.group(1).strip()
                                 pr = float(m.group(2).replace(".", "").replace(",", "."))
@@ -878,9 +890,12 @@ def crawl_verivox_phv(product_config):
                         _body = page.evaluate("(document.querySelector('main')||document.body).innerText")
                     except Exception:
                         _body = ""
+                    _tvi = _body.find("Tarif vergleichen")
+                    _sample = _body[max(0, _tvi - 45):_tvi + 240] if _tvi >= 0 else _body[:220]
                     _vxdiag = {"final_url": page.url[:130], "bd_ok": bool(bd_ok),
                                "hasTarifeVon": ("Tarife von" in _body),
-                               "cardMarkers": _body.count("Tarif vergleichen")}
+                               "cardMarkers": _body.count("Tarif vergleichen"),
+                               "sample": _sample.replace("\n", "|")[:260]}
                     pd["profiles"][profile["key"]] = {"label": profile["label"], "birth": profile["birth"],
                                                       "brands": brands, "total_tariffs": len(acc),
                                                       "extractor": "verivox_text", "_vxdiag": _vxdiag}

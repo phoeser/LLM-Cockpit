@@ -40,6 +40,7 @@ EVENTS_FILE = Path("shared/events.jsonl")
 HISTORY_FILE = Path("data/sov_history.jsonl")  # dichte SoV-Messreihe (Vorrang)
 REVIEW_HISTORY_FILE = Path("data/review_history.json")
 OUT_FILE = Path("data/correlation_impact.json")
+PRICE_FILE = Path("data/price_comparison.json")  # #17: Preis als Treiber
 
 # Optionaler Lag in Tagen: Wirkung tritt evtl. verzoegert auf. 0 = gleiches Intervall.
 LAG_DAYS = 0
@@ -1021,6 +1022,11 @@ def _mundlak_fit(cells, xkey, ykey, min_cells=10):
         eff[nm] = {"coef_pp_sov_per_pp_citeshare": round(mu, 3),
                    "ci95_low": round(mu - 1.96 * sigma, 3), "ci95_high": round(mu + 1.96 * sigma, 3),
                    "prob_direction": round(pdir, 3), "significant": bool(pdir >= 0.975)}
+    def _sdraw(v):
+        m = sum(v) / len(v)
+        return (sum((x - m) ** 2 for x in v) / max(len(v) - 1, 1)) ** 0.5
+    eff["within"]["effect_std_pp"] = round(eff["within"]["coef_pp_sov_per_pp_citeshare"] * _sdraw(W), 2)
+    eff["between"]["effect_std_pp"] = round(eff["between"]["coef_pp_sov_per_pp_citeshare"] * _sdraw(B), 2)
     yhat = [sum(Xs[i][j] * beta[j] for j in range(2)) for i in range(n)]
     sse = sum((Yc[i] - yhat[i]) ** 2 for i in range(n)); sst = sum(v * v for v in Yc)
     r2 = round(1 - sse / sst, 3) if sst > 0 else None
@@ -1050,6 +1056,49 @@ def _mundlak_fit(cells, xkey, ykey, min_cells=10):
             "r2_within_topics": r2, "leader": lead, "between_loo": _blo, "gap_decomposition": gaps,
             "authority_ranking": [{"brand": b, "mean_cite_share_pct": round(xbar[b], 2),
                                    "mean_sov_pct": round(ybar[b], 2)} for b in auth]}
+
+
+def _conf_badge(pdir):
+    if pdir is None:
+        return "unbekannt"
+    return "sehr sicher" if pdir >= 0.99 else ("wahrscheinlich" if pdir >= 0.90 else "noch unklar")
+
+
+def _relprice_map():
+    """{topic_id: {Anzeigename: relpreis}} — relpreis = Markenpreis / guenstigster Marktpreis (>=1)."""
+    try:
+        d = json.loads(PRICE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    keymap = {"allianz": "Allianz", "ergo": "ERGO", "axa": "AXA", "generali": "Generali",
+              "huk": "HUK-Coburg", "signal-iduna": "Signal Iduna", "cosmosdirekt": "CosmosDirekt"}
+    out = {}
+    for pid, pr in (d.get("products") or {}).items():
+        prof = (pr.get("profiles") or {}).get("age_50") or {}
+        prices = {}
+        for k, v in (prof.get("brands") or {}).items():
+            if k.startswith("_other_"):
+                continue
+            p = v.get("price"); nm = keymap.get(k)
+            if nm and isinstance(p, (int, float)) and p > 0:
+                prices[nm] = p
+        if len(prices) >= 2:
+            mn = min(prices.values())
+            out[pid] = {nm: prices[nm] / mn for nm in prices}
+    return out
+
+
+def _driver_card(label, fit, controllability, plain_tmpl, unit_note):
+    if not fit or not fit.get("available"):
+        return {"label": label, "available": False, "note": (fit or {}).get("note", "nicht verfuegbar")}
+    be = fit.get("between_effect") or {}
+    pdir = be.get("prob_direction"); es = be.get("effect_std_pp")
+    return {"label": label, "available": True,
+            "effect_pp_per_unit": be.get("coef_pp_sov_per_pp_citeshare"),
+            "effect_std_pp": es, "prob_direction": pdir, "confidence": _conf_badge(pdir),
+            "sign_stable": (fit.get("between_loo") or {}).get("sign_stable"),
+            "n_cells": fit.get("n_cells"), "controllability": controllability,
+            "plain": (plain_tmpl.format(es=es) if es is not None else None), "unit": unit_note}
 
 
 def level_model_mundlak():
@@ -1098,10 +1147,34 @@ def level_model_mundlak():
             av = [s.get(e, 0.0) for e in llms]
             cells_c.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(av) / len(av) if av else 0.0)})
+    fit_g = _mundlak_fit(cells_g, "cite_share", "sov")
+    fit_u = _mundlak_fit(cells_u, "cite_share", "sov")
+    fit_c = _mundlak_fit(cells_c, "cite_share", "sov")
+    # #17: Relativpreis als zusaetzlicher Treiber (nur Produkte mit Preisdaten)
+    _rp = _relprice_map()
+    for _cs in (cells_g, cells_u, cells_c):
+        for c in _cs:
+            v = _rp.get(c["topic"], {}).get(c["brand"])
+            if v is not None:
+                c["relprice"] = v
+    price_model = {}
+    for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+        _pc = [c for c in _cs if "relprice" in c]
+        price_model[_en] = (_mundlak_fit(_pc, "relprice", "sov", min_cells=6)
+                            if len(_pc) >= 6 else
+                            {"available": False, "n_cells": len(_pc),
+                             "note": "Zu wenige Produkte mit Preisdaten fuer einen belastbaren Preis-Effekt."})
+    drivers = [
+        _driver_card("Zitations-Footprint (Autoritaet)", fit_c, "mittelbar",
+                     "+1 SD mehr Footprint entspricht etwa {es} pp Sichtbarkeit",
+                     "pp SoV je pp Zitationsanteil"),
+        _driver_card("Relativpreis (teurer = mehr SoV)", price_model.get("combined"), "direkt",
+                     "+1 SD teurer entspricht etwa {es} pp Sichtbarkeit",
+                     "pp SoV je Einheit Relativpreis (1.0 = Marktbestpreis)"),
+    ]
     return {"available": True, "driver": "cite_share",
-            "grounded": _mundlak_fit(cells_g, "cite_share", "sov"),
-            "ungrounded": _mundlak_fit(cells_u, "cite_share", "sov"),
-            "combined": _mundlak_fit(cells_c, "cite_share", "sov"),
+            "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
+            "price_model": price_model, "drivers": drivers,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

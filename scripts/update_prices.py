@@ -831,36 +831,44 @@ def crawl_verivox_phv(product_config):
                         page.wait_for_timeout(4000)
                     except Exception as e:
                         print("    [vx] 50Mio: %s" % str(e)[:60])
+                    # Alle Tarife laden — robust: hinscrollen, klicken, auf Wachstum warten
                     try:
-                        page.get_by_role("link", name=re.compile("Alle Tarife laden", re.I)).first.click(timeout=8000)
-                        page.wait_for_timeout(4000)
+                        page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                        page.wait_for_timeout(1200)
+                        for _lbl in ["Alle Tarife laden", "weitere Tarife laden"]:
+                            try:
+                                lk = page.get_by_role("link", name=re.compile(_lbl, re.I)).first
+                                if lk.count() > 0:
+                                    lk.scroll_into_view_if_needed(timeout=4000)
+                                    lk.click(timeout=5000)
+                                    page.wait_for_timeout(3000)
+                            except Exception:
+                                pass
                     except Exception as e:
                         print("    [vx] AlleLaden: %s" % str(e)[:60])
+                    # bis alles gerendert: mehrfach ans Ende scrollen, bis Hoehe stabil
                     try:
-                        page.wait_for_function(
-                            "() => (((document.querySelector('main')||document.body).innerText).split('jährlich').length - 1) >= 3",
-                            timeout=20000,
-                        )
-                    except Exception:
-                        page.wait_for_timeout(5000)
-                    acc = {}
-                    # erster Griff an aktueller Position (Top-Karten)
-                    try:
-                        _t0 = page.evaluate("(document.querySelector('main')||document.body).innerText")
-                        for _m in VERIVOX_CARD_RE.finditer(_t0):
-                            _nm=_m.group(1).strip(); _pr=float(_m.group(2).replace(".","").replace(",","."))
-                            if _nm and (_nm not in acc or _pr < acc[_nm]): acc[_nm]=_pr
+                        _lastH = 0
+                        for _ in range(25):
+                            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                            page.wait_for_timeout(600)
+                            _h = page.evaluate("document.documentElement.scrollHeight")
+                            if _h <= _lastH:
+                                break
+                            _lastH = _h
                     except Exception:
                         pass
+                    acc = {}
+                    # Von oben nach unten in kleinen Schritten alles einsammeln
                     try:
                         page.evaluate("window.scrollTo(0,0)")
                         page.wait_for_timeout(600)
                         H = page.evaluate("document.documentElement.scrollHeight")
                         y = 0
                         guard = 0
-                        while y <= H and guard < 90:
+                        while y <= H + 600 and guard < 220:
                             page.evaluate("window.scrollTo(0, arguments[0])", y)
-                            page.wait_for_timeout(320)
+                            page.wait_for_timeout(260)
                             txt = page.evaluate("(document.querySelector('main')||document.body).innerText")
                             for m in VERIVOX_CARD_RE.finditer(txt):
                                 nm = m.group(1).strip()
@@ -868,7 +876,7 @@ def crawl_verivox_phv(product_config):
                                 if nm and (nm not in acc or pr < acc[nm]):
                                     acc[nm] = pr
                             H = page.evaluate("document.documentElement.scrollHeight")
-                            y += 700
+                            y += 500
                             guard += 1
                     except Exception as e:
                         print("    [vx] Scroll: %s" % str(e)[:80])

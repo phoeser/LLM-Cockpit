@@ -726,15 +726,33 @@ VERIVOX_CARD_RE = re.compile(
 
 
 def _verivox_cookies(page):
-    for nm in ["Alles ablehnen", "Geht klar", "Akzeptieren", "Zustimmen"]:
+    names = ["Alles ablehnen", "Alle ablehnen", "Ablehnen", "Geht klar",
+             "Akzeptieren", "Alle akzeptieren", "Zustimmen", "Einverstanden"]
+    # a) Buttons im Haupt-DOM
+    for nm in names:
         try:
             b = page.get_by_role("button", name=nm)
             if b.count() > 0:
-                b.first.click(timeout=3000)
-                page.wait_for_timeout(800)
-                return
+                b.first.click(timeout=2500); page.wait_for_timeout(600); return
         except Exception:
             pass
+    # b) Buttons in Consent-iframes (CMP)
+    try:
+        for fr in page.frames:
+            for nm in names:
+                try:
+                    b = fr.get_by_role("button", name=nm)
+                    if b.count() > 0:
+                        b.first.click(timeout=2000); page.wait_for_timeout(600); return
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    # c) Notnagel: Overlays per JS entfernen
+    try:
+        page.evaluate("() => { document.querySelectorAll('[class*=consent],[id*=consent],[class*=cookie],[id*=cookie],[class*=cmp],[id*=sp_message]').forEach(function(e){e.remove()}); if(document.body) document.body.style.overflow='auto'; }")
+    except Exception:
+        pass
 
 
 def crawl_verivox_phv(product_config):
@@ -762,18 +780,37 @@ def crawl_verivox_phv(product_config):
                     page.wait_for_timeout(4000)
                     _verivox_cookies(page)
                     page.wait_for_timeout(800)
+                    bd_ok = False
                     try:
                         bd = page.get_by_placeholder("TT.MM.JJJJ").first
                         bd.click(timeout=8000)
-                        bd.fill("")
-                        bd.type(birth_de, delay=40)
+                        try:
+                            bd.press("Control+A"); bd.press("Delete")
+                        except Exception:
+                            pass
+                        bd.type(birth_de, delay=60)
+                        page.wait_for_timeout(300)
+                        try:
+                            bd_ok = (bd.input_value() or "").strip().startswith(birth_de[:2])
+                        except Exception:
+                            bd_ok = False
+                        if not bd_ok:
+                            # JS-Fallback mit Angular-Events
+                            page.evaluate(
+                                "(v)=>{var el=document.querySelector('input[placeholder=\"TT.MM.JJJJ\"]'); if(el){el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true}));}}",
+                                birth_de,
+                            )
+                            page.wait_for_timeout(300)
                     except Exception as e:
                         print("    [vx] Geburtsdatum: %s" % str(e)[:60])
                     try:
                         plz = page.locator("#prestep_postcode-input")
                         plz.click(timeout=5000)
-                        plz.fill("")
-                        plz.type("10115", delay=40)
+                        try:
+                            plz.press("Control+A"); plz.press("Delete")
+                        except Exception:
+                            pass
+                        plz.type("10115", delay=50)
                     except Exception as e:
                         print("    [vx] PLZ: %s" % str(e)[:60])
                     page.wait_for_timeout(500)
@@ -831,9 +868,17 @@ def crawl_verivox_phv(product_config):
                         else:
                             brands["_other_" + nm[:30]] = entry
                     tracked = [k for k in brands if not k.startswith("_other_")]
+                    try:
+                        _body = page.evaluate("(document.querySelector('main')||document.body).innerText")
+                    except Exception:
+                        _body = ""
+                    _vxdiag = {"final_url": page.url[:130], "bd_ok": bool(bd_ok),
+                               "hasTarifeVon": ("Tarife von" in _body),
+                               "cardMarkers": _body.count("Tarif vergleichen")}
                     pd["profiles"][profile["key"]] = {"label": profile["label"], "birth": profile["birth"],
                                                       "brands": brands, "total_tariffs": len(acc),
-                                                      "extractor": "verivox_text"}
+                                                      "extractor": "verivox_text", "_vxdiag": _vxdiag}
+                    print("  [verivox_phv] diag %s" % json.dumps(_vxdiag, ensure_ascii=False))
                     print("  [verivox_phv] %s: %d Tarife, %d unsere Brands" % (profile["label"], len(acc), len(tracked)))
                     for bk in tracked:
                         print("      %s: %.2f EUR/Monat (%s)" % (bk, brands[bk]["price"], brands[bk]["tariff"][:30]))

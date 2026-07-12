@@ -782,35 +782,34 @@ def crawl_verivox_phv(product_config):
                     page.wait_for_timeout(800)
                     bd_ok = False
                     try:
-                        bd = page.get_by_placeholder("TT.MM.JJJJ").first
-                        bd.click(timeout=8000)
-                        try:
-                            bd.press("Control+A"); bd.press("Delete")
-                        except Exception:
-                            pass
-                        bd.type(birth_de, delay=60)
-                        page.wait_for_timeout(300)
-                        try:
-                            bd_ok = (bd.input_value() or "").strip().startswith(birth_de[:2])
-                        except Exception:
-                            bd_ok = False
-                        if not bd_ok:
-                            # JS-Fallback mit Angular-Events
-                            page.evaluate(
-                                "(v)=>{var el=document.querySelector('input[placeholder=\"TT.MM.JJJJ\"]'); if(el){el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true}));}}",
-                                birth_de,
-                            )
-                            page.wait_for_timeout(300)
+                        page.wait_for_selector('input[placeholder="TT.MM.JJJJ"]', state="visible", timeout=30000)
                     except Exception as e:
-                        print("    [vx] Geburtsdatum: %s" % str(e)[:60])
+                        print("    [vx] Geburtsdatum-Feld nicht sichtbar: %s" % str(e)[:60])
+                    for _att in range(3):
+                        try:
+                            bd = page.locator('input[placeholder="TT.MM.JJJJ"]').first
+                            bd.click(timeout=8000)
+                            try:
+                                bd.press("Control+A"); bd.press("Delete")
+                            except Exception:
+                                pass
+                            bd.type(birth_de, delay=90)
+                            page.wait_for_timeout(500)
+                            if (bd.input_value() or "").strip().startswith(birth_de[:2]):
+                                bd_ok = True
+                                break
+                        except Exception as e:
+                            print("    [vx] Geburtsdatum Versuch %d: %s" % (_att, str(e)[:50]))
+                        page.wait_for_timeout(1500)
                     try:
                         plz = page.locator("#prestep_postcode-input")
+                        plz.wait_for(state="visible", timeout=8000)
                         plz.click(timeout=5000)
                         try:
                             plz.press("Control+A"); plz.press("Delete")
                         except Exception:
                             pass
-                        plz.type("10115", delay=50)
+                        plz.type("10115", delay=60)
                     except Exception as e:
                         print("    [vx] PLZ: %s" % str(e)[:60])
                     page.wait_for_timeout(500)
@@ -819,7 +818,14 @@ def crawl_verivox_phv(product_config):
                         page.wait_for_selector("text=/Tarife von/", timeout=30000)
                     except Exception:
                         page.wait_for_timeout(8000)
-                    page.wait_for_timeout(3000)
+                    try:
+                        page.wait_for_function(
+                            "() => ((document.querySelector('main')||document.body).innerText.match(/Tarifnote/g)||[]).length >= 2",
+                            timeout=25000,
+                        )
+                    except Exception:
+                        page.wait_for_timeout(6000)
+                    page.wait_for_timeout(2500)
                     try:
                         page.get_by_text(re.compile(r"mind\.\s*50\s*Mio")).first.click(timeout=8000)
                         page.wait_for_timeout(4000)

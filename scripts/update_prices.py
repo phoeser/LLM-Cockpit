@@ -100,15 +100,8 @@ PRODUCTS = {
     },
     "haftpflicht": {
         "name": "Privathaftpflichtversicherung",
-        "params": "Profil: Single, Deckungssumme 50 Mio EUR, PLZ 10115, monatliche Zahlweise — guenstigster Tarif je Anbieter",
-        "flow": "deeplink",
-        "url_tpl": (
-            "https://privathaftpflicht.check24.de/privathaftpflicht/vergleichsergebnis/?"
-            "coinsured=1&birthdate={birth_de}&zipcode=10115&city=&protection_level=none&"
-            "amountinsuredchildren=-1&childrenunder7or10=no&public_service=no&sortorder=asc&"
-            "min_insure_sum=50&max_costsharing=0&paymentperiod=month&grade=4&"
-            "insure_date={insure_date_de}&from_ipss=yes"
-        ),
+        "params": "Profil: Single ohne Kinder, 50 J., Deckungssumme 50 Mio EUR, PLZ 10115 — guenstigster vergleichbarer Tarif je Anbieter (Verivox, Jahresbeitrag/12) inkl. Verivox-Tarifnote",
+        "flow": "verivox_phv",
     },
     "hausrat": {
         "name": "Hausratversicherung",
@@ -726,6 +719,136 @@ def emit_price_events(old_data, new_data):
     return len(lines)
 
 
+
+VERIVOX_CARD_RE = re.compile(
+    r"([^\n]+)\nTarif vergleichen[\s\S]*?Tarifnote\s*\n?\s*(\d{1,3}(?:\.\d{3})?,\d{2})\s*€\s*\n?\s*(?:jährlich|monatlich)"
+)
+
+
+def _verivox_cookies(page):
+    for nm in ["Alles ablehnen", "Geht klar", "Akzeptieren", "Zustimmen"]:
+        try:
+            b = page.get_by_role("button", name=nm)
+            if b.count() > 0:
+                b.first.click(timeout=3000)
+                page.wait_for_timeout(800)
+                return
+        except Exception:
+            pass
+
+
+def crawl_verivox_phv(product_config):
+    """Verivox Privathaftpflicht: Formular ausfuellen -> Ergebnisse -> 50 Mio + alle laden
+    -> Kartentext scrollend einsammeln und parsen. Jahresbeitrag/12 = Monatswert."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("  Playwright nicht installiert — ueberspringe")
+        return None
+    pd = {"name": product_config["name"], "params": product_config.get("params"), "profiles": {}}
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+            ctx = browser.new_context(user_agent=REAL_UA, locale="de-DE",
+                                      viewport={"width": 1440, "height": 2200},
+                                      extra_http_headers={"Accept-Language": "de-DE,de;q=0.9"})
+            for profile in AGE_PROFILES:
+                bb = profile["birth"]
+                birth_de = "%s.%s.%s" % (bb[6:8], bb[4:6], bb[0:4])
+                age = profile["label"].split()[0]
+                page = ctx.new_page()
+                try:
+                    page.goto("https://www.verivox.de/privathaftpflicht/vergleich/#/pli/customer?situationGroup=singleWithoutChild&age=" + age, timeout=60000)
+                    page.wait_for_timeout(4000)
+                    _verivox_cookies(page)
+                    page.wait_for_timeout(800)
+                    try:
+                        bd = page.get_by_placeholder("TT.MM.JJJJ").first
+                        bd.click(timeout=8000)
+                        bd.fill("")
+                        bd.type(birth_de, delay=40)
+                    except Exception as e:
+                        print("    [vx] Geburtsdatum: %s" % str(e)[:60])
+                    try:
+                        plz = page.locator("#prestep_postcode-input")
+                        plz.click(timeout=5000)
+                        plz.fill("")
+                        plz.type("10115", delay=40)
+                    except Exception as e:
+                        print("    [vx] PLZ: %s" % str(e)[:60])
+                    page.wait_for_timeout(500)
+                    page.get_by_role("button", name=re.compile("Jetzt vergleichen", re.I)).first.click(timeout=10000)
+                    try:
+                        page.wait_for_selector("text=/Tarife von/", timeout=30000)
+                    except Exception:
+                        page.wait_for_timeout(8000)
+                    page.wait_for_timeout(3000)
+                    try:
+                        page.get_by_text(re.compile(r"mind\.\s*50\s*Mio")).first.click(timeout=8000)
+                        page.wait_for_timeout(4000)
+                    except Exception as e:
+                        print("    [vx] 50Mio: %s" % str(e)[:60])
+                    try:
+                        page.get_by_role("link", name=re.compile("Alle Tarife laden", re.I)).first.click(timeout=8000)
+                        page.wait_for_timeout(4000)
+                    except Exception as e:
+                        print("    [vx] AlleLaden: %s" % str(e)[:60])
+                    acc = {}
+                    try:
+                        page.evaluate("window.scrollTo(0,0)")
+                        page.wait_for_timeout(600)
+                        H = page.evaluate("document.documentElement.scrollHeight")
+                        y = 0
+                        guard = 0
+                        while y <= H and guard < 90:
+                            page.evaluate("window.scrollTo(0, arguments[0])", y)
+                            page.wait_for_timeout(320)
+                            try:
+                                txt = page.locator("main").inner_text(timeout=5000)
+                            except Exception:
+                                txt = page.evaluate("(document.querySelector('main')||document.body).innerText")
+                            for m in VERIVOX_CARD_RE.finditer(txt):
+                                nm = m.group(1).strip()
+                                pr = float(m.group(2).replace(".", "").replace(",", "."))
+                                if nm and (nm not in acc or pr < acc[nm]):
+                                    acc[nm] = pr
+                            H = page.evaluate("document.documentElement.scrollHeight")
+                            y += 700
+                            guard += 1
+                    except Exception as e:
+                        print("    [vx] Scroll: %s" % str(e)[:80])
+                    brands = {}
+                    for nm, pr in acc.items():
+                        bk = map_brand(nm)
+                        monthly = round(pr / 12.0, 2)
+                        entry = {"price": monthly, "grade": None, "grade_label": None,
+                                 "customer_score": None, "customer_count": None,
+                                 "tariff": nm[:60], "leistung": None, "waiting_period": None,
+                                 "c24_name": nm, "annual": pr}
+                        if bk:
+                            if bk not in brands or monthly < brands[bk]["price"]:
+                                brands[bk] = entry
+                        else:
+                            brands["_other_" + nm[:30]] = entry
+                    tracked = [k for k in brands if not k.startswith("_other_")]
+                    pd["profiles"][profile["key"]] = {"label": profile["label"], "birth": profile["birth"],
+                                                      "brands": brands, "total_tariffs": len(acc),
+                                                      "extractor": "verivox_text"}
+                    print("  [verivox_phv] %s: %d Tarife, %d unsere Brands" % (profile["label"], len(acc), len(tracked)))
+                    for bk in tracked:
+                        print("      %s: %.2f EUR/Monat (%s)" % (bk, brands[bk]["price"], brands[bk]["tariff"][:30]))
+                except Exception as e:
+                    pd["profiles"][profile["key"]] = {"label": profile["label"], "brands": {}, "error": str(e)[:200]}
+                    print("    FEHLER: %s" % str(e)[:150])
+                finally:
+                    page.close()
+            browser.close()
+    except Exception as e:
+        print("  Playwright-Fehler: %s" % str(e)[:200])
+        return None
+    return pd
+
+
 def main():
     print("=" * 60)
     print("[prices] Check24 Preisvergleich-Crawler")
@@ -739,7 +862,10 @@ def main():
 
     for product_key, product_config in PRODUCTS.items():
         print("\n--- %s ---" % product_config["name"])
-        result = crawl_product_prices(product_key, product_config)
+        if product_config.get("flow") == "verivox_phv":
+            result = crawl_verivox_phv(product_config)
+        else:
+            result = crawl_product_prices(product_key, product_config)
         if result:
             all_data["products"][product_key] = result
 

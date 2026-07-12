@@ -21,6 +21,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -814,17 +815,32 @@ def crawl_verivox_phv(product_config):
                         print("    [vx] PLZ: %s" % str(e)[:60])
                     page.wait_for_timeout(500)
                     page.get_by_role("button", name=re.compile("Jetzt vergleichen", re.I)).first.click(timeout=10000)
-                    try:
-                        page.wait_for_selector("text=/Tarife von/", timeout=30000)
-                    except Exception:
-                        page.wait_for_timeout(8000)
-                    try:
-                        page.wait_for_function(
-                            "() => (((document.querySelector('main')||document.body).innerText).split('jährlich').length - 1) >= 3",
-                            timeout=25000,
-                        )
-                    except Exception:
-                        page.wait_for_timeout(6000)
+                    # Robust auf Tarif-Karten warten: bis zu 120s pollen, dabei sanft
+                    # scrollen (Karten rendern lazy). Erfolgskriterium: Karten-Marker
+                    # "Tarif vergleichen" oder >=3 Preisangaben "x,xx €" im Text.
+                    _price_re = re.compile(r"\d{1,3}(?:\.\d{3})?,\d{2}\s*€")
+                    cards_ready = False
+                    _wait_t0 = time.time()
+                    _poll = 0
+                    while time.time() - _wait_t0 < 120:
+                        try:
+                            _t = page.evaluate("(document.querySelector('main')||document.body).innerText")
+                        except Exception:
+                            _t = ""
+                        if _t.count("Tarif vergleichen") >= 1 or len(_price_re.findall(_t)) >= 3:
+                            cards_ready = True
+                            break
+                        # sanft runter- und wieder hochscrollen, um Lazy-Rendering anzustossen
+                        try:
+                            page.evaluate("window.scrollTo(0, Math.min(1200, document.documentElement.scrollHeight))")
+                            page.wait_for_timeout(800)
+                            page.evaluate("window.scrollTo(0, 0)")
+                        except Exception:
+                            pass
+                        page.wait_for_timeout(2000)
+                        _poll += 1
+                    wait_secs = round(time.time() - _wait_t0, 1)
+                    print("    [vx] Karten nach %.1fs: %s (Polls: %d)" % (wait_secs, "OK" if cards_ready else "NICHT gefunden", _poll))
                     page.wait_for_timeout(1500)
                     try:
                         page.get_by_text(re.compile(r"mind\.\s*50\s*Mio")).first.click(timeout=8000)
@@ -867,7 +883,7 @@ def crawl_verivox_phv(product_config):
                         y = 0
                         guard = 0
                         while y <= H + 600 and guard < 220:
-                            page.evaluate("window.scrollTo(0, arguments[0])", y)
+                            page.evaluate("y => window.scrollTo(0, y)", y)
                             page.wait_for_timeout(260)
                             txt = page.evaluate("(document.querySelector('main')||document.body).innerText")
                             for m in VERIVOX_CARD_RE.finditer(txt):
@@ -900,7 +916,11 @@ def crawl_verivox_phv(product_config):
                         _body = ""
                     _tvi = _body.find("Tarif vergleichen")
                     _sample = _body[max(0, _tvi - 45):_tvi + 240] if _tvi >= 0 else _body[:220]
+                    _blocked = any(s in _body for s in ("Zugriff verweigert", "Access Denied",
+                                                        "nicht erreichbar", "captcha", "Captcha"))
                     _vxdiag = {"final_url": page.url[:130], "bd_ok": bool(bd_ok),
+                               "cardsReady": bool(cards_ready), "waitSecs": wait_secs,
+                               "bodyLen": len(_body), "blocked": _blocked,
                                "hasTarifeVon": ("Tarife von" in _body),
                                "cardMarkers": _body.count("Tarif vergleichen"),
                                "sample": _sample.replace("\n", "|")[:260]}

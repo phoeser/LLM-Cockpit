@@ -231,9 +231,11 @@ JS_EXTRACT_CHIPS = """() => {
 JS_EXTRACT_BRANDS = """() => {
     var TARGETS={allianz:/allianz/i, axa:/(^|[^a-z])axa($|[^a-z])/i, ergo:/ergo/i, dkv:/dkv/i, generali:/generali/i, 'signal-iduna':/signal[-_ ]?iduna/i, huk:/huk/i, cosmosdirekt:/cosmos/i};
     var found={};
-    function tag(name, price){ for(var k in TARGETS){ if(TARGETS[k].test(name)){ if(!(k in found)||price<found[k].price) found[k]={price:price}; } } }
-    document.querySelectorAll('img[alt]').forEach(function(im){ var alt=(im.getAttribute('alt')||'').trim(); if(!alt) return; var node=im; for(var i=0;i<6&&node;i++){ node=node.parentElement; if(!node)break; var t=node.textContent||''; if(/\\d,\\d{2}\\s*\u20ac/.test(t)){ var m=t.match(/(\\d{1,3}(?:\\.\\d{3})?,\\d{2})\\s*\u20ac/); if(m) tag(alt, parseFloat(m[1].replace('.','').replace(',','.'))); break; } } });
-    document.querySelectorAll('*').forEach(function(el){ if(el.children.length) return; var t=(el.textContent||'').trim(); if(!t||t.length>18) return; var hit=false; for(var k in TARGETS){ if(TARGETS[k].test(t)) hit=true; } if(!hit) return; var node=el; for(var i=0;i<6&&node;i++){ node=node.parentElement; if(!node)break; var tt=node.textContent||''; if(/ab\\s*\\d/.test(tt)&&/\\d,\\d{2}\\s*\u20ac/.test(tt)){ var m=tt.match(/(\\d{1,3}(?:\\.\\d{3})?,\\d{2})\\s*\u20ac/); if(m) tag(t, parseFloat(m[1].replace('.','').replace(',','.'))); break; } } });
+    function priceOf(t){var m=t.match(/(\d{1,3}(?:\.\d{3})?,\d{2})\s*€/); return m?parseFloat(m[1].replace('.','').replace(',','.')):null;}
+    function tight(node){var n=node;for(var i=0;i<6&&n;i++){n=n.parentElement;if(!n)break;var cls=(n.className&&n.className.toString?n.className.toString():'');if(/filter|preview|sidebar|leiste|facet/i.test(cls))return null;var t=(n.textContent||'').replace(/\s+/g,' ').trim();if(/\d,\d{2}\s*€/.test(t)){return t.length<45?priceOf(t):null;}}return null;}
+    function tag(name,p){for(var k in TARGETS){if(TARGETS[k].test(name)){if(!(k in found)||p<found[k].price)found[k]={price:p};}}}
+    document.querySelectorAll('img[alt]').forEach(function(im){var alt=(im.getAttribute('alt')||'').trim();if(!alt)return;var p=tight(im);if(p==null)return;tag(alt,p);});
+    document.querySelectorAll('*').forEach(function(el){if(el.children.length)return;var t=(el.textContent||'').trim();if(!t||t.length>18)return;var hit=false;for(var k in TARGETS)if(TARGETS[k].test(t))hit=true;if(!hit)return;var p=tight(el);if(p==null)return;tag(t,p);});
     return found;
 }"""
 

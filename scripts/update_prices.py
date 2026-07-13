@@ -813,7 +813,19 @@ def crawl_verivox_phv(product_config):
                     except Exception as e:
                         print("    [vx] PLZ: %s" % str(e)[:60])
                     page.wait_for_timeout(500)
-                    page.get_by_role("button", name=re.compile("Jetzt vergleichen", re.I)).first.click(timeout=10000)
+                    _verivox_cookies(page)
+                    try:
+                        page.get_by_role("button", name=re.compile("Jetzt vergleichen", re.I)).first.click(timeout=10000)
+                    except Exception:
+                        try:
+                            page.evaluate("() => { document.querySelectorAll('[class*=consent],[id*=consent],[class*=cookie],[id*=sp_message],[class*=cmp],[class*=overlay],[class*=modal]').forEach(function(e){e.remove()}); if(document.body) document.body.style.overflow='auto'; }")
+                        except Exception:
+                            pass
+                        try:
+                            page.get_by_role("button", name=re.compile("Jetzt vergleichen", re.I)).first.click(timeout=8000, force=True)
+                        except Exception:
+                            page.evaluate("() => { var bs=[].slice.call(document.querySelectorAll('button')); for(var i=0;i<bs.length;i++){ if(/jetzt vergleichen/i.test(bs[i].textContent||'')){ bs[i].click(); return true; } } return false; }")
+                    page.wait_for_timeout(1500)
                     try:
                         page.wait_for_selector("text=/Tarife von/", timeout=30000)
                     except Exception:

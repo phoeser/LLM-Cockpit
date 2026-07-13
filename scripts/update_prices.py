@@ -372,6 +372,35 @@ JS_DIAG = """() => {
 }"""
 
 
+def _accept_consent(page):
+    """Nimmt den Check24-Cookie-Consent AKTIV an (setzt Consent-Cookies), damit die
+    volle Tarifliste geladen wird statt einer abgeschnittenen Top-N-Liste. Sucht den
+    Zustimmen-Button im Haupt-DOM UND in iframes (Consent liegt oft in einem iframe)."""
+    pat = re.compile(r"(alle\s*akzeptieren|akzeptieren|einverstanden|zustimmen|accept\s*all|einwilligen)", re.I)
+    for _t in range(3):
+        for fr in page.frames:
+            try:
+                btn = fr.get_by_role("button", name=pat)
+                if btn.count() > 0:
+                    btn.first.click(timeout=3000)
+                    page.wait_for_timeout(2500)
+                    print("    [consent] Zustimmung erteilt (button/role)")
+                    return True
+            except Exception:
+                pass
+            try:
+                el = fr.locator("button, a, [role=button]").filter(has_text=pat).first
+                if el.count() > 0:
+                    el.click(timeout=3000)
+                    page.wait_for_timeout(2500)
+                    print("    [consent] Zustimmung erteilt (text)")
+                    return True
+            except Exception:
+                pass
+        page.wait_for_timeout(1200)
+    return False
+
+
 def _dismiss_overlays(page):
     """Entfernt den C24-Cookie-Consent-Layer (per DOM-remove, OHNE Einwilligung — es
     werden keine Consent-Cookies gesetzt) und klickt das 'OK, verstanden'-Modal weg.
@@ -503,6 +532,7 @@ def crawl_product_prices(product_key, product_config):
                     except Exception:
                         pass
                     page.wait_for_timeout(5000)
+                    _accept_consent(page)   # Consent aktiv annehmen -> volle Tarifliste
                     _dismiss_overlays(page)
 
                     # Formular-Flow (Zahn): Eingaben ausfuellen + zum Ergebnis navigieren

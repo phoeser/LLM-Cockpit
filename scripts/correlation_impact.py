@@ -1101,6 +1101,87 @@ def _driver_card(label, fit, controllability, plain_tmpl, unit_note):
             "plain": (plain_tmpl.format(es=es) if es is not None else None), "unit": unit_note}
 
 
+BRAND_SIZE = {  # grobe Groessen-/Bekanntheits-Naeherung (0-100), Basis GDV-Marktanteile 2024
+                # + Markenbekanntheit; bewusst als Naeherung, leicht editierbar.
+    "Allianz": 100.0, "ERGO": 65.0, "HUK-Coburg": 60.0, "AXA": 55.0,
+    "Generali": 50.0, "Signal Iduna": 35.0, "CosmosDirekt": 30.0,
+}
+
+
+def _mundlak_multi(cells, xkeys, ykey):
+    """Mundlak/CRE mit MEHREREN Treibern gemeinsam: je Treiber Within+Between, die
+    Between-Effekte kontrollieren einander (so trennt sich z.B. Groesse vom Footprint)."""
+    brands = sorted({c["brand"] for c in cells})
+    topics = sorted({c["topic"] for c in cells})
+    n = len(cells)
+    if n < 10 or len(brands) < 3 or len(topics) < 2:
+        return {"available": False, "n_cells": n, "note": "Zu wenige Zellen fuer das gemeinsame Modell."}
+    cnt = {}
+    xbar = {k: {} for k in xkeys}
+    for c in cells:
+        cnt[c["brand"]] = cnt.get(c["brand"], 0) + 1
+        for k in xkeys:
+            xbar[k][c["brand"]] = xbar[k].get(c["brand"], 0.0) + float(c.get(k, 0.0))
+    for k in xkeys:
+        for b in xbar[k]:
+            xbar[k][b] /= cnt[b]
+    yb = {}; cy = {}
+    for c in cells:
+        yb[c["brand"]] = yb.get(c["brand"], 0.0) + c[ykey]; cy[c["brand"]] = cy.get(c["brand"], 0) + 1
+    ybar = {b: yb[b] / cy[b] for b in yb}
+    def _tdm(v):
+        tm = {}; tc = {}
+        for c, val in zip(cells, v):
+            tm[c["topic"]] = tm.get(c["topic"], 0.0) + val; tc[c["topic"]] = tc.get(c["topic"], 0) + 1
+        tmean = {t: tm[t] / tc[t] for t in tm}
+        return [val - tmean[c["topic"]] for c, val in zip(cells, v)]
+    cols = []; names = []; rawcols = []
+    for k in xkeys:
+        W = [float(c.get(k, 0.0)) - xbar[k][c["brand"]] for c in cells]
+        B = [xbar[k][c["brand"]] for c in cells]
+        cols.append(_tdm(W)); names.append(("within", k)); rawcols.append(W)
+        cols.append(_tdm(B)); names.append(("between", k)); rawcols.append(B)
+    Yc = _tdm([c[ykey] for c in cells])
+    sd = []
+    for col in cols:
+        v = sum(x * x for x in col) / max(n - 1, 1); sd.append(v ** 0.5 if v > 1e-12 else 1.0)
+    p = len(cols)
+    Xs = [[cols[j][i] / sd[j] for j in range(p)] for i in range(n)]
+    beta, Ainv, sig2 = _ridge_posterior(Xs, Yc, n * 0.1)
+    def _sdraw(v):
+        m = sum(v) / len(v); return (sum((x - m) ** 2 for x in v) / max(len(v) - 1, 1)) ** 0.5
+    eff = {}
+    for j, (kind, k) in enumerate(names):
+        mu = beta[j] / sd[j]
+        sigma = (max(sig2 * Ainv[j][j], 0.0) ** 0.5) / sd[j]
+        pdir = max(_norm_cdf(mu / sigma), 1.0 - _norm_cdf(mu / sigma)) if sigma > 1e-12 else 1.0
+        eff.setdefault(k, {})[kind] = {"coef": round(mu, 3), "prob_direction": round(pdir, 3),
+                                       "effect_std_pp": round(mu * _sdraw(rawcols[j]), 2)}
+    lead = max(ybar, key=lambda b: ybar[b])
+    gaps = {}
+    for b in brands:
+        if b == lead:
+            continue
+        actual = ybar[lead] - ybar[b]
+        contrib = {k: round(eff[k]["between"]["coef"] * (xbar[k][lead] - xbar[k][b]), 2) for k in xkeys}
+        gaps[b] = {"vs": lead, "actual_gap_pp": round(actual, 2), "contrib_pp": contrib,
+                   "explained_pp": round(sum(contrib.values()), 2)}
+    return {"available": True, "n_cells": n, "n_brands": len(brands), "n_topics": len(topics),
+            "drivers_eff": eff, "leader": lead, "gap_decomposition": gaps,
+            "note": "Gemeinsames Mundlak-Modell; Between-Effekte kontrollieren einander (Groesse vs. Footprint sauber getrennt)."}
+
+
+def _card_from_joint(label, k, joint, controllability, plain_tmpl, unit):
+    if not joint or not joint.get("available"):
+        return {"label": label, "available": False, "note": (joint or {}).get("note", "nicht verfuegbar")}
+    be = (joint.get("drivers_eff", {}).get(k) or {}).get("between") or {}
+    es = be.get("effect_std_pp"); pdir = be.get("prob_direction")
+    return {"label": label, "available": True, "effect_pp_per_unit": be.get("coef"),
+            "effect_std_pp": es, "prob_direction": pdir, "confidence": _conf_badge(pdir),
+            "sign_stable": None, "n_cells": joint.get("n_cells"), "controllability": controllability,
+            "plain": (plain_tmpl.format(es=es) if es is not None else None), "unit": unit}
+
+
 def level_model_mundlak():
     """Level-Modell (Mundlak): erklaert das SoV-NIVEAU aus dem Zitations-Footprint,
     getrennt fuer grounded (Gemini/Perplexity) und ungrounded (ChatGPT)."""
@@ -1164,17 +1245,26 @@ def level_model_mundlak():
                             if len(_pc) >= 6 else
                             {"available": False, "n_cells": len(_pc),
                              "note": "Zu wenige Produkte mit Preisdaten fuer einen belastbaren Preis-Effekt."})
+    # #16 2. Treiber: Groesse/Bekanntheit gemeinsam mit Footprint (Effekte kontrollieren einander)
+    for c in cells_c:
+        if c["brand"] in BRAND_SIZE:
+            c["size"] = BRAND_SIZE[c["brand"]]
+    _joint_cells = [c for c in cells_c if ("size" in c and "cite_share" in c)]
+    joint_model = _mundlak_multi(_joint_cells, ["cite_share", "size"], "sov")
     drivers = [
-        _driver_card("Zitations-Footprint (Autoritaet)", fit_c, "mittelbar",
-                     "+1 SD mehr Footprint entspricht etwa {es} pp Sichtbarkeit",
-                     "pp SoV je pp Zitationsanteil"),
+        _card_from_joint("Zitations-Footprint (Autoritaet)", "cite_share", joint_model, "mittelbar",
+                         "+1 SD mehr Footprint entspricht etwa {es} pp Sichtbarkeit (bei gleicher Groesse)",
+                         "pp SoV je pp Zitationsanteil"),
+        _card_from_joint("Groesse/Bekanntheit (Marktanteil)", "size", joint_model, "strukturell",
+                         "+1 SD groesser entspricht etwa {es} pp Sichtbarkeit (bei gleichem Footprint)",
+                         "pp SoV je Groessen-Einheit"),
         _driver_card("Relativpreis (teurer = mehr SoV)", price_model.get("combined"), "direkt",
                      "+1 SD teurer entspricht etwa {es} pp Sichtbarkeit",
                      "pp SoV je Einheit Relativpreis (1.0 = Marktbestpreis)"),
     ]
     return {"available": True, "driver": "cite_share",
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
-            "price_model": price_model, "drivers": drivers,
+            "price_model": price_model, "joint_model": joint_model, "drivers": drivers,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

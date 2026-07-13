@@ -850,15 +850,29 @@ def crawl_verivox_phv(product_config):
                         for _ in range(14):
                             page.mouse.wheel(0, 2200)
                             page.wait_for_timeout(350)
-                        for _lbl in ["Alle Tarife laden", "weitere Tarife laden"]:
-                            try:
-                                lk = page.get_by_role("link", name=re.compile(_lbl, re.I)).first
-                                if lk.count() > 0:
-                                    lk.scroll_into_view_if_needed(timeout=4000)
-                                    lk.click(timeout=5000)
-                                    page.wait_for_timeout(2500)
-                            except Exception:
-                                pass
+                        # "Alle Tarife laden" per exaktem Selektor (a.load-all-button).
+                        # Fallback: mehrfach "20 weitere Tarife laden" (a.load-more-button).
+                        try:
+                            la = page.locator("a.load-all-button").first
+                            if la.count() > 0:
+                                la.scroll_into_view_if_needed(timeout=4000)
+                                la.click(timeout=6000)
+                                page.wait_for_timeout(3500)
+                            else:
+                                for _ in range(12):
+                                    lm = page.locator("a.load-more-button").first
+                                    if lm.count() == 0:
+                                        break
+                                    lm.scroll_into_view_if_needed(timeout=3000)
+                                    lm.click(timeout=4000)
+                                    page.wait_for_timeout(1600)
+                        except Exception as _e:
+                            print("    [vx] AlleLaden-Klick: %s" % str(_e)[:60])
+                        try:
+                            page.evaluate("var a=document.querySelector('a.load-all-button'); if(a){a.click();}")
+                            page.wait_for_timeout(2500)
+                        except Exception:
+                            pass
                         _lastH = 0
                         for _ in range(30):
                             page.mouse.wheel(0, 3000)

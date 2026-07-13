@@ -521,6 +521,35 @@ def crawl_product_prices(product_key, product_config):
                         _dismiss_overlays(page)
                         page.wait_for_timeout(6000)
 
+                    # Check24-Ergebnisliste vollstaendig laden: bis ans Ende scrollen +
+                    # etwaige "weitere Tarife"-Buttons klicken, damit auch tiefer stehende
+                    # Zielmarken (z.B. ERGO, Signal Iduna) im DOM landen. Karten sind nicht
+                    # virtualisiert -> einmal geladen bleiben sie im DOM.
+                    try:
+                        page.mouse.move(720, 420)
+                        _prevH, _stable = 0, 0
+                        for _si in range(60):
+                            page.mouse.wheel(0, 5000)
+                            page.wait_for_timeout(420)
+                            try:
+                                _lm = page.get_by_role("button", name=re.compile(r"weitere|mehr Tarife|mehr anzeigen", re.I)).first
+                                if _lm.count() > 0:
+                                    _lm.click(timeout=2500)
+                                    page.wait_for_timeout(1200)
+                            except Exception:
+                                pass
+                            _h = page.evaluate("document.body.scrollHeight")
+                            if _h <= _prevH:
+                                _stable += 1
+                                if _stable >= 3:
+                                    break
+                            else:
+                                _stable, _prevH = 0, _h
+                        page.evaluate("window.scrollTo(0,0)")
+                        page.wait_for_timeout(800)
+                    except Exception as _se:
+                        print("    [scroll-load] %s" % str(_se)[:60])
+
                     # 1) Primaer: Provider-Chips ('ab X EUR' je Anbieter)
                     raw = page.evaluate(JS_EXTRACT_CHIPS)
                     src = "chips"
@@ -592,7 +621,11 @@ def crawl_product_prices(product_key, product_config):
 
                     # Auf unsere Brands mappen
                     profile_data = {}
+                    # Phantom-"Anbieter" (Berater-Fotos, Chat-Widgets etc.) rausfiltern
+                    _BOGUS = re.compile(r"kundenberater|berater|experte|beratung|hotline|chat|assistent", re.I)
                     for c24_name, data in raw.items():
+                        if _BOGUS.search(c24_name or ""):
+                            continue
                         brand_key = None
                         for _sub, _bk in (product_config.get("brand_overrides") or []):
                             if _sub in c24_name.lower():

@@ -270,7 +270,7 @@ JS_EXTRACT = """() => {
     document.querySelectorAll('*').forEach(function(el) {
         if (el.children.length > 0) return;
         var t = el.textContent.trim();
-        if (!t.match(/^\\d{2,3},\\d{2}\\s*€$/)) return;
+        if (!t.match(/^\\d{1,3},\\d{2}\\s*€$/)) return;
         var price = parseFloat(t.replace(',','.').replace('€','').trim());
         if (price < 1 || price > 500) return;
 
@@ -279,6 +279,16 @@ JS_EXTRACT = """() => {
             node = node.parentElement;
             if (!node) break;
             var logo = node.querySelector('img[alt*="Logo"]');
+            if (!logo) {
+                var cands = node.querySelectorAll('img[alt]:not([alt=""])');
+                for (var ci = 0; ci < cands.length; ci++) {
+                    var a = (cands[ci].alt || '').trim();
+                    if (a.length >= 2 && a.length <= 35 && /[A-Za-zÄÖÜ]/.test(a) &&
+                        !/(TÜV|Stiftung|Amazon|Gutschein|Siegel|Testsieger|Empfehlung|Note|Sterne?)/i.test(a)) {
+                        logo = cands[ci]; break;
+                    }
+                }
+            }
             if (!logo) continue;
             var name = logo.alt.replace(/anbieter\\s*logo\\s*/gi, '').replace(/\\s*Logo\\s*/gi, '').trim();
 

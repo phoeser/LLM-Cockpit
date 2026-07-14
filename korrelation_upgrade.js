@@ -103,53 +103,48 @@
     return rows;
   }
 
-  /* ---------- Forest-Plot (HTML/CSS) ---------- */
+  /* ---------- Forest-Plot (HTML/CSS), aufgeraeumt ---------- */
   function forestPlot(C){
     var rows=driverRows(C);
-    // Skala über alle CI-Grenzen und Schätzer, symmetrisch um 0
     var mx=1;
-    rows.forEach(function(r){
-      mx=Math.max(mx, Math.abs(r.est||0), Math.abs(r.lo||0), Math.abs(r.hi||0));
-    });
-    mx=mx*1.08;
-    function x(v){ return 50 + 50*(v/mx); } // Prozentposition (0 = Mitte)
+    rows.forEach(function(r){ mx=Math.max(mx, Math.abs(r.est||0), Math.abs(r.lo||0), Math.abs(r.hi||0)); });
+    mx=mx*1.1;
+    function x(v){ return 50 + 50*(v/mx); }
+    var grid='';
+    [-0.5,0.5].forEach(function(f){ grid+='<div style="position:absolute;left:'+(50+50*f)+'%;top:0;bottom:0;width:1px;background:#f0f1f3"></div>'; });
 
-    var body=rows.map(function(r){
+    var body=rows.map(function(r,i){
       var cf=r.events?{t:"kein belastbarer Effekt",c:"#6b7280",bg:"#eef0f2"}:conf(r.p,r.stable);
       var col=r.events?"#9ca3af":barColFor(cf);
-      var unstable=(r.stable===false&&!r.events)?'<span style="font-size:10px;color:#b45309">↔ Vorzeichen nicht stabil (LOO)</span>':"";
-      var nchip=r.nTxt?'<span style="font-size:10px;color:#9ca3af">'+r.nTxt+'</span>':"";
-      var ciTxt=(r.lo!=null&&r.hi!=null)?('<span style="font-size:10px;color:#9ca3af">95%-CI '+signed(r.lo,1)+' … '+signed(r.hi,1)+' pp</span>'):"";
-      // Plot-Zeile: Nulllinie, CI-Band, Punktschätzer
-      var plot='<div style="position:relative;height:20px;background:#f7f8fa;border-radius:4px;overflow:hidden">'+
-        '<div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#c8ccd2"></div>';
+      var ciTitle=(r.lo!=null&&r.hi!=null)?('95%-Konfidenzintervall: '+signed(r.lo,1)+' bis '+signed(r.hi,1)+' pp'):'';
+      var plot='<div title="'+ciTitle+'" style="position:relative;height:26px;background:'+(i%2?'#fbfbfc':'#f7f8fa')+';border-radius:4px;overflow:hidden">'+grid+
+        '<div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c8ccd2"></div>';
       if(r.lo!=null&&r.hi!=null){
         var l=clamp(Math.min(x(r.lo),x(r.hi)),0,100), rgt=clamp(Math.max(x(r.lo),x(r.hi)),0,100);
-        plot+='<div style="position:absolute;left:'+l+'%;width:'+Math.max(rgt-l,0.5)+'%;top:7px;height:6px;background:'+col+'55;border-radius:3px"></div>';
+        plot+='<div style="position:absolute;left:'+l+'%;width:'+Math.max(rgt-l,0.6)+'%;top:10px;height:6px;background:'+col+'44;border-radius:3px"></div>';
       }
       if(!r.events){
-        plot+='<div style="position:absolute;left:calc('+clamp(x(r.est),0,100)+'% - 4px);top:5px;width:8px;height:10px;background:'+col+';border-radius:2px"></div>';
+        plot+='<div style="position:absolute;left:calc('+clamp(x(r.est),1,99)+'% - 5px);top:7px;width:10px;height:12px;background:'+col+';border-radius:2px;box-shadow:0 0 0 1px #fff"></div>';
       } else {
-        plot+='<div style="position:absolute;left:calc(50% - 4px);top:5px;width:8px;height:10px;border:2px solid '+col+';border-radius:2px;background:#fff"></div>';
+        plot+='<div style="position:absolute;left:calc(50% - 5px);top:7px;width:10px;height:12px;border:2px solid '+col+';border-radius:2px;background:#fff"></div>';
       }
       plot+='</div>';
       var eff=r.events?"~0":signed(r.est,1)+" pp";
-      return '<div style="margin:11px 0">'+
-        '<div style="display:grid;grid-template-columns:230px 1fr 74px;align-items:center;gap:10px">'+
-          '<div><div style="font-size:12.5px;font-weight:600;line-height:1.25">'+r.label+'</div>'+
-          '<div style="font-size:10.5px;color:#9ca3af">'+(r.sub||'')+'</div></div>'+
-          plot+
-          '<div style="font-size:12px;font-weight:700;text-align:right;color:#1a1a2e">'+eff+'</div></div>'+
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">'+confChip(cf)+ampelChip(r.ctrl)+ciTxt+unstable+nchip+'</div>'+
-        '<div style="font-size:11px;color:#6b7280;margin-top:2px">'+r.plain+'</div>'+
-      '</div>';
+      var unstable=(r.stable===false&&!r.events)?' <span style="font-size:10px;color:#b45309" title="Vorzeichen wechselt, wenn einzelne Marken weggelassen werden (Leave-one-out)">↔ instabil</span>':"";
+      return '<div style="display:grid;grid-template-columns:215px 1fr 84px;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f4f5f6">'+
+          '<div><div style="font-size:12.5px;font-weight:600;line-height:1.25" title="'+(r.sub||'')+'">'+r.label+'</div>'+
+          '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:3px">'+confChip(cf)+ampelChip(r.ctrl)+unstable+'</div>'+
+          '<div style="font-size:10px;color:#b3b8bf;margin-top:2px">'+(r.nTxt||'')+'</div></div>'+
+          '<div>'+plot+'<div style="font-size:10.5px;color:#8b919a;margin-top:3px;line-height:1.35">'+r.plain+'</div></div>'+
+          '<div style="font-size:13px;font-weight:700;text-align:right;color:'+(r.events?'#9ca3af':'#1a1a2e')+'">'+eff+'</div>'+
+        '</div>';
     }).join('');
     return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;margin-bottom:14px">'+
-      '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Treiber-Ranking (Forest-Plot) — was bewegt die Sichtbarkeit? <span style="font-weight:500;color:#9ca3af">('+modeLbl()+')</span></div>'+
-      '<div style="font-size:11px;color:#9ca3af;margin-bottom:4px">Quadrat = bester Schätzwert · Band = 95%-Konfidenzintervall · Mittellinie = kein Effekt. Schneidet das Band die Mittellinie, ist der Effekt statistisch nicht gesichert.</div>'+
-      '<div style="display:grid;grid-template-columns:230px 1fr 74px;gap:10px;font-size:10px;color:#c0c4cb"><div></div><div style="display:flex;justify-content:space-between"><span>−'+num(mx,0)+' pp</span><span>0</span><span>+'+num(mx,0)+' pp</span></div><div></div></div>'+
+      '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Treiber-Ranking — was bewegt die Sichtbarkeit? <span style="font-weight:500;color:#9ca3af">('+modeLbl()+')</span></div>'+
+      '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Quadrat = bester Schätzwert (pp Sichtbarkeit je +1 Standardabweichung) · farbiges Band = 95%-Unsicherheitsbereich · dicke Mittellinie = kein Effekt. Berührt das Band die Mittellinie, kann der Effekt noch Zufall sein.</div>'+
+      '<div style="display:grid;grid-template-columns:215px 1fr 84px;gap:10px;font-size:10px;color:#c0c4cb"><div></div><div style="display:flex;justify-content:space-between;padding:0 2px"><span>−'+num(mx,0)+' pp</span><span>0</span><span>+'+num(mx,0)+' pp</span></div><div style="text-align:right">Effekt</div></div>'+
       body+
-      '<div style="font-size:10.5px;color:#9ca3af;margin-top:8px">Effekt in <b>pp Sichtbarkeit je +1 Standardabweichung</b> des Treibers (Mundlak/CRE-Level-Modell). <b>Wichtig:</b> Markenniveau-Effekte (Between) stützen sich effektiv nur auf die Zahl der <b>Marken</b>, nicht der Zellen — deshalb steht dort „n eff.". Alles Zusammenhänge, kein Kausalnachweis (Ausnahme: Maßnahmen-Wirkung/DiD).</div>'+
+      '<div style="font-size:10.5px;color:#9ca3af;margin-top:8px">Mundlak/CRE-Level-Modell. Markenniveau-Effekte (Between) stützen sich effektiv nur auf die Zahl der <b>Marken</b> („n eff."), nicht der Zellen. Zusammenhänge, kein Kausalnachweis (Ausnahme: Maßnahmen-Wirkung/DiD).</div>'+
     '</div>';
   }
 
@@ -331,20 +326,30 @@
   }
   function wireGeoLink(){ var b=document.getElementById("korrGeoLink"); if(b) b.addEventListener("click",function(){ var t=document.querySelector('[data-tab="geo"]'); if(t){ t.click(); window.scrollTo({top:0,behavior:"smooth"}); } }); }
 
-  // Detail-/Monitoring-Sektionen einklappen; Alt-Titel ausblenden
+  // Detail-Sektionen gruppieren (standardmaessig OFFEN, damit Daten/Charts sichtbar sind)
+  function rerenderDetails(){
+    ["renderCorrelationTab"].forEach(function(fn){
+      try{ if(typeof window[fn]==="function") window[fn](); }catch(e){ console.warn(fn+":", e.message); }
+    });
+  }
   function tidy(host){
     [].slice.call(host.children).forEach(function(el){
-      if(el.id!=="korrSynth" && el.id!=="korrDetails" && el.id!=="gapWaterfallBox" && /^🔗\s*Korrelation/.test((el.innerText||"").trim())) el.style.display="none";
+      if(el.id!=="korrSynth" && el.id!=="korrDetails" && el.id!=="gapWaterfallBox" && /^🔗\s*Korrelation/.test((el.innerText||el.textContent||"").trim())) el.style.display="none";
     });
     if(document.getElementById("korrDetails")) return;
     var rxs=[/Validierte Impact-Analyse/,/Maßnahmen-Wirkung/,/Share of Voice/,/Tagesübersicht/,/Mention-Tracking/,/Event-Stream/];
     var kids=[].slice.call(host.children); var toCollapse=[];
-    rxs.forEach(function(rx){ var b=kids.filter(function(el){ return el.id!=="korrSynth"&&el.id!=="korrDetails"&&el.id!=="gapWaterfallBox"&&rx.test((el.innerText||"").slice(0,90)); })[0]; if(b&&toCollapse.indexOf(b)<0) toCollapse.push(b); });
+    rxs.forEach(function(rx){ var b=kids.filter(function(el){ return el.id!=="korrSynth"&&el.id!=="korrDetails"&&el.id!=="gapWaterfallBox"&&rx.test(((el.innerText||el.textContent)||"").slice(0,90)); })[0]; if(b&&toCollapse.indexOf(b)<0) toCollapse.push(b); });
     if(toCollapse.length){
-      var det=document.createElement("details"); det.id="korrDetails"; det.className="bg-white rounded-xl shadow mb-6"; det.style.cssText="padding:6px 18px";
-      det.innerHTML='<summary style="cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;padding:12px 0">Alle Detail-Auswertungen anzeigen (Event-Study, Maßnahmen-Wirkung/DiD, SoV-Verlauf, Mentions, Event-Stream)</summary>';
+      var det=document.createElement("details"); det.id="korrDetails"; det.open=true;
+      det.className="bg-white rounded-xl shadow mb-6"; det.style.cssText="padding:6px 18px";
+      det.innerHTML='<summary style="cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;padding:12px 0">Detail-Auswertungen (Event-Study, Maßnahmen-Wirkung/DiD, SoV-Verlauf, Mentions, Event-Stream) — zum Ein-/Ausklappen klicken</summary>';
       toCollapse[0].parentNode.insertBefore(det, toCollapse[0]);
       toCollapse.forEach(function(b){ b.style.display=""; det.appendChild(b); });
+      // Beim Aufklappen Charts neu rendern (Chart.js kann nicht in unsichtbare Container zeichnen)
+      det.addEventListener("toggle", function(){ if(det.open) setTimeout(rerenderDetails, 60); });
+      // Einmalig nach dem Gruppieren neu rendern, damit Canvas-Breiten stimmen
+      setTimeout(rerenderDetails, 120);
     }
   }
 

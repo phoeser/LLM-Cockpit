@@ -675,30 +675,63 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h2 class="text-2xl font-bold text-ergo-dark mb-2">🔗 Korrelation: Events × LLM-Sichtbarkeit</h2>
-    <p class="text-sm text-gray-600">Welche Veränderungen (Presse, Bewertungen, Webseite, Ratings) beeinflussen die LLM-Sichtbarkeit?</p>
+    <p class="text-sm text-gray-600 mb-4">Event-Überblick der letzten 14 Tage — die validierte Impact-Analyse unten nutzt den gesamten Messzeitraum (siehe Badge).</p>
+    <div id="corrKPIs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
   </div>
 
-  <!-- Event-Timeline -->
+  <!-- Validierte Impact-Analyse (Event-Study, waechst mit jedem Tag) -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
+    <div class="flex items-start justify-between flex-wrap gap-2">
+      <h3 class="text-lg font-bold text-ergo-dark mb-2">🧪 Validierte Impact-Analyse <span class="text-xs font-normal text-gray-500">(Event-Study)</span></h3>
+      <span class="flex items-center gap-2"><select id="impactBrandSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle Anbieter</option></select><select id="impactLlmSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle LLMs (gesamt)</option></select><span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span></span>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Geschätzter durchschnittlicher Effekt eines Ereignis-Typs auf den Share of Voice (in Prozentpunkten), pro Messintervall. Wird mit jeder Nacht statistisch belastbarer.</p>
+    <div id="corrImpactStudy"></div>
+  </div>
+
+  <!-- Maßnahmen-Wirkung (DiD) -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">🎯 Maßnahmen-Wirkung (kausal, Difference-in-Differences)</h3>
+    <p class="text-xs text-gray-500 mb-3">Schätzt den <b>kausalen</b> SoV-Effekt datierter Maßnahmen gegen die anderen Marken als Kontrollgruppe. Eigene Maßnahmen in <code>data/interventions.json</code> taggen; „auto" = erkannte Aktivitäts-Spitzen.</p>
+    <div id="corrInterventions"></div>
+  </div>
+
+  <!-- Tages-Heatmap -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-4">Event-Timeline</h3>
-    <div id="correlationTimeline" style="min-height:300px;"></div>
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+      <h3 class="text-lg font-bold text-ergo-dark">📅 Tagesübersicht</h3>
+      <select id="corrHmBrandSel" onchange="__renderCorrHeatmap()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle Anbieter</option></select>
+    </div>
+    <div id="corrHeatmap" style="overflow-x:auto;"></div>
   </div>
 
-  <!-- Impact-Heatmap -->
+  <!-- SoV-Entwicklung -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-4">Impact-Matrix: Event-Typ → Metrik-Veränderung</h3>
-    <div id="correlationHeatmap"></div>
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">📊 Share of Voice – Entwicklung</h3>
+    <p class="text-xs text-gray-500 mb-4">Gemessene LLM-Sichtbarkeit pro Anbieter über die letzten Messläufe.</p>
+    <div id="corrSovChart" style="min-height:380px;"></div>
+    <div id="corrSovSummary" class="mt-3"></div>
   </div>
 
-  <!-- Event-Liste -->
+
+  <!-- Mention-Tracking -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-4">Letzte Events</h3>
-    <div id="correlationEventList"></div>
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">📈 Mention-Tracking</h3>
+    <p class="text-xs text-gray-500 mb-4">LLM-Erwähnungen pro Brand – ein Frühindikator für Sichtbarkeitsveränderungen.</p>
+    <div id="corrMentions" style="min-height:320px;"></div>
+    <div id="corrMentionSummary" class="mt-3"></div>
   </div>
 
-  <!-- Status-Info -->
+  <!-- Event-Stream -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-4">🕐 Event-Stream</h3>
+    <div id="corrFilters" class="flex flex-wrap gap-2 mb-4"></div>
+    <div id="corrStream" style="max-height:600px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- Status -->
   <div class="bg-blue-50 rounded-xl p-4 shadow mb-6">
-    <p class="text-sm text-blue-800"><strong>Hinweis:</strong> Die Korrelations-Engine sammelt ab sofort Events bei jedem Nightly-Run. Nach 2-3 Wochen Datensammlung werden hier statistische Korrelationen zwischen Events und SoV-Veränderungen angezeigt. Bis dahin siehst du die Event-Timeline und eine Demo der Impact-Matrix.</p>
+    <p class="text-sm text-blue-800"><strong>Datenbasis:</strong> <span id="correlationDataStatus">wird berechnet…</span></p>
   </div>
 </section>
 
@@ -2862,3 +2895,702 @@ window.BERATER_DATA = /* BERATER_DATA_START */{"generated_at":"2026-05-31T19:03:
   }
 
   i
+</script>
+
+<!-- ===== KORRELATION v3 (Umzug 2026-07-14): Renderer + Daten-Loader ===== -->
+<script>
+(function(){
+  "use strict";
+// ===== Korrelations-Tab Rendering =====
+  // CORRELATION_EVENTS wird vom Nightly-Workflow injiziert (nach Datensammlung)
+  let CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];
+
+  
+    // === Drilldown Modal für Event-Kategorien ===
+    function showEventDrilldown(eventType, context) {
+      const ANALYSIS_WINDOW_DAYS = 180;
+      const now = new Date();
+      const windowStart = now.getTime() - (ANALYSIS_WINDOW_DAYS * 86400000);
+      const filtered = CORRELATION_EVENTS.filter(e => {
+        if (e.event_type !== eventType) return false;
+        return new Date(e.timestamp).getTime() >= windowStart;
+      });
+      
+      // Sort by date descending
+      filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      // Group by brand
+      const byBrand = {};
+      filtered.forEach(e => {
+        if (!byBrand[e.brand]) byBrand[e.brand] = [];
+        byBrand[e.brand].push(e);
+      });
+      
+      const icon = (typeof EVENT_ICONS !== 'undefined' ? EVENT_ICONS[eventType] : '') || '📌';
+      const color = (typeof EVENT_COLORS !== 'undefined' ? EVENT_COLORS[eventType] : '') || '#6b7280';
+      const typeName = eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      
+      let modal = '<div id="eventDrilldownModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)this.remove()">';
+      modal += '<div style="background:white;border-radius:12px;max-width:800px;width:95%;max-height:80vh;overflow-y:auto;padding:24px;box-shadow:0 25px 50px rgba(0,0,0,0.25)">';
+      modal += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+      modal += '<h3 style="font-size:18px;font-weight:700;color:#1e293b">' + icon + ' ' + typeName + ' — Detail (' + filtered.length + ' Events)</h3>';
+      modal += '<button onclick="document.getElementById(\'eventDrilldownModal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b">✕</button>';
+      modal += '</div>';
+      
+      if (filtered.length === 0) {
+        modal += '<div style="padding:20px;text-align:center;color:#94a3b8">Keine Events dieses Typs im Analysefenster.</div>';
+      } else {
+        // Brand tabs
+        const brands = Object.keys(byBrand).sort((a,b) => byBrand[b].length - byBrand[a].length);
+        modal += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
+        modal += '<button class="drilldown-brand-btn" onclick="filterDrilldown(\'all\')" style="padding:4px 12px;border-radius:16px;border:1px solid ' + color + ';background:' + color + ';color:white;font-size:12px;font-weight:600;cursor:pointer">Alle (' + filtered.length + ')</button>';
+        brands.forEach(b => {
+          const brandColor = {ERGO:'#c2002f',Allianz:'#003781',AXA:'#00008f','HUK-Coburg':'#006633',Generali:'#c8102e','Signal Iduna':'#005ca9','R+V':'#e30613',DEVK:'#005ea8',Hannoversche:'#007a33','Cosmos Direkt':'#e95d0f'}[b] || '#6b7280';
+          modal += '<button class="drilldown-brand-btn" onclick="filterDrilldown(\'' + b.replace(/'/g,'') + '\')" style="padding:4px 12px;border-radius:16px;border:1px solid ' + brandColor + ';background:white;color:' + brandColor + ';font-size:12px;font-weight:500;cursor:pointer">' + b + ' (' + byBrand[b].length + ')</button>';
+        });
+        modal += '</div>';
+        
+        // Event list
+        modal += '<div id="drilldownEventList" style="display:flex;flex-direction:column;gap:8px">';
+        filtered.forEach(e => {
+          const d = e.detail || {};
+          const date = (e.timestamp || '').substring(0, 10);
+          let detailHtml = '';
+          
+          if (eventType === 'page_change' || eventType === 'page_new') {
+            const url = d.url || '';
+            const sim = d.similarity ? (d.similarity * 100).toFixed(1) + '% Similarity' : '';
+            const added = d.added_lines ? '+' + d.added_lines + ' Zeilen' : '';
+            const removed = d.removed_lines ? '-' + d.removed_lines + ' Zeilen' : '';
+            detailHtml = '<div style="font-size:12px;color:#475569">' + (url ? '<a href="' + url + '" target="_blank" style="color:#3b82f6;text-decoration:underline">' + url.replace(/https?:\/\//, '').substring(0, 60) + '</a>' : '') + '</div>';
+            if (sim || added || removed) detailHtml += '<div style="font-size:11px;color:#94a3b8">' + [sim, added, removed].filter(Boolean).join(' · ') + '</div>';
+            if (d.added_snippets && d.added_snippets.length > 0) {
+              detailHtml += '<div style="font-size:11px;color:#16a34a;margin-top:2px">+ ' + d.added_snippets[0].substring(0, 80) + '</div>';
+            }
+          } else if (eventType === 'domain_change') {
+            detailHtml = '<div style="font-size:12px;color:#475569">' + (d.url || d.domain || '') + '</div>';
+            if (d.change_type) detailHtml += '<div style="font-size:11px;color:#94a3b8">' + d.change_type + '</div>';
+          } else if (eventType === 'news_mention' || eventType === 'press_mention') {
+            const title = d.title || d.headline || '';
+            const src = d.source || d.publisher || '';
+            detailHtml = '<div style="font-size:12px;color:#475569">' + title.substring(0, 80) + '</div>';
+            if (src) detailHtml += '<div style="font-size:11px;color:#94a3b8">' + src + '</div>';
+          } else if (eventType === 'review_change') {
+            detailHtml = '<div style="font-size:12px;color:#475569">' + (d.platform || '') + ': ' + (d.old_rating || '?') + ' → ' + (d.new_rating || '?') + '</div>';
+          } else {
+            detailHtml = '<div style="font-size:12px;color:#475569">' + JSON.stringify(d).substring(0, 120) + '</div>';
+          }
+          
+          modal += '<div class="drilldown-event" data-brand="' + (e.brand || '') + '" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc">';
+          modal += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+          modal += '<span style="font-weight:600;font-size:13px;color:#1e293b">' + (e.brand || 'Unbekannt') + '</span>';
+          modal += '<span style="font-size:11px;color:#94a3b8">' + date + '</span>';
+          modal += '</div>';
+          modal += detailHtml;
+          modal += '</div>';
+        });
+        modal += '</div>';
+      }
+      
+      modal += '</div></div>';
+      
+      // Remove old modal if exists
+      const old = document.getElementById('eventDrilldownModal');
+      if (old) old.remove();
+      
+      document.body.insertAdjacentHTML('beforeend', modal);
+    }
+    
+    function filterDrilldown(brand) {
+      const events = document.querySelectorAll('.drilldown-event');
+      events.forEach(el => {
+        if (brand === 'all' || el.getAttribute('data-brand') === brand) {
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+      // Update button styles
+      document.querySelectorAll('.drilldown-brand-btn').forEach(btn => {
+        if (brand === 'all' && btn.textContent.startsWith('Alle')) {
+          btn.style.fontWeight = '700';
+          btn.style.boxShadow = '0 0 0 2px rgba(99,102,241,0.3)';
+        } else if (btn.textContent.startsWith(brand)) {
+          btn.style.fontWeight = '700';
+          btn.style.boxShadow = '0 0 0 2px rgba(99,102,241,0.3)';
+        } else {
+          btn.style.fontWeight = '500';
+          btn.style.boxShadow = 'none';
+        }
+      });
+    }
+
+    function renderImpactStudy() {
+      var el = document.getElementById('corrImpactStudy');
+      var badge = document.getElementById('impactStudyBadge');
+      var ciRoot = window.CORRELATION_IMPACT;
+      var sel = document.getElementById('impactLlmSel');
+      if (sel && ciRoot && sel.options.length <= 1) {
+        if (ciRoot.by_grounding && ciRoot.by_grounding.grounded) {
+          var og=document.createElement('option'); og.value='__grounded__';
+          og.textContent='Web-gestützt ('+(ciRoot.grounded_llms||[]).join(', ')+')'; sel.appendChild(og);
+        }
+        if (ciRoot.by_grounding && ciRoot.by_grounding.ungrounded) {
+          var ou=document.createElement('option'); ou.value='__ungrounded__';
+          ou.textContent='Nicht web-gestützt ('+(ciRoot.ungrounded_llms||[]).join(', ')+')'; sel.appendChild(ou);
+        }
+        if (ciRoot.by_llm) Object.keys(ciRoot.by_llm).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+      }
+      var bsel = document.getElementById('impactBrandSel');
+      if (bsel && ciRoot && ciRoot.by_brand && bsel.options.length <= 1) {
+        Object.keys(ciRoot.by_brand).sort().forEach(function(b){ var o=document.createElement('option'); o.value=b; o.textContent=b; bsel.appendChild(o); });
+      }
+      var bpick = bsel ? bsel.value : '';
+      var pick = sel ? sel.value : '';
+      // Anbieter-Auswahl hat Vorrang (Marken-Isolierung); sonst LLM-Auswahl; sonst Gesamt
+      var ci = ciRoot;
+      var scopeNote = '';
+      if (bpick && ciRoot && ciRoot.by_brand && ciRoot.by_brand[bpick]) {
+        ci = ciRoot.by_brand[bpick]; scopeNote = 'Nur ' + bpick + ' · ';
+        if (sel) sel.disabled = true;
+      } else {
+        if (sel) sel.disabled = false;
+        if (pick === '__grounded__' && ciRoot.by_grounding && ciRoot.by_grounding.grounded) {
+          ci = ciRoot.by_grounding.grounded; scopeNote = 'Web-gestützte LLMs · ';
+        } else if (pick === '__ungrounded__' && ciRoot.by_grounding && ciRoot.by_grounding.ungrounded) {
+          ci = ciRoot.by_grounding.ungrounded; scopeNote = 'Nicht web-gestützte LLMs · ';
+        } else if (pick && ciRoot && ciRoot.by_llm && ciRoot.by_llm[pick]) {
+          ci = ciRoot.by_llm[pick]; scopeNote = 'LLM: ' + pick + ' · ';
+        }
+      }
+      if (ci && ciRoot && !ci.generated_at) ci.generated_at = ciRoot.generated_at;
+      if (ci && ciRoot && !ci.sov_source) ci.sov_source = ciRoot.sov_source;
+      if (!el) return;
+      if (!ci || !ci.impact) {
+        el.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Noch keine Impact-Berechnung vorhanden. Wird ab dem nächsten Nightly-Run erzeugt (benötigt die dichte SoV-Historie).</div>';
+        if (badge) { badge.textContent = '–'; badge.style.background = '#f1f5f9'; badge.style.color = '#64748b'; }
+        return;
+      }
+      var confMap = {
+        'unzureichend': { bg:'#fee2e2', fg:'#b91c1c', txt:'Datenbasis unzureichend' },
+        'vorlaeufig':   { bg:'#fef3c7', fg:'#b45309', txt:'Vorläufig' },
+        'moderat':      { bg:'#dbeafe', fg:'#1d4ed8', txt:'Moderat belastbar' },
+        'belastbar':    { bg:'#dcfce7', fg:'#15803d', txt:'Belastbar' }
+      };
+      var c = confMap[ci.confidence] || { bg:'#f1f5f9', fg:'#64748b', txt:(ci.confidence||'?') };
+      if (badge) { badge.textContent = c.txt + ' · ' + (ci.sov_measure_days||0) + ' Messtage'; badge.style.background = c.bg; badge.style.color = c.fg; }
+      var rows = Object.keys(ci.impact || {}).map(function(k){ return ci.impact[k]; });
+      var range = ci.sov_measure_range || [];
+      var note = '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px">' + scopeNote + (ci.confidence_note||'') +
+        ' · Quelle: ' + (ci.sov_source === 'sov_history' ? 'dichte SoV-Historie' : 'SoV-Änderungs-Events') +
+        ' · Zeitraum: ' + (range[0]||'?') + '–' + (range[1]||'?') +
+        ' · Stand: ' + ((ci.generated_at||'').slice(0,10)) + '</div>';
+      if (!rows.length) { el.innerHTML = note + '<div class="text-center py-4 text-gray-400 text-sm">Noch keine Ereignis-Intervalle mit messbarem Effekt.</div>'; return; }
+      var maxAbs = Math.max.apply(null, rows.map(function(r){ return Math.abs(r.avg_sov_effect_pp||0); }).concat([0.01]));
+      var tcMap = {unzureichend:['#fee2e2','#b91c1c'], vorlaeufig:['#fef3c7','#b45309'], moderat:['#dbeafe','#1d4ed8'], belastbar:['#dcfce7','#15803d']};
+      var html = note + '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">' +
+        '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Ø Effekt (Pp/Tag)</th><th style="padding:6px 8px;text-align:right">95%-Konfidenz&shy;intervall</th><th style="padding:6px 8px;text-align:center">Aussagekraft</th><th style="padding:6px 8px;text-align:right">ρ</th><th style="padding:6px 8px;text-align:right">Interv. (mit Event)</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        var eff = r.avg_sov_effect_pp; var pos = (eff||0) >= 0;
+        var w = Math.round(Math.abs(eff||0)/maxAbs*100);
+        var bar = '<div style="display:inline-block;vertical-align:middle;width:80px;height:8px;background:#f1f5f9;border-radius:4px;margin-right:6px;position:relative"><div style="position:absolute;' + (pos?'left':'right') + ':50%;width:' + (w/2) + '%;height:8px;background:' + (pos?'#16a34a':'#dc2626') + ';border-radius:4px"></div></div>';
+        var tc = r.type_confidence ? (tcMap[r.type_confidence]||['#f1f5f9','#64748b']) : null;
+        var chip = tc ? ' <span style="font-size:10px;padding:1px 6px;border-radius:8px;background:'+tc[0]+';color:'+tc[1]+'">'+r.type_confidence+'</span>' : '';
+        var rho = (r.spearman_r!=null) ? r.spearman_r : (r.pearson_r!=null ? r.pearson_r : '–');
+        var ciTxt = (r.ci95_low_pp!=null && r.ci95_high_pp!=null)
+          ? ((r.ci95_low_pp>0?'+':'')+r.ci95_low_pp.toFixed(1)+' … '+(r.ci95_high_pp>0?'+':'')+r.ci95_high_pp.toFixed(1))
+          : '<span style="color:#cbd5e1">—</span>';
+        var sig = r.significant;
+        var sigChip = (sig===true)
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>'
+          : (sig===false)
+            ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ Zufall mögl.</span>'
+            : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#94a3b8">zu wenig</span>';
+        html += '<tr style="border-bottom:1px solid #f1f5f9">' +
+          '<td style="padding:6px 8px;color:#1e293b">' + (r.label||'') + chip + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#64748b;white-space:nowrap">' + ciTxt + '</td>' +
+          '<td style="padding:6px 8px;text-align:center">' + sigChip + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#475569">' + rho + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#475569">' + (r.n_intervals||0) + ' (' + (r.n_with_event||0) + ')</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+      html += '<div style="margin-top:8px;font-size:11px;color:#64748b;line-height:1.5">'
+        + '<b>Lesehilfe:</b> Der <b>Ø Effekt</b> ist die geschätzte SoV-Veränderung an Tagen mit diesem Ereignis (in Prozentpunkten pro Tag). '
+        + 'Das <b>95%-Konfidenzintervall</b> gibt die Spanne an, in der der wahre Effekt mit 95% Wahrscheinlichkeit liegt. '
+        + '<b>Aussagekraft „✓ gesichert“</b> = das Intervall schließt die Null aus (Effekt statistisch belegt); '
+        + '<b>„~ Zufall mögl.“</b> = Spanne umfasst die Null, der Effekt kann noch Zufall sein. '
+        + '<b>ρ</b> = Rang-Korrelation Eventzahl ↔ SoV (−1…+1). Alle Werte werden mit jedem Mess-Tag präziser.</div>';
+      if (ci.confidence === 'unzureichend' || ci.confidence === 'vorlaeufig') {
+        html += '<div style="margin-top:10px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Diese Werte sind noch nicht statistisch belastbar. Die Schätzungen werden mit jedem weiteren Mess-Tag genauer.</div>';
+      }
+      // ===== Multivariates Modell (isolierte Effekte, nur Gesamt-Ansicht) =====
+      var mv = ci.multivariate;
+      if (mv && mv.available && mv.coefficients && Object.keys(mv.coefficients).length) {
+        html += '<div style="margin-top:18px;padding-top:14px;border-top:2px solid #e2e8f0">';
+        html += '<div style="font-weight:700;color:#1e293b;font-size:13px;margin-bottom:2px">🔬 Multivariates Modell — isolierte Effekte</div>';
+        html += '<div style="font-size:11px;color:#64748b;margin-bottom:8px">Alle Treiber <b>gleichzeitig</b> geschätzt (Bayes-Panel-Regression, Marken-+Zeit-Fixed-Effects, Partial Pooling). Zeigt den Beitrag jeder Kategorie <b>bereinigt um die anderen</b>. <b>P(&gt;0)</b> = Wahrscheinlichkeit eines positiven Effekts. <b>Koeffizient = Pp je <u>einzelnem</u> Event dieser Art</b> (die Pro-Tag-Normalisierung kürzt sich heraus; magnitude-gewichtet).</div>';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+          + '<th style="padding:6px 8px">Ereignis-Typ</th><th style="padding:6px 8px;text-align:right">Koeffizient (Pp)</th><th style="padding:6px 8px;text-align:right">95%-Glaubw.-Intervall</th><th style="padding:6px 8px;text-align:right">P(&gt;0)</th><th style="padding:6px 8px;text-align:center">Aussagekraft</th><th style="padding:6px 8px;text-align:right">Interv. mit Event</th></tr></thead><tbody>';
+        Object.keys(mv.coefficients).forEach(function(k){
+          var r = mv.coefficients[k]; var b = r.coef_pp_per_event_day; var pos = (b||0) >= 0;
+          var ciT = (r.ci95_low!=null && r.ci95_high!=null) ? ((r.ci95_low>0?'+':'')+r.ci95_low.toFixed(2)+' … '+(r.ci95_high>0?'+':'')+r.ci95_high.toFixed(2)) : '—';
+          var pp = (r.prob_positive!=null) ? Math.round(r.prob_positive*100)+'%' : '—';
+          var sg = (r.significant ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>' : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ unsicher</span>');
+          html += '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#1e293b">'+(r.label||k)+'</td>'
+            + '<td style="padding:6px 8px;text-align:right;font-weight:600;color:'+(pos?'#15803d':'#b91c1c')+'">'+(pos?'+':'')+(b!=null?b.toFixed(3):'–')+'</td>'
+            + '<td style="padding:6px 8px;text-align:right;color:#64748b;white-space:nowrap">'+ciT+'</td>'
+            + '<td style="padding:6px 8px;text-align:right;color:#475569">'+pp+'</td>'
+            + '<td style="padding:6px 8px;text-align:center">'+sg+'</td>'
+            + '<td style="padding:6px 8px;text-align:right;color:#475569">'+(r.n_with_event||0)+'</td></tr>';
+        });
+        html += '</tbody></table>';
+        var exTxt = (mv.types_excluded_too_few && mv.types_excluded_too_few.length) ? (' · ausgelassen (zu wenige Events): '+mv.types_excluded_too_few.join(', ')) : '';
+        html += '<div style="margin-top:6px;font-size:11px;color:#94a3b8">'+mv.n_points+' Intervalle · '+mv.n_brands+' Marken'+(mv.pooled_prior?' · Partial Pooling':'')+exTxt+'. '+(mv.note||'')+'</div>';
+        if (mv.exploratory) html += '<div style="margin-top:8px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Explorativ: dieses Segment hat &lt;20 Intervalle/Messtage — Einzeleffekte sind hier nicht gesichert, nur Tendenz.</div>';
+        var vd = ci.validation;
+        if (vd) {
+          var fp = (vd.placebo_false_positive_rate!=null) ? (Math.round(vd.placebo_false_positive_rate*1000)/10)+'%' : '—';
+          var oos = (vd.out_of_sample && vd.out_of_sample.r2_oos_vs_baseline!=null) ? vd.out_of_sample.r2_oos_vs_baseline.toFixed(2) : '—';
+          var oosGood = vd.out_of_sample && vd.out_of_sample.r2_oos_vs_baseline > 0;
+          html += '<div style="margin-top:10px;font-size:11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px;color:#334155">'
+            + '<b>Modell-Validierung:</b> Placebo-Falsch-Positiv-Rate <b>'+fp+'</b> (Ziel ≈5 % — niedriger = konservativ/ehrlich). '
+            + 'Out-of-Sample-Güte <b style="color:'+(oosGood?'#15803d':'#b91c1c')+'">r²='+oos+'</b> ggü. Marken-Basislinie — '
+            + (oosGood ? 'die Treiber verbessern die SoV-Vorhersage.' : 'die Treiber verbessern die Vorhersage <b>noch nicht</b> (zu wenige Messtage; wächst mit der Zeit).')
+            + '</div>';
+        }
+        html += '</div>';
+      } else if (mv && !mv.available && !bpick && !pick) {
+        html += '<div style="margin-top:14px;font-size:11px;color:#94a3b8">🔬 Multivariates Modell: '+(mv.note||'noch nicht verfügbar')+'</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    function buildInterventions(){
+      var host=document.getElementById('corrInterventions'); if(!host) return;
+      var d=window.INTERVENTIONS;
+      if(!d || !d.results || !d.results.length){
+        host.innerHTML='<div class="text-sm text-gray-400 py-2">Noch keine auswertbaren Maßnahmen. Trage datierte Maßnahmen in <code>data/interventions.json</code> ein — der nächste Nightly-Lauf misst ihre Wirkung.</div>';
+        return;
+      }
+      var h='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+        +'<th style="padding:6px 8px">Datum</th><th style="padding:6px 8px">Marke</th><th style="padding:6px 8px">Maßnahme</th>'
+        +'<th style="padding:6px 8px;text-align:right">Effekt (Pp)</th><th style="padding:6px 8px;text-align:center">Sicherheit</th><th style="padding:6px 8px">Quelle</th></tr></thead><tbody>';
+      d.results.forEach(function(r){
+        var pos=(r.did_pp||0)>=0; var strong=(r.p_placebo!=null && r.p_placebo<0.1);
+        var sig = strong
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">deutlich (p='+r.p_placebo.toFixed(2)+')</span>'
+          : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">unsicher (p='+(r.p_placebo!=null?r.p_placebo.toFixed(2):'?')+')</span>';
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#475569">'+r.date+'</td>'
+          +'<td style="padding:6px 8px;font-weight:600">'+r.brand+'</td>'
+          +'<td style="padding:6px 8px;color:#1e293b">'+(r.label||'')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+(pos?'#15803d':'#b91c1c')+'">'+(pos?'+':'')+r.did_pp+'</td>'
+          +'<td style="padding:6px 8px;text-align:center">'+sig+'</td>'
+          +'<td style="padding:6px 8px;color:#94a3b8;font-size:11px">'+(r.source||'')+'</td></tr>';
+      });
+      h+='</tbody></table>';
+      h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">'+(d.note||'')+' · Fenster: ±'+(d.window_days||7)+' Tage · '+(d.measure_days||0)+' Messtage gesamt.</div>';
+      host.innerHTML=h;
+    }
+
+    function renderCorrelationTab() {
+    CORRELATION_EVENTS = window.CORRELATION_EVENTS || [];
+    try { renderImpactStudy(); } catch(e){ console.warn('impactStudy:', e.message); }
+    try { buildInterventions(); } catch(e){ console.warn('interventions:', e.message); }
+    const EI = { review_change:'⭐', press_mention:'📰', news_mention:'🗞️', page_change:'🌐', page_new:'🆕', domain_change:'🔗', sov_change:'📈', berater_shift:'👥', review_volume:'📊', rating_update:'🏆', wikipedia_change:'📚', portal_rank_change:'🛒', rating_status_change:'🏅' };
+    const EC = { review_change:'#f59e0b', press_mention:'#3b82f6', news_mention:'#6366f1', page_change:'#8b5cf6', page_new:'#06b6d4', domain_change:'#14b8a6', sov_change:'#ef4444', berater_shift:'#ec4899', review_volume:'#f59e0b', rating_update:'#10b981', wikipedia_change:'#0ea5e9', portal_rank_change:'#f97316', rating_status_change:'#eab308' };
+    const EN = { review_change:'Bewertungen', press_mention:'Presse', news_mention:'News', page_change:'Seitenänderungen', page_new:'Neue Seiten', domain_change:'Domain', sov_change:'SoV', berater_shift:'Berater', review_volume:'Review-Volumen', rating_update:'Rating-Update', wikipedia_change:'Wikipedia', portal_rank_change:'Portal-Rang', rating_status_change:'Testsieger-Status' };
+    const BC = { 'ERGO':'#c2002f','Allianz':'#003781','AXA':'#00008f','HUK-Coburg':'#006633','Generali':'#c8102e','R+V':'#004f9f','Signal Iduna':'#003e7e','Cosmos Direkt':'#f59e0b','DEVK':'#10b981','Hannoversche':'#6366f1' };
+    const defC = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6'];
+
+    if (!CORRELATION_EVENTS || CORRELATION_EVENTS.length === 0) {
+      ['corrKPIs','corrHeatmap','corrSovChart','corrMentions','corrStream'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">🔍 Noch keine Daten</p><p class="text-sm">Die Korrelations-Engine sammelt Events bei jedem Nightly-Run.</p></div>';
+      });
+      return;
+    }
+
+    // ── Daten aufbereiten: letzte 14 Tage ──
+    const allDates = [...new Set(CORRELATION_EVENTS.map(e => (e.timestamp||'').substring(0,10)))].sort();
+    const latestDate = allDates[allDates.length - 1];
+    const cutoff14 = new Date(new Date(latestDate).getTime() - 13*86400000).toISOString().substring(0,10);
+    const events14 = CORRELATION_EVENTS.filter(e => (e.timestamp||'').substring(0,10) >= cutoff14);
+    const allSov = events14.filter(e => e.event_type === 'sov_change');
+    const sovPct = allSov.filter(e => (e.detail||{}).metric === 'share_of_voice_pct' && e.detail.old_pct !== undefined);
+    const mentions = allSov.filter(e => (e.detail||{}).metric === 'mentions');
+    const nonSov = events14.filter(e => e.event_type !== 'sov_change');
+    const days14 = [...new Set(events14.map(e => (e.timestamp||'').substring(0,10)))].sort();
+    const brands = [...new Set(events14.map(e => e.brand))].sort((a,b) => a==='ERGO'?-1:b==='ERGO'?1:a.localeCompare(b));
+    const activeTypes = [...new Set(nonSov.map(e => e.event_type))].sort();
+
+    // ── 1. KPI-Cards ──
+    const kpiEl = document.getElementById('corrKPIs');
+    if (kpiEl) {
+      const ergoSov = sovPct.filter(e => e.brand === 'ERGO').sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+      const ergoTrend = ergoSov.length > 0 ? ergoSov[0].detail.new_pct - ergoSov[0].detail.old_pct : null;
+      const ergoLatest = ergoSov.length > 0 ? ergoSov[0].detail.new_pct : null;
+      const totalMentionDelta = mentions.reduce((s,e) => s + ((e.detail.new_mentions||0) - (e.detail.old_mentions||0)), 0);
+
+      function kpiCard(icon, label, value, sub, accent) {
+        return '<div class="rounded-xl p-4 border border-gray-200 bg-gradient-to-br from-white to-gray-50">'
+          + '<div class="text-2xl mb-1">' + icon + '</div>'
+          + '<div class="text-2xl font-bold" style="color:' + (accent||'#1e293b') + '">' + value + '</div>'
+          + '<div class="text-xs font-medium text-gray-600">' + label + '</div>'
+          + (sub ? '<div class="text-xs text-gray-400 mt-1">' + sub + '</div>' : '')
+          + '</div>';
+      }
+
+      kpiEl.innerHTML = kpiCard('📊', 'Events (14 Tage)', events14.length, brands.length + ' Brands, ' + days14.length + ' Tage')
+        + kpiCard('📈', 'ERGO SoV', ergoLatest !== null ? ergoLatest.toFixed(1) + '%' : '–', ergoTrend !== null ? (ergoTrend >= 0 ? '↑ +' : '↓ ') + ergoTrend.toFixed(1) + ' Pp' : 'Kein GEO-Run', ergoTrend !== null ? (ergoTrend >= 0 ? '#16a34a' : '#dc2626') : '#6b7280')
+        + kpiCard('🗣️', 'Mention-Trend', totalMentionDelta !== 0 ? (totalMentionDelta > 0 ? '+' : '') + totalMentionDelta : '–', mentions.length + ' Messungen')
+        + kpiCard('📰', 'Presse & News', nonSov.filter(e => e.event_type==='press_mention'||e.event_type==='news_mention').length, 'Artikel in 14 Tagen');
+    }
+
+    // ── 2. Tages-Heatmap (ausgelagert, mit Anbieter-Filter) ──
+    window._corrDays14 = days14;
+    __renderCorrHeatmap();
+
+    // ── 3. SoV-Chart ──
+    const sovEl = document.getElementById('corrSovChart');
+    const sovSumEl = document.getElementById('corrSovSummary');
+    if (sovEl) {
+      if (sovPct.length > 0) {
+        const sovByBrand = {};
+        sovPct.forEach(e => {
+          const d = (e.timestamp||'').substring(0,10);
+          if (!sovByBrand[e.brand]) sovByBrand[e.brand] = {};
+          sovByBrand[e.brand][d] = e.detail.new_pct;
+        });
+        const sovDates = [...new Set(sovPct.map(e => (e.timestamp||'').substring(0,10)))].sort();
+
+        const datasets = Object.entries(sovByBrand).map(([brand, dm], idx) => {
+          const c = BC[brand] || defC[idx % defC.length];
+          return {
+            label: brand,
+            data: sovDates.map(d => dm[d] !== undefined ? dm[d] : null),
+            backgroundColor: brand === 'ERGO' ? c : c + '88',
+            borderColor: c,
+            borderWidth: brand === 'ERGO' ? 3 : 1,
+            borderRadius: 4,
+            barPercentage: 0.85,
+            categoryPercentage: 0.9,
+            order: brand === 'ERGO' ? 0 : 1
+          };
+        }).sort((a,b) => a.label==='ERGO'?-1:b.label==='ERGO'?1:a.label.localeCompare(b.label));
+
+        const canvas = document.createElement('canvas');
+        canvas.height = 350;
+        sovEl.innerHTML = '';
+        sovEl.appendChild(canvas);
+        try {
+          new Chart(canvas, {
+            type: 'bar',
+            data: { labels: sovDates, datasets },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y !== null ? ctx.parsed.y.toFixed(1) + '%' : 'k.A.') } }
+              },
+              scales: {
+                y: { title: { display: true, text: 'Share of Voice (%)' }, beginAtZero: true, ticks: { callback: v => v + '%' } },
+                x: { title: { display: true, text: 'GEO-Messung' }, ticks: { maxRotation: 45 } }
+              },
+              interaction: { mode: 'index', intersect: false }
+            }
+          });
+        } catch(e) { sovEl.innerHTML = '<p class="text-gray-400 text-sm">Chart.js nicht geladen.</p>'; }
+
+        // Zusammenfassung
+        if (sovSumEl) {
+          const latest = sovDates[sovDates.length - 1];
+          const latestEvs = sovPct.filter(e => (e.timestamp||'').substring(0,10) === latest);
+          const up = latestEvs.filter(e => e.detail.new_pct > e.detail.old_pct).sort((a,b) => (b.detail.new_pct-b.detail.old_pct)-(a.detail.new_pct-a.detail.old_pct));
+          const down = latestEvs.filter(e => e.detail.new_pct < e.detail.old_pct).sort((a,b) => (a.detail.new_pct-a.detail.old_pct)-(b.detail.new_pct-b.detail.old_pct));
+          let sh = '<div class="p-3 bg-gray-50 rounded-lg text-sm">';
+          sh += '<span class="text-xs text-gray-500 font-medium">Letzte Messung (' + latest + '):</span><br>';
+          if (up.length) sh += '<span class="text-green-700">↑ ' + up.map(e => e.brand + ' (+' + (e.detail.new_pct-e.detail.old_pct).toFixed(1) + ')').join(', ') + '</span>';
+          if (up.length && down.length) sh += ' · ';
+          if (down.length) sh += '<span class="text-red-700">↓ ' + down.map(e => e.brand + ' (' + (e.detail.new_pct-e.detail.old_pct).toFixed(1) + ')').join(', ') + '</span>';
+          sh += '</div>';
+          sovSumEl.innerHTML = sh;
+        }
+      } else {
+        sovEl.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">📊 Noch keine SoV-Messungen</p><p class="text-sm">SoV-Daten werden nach dem nächsten GEO-Run erfasst.</p></div>';
+      }
+    }
+
+    // ── 5. Mention-Tracking ──
+    const menEl = document.getElementById('corrMentions');
+    const menSumEl = document.getElementById('corrMentionSummary');
+    if (menEl) {
+      if (mentions.length > 0) {
+        const mByBD = {};
+        mentions.forEach(e => {
+          const d = (e.timestamp||'').substring(0,10);
+          if (!mByBD[e.brand]) mByBD[e.brand] = {};
+          mByBD[e.brand][d] = (mByBD[e.brand][d]||0) + (e.detail.new_mentions||0);
+        });
+        const mDates = [...new Set(mentions.map(e => (e.timestamp||'').substring(0,10)))].sort();
+        const mDS = Object.entries(mByBD).map(([brand, dm], idx) => {
+          const c = BC[brand] || defC[idx % defC.length];
+          return { label: brand, data: mDates.map(d => dm[d]||0), backgroundColor: brand==='ERGO'?c:c+'88', borderColor: c, borderWidth: brand==='ERGO'?3:1, borderRadius: 4, barPercentage: 0.85, categoryPercentage: 0.9 };
+        }).sort((a,b) => a.label==='ERGO'?-1:b.label==='ERGO'?1:a.label.localeCompare(b.label));
+
+        const canvas = document.createElement('canvas');
+        canvas.height = 300;
+        menEl.innerHTML = '';
+        menEl.appendChild(canvas);
+        try {
+          new Chart(canvas, {
+            type: 'bar',
+            data: { labels: mDates, datasets: mDS },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' Mentions' } }
+              },
+              scales: {
+                y: { title: { display: true, text: 'Mentions' }, beginAtZero: true },
+                x: { title: { display: true, text: 'Datum' }, ticks: { maxRotation: 45 } }
+              },
+              interaction: { mode: 'index', intersect: false }
+            }
+          });
+        } catch(e) {}
+
+        // Zusammenfassung
+        if (menSumEl) {
+          const totals = Object.entries(mByBD).map(([brand, dm]) => ({ brand, total: Object.values(dm).reduce((s,v)=>s+v,0) })).sort((a,b)=>b.total-a.total);
+          let mh = '<div class="p-3 bg-gray-50 rounded-lg flex flex-wrap gap-2">';
+          totals.forEach(b => {
+            const c = BC[b.brand] || '#666';
+            mh += '<span class="px-2 py-1 rounded text-xs font-medium" style="background:'+c+'15;color:'+c+'">' + b.brand + ': ' + b.total + '</span>';
+          });
+          mh += '</div>';
+          menSumEl.innerHTML = mh;
+        }
+      } else {
+        menEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p>Noch keine Mention-Tracking-Daten.</p></div>';
+      }
+    }
+
+    // ── 6. Event-Stream mit Filtern ──
+    const filterEl = document.getElementById('corrFilters');
+    const streamEl = document.getElementById('corrStream');
+    if (filterEl && streamEl && nonSov.length > 0) {
+      // Filter-Buttons
+      let fh = '<button onclick="filterCorrelationStream(\'all\')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-800 text-white hover:bg-gray-700 transition-colors" data-corr-filter="all">Alle (' + nonSov.length + ')</button>';
+      activeTypes.forEach(t => {
+        const icon = EI[t] || '📌';
+        const count = nonSov.filter(e => e.event_type === t).length;
+        fh += '<button onclick="filterCorrelationStream(\'' + t + '\')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-corr-filter="' + t + '">' + icon + ' ' + (EN[t]||t) + ' (' + count + ')</button>';
+      });
+      filterEl.innerHTML = fh;
+
+      // Stream: nach Tag gruppiert
+      window._corrNonSov = nonSov; // for filter function
+      window._corrEI = EI;
+      window._corrEC = EC;
+      window._corrEN = EN;
+      renderCorrelationStream('all');
+    }
+
+    // ── Status ──
+    const statEl = document.getElementById('correlationDataStatus');
+    if (statEl) {
+      const dateRange = days14.length >= 2 ? days14[0] + ' bis ' + days14[days14.length-1] : (days14[0] || 'keine Daten');
+      statEl.textContent = events14.length + ' Events (' + dateRange + '), ' + allSov.length + ' SoV-Messungen (' + sovPct.length + ' SoV%, ' + mentions.length + ' Mentions), ' + nonSov.length + ' Aktivitäten';
+    }
+  }
+
+  window.__renderCorrHeatmap = function(){
+    const hmEl = document.getElementById('corrHeatmap');
+    const days14 = window._corrDays14 || [];
+    let nonSov = window._corrNonSov || [];
+    const sel = document.getElementById('corrHmBrandSel');
+    if (sel && sel.options.length <= 1 && nonSov.length) {
+      const bs = {}; nonSov.forEach(e => { if (e.brand) bs[e.brand] = 1; });
+      Object.keys(bs).sort().forEach(b => { const o = document.createElement('option'); o.value = b; o.textContent = b; sel.appendChild(o); });
+    }
+    const pick = sel ? sel.value : '';
+    if (pick) nonSov = nonSov.filter(e => e.brand === pick);
+    if (!hmEl || !days14.length) return;
+    const grid = {};
+    nonSov.forEach(e => {
+      const dd = (e.timestamp||'').substring(0,10);
+      const t = e.event_type;
+      if (!grid[t]) grid[t] = {};
+      grid[t][dd] = (grid[t][dd] || 0) + 1;
+    });
+    const EN = window._corrEN || {};
+    const types = Object.keys(grid).sort((a,b) => {
+      const sa = Object.values(grid[a]).reduce((x,y)=>x+y,0);
+      const sb = Object.values(grid[b]).reduce((x,y)=>x+y,0);
+      return sb - sa;
+    });
+    if (!types.length) { hmEl.innerHTML = '<div class="text-sm text-gray-400 py-3">Keine Events für ' + (pick||'alle Anbieter') + ' im Zeitraum.</div>'; return; }
+    const maxVal = Math.max(...types.flatMap(t => Object.values(grid[t])), 1);
+    let h = '<table style="border-collapse:collapse;width:100%;font-size:12px;">';
+    h += '<thead><tr><th style="text-align:left;padding:6px 8px;font-weight:600;color:#64748b;min-width:140px;">Event-Typ</th>';
+    days14.forEach(dd => {
+      const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(dd+'T12:00:00').getDay()];
+      h += '<th style="text-align:center;padding:4px 2px;font-weight:500;color:#94a3b8;min-width:44px;">' + wd + '<br><span style="font-size:10px;">' + dd.substring(5) + '</span></th>';
+    });
+    h += '<th style="text-align:center;padding:4px 8px;font-weight:600;color:#64748b;">Σ</th></tr></thead><tbody>';
+    types.forEach(t => {
+      const sum = Object.values(grid[t]).reduce((x,y)=>x+y,0);
+      h += '<tr style="border-top:1px solid #f1f5f9;"><td style="padding:6px 8px;font-weight:600;color:#334155;">' + (EN[t]||t) + '</td>';
+      days14.forEach(dd => {
+        const v = grid[t][dd] || 0;
+        const alpha = v ? (0.15 + 0.85 * v / maxVal) : 0;
+        h += '<td style="text-align:center;padding:4px 2px;background:rgba(220,0,40,' + alpha.toFixed(2) + ');color:' + (alpha > 0.5 ? '#fff' : '#334155') + ';">' + (v || '·') + '</td>';
+      });
+      h += '<td style="text-align:center;padding:4px 8px;font-weight:700;color:#1e293b;">' + sum + '</td></tr>';
+    });
+    h += '<tr style="border-top:2px solid #e2e8f0;"><td style="padding:6px 8px;font-weight:700;color:#475569;">Gesamt</td>';
+    days14.forEach(dd => {
+      const dayTotal = nonSov.filter(e => (e.timestamp||'').substring(0,10) === dd).length;
+      h += '<td style="text-align:center;padding:4px 2px;font-weight:700;color:#475569;">' + (dayTotal || '·') + '</td>';
+    });
+    h += '<td style="text-align:center;padding:4px 8px;font-weight:800;color:#1e293b;">' + nonSov.length + '</td></tr>';
+    h += '</tbody></table>';
+    hmEl.innerHTML = h;
+  };
+
+  function renderCorrelationStream(filter) {
+    const streamEl = document.getElementById('corrStream');
+    if (!streamEl || !window._corrNonSov) return;
+    const EI = window._corrEI, EC = window._corrEC, EN = window._corrEN;
+    const events = filter === 'all' ? window._corrNonSov : window._corrNonSov.filter(e => e.event_type === filter);
+
+    // Update filter button styles
+    document.querySelectorAll('[data-corr-filter]').forEach(btn => {
+      if (btn.getAttribute('data-corr-filter') === filter) {
+        btn.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-gray-800 text-white hover:bg-gray-700 transition-colors';
+      } else {
+        btn.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors';
+      }
+    });
+
+    // Limit events for performance (max 100, with "load more" button)
+    const MAX_STREAM = 100;
+    const sorted = events.slice().sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
+    const limited = sorted.slice(0, MAX_STREAM);
+    const hasMore = events.length > MAX_STREAM;
+
+    // Group by day
+    const byDay = {};
+    limited.forEach(e => {
+      const d = (e.timestamp||'').substring(0,10);
+      if (!byDay[d]) byDay[d] = [];
+      byDay[d].push(e);
+    });
+    const days = Object.keys(byDay).sort().reverse();
+
+    let sh = '';
+    if (hasMore) {
+      sh += '<div class="text-xs text-gray-500 mb-3 px-1">Zeige die neuesten ' + MAX_STREAM + ' von ' + events.length + ' Events</div>';
+    }
+    days.forEach(day => {
+      const wd = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date(day+'T12:00:00').getDay()];
+      const evts = byDay[day];
+      sh += '<div class="mb-4">';
+      sh += '<div class="flex items-center gap-2 mb-2 sticky top-0 bg-white py-1 z-10 border-b border-gray-100">';
+      sh += '<span class="text-xs font-bold text-gray-500 uppercase">' + wd + ', ' + day + '</span>';
+      sh += '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">' + evts.length + ' Events</span>';
+      sh += '</div>';
+      sh += '<div class="space-y-1.5">';
+      evts.forEach((ev, _ei) => {
+        const eid = 'csv_' + day.replace(/-/g,'') + '_' + _ei;
+        const icon = EI[ev.event_type] || '📌';
+        const color = EC[ev.event_type] || '#999';
+        const time = (ev.timestamp||'').substring(11,16);
+        const d = ev.detail || {};
+        var srcUrl = d.url || ev.url || '';
+        var srcLink = srcUrl ? (/^https?:\/\//.test(srcUrl) ? srcUrl : ('https://'+srcUrl)) : '';
+        let desc = '';
+        if (d.title) desc = d.title;
+        else if (srcUrl) desc = srcUrl.replace(/https?:\/\/(www\.)?/, '').substring(0,70);
+        else if (d.metric === 'total_subdomains') desc = 'Subdomains: ' + (d.old_count||0) + ' → ' + (d.new_count||0);
+        else if (d.metric === 'average_rating') desc = 'Rating: ' + (d.old_value||0) + ' → ' + (d.new_value||0);
+        else if (d.similarity !== undefined) desc = 'Similarity: ' + ((d.similarity||0)*100).toFixed(1) + '% | +' + (d.added_lines||0) + '/-' + (d.removed_lines||0) + ' Zeilen';
+
+        var det = '';
+        if (srcLink) det += '<div class="mb-1"><a href="' + srcLink + '" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">\ud83d\udd17 ' + srcLink + '</a></div>';
+        var al = d.added_lines, rl = d.removed_lines;
+        if (Array.isArray(al) || Array.isArray(rl)) {
+          det += '<div class="text-xs font-mono bg-gray-50 rounded p-2 max-h-56 overflow-auto">';
+          (rl||[]).slice(0,30).forEach(function(l){ det += '<div class="text-red-700">- ' + (''+l).replace(/[<>&]/g,'') + '</div>'; });
+          (al||[]).slice(0,30).forEach(function(l){ det += '<div class="text-emerald-700">+ ' + (''+l).replace(/[<>&]/g,'') + '</div>'; });
+          det += '</div>';
+        }
+        var skip = {added_lines:1, removed_lines:1, url:1};
+        var fields = Object.keys(d).filter(function(k){ return !skip[k] && d[k]!=null && typeof d[k]!=='object'; });
+        if (fields.length) {
+          det += '<div class="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-600">';
+          fields.forEach(function(k){ det += '<span><b>' + k + ':</b> ' + (''+d[k]).replace(/[<>&]/g,'').slice(0,60) + '</span>'; });
+          det += '</div>';
+        }
+        if (ev.source) det += '<div class="mt-1 text-xs text-gray-400">Quelle: ' + ev.source + (ev.crawler?(' · '+ev.crawler):'') + '</div>';
+        if (!det) det = '<div class="text-xs text-gray-400">Keine weiteren Details gespeichert.</div>';
+        sh += '<div style="border-left:3px solid ' + color + '">';
+        sh += '<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="(function(el){var x=document.getElementById(\''+eid+'\');var a=el.querySelector(\'.cs-arr\');if(x){var h=x.classList.toggle(\'hidden\');if(a)a.textContent=h?\'▸\':\'▾\';}})(this)">';
+        sh += '<span class="cs-arr text-gray-400 flex-shrink-0 mt-0.5 text-xs">▸</span>';
+        sh += '<span class="text-base flex-shrink-0 mt-0.5">' + icon + '</span>';
+        sh += '<div class="flex-1 min-w-0">';
+        sh += '<div class="flex items-center gap-2 flex-wrap">';
+        sh += '<span class="font-semibold text-sm">' + ev.brand + '</span>';
+        sh += '<span class="text-xs px-1.5 py-0.5 rounded" style="background:' + color + '15;color:' + color + '">' + (EN[ev.event_type]||ev.event_type) + '</span>';
+        if (ev.product) sh += '<span class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">' + ev.product + '</span>';
+        sh += '</div>';
+        if (desc) sh += '<p class="text-xs text-gray-500 truncate mt-0.5">' + desc + '</p>';
+        sh += '</div>';
+        if (srcLink) sh += '<a href="' + srcLink + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-blue-600 hover:underline flex-shrink-0 mt-0.5" title="Quelle \u00f6ffnen">\u2197 Quelle</a>';
+        sh += '<span class="text-xs text-gray-400 flex-shrink-0">' + time + '</span>';
+        sh += '</div>';
+        sh += '<div id="' + eid + '" class="hidden px-8 pb-2">' + det + '</div>';
+        sh += '</div>';
+      });
+      sh += '</div></div>';
+    });
+
+    if (events.length === 0) sh = '<div class="text-center py-6 text-gray-400"><p class="text-sm">Keine Events für diesen Filter.</p></div>';
+    streamEl.innerHTML = sh;
+  }
+
+  window.filterCorrelationStream = function(filter) { renderCorrelationStream(filter); };
+
+  
+  window.renderCorrelationTab = renderCorrelationTab;
+  window.renderImpactStudy = renderImpactStudy;
+  window.showEventDrilldown = showEventDrilldown;
+  window.filterDrilldown = filterDrilldown;
+
+  function loadJSON(p){ return fetch(p,{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}); }
+  function loadEvents(){
+    return fetch("shared/events.jsonl",{cache:"no-store"}).then(function(r){ return r.ok?r.text():""; }).then(function(t){
+      var cutoff=new Date(Date.now()-90*24*3600*1000).toISOString().slice(0,10); var out=[];
+      (t||"").split("\n").forEach(function(line){ line=line.trim(); if(!line) return;
+        try{ var e=JSON.parse(line); if((e.timestamp||"").slice(0,10)>=cutoff) out.push(e); }catch(x){} });
+      return out;
+    }).catch(function(){ return []; });
+  }
+  function boot(){
+    Promise.all([loadEvents(), loadJSON("data/correlation_impact.json"), loadJSON("data/intervention_results.json")])
+      .then(function(res){
+        if(res[0] && res[0].length) window.CORRELATION_EVENTS = res[0];
+        if(res[1]) window.CORRELATION_IMPACT = res[1];
+        if(res[2]) window.INTERVENTIONS = res[2];
+        try{ renderCorrelationTab(); }catch(e){ console.warn("korr init:", e.message); }
+      });
+  }
+  if(document.readyState!=="loading") boot(); else document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
+<script src="korrelation_upgrade.js"></script>
+<script src="gap_waterfall.js"></script>
+

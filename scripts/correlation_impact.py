@@ -41,6 +41,7 @@ HISTORY_FILE = Path("data/sov_history.jsonl")  # dichte SoV-Messreihe (Vorrang)
 REVIEW_HISTORY_FILE = Path("data/review_history.json")
 OUT_FILE = Path("data/correlation_impact.json")
 PRICE_FILE = Path("data/price_comparison.json")  # #17: Preis als Treiber
+PEEC_FILE = Path("data/peec_cells.csv")  # Peec-AI-Export (2. Messquelle, 2026-07-15)
 
 # Optionaler Lag in Tagen: Wirkung tritt evtl. verzoegert auf. 0 = gleiches Intervall.
 LAG_DAYS = 0
@@ -1182,6 +1183,49 @@ def _card_from_joint(label, k, joint, controllability, plain_tmpl, unit):
             "plain": (plain_tmpl.format(es=es) if es is not None else None), "unit": unit}
 
 
+def _load_peec_cells():
+    """Peec-AI-Export (UI-Scraping, unabhaengige 2. Messquelle) -> SoV je Marke x Thema.
+    grounded = Gemini/Perplexity/AI Overview/AI Mode/ChatGPT-UI. ChatGPT-UI zaehlt zu
+    grounded, weil empirisch belegt (14.07.2026): r=0,86 zu eigenem Gemini-grounded
+    vs. nur 0,71 zum eigenen ChatGPT-API-ungrounded — die UI nutzt faktisch Websuche.
+    SoV wird mention_count-basiert je Thema neu berechnet (nie Peec-SoV mitteln)."""
+    import csv as _csv
+    if not PEEC_FILE.exists():
+        return None
+    tmap = {"Zahnzusatz": "zahnzusatz", "Sterbegeld": "sterbegeld", "Risikoleben": "risikoleben",
+            "Berufsunf\u00e4higkeit": "berufsunfaehigkeit", "Berufsunfaehigkeit": "berufsunfaehigkeit",
+            "Rechtsschutz": "rechtsschutz", "Haftpflicht": "haftpflicht", "Hausrat": "hausrat",
+            "Kfz": "kfz", "Unfall": "unfall", "Krankenhauszusatz": "krankenhauszusatz", "Reise": "reise"}
+    bmap = {"HUK24": "HUK-Coburg"}
+    ground = {"Gemini", "Perplexity", "AI Overview", "AI Mode", "ChatGPT"}
+    mc_g = {}; tot_g = {}; mc_all = {}; tot_all = {}
+    try:
+        with PEEC_FILE.open(encoding="utf-8-sig") as fh:
+            for r in _csv.DictReader(fh, delimiter=";"):
+                pid = tmap.get((r.get("thema") or "").strip())
+                if not pid:
+                    continue
+                b = bmap.get(r.get("marke"), r.get("marke"))
+                try:
+                    m = float(r.get("mention_count") or 0)
+                except (TypeError, ValueError):
+                    continue
+                key = (b, pid)
+                mc_all[key] = mc_all.get(key, 0.0) + m
+                tot_all[pid] = tot_all.get(pid, 0.0) + m
+                if (r.get("engine") or "") in ground:
+                    mc_g[key] = mc_g.get(key, 0.0) + m
+                    tot_g[pid] = tot_g.get(pid, 0.0) + m
+    except Exception:
+        return None
+    out = {}
+    for (b, pid), m in mc_all.items():
+        out[(b, pid)] = {
+            "sov_g": (100.0 * mc_g.get((b, pid), 0.0) / tot_g[pid]) if tot_g.get(pid) else None,
+            "sov_all": (100.0 * m / tot_all[pid]) if tot_all.get(pid) else None}
+    return out or None
+
+
 def level_model_mundlak():
     """Level-Modell (Mundlak): erklaert das SoV-NIVEAU aus dem Zitations-Footprint,
     getrennt fuer grounded (Gemini/Perplexity) und ungrounded (ChatGPT)."""
@@ -1262,9 +1306,52 @@ def level_model_mundlak():
                      "+1 SD teurer entspricht etwa {es} pp Sichtbarkeit",
                      "pp SoV je Einheit Relativpreis (1.0 = Marktbestpreis)"),
     ]
+    # ── Peec-Integration (2026-07-15): Source-augmentiertes Modell + Konvergenz ──
+    with_peec = None
+    try:
+        _peec = _load_peec_cells()
+        if _peec:
+            _cs_map = {(c["brand"], c["topic"]): c["cite_share"] for c in cells_g}
+            _own_g = {(c["brand"], c["topic"]): c["sov"] for c in cells_g}
+            aug_g = [dict(c, src_peec=0.0) for c in cells_g]
+            aug_c = [dict(c, src_peec=0.0) for c in cells_c]
+            _n_add = 0
+            _vx = []; _vy = []
+            for (_b, _pid), _v in _peec.items():
+                if (_b, _pid) in _own_g and _v.get("sov_g") is not None:
+                    _vx.append(_own_g[(_b, _pid)]); _vy.append(_v["sov_g"])
+                _cs = _cs_map.get((_b, _pid))
+                if _cs is None:
+                    continue  # nur Zellen mit bekanntem Footprint-Treiber
+                if _v.get("sov_g") is not None:
+                    aug_g.append({"brand": _b, "topic": _pid, "cite_share": _cs,
+                                  "sov": _v["sov_g"], "src_peec": 1.0})
+                if _v.get("sov_all") is not None:
+                    aug_c.append({"brand": _b, "topic": _pid, "cite_share": _cs,
+                                  "sov": _v["sov_all"], "src_peec": 1.0})
+                _n_add += 1
+            _r = pearson(_vx, _vy) if len(_vx) >= 5 else None
+            _rho = spearman(_vx, _vy) if len(_vx) >= 5 else None
+            with_peec = {
+                "available": _n_add > 0,
+                "n_cells_added": _n_add,
+                "grounded": _mundlak_multi(aug_g, ["cite_share", "src_peec"], "sov"),
+                "combined": _mundlak_multi(aug_c, ["cite_share", "src_peec"], "sov"),
+                "validation": {"n_common_cells": len(_vx),
+                               "pearson_r": round(_r, 3) if _r is not None else None,
+                               "spearman_r": round(_rho, 3) if _rho is not None else None,
+                               "criterion": "Rangfolgen-Konvergenz > 0,7 erwartet (13_PEEC_INTEGRATION_ANLEITUNG)"},
+                "note": ("Peec AI (UI-Scraping, 366 Prompts, inkl. Google AI Overview/AI Mode) als zweite, "
+                         "unabhaengige Messquelle. Zellen mit src_peec-Dummy (Mundlak-Kontrolle fuer "
+                         "Niveau-Unterschiede UI vs. API) zum eigenen Crawl hinzugefuegt; Footprint-Treiber "
+                         "stammt weiterhin aus dem eigenen Crawl. drivers_eff.cite_share = integrierter "
+                         "Footprint-Effekt ueber beide Quellen.")}
+    except Exception as _pe:
+        with_peec = {"available": False, "note": "Peec-Integration fehlgeschlagen: " + str(_pe)[:120]}
     return {"available": True, "driver": "cite_share",
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
             "price_model": price_model, "joint_model": joint_model, "drivers": drivers,
+            "with_peec": with_peec,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

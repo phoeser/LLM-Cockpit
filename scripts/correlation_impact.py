@@ -1324,6 +1324,20 @@ def level_model_mundlak():
                                       {"available": False, "n_cells": len(_pc),
                                        "note": "Zu wenige Zellen mit Preis UND Footprint."})
 
+    # (15.07.2026) Voll-Zerlegung fuer die Ursachenanalyse vs. Marktfuehrer:
+    # Groesse + Footprint + Preis GEMEINSAM (kontrollieren einander). Achtung
+    # Kollinearitaet Groesse<->Footprint bei n eff.=6-7 Marken — die interne
+    # Aufteilung dieser beiden ist nur als Tendenz zu lesen (im UI kenntlich machen).
+    full_joint = {}
+    for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+        _fc = [c for c in _cs if ("relprice" in c and c["brand"] in BRAND_SIZE)]
+        for c in _fc:
+            c["size"] = BRAND_SIZE[c["brand"]]
+        full_joint[_en] = (_mundlak_multi(_fc, ["cite_share", "size", "relprice"], "sov")
+                           if len(_fc) >= 12 else
+                           {"available": False, "n_cells": len(_fc),
+                            "note": "Zu wenige Zellen mit Preis+Groesse+Footprint."})
+
     # #16 2. Treiber: Groesse/Bekanntheit gemeinsam mit Footprint (Effekte kontrollieren einander)
     for c in cells_c:
         if c["brand"] in BRAND_SIZE:
@@ -1387,6 +1401,7 @@ def level_model_mundlak():
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
             "price_model": price_model, "joint_model": joint_model, "drivers": drivers,
             "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,
+            "full_joint": full_joint,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

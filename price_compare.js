@@ -39,9 +39,31 @@
   var data = null, profile = "age_50";
 
   function getData(){
-    if(window.PRICE_COMPARISON) return Promise.resolve(window.PRICE_COMPARISON);
-    return fetch("data/price_comparison.json?t="+Date.now(),{cache:"no-store"})
-      .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+    // Basis: Crawler-Daten; dazu die manuelle Preis-Vollerhebung (14.07.2026) mergen.
+    // Merge-Regel je Produkt: die Quelle mit MEHR Marken gewinnt.
+    var base = window.PRICE_COMPARISON ? Promise.resolve(window.PRICE_COMPARISON)
+      : fetch("data/price_comparison.json?t="+Date.now(),{cache:"no-store"})
+          .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+    var man = fetch("data/price_manual.json?t="+Date.now(),{cache:"no-store"})
+          .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+    function nBrands(prod){
+      var b=((prod.profiles||{}).age_50||{}).brands||{};
+      return Object.keys(b).filter(function(k){return k.indexOf("_other_")!==0;}).length;
+    }
+    return Promise.all([base,man]).then(function(res){
+      var a=res[0], b=res[1];
+      if(!b) return a;
+      if(!a) return b;
+      a.products=a.products||{};
+      Object.keys(b.products||{}).forEach(function(pid){
+        var mp=b.products[pid], cp=a.products[pid];
+        if(!cp || nBrands(mp)>nBrands(cp)){
+          mp.params=(mp.params||"")+" · Quelle: manuelle Erhebung "+(b.as_of||"");
+          a.products[pid]=mp;
+        }
+      });
+      return a;
+    });
   }
   function eur(v){ return (v==null||isNaN(v))?"—":(Math.round(v*100)/100).toFixed(2).replace(".",",")+" €"; }
 

@@ -42,6 +42,7 @@ REVIEW_HISTORY_FILE = Path("data/review_history.json")
 OUT_FILE = Path("data/correlation_impact.json")
 PRICE_FILE = Path("data/price_comparison.json")  # #17: Preis als Treiber
 PEEC_FILE = Path("data/peec_cells.csv")  # Peec-AI-Export (2. Messquelle, 2026-07-15)
+PRICE_MANUAL_FILE = Path("data/price_manual.json")  # manuelle Preis-Vollerhebung 14.07.2026
 
 # Optionaler Lag in Tagen: Wirkung tritt evtl. verzoegert auf. 0 = gleiches Intervall.
 LAG_DAYS = 0
@@ -1066,26 +1067,49 @@ def _conf_badge(pdir):
 
 
 def _relprice_map():
-    """{topic_id: {Anzeigename: relpreis}} — relpreis = Markenpreis / guenstigster Marktpreis (>=1)."""
-    try:
-        d = json.loads(PRICE_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+    """{topic_id: {Anzeigename: relpreis}} — relpreis = Markenpreis / guenstigster Marktpreis (>=1).
+    Quellen: Crawler (data/price_comparison.json) + manuelle Vollerhebung 14.07.2026
+    (data/price_manual.json). Je Produkt gewinnt die Quelle mit MEHR Marken (die
+    manuelle Erhebung deckt 7 zusaetzliche Produkte ab, u.a. Rechtsschutz/Kfz/BU)."""
     keymap = {"allianz": "Allianz", "ergo": "ERGO", "axa": "AXA", "generali": "Generali",
               "huk": "HUK-Coburg", "signal-iduna": "Signal Iduna", "cosmosdirekt": "CosmosDirekt"}
+
+    def _extract(path):
+        try:
+            d = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+        res = {}
+        for pid, pr in (d.get("products") or {}).items():
+            prof = (pr.get("profiles") or {}).get("age_50") or {}
+            prices = {}
+            for k, v in (prof.get("brands") or {}).items():
+                if k.startswith("_other_"):
+                    continue
+                p = v.get("price"); nm = keymap.get(k)
+                if nm and isinstance(p, (int, float)) and p > 0:
+                    prices[nm] = p
+            if len(prices) >= 2:
+                res[pid] = prices
+        return res
+
+    crawler = _extract(PRICE_FILE)
+    manual = _extract(PRICE_MANUAL_FILE)
+    merged = dict(crawler)
+    for pid, prices in manual.items():
+        if pid not in merged or len(prices) > len(merged[pid]):
+            merged[pid] = prices
+    # DKV-Ausschluss (15.07.2026): Krankenhauszusatz laeuft im ERGO-Konzern unter der
+    # Marke DKV — die Nennung zahlt nicht auf die ERGO-Markensichtbarkeit ein, der
+    # Preis darf ERGO daher nicht zugerechnet werden.
+    if "krankenhauszusatz" in merged:
+        merged["krankenhauszusatz"] = {b: p for b, p in merged["krankenhauszusatz"].items() if b != "ERGO"}
+        if len(merged["krankenhauszusatz"]) < 2:
+            merged.pop("krankenhauszusatz")
     out = {}
-    for pid, pr in (d.get("products") or {}).items():
-        prof = (pr.get("profiles") or {}).get("age_50") or {}
-        prices = {}
-        for k, v in (prof.get("brands") or {}).items():
-            if k.startswith("_other_"):
-                continue
-            p = v.get("price"); nm = keymap.get(k)
-            if nm and isinstance(p, (int, float)) and p > 0:
-                prices[nm] = p
-        if len(prices) >= 2:
-            mn = min(prices.values())
-            out[pid] = {nm: prices[nm] / mn for nm in prices}
+    for pid, prices in merged.items():
+        mn = min(prices.values())
+        out[pid] = {nm: prices[nm] / mn for nm in prices}
     return out
 
 
@@ -1289,6 +1313,17 @@ def level_model_mundlak():
                             if len(_pc) >= 6 else
                             {"available": False, "n_cells": len(_pc),
                              "note": "Zu wenige Produkte mit Preisdaten fuer einen belastbaren Preis-Effekt."})
+    # (b) 15.07.2026: Gemeinsames Modell Preis + Footprint — trennt die Ueberlappung
+    # (guenstige Marken ranken auf Portalen besser -> mehr Zitate; erst das gemeinsame
+    # Modell zeigt den Preis-Effekt BEREINIGT um den Footprint und umgekehrt).
+    price_footprint_joint = {}
+    for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+        _pc = [c for c in _cs if "relprice" in c]
+        price_footprint_joint[_en] = (_mundlak_multi(_pc, ["cite_share", "relprice"], "sov")
+                                      if len(_pc) >= 10 else
+                                      {"available": False, "n_cells": len(_pc),
+                                       "note": "Zu wenige Zellen mit Preis UND Footprint."})
+
     # #16 2. Treiber: Groesse/Bekanntheit gemeinsam mit Footprint (Effekte kontrollieren einander)
     for c in cells_c:
         if c["brand"] in BRAND_SIZE:
@@ -1351,7 +1386,7 @@ def level_model_mundlak():
     return {"available": True, "driver": "cite_share",
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
             "price_model": price_model, "joint_model": joint_model, "drivers": drivers,
-            "with_peec": with_peec,
+            "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

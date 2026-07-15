@@ -96,7 +96,7 @@
     var r1=null;
     if(je && je.cite_share && je.cite_share.between){
       r1=jointRow(je.cite_share.between,{
-        label:"Zitations-Footprint — Markenniveau",
+        label:"Zitations-Footprint — Markenniveau", group:"Zitations-Footprint (Autorität)", level:"zwischen Marken",
         sub:"Bereinigt um den Preis (gemeinsames Mundlak-Modell)",
         stable:(m.between_loo||{}).sign_stable, ctrl:"mittelbar",
         nTxt:"n eff. = "+(joint.n_brands||"?")+" Marken · gemeinsam mit Preis geschätzt",
@@ -104,7 +104,7 @@
     }
     if(!r1 && m.between_effect){
       r1=stdRow(m.between_effect,{
-        label:"Zitations-Footprint — Markenniveau",
+        label:"Zitations-Footprint — Markenniveau", group:"Zitations-Footprint (Autorität)", level:"zwischen Marken",
         sub:"Warum Marke A sichtbarer ist als B (Between/Mundlak)",
         stable:(m.between_loo||{}).sign_stable, ctrl:"mittelbar",
         nTxt:"n eff. = "+(m.n_brands||"?")+" Marken",
@@ -114,7 +114,7 @@
     // -- Footprint Hebel im Thema (Within, aus dem Solo-Fit mit echten CI) --
     if(m.within_effect){
       var r2=stdRow(m.within_effect,{
-        label:"Zitations-Footprint — Hebel im Thema",
+        label:"Zitations-Footprint — Hebel im Thema", group:"Zitations-Footprint (Autorität)", level:"innerhalb einer Marke · Hebel",
         sub:"Bewegt MEHR eigener Footprint im Thema die Sichtbarkeit? (Within, themenbereinigt)",
         stable:null, ctrl:"direkt",
         nTxt:"n = "+(m.n_cells||"?")+" Zellen · "+(m.n_topics||"?")+" Themen",
@@ -125,7 +125,7 @@
     var r3=null;
     if(je && je.relprice && je.relprice.between){
       r3=jointRow(je.relprice.between,{
-        label:"Relativpreis — Markenniveau",
+        label:"Relativpreis — Markenniveau", group:"Relativpreis (Preisniveau vs. günstigstem Anbieter)", level:"zwischen Marken",
         sub:"Bereinigt um den Footprint (gemeinsames Modell, ohne DKV)",
         stable:(pm.between_loo||{}).sign_stable, ctrl:"strukturell",
         nTxt:"n eff. = "+(joint.n_brands||"?")+" Marken · gemeinsam mit Footprint geschätzt",
@@ -133,7 +133,7 @@
     }
     if(!r3 && pm.between_effect){
       r3=stdRow(pm.between_effect,{
-        label:"Relativpreis — Markenniveau",
+        label:"Relativpreis — Markenniveau", group:"Relativpreis (Preisniveau vs. günstigstem Anbieter)", level:"zwischen Marken",
         sub:"Teurer vs. günstiger (Between, Preis-Level-Modell)",
         stable:(pm.between_loo||{}).sign_stable, ctrl:"direkt",
         nTxt:"n eff. = "+(pm.n_brands||"?")+" Marken · "+(pm.n_topics||"?")+" Themen",
@@ -144,21 +144,21 @@
     var r4=null;
     if(je && je.relprice && je.relprice.within){
       r4=jointRow(je.relprice.within,{
-        label:"Relativpreis — Hebel im Produkt",
+        label:"Relativpreis — Hebel im Produkt", group:"Relativpreis (Preisniveau vs. günstigstem Anbieter)", level:"innerhalb einer Marke · Hebel",
         sub:"Ist ERGO dort unsichtbarer, wo ERGO teurer ist? (Within, markenbereinigt)",
         stable:null, ctrl:"direkt",
         nTxt:"n = "+(joint.n_cells||"?")+" Zellen · "+(joint.n_topics||"?")+" Themen",
         plain:"Das wäre der echte Preishebel — und er ist praktisch null. Preisunterschiede zwischen den Produkten einer Marke erklären deren Sichtbarkeit nicht."});
     } else if(pm.within_effect){
       r4=stdRow(pm.within_effect,{
-        label:"Relativpreis — Hebel im Produkt",
+        label:"Relativpreis — Hebel im Produkt", group:"Relativpreis (Preisniveau vs. günstigstem Anbieter)", level:"innerhalb einer Marke · Hebel",
         sub:"Ist ERGO dort unsichtbarer, wo ERGO teurer ist? (Within, markenbereinigt)",
         stable:null, ctrl:"direkt",
         nTxt:"n = "+(pm.n_cells||"?")+" Zellen · "+(pm.n_topics||"?")+" Themen",
         plain:"Das wäre der echte Preishebel — und er ist praktisch null."});
     }
     if(r4) rows.push(r4);
-    rows.push({label:"Einzel-Aktivitäten / Events (kurzfristig)",
+    rows.push({label:"Einzel-Aktivitäten / Events (kurzfristig)", group:"Einzel-Aktivitäten / Events", level:"kurzfristige Wirkung",
       sub:"Seitenänderungen, Presse, Bewertungen (Event-Study, multivariat)",
       est:0, lo:null, hi:null, p:null, stable:null, ctrl:"direkt", events:true,
       nTxt:"n = "+((C.multivariate||{}).n_points||"?")+" Intervalle",
@@ -177,7 +177,13 @@
     var grid='';
     [-0.5,0.5].forEach(function(f){ grid+='<div style="position:absolute;left:'+(50+50*f)+'%;top:0;bottom:0;width:1px;background:#f0f1f3"></div>'; });
 
+    var lastGroup=null;
     var body=rows.map(function(r,i){
+      var head="";
+      if(r.group && r.group!==lastGroup){
+        lastGroup=r.group;
+        head='<div style="font-size:11.5px;font-weight:700;color:#4b5563;padding:9px 0 1px;border-top:1px solid #eceef0;margin-top:2px">'+r.group+'</div>';
+      }
       var cf=r.events?{t:"kein belastbarer Effekt",c:"#6b7280",bg:"#eef0f2"}:conf(r.p,r.stable);
       var col=r.events?"#9ca3af":barColFor(cf);
       var ciTitle=(r.lo!=null&&r.hi!=null)?('95%-Konfidenzintervall: '+signed(r.lo,1)+' bis '+signed(r.hi,1)+' pp'):'';
@@ -195,8 +201,10 @@
       plot+='</div>';
       var eff=r.events?"~0":signed(r.est,1)+" pp";
       var unstable=(r.stable===false&&!r.events)?' <span style="font-size:10px;color:#b45309" title="Vorzeichen wechselt, wenn einzelne Marken weggelassen werden (Leave-one-out)">↔ instabil</span>':"";
-      return '<div style="display:grid;grid-template-columns:215px 1fr 84px;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f4f5f6">'+
-          '<div><div style="font-size:12.5px;font-weight:600;line-height:1.25" title="'+(r.sub||'')+'">'+r.label+'</div>'+
+      var lblTxt = r.level || r.label;
+      var indent = r.level ? 'padding-left:9px;border-left:2px solid #e5e7eb;' : '';
+      return head+'<div style="display:grid;grid-template-columns:215px 1fr 84px;align-items:center;gap:10px;padding:7px 0;'+(r.level?'':'border-top:1px solid #f4f5f6')+'">'+
+          '<div style="'+indent+'"><div style="font-size:12.5px;font-weight:600;line-height:1.25" title="'+(r.label||'')+' — '+(r.sub||'')+'">'+lblTxt+'</div>'+
           '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:3px">'+confChip(cf)+ampelChip(r.ctrl)+unstable+'</div>'+
           '<div style="font-size:10px;color:#b3b8bf;margin-top:2px">'+(r.nTxt||'')+'</div></div>'+
           '<div>'+plot+'<div style="font-size:10.5px;color:#8b919a;margin-top:3px;line-height:1.35">'+r.plain+'</div></div>'+

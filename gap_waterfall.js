@@ -1,14 +1,15 @@
 /* ===========================================================================
-   ERGO LLM-Cockpit — Gap-Wasserfall "Warum liegt der Marktfuehrer vorn?" v2
-   Fix 2026-07-14: nutzt die real vorhandenen Daten
-   level_model.{grounded|ungrounded|combined}.gap_decomposition
-   (das frueher erwartete level_model.joint_model liefert die Pipeline nicht
-   — die Box zeigte deshalb dauerhaft nur einen Platzhalter).
-   Zerlegt den SoV-Abstand einer Marke zum Marktfuehrer in:
-   Footprint-Beitrag (gekappt bei 100 %) + Rest/unerklaert.
-   Modus (grounded/ungrounded/beides) folgt dem Umschalter der Synthese
-   (window.__gwSetMode wird von korrelation_upgrade.js aufgerufen).
-   Einbindung: <script src="gap_waterfall.js"></script>
+   ERGO LLM-Cockpit — Ursachenanalyse "Warum liegt der Marktfuehrer vorn?" v3
+   (15.07.2026) Ausdifferenzierung:
+   1. Wasserfall mit DREI Treiber-Stufen aus level_model.full_joint
+      (Groesse + Footprint + Preis, kontrollieren einander; Fallback:
+      price_footprint_joint -> Footprint-only aus gap_decomposition).
+      Beitraege werden proportional gekappt, wenn Summe > Gap.
+   2. NEU: Themen-Hotspots — wo genau verliert die Marke gegen den
+      Marktfuehrer? Je Thema: SoV-Gap + eigener Zitatanteil -> Prio-Label
+      (Content-Luecke / Verwertung / fast gleichauf). Quelle: GEO_SNAPSHOT
+      client-seitig (kein Pipeline-Feld noetig).
+   Modus folgt dem Synthese-Umschalter (window.__gwSetMode).
    =========================================================================== */
 (function () {
   "use strict";
@@ -19,17 +20,81 @@
       .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
   }
   function pp(v){ return (v==null||isNaN(v))?"—":((v>0?"+":"")+(Math.round(v*10)/10).toFixed(1).replace(".",",")+" pp"); }
-  function sovLbl(v){ return (v==null||isNaN(v))?"—":(Math.round(v*10)/10).toFixed(1).replace(".",",")+" %"; }
+  function pct(v){ return (v==null||isNaN(v))?"—":(Math.round(v*10)/10).toFixed(1).replace(".",",")+" %"; }
 
-  var COL = { base:"#9aa0a8", foot:"#b8860b", rest:"#d9dce1", leader:"#dc0028" };
+  var COL = { base:"#9aa0a8", size:"#6b7280", foot:"#b8860b", price:"#0e7490", rest:"#d9dce1", leader:"#dc0028" };
+  var LBL = { size:"Größe/Marktmacht", cite_share:"Footprint (Quellpräsenz)", relprice:"Preisniveau" };
+  var AMP = { size:"⚪", cite_share:"🟡", relprice:"🟢" };
   var mode = "g", curBrand = "ERGO";
-  function seg(lm){ return mode==="g"?lm.grounded:(mode==="u"?lm.ungrounded:lm.combined); }
+  function seg(o){ return o?(mode==="g"?o.grounded:(mode==="u"?o.ungrounded:o.combined)):null; }
   function modeLbl(){ return mode==="g"?"grounded (Web-Suche)":(mode==="u"?"ungrounded (ChatGPT)":"kombiniert"); }
 
   function sovOf(m, brand){
-    var ar = m.authority_ranking || [];
+    var ar = (m&&m.authority_ranking) || [];
     for (var i=0;i<ar.length;i++){ if(ar[i].brand===brand) return ar[i].mean_sov_pct; }
     return null;
+  }
+
+  /* ---- Zerlegungs-Quelle waehlen: full_joint > price_footprint_joint > Footprint-only ---- */
+  function decompFor(lm, brand){
+    var srcs=[ [seg(lm.full_joint), "Größe + Footprint + Preis (gemeinsam geschätzt)", {size:COL.size, cite_share:COL.foot, relprice:COL.price}],
+               [seg(lm.price_footprint_joint), "Footprint + Preis (gemeinsam geschätzt)", {cite_share:COL.foot, relprice:COL.price}] ];
+    for(var i=0;i<srcs.length;i++){
+      var j=srcs[i][0];
+      if(j && j.available && j.gap_decomposition && j.gap_decomposition[brand] && j.gap_decomposition[brand].contrib_pp){
+        return { g:j.gap_decomposition[brand], leader:j.leader, label:srcs[i][1], cols:srcs[i][2],
+                 brands:Object.keys(j.gap_decomposition), joint:true, n:j.n_cells, nb:j.n_brands, nt:j.n_topics };
+      }
+    }
+    var m=seg(lm)||{};
+    if(m.available && m.gap_decomposition && m.gap_decomposition[brand]){
+      var g0=m.gap_decomposition[brand];
+      return { g:{actual_gap_pp:g0.actual_gap_pp, contrib_pp:{cite_share:g0.explained_by_footprint_pp}},
+               leader:m.leader, label:"nur Footprint (Mundlak-Between)", cols:{cite_share:COL.foot},
+               brands:Object.keys(m.gap_decomposition), joint:false, n:m.n_cells, nb:m.n_brands, nt:m.n_topics };
+    }
+    return null;
+  }
+
+  /* ---- Themen-Hotspots aus GEO_SNAPSHOT (client-seitig) ---- */
+  var DOM2BRAND = { "ergo.de":"ERGO","ergo-reiseversicherung.de":"ERGO","dkv.com":"ERGO","allianz.de":"Allianz",
+    "allianzdirect.de":"Allianz","axa.de":"AXA","generali.de":"Generali","cosmosdirekt.de":"CosmosDirekt",
+    "huk.de":"HUK-Coburg","huk24.de":"HUK-Coburg","signal-iduna.de":"Signal Iduna" };
+  function topicHotspots(brand, leader){
+    var g=window.GEO_SNAPSHOT;
+    if(!g || !g.products) return null;
+    var engines = mode==="g"?["gemini"]:(mode==="u"?["chatgpt"]:["gemini","chatgpt"]);
+    var rows=[];
+    Object.keys(g.products).forEach(function(pid){
+      var pd=g.products[pid]; var sbl=pd.summary_by_llm||{};
+      var sB=[], sL=[];
+      engines.forEach(function(e){
+        ((sbl[e]||{}).brands||[]).forEach(function(b){
+          if(b.name===brand) sB.push(100*(b.share_of_voice||0));
+          if(b.name===leader) sL.push(100*(b.share_of_voice||0));
+        });
+      });
+      if(!sB.length && !sL.length) return;
+      function avg(v){ return v.length? v.reduce(function(a,x){return a+x;},0)/v.length : 0; }
+      // Zitatanteile aus cited_sources.overall
+      var tot=0, cB=0, cL=0;
+      (((pd.cited_sources)||{}).overall||[]).forEach(function(r){
+        var n=r.count||0; tot+=n;
+        var bb=DOM2BRAND[(r.domain||"").replace(/^www\./,"")];
+        if(bb===brand) cB+=n;
+        if(bb===leader) cL+=n;
+      });
+      rows.push({ pid:pid, name:(pd.name||pid), sovB:avg(sB), sovL:avg(sL), gap:avg(sL)-avg(sB),
+                  citB:tot?100*cB/tot:0, citL:tot?100*cL/tot:0 });
+    });
+    rows.sort(function(a,b){ return b.gap-a.gap; });
+    return rows;
+  }
+  function prioChip(r){
+    if(r.gap<=1) return '<span style="font-size:10px;font-weight:700;color:#067d3a;background:#e6f5ec;border-radius:4px;padding:1px 6px">fast gleichauf</span>';
+    if(r.citB<r.citL && r.citB<5) return '<span style="font-size:10px;font-weight:700;color:#b91c1c;background:#fee2e2;border-radius:4px;padding:1px 6px">Content-Lücke → Prio</span>';
+    if(r.citB>=r.citL) return '<span style="font-size:10px;font-weight:700;color:#8a6d00;background:#fdf3d7;border-radius:4px;padding:1px 6px">Verwertungs-/Markenthema</span>';
+    return '<span style="font-size:10px;font-weight:700;color:#8a6d00;background:#fdf3d7;border-radius:4px;padding:1px 6px">Quellpräsenz ausbauen</span>';
   }
 
   function render(host, lm, brand){
@@ -42,60 +107,91 @@
       else if(anchor) host.appendChild(box);
       else host.insertBefore(box, host.firstChild);
     }
-    var m = seg(lm) || {};
-    if(!m.available || !m.gap_decomposition){
-      box.innerHTML='<h3 style="font-size:16px;font-weight:700;margin:0">Warum liegt der Marktführer vorn?</h3>'+
+    var d = decompFor(lm, brand);
+    if(!d){
+      box.innerHTML='<h3 style="font-size:16px;font-weight:700;margin:0">Ursachenanalyse: Warum liegt der Marktführer vorn?</h3>'+
         '<p style="font-size:12px;color:#9ca3af;margin-top:8px">Für diese Auswahl noch keine Zerlegungs-Daten.</p>';
       return;
     }
-    var leader = m.leader;
-    var others = Object.keys(m.gap_decomposition);
-    if(others.indexOf(brand)<0) brand = (others.indexOf("ERGO")>=0?"ERGO":others[0]);
-    curBrand = brand;
-    var g = m.gap_decomposition[brand] || {};
-    var baseSov = sovOf(m, brand);
-    var leadSov = sovOf(m, leader);
-    if(baseSov==null || leadSov==null){ baseSov = 0; leadSov = (g.actual_gap_pp||0); }
-
-    var gap = g.actual_gap_pp || 0;
-    // Footprint-Beitrag bei 100 % des Abstands kappen (Design-Doc: >100 % kappen)
-    var foot = Math.max(0, Math.min(g.explained_by_footprint_pp||0, gap));
-    var capped = (g.explained_by_footprint_pp||0) > gap + 0.05;
-    var rest = Math.max(0, gap - foot);
-    var shareTxt = (g.share_explained!=null) ? Math.round(Math.min(g.share_explained,1)*100) : null;
+    if(d.brands.indexOf(brand)<0) brand=(d.brands.indexOf("ERGO")>=0?"ERGO":d.brands[0]);
+    curBrand=brand;
+    var leader=d.leader, g=d.g;
+    var m=seg(lm)||{};
+    var baseSov=sovOf(m,brand), leadSov=sovOf(m,leader);
+    var gap=g.actual_gap_pp||0;
+    // Beitraege: negative auf 0, Summe proportional auf max. Gap kappen
+    var contrib={}; var sum=0;
+    Object.keys(g.contrib_pp||{}).forEach(function(k){ var v=Math.max(0,g.contrib_pp[k]||0); contrib[k]=v; sum+=v; });
+    var capped=false;
+    if(sum>gap && sum>0){ var f=gap/sum; Object.keys(contrib).forEach(function(k){ contrib[k]*=f; }); capped=true; sum=gap; }
+    var rest=Math.max(0,gap-sum);
+    if(baseSov==null||leadSov==null){ baseSov=0; leadSov=gap; }
 
     // Marken-Umschalter
-    var sel = '<div style="display:flex;gap:6px;flex-wrap:wrap">'+others.map(function(o){
+    var sel='<div style="display:flex;gap:6px;flex-wrap:wrap">'+d.brands.map(function(o){
       var on=o===brand; return '<button data-b="'+o+'" class="gwb" style="font-size:11px;padding:3px 9px;border-radius:8px;border:1px solid '+(on?"#dc0028":"#ccc")+';background:'+(on?"#dc0028":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+o+'</button>';
     }).join("")+'</div>';
 
-    // Gestapelter Balken von Basis bis Marktfuehrer
-    var segs = [
-      {label:brand+" Basis", val:baseSov, col:COL.base, isBase:true},
-      {label:"Footprint (Quellpräsenz)", val:foot, col:COL.foot},
-      {label:"Rest / unerklärt (Markenstärke u. a.)", val:rest, col:COL.rest}
-    ];
-    var total = leadSov>0?leadSov:segs.reduce(function(a,s){return a+s.val;},0);
+    // Balken
+    var order=["size","cite_share","relprice"];
+    var segs=[{label:brand+" Basis (Ø SoV)",val:baseSov,col:COL.base,isBase:true}];
+    order.forEach(function(k){ if(contrib[k]!=null) segs.push({label:(AMP[k]||"")+" "+(LBL[k]||k),val:contrib[k],col:d.cols[k]||COL.rest,k:k}); });
+    if(rest>0.05) segs.push({label:"Rest / unerklärt",val:rest,col:COL.rest});
+    var total=leadSov>0?leadSov:segs.reduce(function(a,s){return a+s.val;},0);
     var bar='<div style="display:flex;height:34px;border-radius:6px;overflow:hidden;margin:14px 0 6px;border:1px solid #eee">';
     segs.forEach(function(s){ var w=total>0?(s.val/total*100):0; if(w<=0)return;
-      bar+='<div title="'+s.label+': '+(s.isBase?sovLbl(s.val):pp(s.val))+'" style="width:'+w+'%;background:'+s.col+'"></div>'; });
+      bar+='<div title="'+s.label+': '+(s.isBase?pct(s.val):pp(s.val))+'" style="width:'+w+'%;background:'+s.col+'"></div>'; });
     bar+='</div>';
 
-    var legend='<div style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:12.5px;margin-top:6px">';
-    legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.base+';border-radius:2px;margin-right:6px"></span>'+brand+' Basis (Ø SoV)</div><div style="text-align:right;font-weight:600">'+sovLbl(baseSov)+'</div>';
-    legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.foot+';border-radius:2px;margin-right:6px"></span>Footprint (Quellpräsenz)'+(capped?' <span style="font-size:10px;color:#b45309">(auf 100 % gekappt)</span>':'')+'</div><div style="text-align:right;font-weight:600;color:'+COL.foot+'">'+pp(foot)+'</div>';
-    legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.rest+';border-radius:2px;margin-right:6px"></span>Rest / unerklärt</div><div style="text-align:right;font-weight:600">'+pp(rest)+'</div>';
-    legend+='<div style="border-top:1px solid #eee;padding-top:4px"><span style="display:inline-block;width:10px;height:10px;background:'+COL.leader+';border-radius:2px;margin-right:6px"></span><b>'+leader+' (Marktführer)</b></div><div style="text-align:right;font-weight:700;border-top:1px solid #eee;padding-top:4px;color:'+COL.leader+'">'+sovLbl(leadSov)+'</div>';
+    // Legende mit Anteilen am Gap
+    var legend='<div style="display:grid;grid-template-columns:1fr auto auto;gap:2px 14px;font-size:12.5px;margin-top:6px">';
+    legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.base+';border-radius:2px;margin-right:6px"></span>'+brand+' Basis (Ø SoV)</div><div style="text-align:right;font-weight:600">'+pct(baseSov)+'</div><div></div>';
+    order.forEach(function(k){
+      if(contrib[k]==null) return;
+      var sh=gap>0?Math.round(100*contrib[k]/gap):null;
+      legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+(d.cols[k]||COL.rest)+';border-radius:2px;margin-right:6px"></span>'+(AMP[k]||"")+' '+(LBL[k]||k)+'</div>'+
+        '<div style="text-align:right;font-weight:600;color:'+(d.cols[k]||"#282d37")+'">'+pp(contrib[k])+'</div>'+
+        '<div style="text-align:right;color:#9ca3af;font-size:11px">'+(sh!=null?("≈ "+sh+" % des Gaps"):"")+'</div>';
+    });
+    if(rest>0.05) legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.rest+';border-radius:2px;margin-right:6px"></span>Rest / unerklärt</div><div style="text-align:right;font-weight:600">'+pp(rest)+'</div><div style="text-align:right;color:#9ca3af;font-size:11px">'+(gap>0?("≈ "+Math.round(100*rest/gap)+" %"):"")+'</div>';
+    legend+='<div style="border-top:1px solid #eee;padding-top:4px"><span style="display:inline-block;width:10px;height:10px;background:'+COL.leader+';border-radius:2px;margin-right:6px"></span><b>'+leader+' (Marktführer)</b></div><div style="text-align:right;font-weight:700;border-top:1px solid #eee;padding-top:4px;color:'+COL.leader+'">'+pct(leadSov)+'</div><div style="border-top:1px solid #eee"></div>';
     legend+='</div>';
 
-    var sentence = 'Von '+pp(gap).replace("+","")+' Rückstand gehen '+(shareTxt!=null?('rund <b>'+shareTxt+' %</b>'):pp(foot))+' statistisch mit dem geringeren Zitations-Footprint einher — eine <b>Zerlegung, kein Kausalnachweis</b>.';
+    var notes='<div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5">'+
+      'Zerlegung: <b>'+d.label+'</b> · '+(d.n||"?")+' Zellen, '+(d.nb||"?")+' Marken, '+(d.nt||"?")+' Themen ('+modeLbl()+')'+(capped?' · Beiträge proportional auf 100 % des Gaps gekappt':'')+'. '+
+      (contrib.size!=null?'<b>Achtung Kollinearität:</b> Größe und Footprint sind bei so wenigen Marken statistisch schwer trennbar — ihre Aufteilung ist eine Tendenz, ihre <b>Summe</b> ist belastbar. ':'')+
+      '⚪ nicht beeinflussbar · 🟡 mittelbar (Portale/Quellen) · 🟢 direkt beeinflussbar. Zerlegung, kein Kausalnachweis.</div>';
+
+    // Themen-Hotspots
+    var hs=topicHotspots(brand, leader);
+    var hsHtml='';
+    if(hs && hs.length){
+      var top=hs.filter(function(r){return r.gap>1;}).slice(0,3).map(function(r){return r.name;});
+      hsHtml='<div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:12px">'+
+        '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Wo genau verliert '+brand+'? — Themen-Hotspots</div>'+
+        '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Je Thema: Sichtbarkeits-Rückstand zu '+leader+' und eigener Zitatanteil ('+modeLbl()+'). Rot = großer Gap bei schwacher Quellpräsenz → dort zuerst Content aufbauen.</div>'+
+        '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'+
+        '<th style="padding:5px 8px">Thema</th><th style="padding:5px 8px;text-align:right">'+brand+' SoV</th><th style="padding:5px 8px;text-align:right">'+leader+' SoV</th><th style="padding:5px 8px;text-align:right">Gap</th><th style="padding:5px 8px;text-align:right">Zitatanteil '+brand+' / '+leader+'</th><th style="padding:5px 8px;text-align:center">Einordnung</th></tr></thead><tbody>';
+      hs.forEach(function(r){
+        var neg=r.gap<0;
+        hsHtml+='<tr style="border-bottom:1px solid #f1f5f9'+(r.gap>1&&r.citB<5&&r.citB<r.citL?';background:#fff8f8':'')+'">'+
+          '<td style="padding:5px 8px;font-weight:600;color:#1e293b">'+r.name+'</td>'+
+          '<td style="padding:5px 8px;text-align:right">'+pct(r.sovB)+'</td>'+
+          '<td style="padding:5px 8px;text-align:right">'+pct(r.sovL)+'</td>'+
+          '<td style="padding:5px 8px;text-align:right;font-weight:700;color:'+(neg?"#067d3a":(r.gap>5?"#b91c1c":"#282d37"))+'">'+(neg?"−":"")+pp(Math.abs(r.gap)).replace("+","")+(neg?" vorn":"")+'</td>'+
+          '<td style="padding:5px 8px;text-align:right;color:#475569">'+pct(r.citB)+' / '+pct(r.citL)+'</td>'+
+          '<td style="padding:5px 8px;text-align:center">'+prioChip(r)+'</td></tr>';
+      });
+      hsHtml+='</tbody></table>';
+      if(top.length) hsHtml+='<div style="font-size:12px;color:#282d37;background:#f8f7f4;border-left:3px solid #dc0028;border-radius:4px;padding:9px 12px;margin-top:10px"><b>Prio-Empfehlung:</b> Größte Rückstände bei <b>'+top.join(", ")+'</b> — dort zitierfähige Inhalte und Portal-Präsenz zuerst ausbauen.</div>';
+      hsHtml+='</div>';
+    }
 
     box.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
-        '<div><h3 style="font-size:16px;font-weight:700;margin:0">Warum liegt '+leader+' vor '+brand+'?</h3>'+
-        '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">SoV-Abstand zum Marktführer, zerlegt nach dem Mundlak-Level-Modell <span style="color:#9ca3af">('+modeLbl()+' · Modus folgt dem Umschalter oben)</span></p></div>'+
-        sel+'</div>'+ bar + legend +
-      '<div style="font-size:12px;color:#6b7280;margin-top:10px">'+sentence+'</div>';
+        '<div><h3 style="font-size:16px;font-weight:700;margin:0">Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
+        '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">SoV-Abstand zerlegt in Treiber-Beiträge <span style="color:#9ca3af">('+modeLbl()+' · Modus folgt dem Umschalter oben)</span></p></div>'+
+        sel+'</div>'+ bar + legend + notes + hsHtml;
 
     box.querySelectorAll(".gwb").forEach(function(btn){
       btn.addEventListener("click", function(){ render(host, lm, btn.getAttribute("data-b")); });
@@ -111,7 +207,6 @@
   ready(function(){
     getData().then(function(d){
       window.__GW_LM=(d && d.level_model)?d.level_model:{};
-      // Modus-Hook fuer korrelation_upgrade.js (Synthese-Umschalter)
       window.__gwSetMode=function(m){ mode=m; build(); };
       var tries=0; (function wait(){ tries++; if(build())return; if(tries<40) setTimeout(wait,300); })();
       var tab=document.querySelector('[data-tab="korrelation"]');

@@ -1351,8 +1351,8 @@ def level_model_mundlak():
         _card_from_joint("Groesse/Bekanntheit (Marktanteil)", "size", joint_model, "strukturell",
                          "+1 SD groesser entspricht etwa {es} pp Sichtbarkeit (bei gleichem Footprint)",
                          "pp SoV je Groessen-Einheit"),
-        _driver_card("Relativpreis (teurer = mehr SoV)", price_model.get("combined"), "direkt",
-                     "+1 SD teurer entspricht etwa {es} pp Sichtbarkeit",
+        _driver_card("Relativpreis (Preisniveau vs. guenstigstem Anbieter)", price_model.get("combined"), "direkt",
+                     "+1 SD teurer entspricht etwa {es} pp Sichtbarkeit (negativ = teurer schadet)",
                      "pp SoV je Einheit Relativpreis (1.0 = Marktbestpreis)"),
     ]
     # ── Peec-Integration (2026-07-15): Source-augmentiertes Modell + Konvergenz ──

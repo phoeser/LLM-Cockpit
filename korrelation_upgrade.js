@@ -127,9 +127,9 @@
       r3=jointRow(je.relprice.between,{
         label:"Relativpreis — Markenniveau",
         sub:"Bereinigt um den Footprint (gemeinsames Modell, ohne DKV)",
-        stable:(pm.between_loo||{}).sign_stable, ctrl:"direkt",
-        nTxt:"n = "+(joint.n_cells||"?")+" Zellen · "+(joint.n_topics||"?")+" Themen",
-        plain:"Teurer = weniger sichtbar: eigenständiger Neben-Hebel, auch nach Footprint-Kontrolle. Wirkt vermutlich zusätzlich indirekt über Portal-Rankings."});
+        stable:(pm.between_loo||{}).sign_stable, ctrl:"strukturell",
+        nTxt:"n eff. = "+(joint.n_brands||"?")+" Marken · gemeinsam mit Footprint geschätzt",
+        plain:"Marken mit höherem Preisniveau sind im Schnitt weniger sichtbar. ACHTUNG: Markenvergleich über nur "+(joint.n_brands||"?")+" Marken — vermengt mit allem, was Marken sonst unterscheidet. Kein belegter Hebel."});
     }
     if(!r3 && pm.between_effect){
       r3=stdRow(pm.between_effect,{
@@ -140,6 +140,24 @@
         plain:"Teurer hängt tendenziell mit weniger Sichtbarkeit zusammen (kleine Fallzahl, Vorsicht bei der Interpretation)."});
     }
     if(r3) rows.push(r3);
+    // -- Relativpreis Within: sagt der Preis INNERHALB einer Marke ueber Produkte etwas? --
+    var r4=null;
+    if(je && je.relprice && je.relprice.within){
+      r4=jointRow(je.relprice.within,{
+        label:"Relativpreis — Hebel im Produkt",
+        sub:"Ist ERGO dort unsichtbarer, wo ERGO teurer ist? (Within, markenbereinigt)",
+        stable:null, ctrl:"direkt",
+        nTxt:"n = "+(joint.n_cells||"?")+" Zellen · "+(joint.n_topics||"?")+" Themen",
+        plain:"Das wäre der echte Preishebel — und er ist praktisch null. Preisunterschiede zwischen den Produkten einer Marke erklären deren Sichtbarkeit nicht."});
+    } else if(pm.within_effect){
+      r4=stdRow(pm.within_effect,{
+        label:"Relativpreis — Hebel im Produkt",
+        sub:"Ist ERGO dort unsichtbarer, wo ERGO teurer ist? (Within, markenbereinigt)",
+        stable:null, ctrl:"direkt",
+        nTxt:"n = "+(pm.n_cells||"?")+" Zellen · "+(pm.n_topics||"?")+" Themen",
+        plain:"Das wäre der echte Preishebel — und er ist praktisch null."});
+    }
+    if(r4) rows.push(r4);
     rows.push({label:"Einzel-Aktivitäten / Events (kurzfristig)",
       sub:"Seitenänderungen, Presse, Bewertungen (Event-Study, multivariat)",
       est:0, lo:null, hi:null, p:null, stable:null, ctrl:"direkt", events:true,
@@ -303,10 +321,28 @@
   }
 
   function priceSentence(C){
-    var j=segOf((C.level_model||{}).price_footprint_joint);
-    var pe=(j&&j.available&&j.drivers_eff&&j.drivers_eff.relprice)?j.drivers_eff.relprice.between:null;
-    if(pe&&pe.prob_direction>=0.95) return ' <b>Preis</b> ist ein eigenständiger Neben-Hebel ('+signed(pe.effect_std_pp,1)+' pp je SD teurer — auch bereinigt um den Footprint).';
-    return ' <b>Preis</b> ist bisher nur ein schwacher, unsicherer Treiber.';
+    var pfj=(C.level_model||{}).price_footprint_joint||{};
+    var j=segOf(pfj);
+    var rp=(j&&j.available&&j.drivers_eff)?j.drivers_eff.relprice:null;
+    if(!rp||!rp.between) return ' <b>Preis</b> ist mangels Daten noch nicht bewertbar.';
+    var b=rp.between||{}, w=rp.within||{};
+    var s='';
+    if(b.prob_direction!=null&&b.prob_direction>=0.95){
+      s=' <b>Preis:</b> Marken mit höherem Preisniveau sind im Schnitt weniger sichtbar ('+signed(b.effect_std_pp,1)+' pp je SD teurer, P='+num(b.prob_direction,2)+') — dieser Vergleich stützt sich aber auf nur <b>'+(j.n_brands||"?")+' Marken</b> und ist mit allem vermengt, was Marken sonst unterscheidet.';
+    } else {
+      s=' <b>Preis</b> ist auch im Markenvergleich kein belastbarer Treiber (P='+num(b.prob_direction,2)+').';
+    }
+    if(w.effect_std_pp!=null){
+      s+=' <b>Innerhalb</b> einer Marke sagt der Preis über die Produkte hinweg dagegen fast nichts ('+signed(w.effect_std_pp,1)+' pp, P='+num(w.prob_direction,2)+')'+
+         ((w.prob_direction!=null&&w.prob_direction<0.90)?' — ein Preishebel ist damit <b>nicht belegt</b>.':'.');
+    }
+    // Kanal-Kontrast: Preis wirkt nur, wo das LLM tatsaechlich sucht
+    var g=(pfj.grounded&&pfj.grounded.drivers_eff)?pfj.grounded.drivers_eff.relprice:null;
+    var u=(pfj.ungrounded&&pfj.ungrounded.drivers_eff)?pfj.ungrounded.drivers_eff.relprice:null;
+    if(g&&u&&g.between&&u.between&&g.between.prob_direction>=0.95&&u.between.prob_direction<0.90){
+      s+=' Der Zusammenhang zeigt sich <b>nur bei LLMs mit Web-Suche</b> (ohne Suche: '+signed(u.between.effect_std_pp,1)+' pp, P='+num(u.between.prob_direction,2)+') — plausibel, denn ohne Suche kennt ein Modell aktuelle Preise gar nicht. Er entsteht vermutlich über Vergleichsportale, wo der Preis das Ranking bestimmt.';
+    }
+    return s;
   }
 
   function fazit(C){

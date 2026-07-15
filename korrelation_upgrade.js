@@ -48,6 +48,30 @@
   }
   function barColFor(cf){ return cf.c==="#067d3a"?"#dc0028":(cf.c==="#8a6d00"?"#e0a800":"#9ca3af"); }
 
+  // Invers-Normal (Acklam-Approximation) — rekonstruiert sigma aus prob_direction
+  function probitInv(p){
+    if(p<=0||p>=1) return null;
+    var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924];
+    var b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857];
+    var c=[-0.00778489400243029,-0.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878];
+    var d=[0.00778469570904146,0.32246712907004,2.445134137143,3.75440866190742];
+    var pl=0.02425, q, r;
+    if(p<pl){ q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    if(p<=1-pl){ q=p-0.5; r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+    q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+  // Joint-Modell-Effekt (coef, prob_direction, effect_std_pp) -> Forest-Zeile mit approx. 95%-CI
+  function jointRow(e, base){
+    if(!e || e.effect_std_pp==null) return null;
+    var lo=null, hi=null;
+    var p=e.prob_direction;
+    if(p!=null && p>0.5 && p<1){
+      var z=probitInv(p); // |mu|/sigma
+      if(z && z>1e-6){ var sig=Math.abs(e.effect_std_pp)/z; lo=e.effect_std_pp-1.96*sig; hi=e.effect_std_pp+1.96*sig; }
+    } else if(p>=1){ lo=e.effect_std_pp*0.7; hi=e.effect_std_pp*1.3; } // P=1.0: konservatives Band
+    return Object.assign({est:e.effect_std_pp, lo:lo, hi:hi, p:p}, base||{});
+  }
+
   /* ---------- Forest-Plot-Datenaufbereitung ----------
      Effekte werden in pp SoV je +1 SD des Treibers standardisiert,
      inkl. 95%-CI (CI der Roh-Koeffizienten × SD des Treibers).   */
@@ -65,16 +89,29 @@
   function driverRows(C){
     var lm=C.level_model||{}; var m=seg(lm)||{};
     var pm=segOf(lm.price_model)||{};
+    var joint=segOf(lm.price_footprint_joint);
+    var je=(joint && joint.available) ? (joint.drivers_eff||{}) : null;
     var rows=[];
-    if(m.between_effect){
-      var r1=stdRow(m.between_effect,{
+    // -- Footprint Markenniveau: bevorzugt aus dem gemeinsamen Modell (bereinigt um Preis) --
+    var r1=null;
+    if(je && je.cite_share && je.cite_share.between){
+      r1=jointRow(je.cite_share.between,{
+        label:"Zitations-Footprint — Markenniveau",
+        sub:"Bereinigt um den Preis (gemeinsames Mundlak-Modell)",
+        stable:(m.between_loo||{}).sign_stable, ctrl:"mittelbar",
+        nTxt:"n eff. = "+(joint.n_brands||"?")+" Marken · gemeinsam mit Preis geschätzt",
+        plain:"Marken mit dauerhaft höherer Quellpräsenz sind sichtbarer — auch nach Preis-Kontrolle der stärkste Treiber."});
+    }
+    if(!r1 && m.between_effect){
+      r1=stdRow(m.between_effect,{
         label:"Zitations-Footprint — Markenniveau",
         sub:"Warum Marke A sichtbarer ist als B (Between/Mundlak)",
         stable:(m.between_loo||{}).sign_stable, ctrl:"mittelbar",
         nTxt:"n eff. = "+(m.n_brands||"?")+" Marken",
         plain:"Marken mit dauerhaft höherer Quellpräsenz sind sichtbarer. Erklärt den Autoritätsvorsprung (z. B. Allianz). Stärkster Befund."});
-      if(r1) rows.push(r1);
     }
+    if(r1) rows.push(r1);
+    // -- Footprint Hebel im Thema (Within, aus dem Solo-Fit mit echten CI) --
     if(m.within_effect){
       var r2=stdRow(m.within_effect,{
         label:"Zitations-Footprint — Hebel im Thema",
@@ -84,21 +121,30 @@
         plain:"Das ist der eigentliche ERGO-Hebel: eigenen Zitatanteil in einzelnen Themen ausbauen."});
       if(r2) rows.push(r2);
     }
-    if(pm.between_effect){
-      var r3=stdRow(pm.between_effect,{
+    // -- Relativpreis: bevorzugt aus dem gemeinsamen Modell (bereinigt um Footprint) --
+    var r3=null;
+    if(je && je.relprice && je.relprice.between){
+      r3=jointRow(je.relprice.between,{
+        label:"Relativpreis — Markenniveau",
+        sub:"Bereinigt um den Footprint (gemeinsames Modell, ohne DKV)",
+        stable:(pm.between_loo||{}).sign_stable, ctrl:"direkt",
+        nTxt:"n = "+(joint.n_cells||"?")+" Zellen · "+(joint.n_topics||"?")+" Themen",
+        plain:"Teurer = weniger sichtbar: eigenständiger Neben-Hebel, auch nach Footprint-Kontrolle. Wirkt vermutlich zusätzlich indirekt über Portal-Rankings."});
+    }
+    if(!r3 && pm.between_effect){
+      r3=stdRow(pm.between_effect,{
         label:"Relativpreis — Markenniveau",
         sub:"Teurer vs. günstiger (Between, Preis-Level-Modell)",
         stable:(pm.between_loo||{}).sign_stable, ctrl:"direkt",
         nTxt:"n eff. = "+(pm.n_brands||"?")+" Marken · "+(pm.n_topics||"?")+" Themen",
-        plain:"Preisniveau hängt bisher kaum mit Sichtbarkeit zusammen — schwaches, unsicheres Signal (sehr kleine Fallzahl). Der Nullbefund ist selbst eine Aussage."});
-      if(r3) rows.push(r3);
+        plain:"Teurer hängt tendenziell mit weniger Sichtbarkeit zusammen (kleine Fallzahl, Vorsicht bei der Interpretation)."});
     }
+    if(r3) rows.push(r3);
     rows.push({label:"Einzel-Aktivitäten / Events (kurzfristig)",
       sub:"Seitenänderungen, Presse, Bewertungen (Event-Study, multivariat)",
       est:0, lo:null, hi:null, p:null, stable:null, ctrl:"direkt", events:true,
       nTxt:"n = "+((C.multivariate||{}).n_points||"?")+" Intervalle",
       plain:"Bisher kein verlässlicher Kurzfrist-Effekt: das Event-Modell schlägt die Marken-Basislinie out-of-sample nicht."});
-    // Sortierung: Events ans Ende, sonst nach |Effekt|
     rows.sort(function(a,b){ if(a.events) return 1; if(b.events) return -1; return Math.abs(b.est||0)-Math.abs(a.est||0); });
     return rows;
   }
@@ -249,12 +295,26 @@
       '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Placebo-Falsch-Positiv-Rate '+(fp!=null?num(fp*100,1)+'&nbsp;%':'—')+' (Ziel ≈5 % → Modell ist konservativ/ehrlich). Nur bei web-gestützten LLMs plausibel; bei ChatGPT Rauschen.</div>';
   }
 
+  function peecBadge(C){
+    var wp=(C.level_model||{}).with_peec;
+    var v=wp&&wp.available?wp.validation:null;
+    if(!v||v.spearman_r==null) return '';
+    return '<span title="Unabhängige Zweitmessung (Peec AI, UI-Scraping inkl. Google AI Overview/AI Mode): Rangfolgen-Konvergenz auf '+v.n_common_cells+' gemeinsamen Zellen" style="font-size:10px;font-weight:700;color:#067d3a;background:#e6f5ec;border-radius:4px;padding:2px 7px;vertical-align:middle">✔ Peec-validiert · ρ='+num(v.spearman_r,2)+'</span>';
+  }
+
+  function priceSentence(C){
+    var j=segOf((C.level_model||{}).price_footprint_joint);
+    var pe=(j&&j.available&&j.drivers_eff&&j.drivers_eff.relprice)?j.drivers_eff.relprice.between:null;
+    if(pe&&pe.prob_direction>=0.95) return ' <b>Preis</b> ist ein eigenständiger Neben-Hebel ('+signed(pe.effect_std_pp,1)+' pp je SD teurer — auch bereinigt um den Footprint).';
+    return ' <b>Preis</b> ist bisher nur ein schwacher, unsicherer Treiber.';
+  }
+
   function fazit(C){
     var lm=C.level_model||{}; var m=seg(lm)||{}; var ar=m.authority_ranking||[];
     var al=ar.filter(function(a){return a.brand===m.leader;})[0]||{}; var er=ar.filter(function(a){return a.brand==="ERGO";})[0]||{};
     var over=(er.mean_sov_pct!=null && er.mean_cite_share_pct!=null && er.mean_sov_pct>er.mean_cite_share_pct)?
       (' <b>Lichtblick:</b> ERGO macht aus seiner Quellpräsenz überdurchschnittlich viel Sichtbarkeit ('+num(er.mean_sov_pct,0)+' % SoV bei nur '+num(er.mean_cite_share_pct,0)+' % Zitatanteil, siehe Scatter) — die eigentliche Baustelle ist also die Quellpräsenz selbst, nicht die „Verwertung".'):'';
-    return '<b>Kurz gesagt:</b> Sichtbarkeit kommt aus <b>Quellpräsenz</b>, nicht aus einzelnen Aktionen. ERGO ist in den zitierten Quellen schwächer vertreten ('+num(er.mean_cite_share_pct,0)+' % vs. '+(m.leader||"Allianz")+' '+num(al.mean_cite_share_pct,0)+' %) — genau das erklärt den Großteil des Rückstands.'+over+' <b>Preis</b> ist bisher nur ein schwacher, unsicherer Treiber. <b>Hebel:</b> eigene Inhalte zitierfähig ausbauen, priorisiert dort, wo heute Portale dominieren. Ob das kausal wirkt, prüfen wir über Experimente (Maßnahmen-Wirkung / DiD).';
+    return '<b>Kurz gesagt:</b> Sichtbarkeit kommt aus <b>Quellpräsenz</b>, nicht aus einzelnen Aktionen. ERGO ist in den zitierten Quellen schwächer vertreten ('+num(er.mean_cite_share_pct,0)+' % vs. '+(m.leader||"Allianz")+' '+num(al.mean_cite_share_pct,0)+' %) — genau das erklärt den Großteil des Rückstands.'+over+priceSentence(C)+' <b>Hebel:</b> eigene Inhalte zitierfähig ausbauen, priorisiert dort, wo heute Portale dominieren. Ob das kausal wirkt, prüfen wir über Experimente (Maßnahmen-Wirkung / DiD).';
   }
 
   function details(C){
@@ -265,7 +325,7 @@
     return '<div style="font-size:12px;color:#4b5563;line-height:1.6">'+
       (share!=null?('<b>Gap-Zerlegung:</b> Rund <b>'+share+' %</b> des SoV-Abstands zu '+(m.leader||"Allianz")+' gehen statistisch mit dem geringeren Zitations-Footprint einher — eine <b>Zerlegung, kein Kausalnachweis</b> (ein Teil dürfte allgemeine Markenstärke sein). Der Within-Befund ('+signed((m.within_effect||{}).coef_pp_sov_per_pp_citeshare,1)+' pp/pp, themenbereinigt) stützt, dass Footprint eigenständig wirkt.<br>'):'')+
       (looTxt?(looTxt+'<br>'):'')+
-      'Modellgüte: Zusammenhang r '+num(m.raw_pearson_r,2)+', R² '+(m.r2_within_topics==null?'—':Math.round(m.r2_within_topics*100)+' %')+' ('+modeLbl()+').'+
+      (function(){var wp=(C.level_model||{}).with_peec; if(!(wp&&wp.available)) return ''; var v=wp.validation||{}; var gg=wp.grounded||{}; return '<b>Peec-Integration:</b> '+ (gg.n_cells||'?') +' Zellen (eigener Crawl + Peec, src-Dummy kontrolliert Niveau-Unterschiede) · Konvergenz r '+num(v.pearson_r,2)+' / ρ '+num(v.spearman_r,2)+' auf '+(v.n_common_cells||'?')+' gemeinsamen Zellen.<br>';})()+'Modellgüte: Zusammenhang r '+num(m.raw_pearson_r,2)+', R² '+(m.r2_within_topics==null?'—':Math.round(m.r2_within_topics*100)+' %')+' ('+modeLbl()+').'+
       (mode==="u"?' <b>Achtung:</b> Das sehr hohe R² bei ungrounded ist kein Kausal-Triumph — Zitatanteil und ChatGPT-SoV bilden teils dieselbe latente Markenautorität ab.':'')+'<br>'+
       '<b>Ehrliche Fallzahlen:</b> Within-Effekte nutzen alle '+(m.n_cells||'?')+' Zellen; Between-Effekte („Markenniveau") stützen sich effektiv nur auf '+(m.n_brands||'?')+' Marken — die CIs sind entsprechend breit zu lesen. Der <b>Preis-Treiber</b> stammt aus dem Preis-Level-Modell (n eff. = '+(((segOf((C.level_model||{}).price_model))||{}).n_brands||'?')+' Marken, wenige Themen) und ist bewusst als schwach/unsicher markiert.<br>'+
       '<span style="color:#9ca3af"><b>Sicherheit</b> (Richtungssicherheit P): '+confChip({t:"sehr sicher",c:"#067d3a",bg:"#e6f5ec",p:null})+' P≥0,99 · '+confChip({t:"wahrscheinlich",c:"#8a6d00",bg:"#fdf3d7",p:null})+' 0,90–0,99 · '+confChip({t:"noch unklar",c:"#6b7280",bg:"#eef0f2",p:null})+' &lt;0,90 oder Vorzeichen instabil. <b>Beeinflussbarkeit:</b> '+ampelChip("direkt")+' '+ampelChip("mittelbar")+' '+ampelChip("strukturell")+'.<br>Methodik: Mundlak/CRE-Level-Modell (Zelle = Marke × Thema, Themen-FE); Zusammenhänge, kein Kausalnachweis (Ausnahme DiD). Zitatanteil und Sichtbarkeit stammen teils aus denselben LLM-Antworten (mögliche Überlappung). Evidenz-Skala: '+evChip(3)+' (nur DiD) · '+evChip(1)+' · '+evChip(2)+'</span></div>';
@@ -288,7 +348,7 @@
     if(!card){ card=document.createElement("div"); card.id="korrSynth"; card.className="bg-white rounded-xl shadow p-6 mb-6"; host.insertBefore(card, host.firstChild); }
     card.innerHTML=
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">'+
-        '<div><h3 style="font-size:17px;font-weight:700;margin:0">Was treibt die LLM-Sichtbarkeit?</h3>'+
+        '<div><h3 style="font-size:17px;font-weight:700;margin:0">Was treibt die LLM-Sichtbarkeit? '+peecBadge(C)+'</h3>'+
         '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">Zwei Ebenen: dauerhaftes <b>Niveau</b> (Quellpräsenz) vs. kurzfristige <b>Bewegung</b> (Events). Forest-Plot: je Treiber <b>Stärke</b>, <b>Unsicherheit (95%-CI)</b> und <b>Beeinflussbarkeit</b>.</p></div>'+
         '<div id="korrToggle" style="display:flex;gap:6px">'+
           '<button data-m="g" class="ksw" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #dc0028;background:#dc0028;color:#fff;cursor:pointer">grounded</button>'+

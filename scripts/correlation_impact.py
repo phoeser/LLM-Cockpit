@@ -1362,13 +1362,16 @@ def level_model_mundlak():
         if _peec:
             _cs_map = {(c["brand"], c["topic"]): c["cite_share"] for c in cells_g}
             _own_g = {(c["brand"], c["topic"]): c["sov"] for c in cells_g}
+            _own_c = {(c["brand"], c["topic"]): c["sov"] for c in cells_c}
             aug_g = [dict(c, src_peec=0.0) for c in cells_g]
             aug_c = [dict(c, src_peec=0.0) for c in cells_c]
             _n_add = 0
-            _vx = []; _vy = []
+            _vx = []; _vy = []; _vcx = []; _vcy = []
             for (_b, _pid), _v in _peec.items():
                 if (_b, _pid) in _own_g and _v.get("sov_g") is not None:
                     _vx.append(_own_g[(_b, _pid)]); _vy.append(_v["sov_g"])
+                if (_b, _pid) in _own_c and _v.get("sov_all") is not None:
+                    _vcx.append(_own_c[(_b, _pid)]); _vcy.append(_v["sov_all"])
                 _cs = _cs_map.get((_b, _pid))
                 if _cs is None:
                     continue  # nur Zellen mit bekanntem Footprint-Treiber
@@ -1379,16 +1382,37 @@ def level_model_mundlak():
                     aug_c.append({"brand": _b, "topic": _pid, "cite_share": _cs,
                                   "sov": _v["sov_all"], "src_peec": 1.0})
                 _n_add += 1
+            # 2026-07-16 Fix: Validierung war null, weil der eigene grounded-SoV im
+            # aktuellen Snapshot komplett 0 ist (Gemini-Messung leer -> Varianz 0 ->
+            # pearson() = None). Jetzt: grounded UND combined getrennt validieren,
+            # Varianz-Wache mit explizitem data_health-Hinweis statt stillem null.
             _r = pearson(_vx, _vy) if len(_vx) >= 5 else None
             _rho = spearman(_vx, _vy) if len(_vx) >= 5 else None
+            _rc = pearson(_vcx, _vcy) if len(_vcx) >= 5 else None
+            _rhoc = spearman(_vcx, _vcy) if len(_vcx) >= 5 else None
+            _health = None
+            if _vx and max(_vx) == min(_vx):
+                _health = ("Eigener grounded-SoV ohne Varianz (alle Werte %.2f) - Gemini-"
+                           "Messung im geo_snapshot liefert aktuell keine SoV-Werte. "
+                           "Grounded-Validierung und grounded-Level-Modell derzeit nicht "
+                           "interpretierbar; bitte Crawl pruefen." % _vx[0])
             with_peec = {
                 "available": _n_add > 0,
                 "n_cells_added": _n_add,
                 "grounded": _mundlak_multi(aug_g, ["cite_share", "src_peec"], "sov"),
                 "combined": _mundlak_multi(aug_c, ["cite_share", "src_peec"], "sov"),
                 "validation": {"n_common_cells": len(_vx),
-                               "pearson_r": round(_r, 3) if _r is not None else None,
-                               "spearman_r": round(_rho, 3) if _rho is not None else None,
+                               "pearson_r": (round(_r, 3) if _r is not None
+                                             else (round(_rc, 3) if _rc is not None else None)),
+                               "spearman_r": (round(_rho, 3) if _rho is not None
+                                              else (round(_rhoc, 3) if _rhoc is not None else None)),
+                               "grounded": {"n": len(_vx),
+                                            "pearson_r": round(_r, 3) if _r is not None else None,
+                                            "spearman_r": round(_rho, 3) if _rho is not None else None},
+                               "combined": {"n": len(_vcx),
+                                            "pearson_r": round(_rc, 3) if _rc is not None else None,
+                                            "spearman_r": round(_rhoc, 3) if _rhoc is not None else None},
+                               "data_health": _health,
                                "criterion": "Rangfolgen-Konvergenz > 0,7 erwartet (13_PEEC_INTEGRATION_ANLEITUNG)"},
                 "note": ("Peec AI (UI-Scraping, 366 Prompts, inkl. Google AI Overview/AI Mode) als zweite, "
                          "unabhaengige Messquelle. Zellen mit src_peec-Dummy (Mundlak-Kontrolle fuer "

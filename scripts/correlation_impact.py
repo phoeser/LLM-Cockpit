@@ -1121,17 +1121,8 @@ def _relprice_map():
     return out
 
 
-def _driver_card(label, fit, controllability, plain_tmpl, unit_note):
-    if not fit or not fit.get("available"):
-        return {"label": label, "available": False, "note": (fit or {}).get("note", "nicht verfuegbar")}
-    be = fit.get("between_effect") or {}
-    pdir = be.get("prob_direction"); es = be.get("effect_std_pp")
-    return {"label": label, "available": True,
-            "effect_pp_per_unit": be.get("coef_pp_sov_per_pp_citeshare"),
-            "effect_std_pp": es, "prob_direction": pdir, "confidence": _conf_badge(pdir),
-            "sign_stable": (fit.get("between_loo") or {}).get("sign_stable"),
-            "n_cells": fit.get("n_cells"), "controllability": controllability,
-            "plain": (plain_tmpl.format(es=es) if es is not None else None), "unit": unit_note}
+# _driver_card entfernt (16.07.2026): hatte nach Wegfall der toten "drivers"-Liste
+# keinen Aufrufer mehr.
 
 
 BRAND_SIZE = {  # grobe Groessen-/Bekanntheits-Naeherung (0-100), Basis GDV-Marktanteile 2024
@@ -1360,17 +1351,10 @@ def level_model_mundlak():
             c["size"] = BRAND_SIZE[c["brand"]]
     _joint_cells = [c for c in cells_c if ("size" in c and "cite_share" in c)]
     joint_model = _mundlak_multi(_joint_cells, ["cite_share", "size"], "sov")
-    drivers = [
-        _card_from_joint("Zitations-Footprint (Autoritaet)", "cite_share", joint_model, "mittelbar",
-                         "+1 SD mehr Footprint entspricht etwa {es} pp Sichtbarkeit (bei gleicher Groesse)",
-                         "pp SoV je pp Zitationsanteil"),
-        _card_from_joint("Groesse/Bekanntheit (Marktanteil)", "size", joint_model, "strukturell",
-                         "+1 SD groesser entspricht etwa {es} pp Sichtbarkeit (bei gleichem Footprint)",
-                         "pp SoV je Groessen-Einheit"),
-        _driver_card("Relativpreis (Preisniveau vs. guenstigstem Anbieter)", price_model.get("combined"), "direkt",
-                     "+1 SD teurer entspricht etwa {es} pp Sichtbarkeit (negativ = teurer schadet)",
-                     "pp SoV je Einheit Relativpreis (1.0 = Marktbestpreis)"),
-    ]
+    # 2026-07-16 entfernt: die frühere "drivers"-Kartenliste war toter Code — kein Frontend
+    # hat sie je gelesen (gerendert wird ausschliesslich korrelation_upgrade.js aus
+    # "drivers_eff" des Joint-Modells). Sie hat zweimal Arbeit verursacht, weil dort
+    # "Fixes" gemacht wurden, die nie sichtbar wurden. Bewusst geloescht statt gepflegt.
     # ── Peec-Integration (2026-07-15): Source-augmentiertes Modell + Konvergenz ──
     with_peec = None
     try:
@@ -1415,7 +1399,7 @@ def level_model_mundlak():
         with_peec = {"available": False, "note": "Peec-Integration fehlgeschlagen: " + str(_pe)[:120]}
     return {"available": True, "driver": "cite_share",
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
-            "price_model": price_model, "joint_model": joint_model, "drivers": drivers,
+            "price_model": price_model, "joint_model": joint_model,
             "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,
             "full_joint": full_joint,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "

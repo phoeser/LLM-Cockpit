@@ -991,6 +991,14 @@ def _mundlak_fit(cells, xkey, ykey, min_cells=10):
     if n < min_cells or len(brands) < 3 or len(topics) < 2:
         return {"available": False, "n_cells": n,
                 "note": "Zu wenige Zellen fuer das Level-Modell."}
+    ys = [float(c.get(ykey, 0.0) or 0.0) for c in cells]
+    if ys and (max(ys) - min(ys)) < 1e-9:
+        _allzero = all(abs(y) < 1e-12 for y in ys)
+        return {"available": False, "n_cells": n, "n_brands": len(brands), "n_topics": len(topics),
+                "note": ("Keine Daten fuer diesen Kanal: alle SoV-Werte sind 0 "
+                         "(LLM-Ausfall - z.B. API-Limit/Fehler). Kein Modell gerechnet."
+                         if _allzero else
+                         "Zielgroesse ohne Variation in diesem Kanal - kein Modell gerechnet.")}
     xb = {}; cb = {}
     for c in cells:
         xb[c["brand"]] = xb.get(c["brand"], 0.0) + c[xkey]; cb[c["brand"]] = cb.get(c["brand"], 0) + 1
@@ -1141,6 +1149,14 @@ def _mundlak_multi(cells, xkeys, ykey):
     n = len(cells)
     if n < 10 or len(brands) < 3 or len(topics) < 2:
         return {"available": False, "n_cells": n, "note": "Zu wenige Zellen fuer das gemeinsame Modell."}
+    ys = [float(c.get(ykey, 0.0) or 0.0) for c in cells]
+    if ys and (max(ys) - min(ys)) < 1e-9:
+        _allzero = all(abs(y) < 1e-12 for y in ys)
+        return {"available": False, "n_cells": n, "n_brands": len(brands), "n_topics": len(topics),
+                "note": ("Keine Daten fuer diesen Kanal: alle SoV-Werte sind 0 "
+                         "(LLM-Ausfall - z.B. API-Limit/Fehler). Kein Modell gerechnet."
+                         if _allzero else
+                         "Zielgroesse ohne Variation in diesem Kanal - kein Modell gerechnet.")}
     cnt = {}
     xbar = {k: {} for k in xkeys}
     for c in cells:

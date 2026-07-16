@@ -134,7 +134,7 @@
 
   <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 mb-6 text-sm">
     <span class="font-bold text-green-900">NEU: GEO-Daten integriert</span>
-    <span class="text-gray-700"> — Das parallel laufende GEO-Visibility-Projekt ist angebunden (Pipeline für ChatGPT, Gemini, Claude steht). Erste Test-Runs liegen vor, echte Live-Messungen folgen in 2–3 Wochen. Siehe Reiter <b>"LLM-Sichtbarkeit (GEO)"</b> für Share-of-Voice, Ranking und Pro-Produkt-Auswertung (Zahnzusatz, Sterbegeld, Risikoleben).</span>
+    <span class="text-gray-700"> — Das GEO-Visibility-Tool liefert seit April <b>echte Live-Messungen</b>: nächtlicher Crawl mit Gemini (Google-Grounding) und ChatGPT. Siehe Reiter <b>"LLM-Sichtbarkeit (GEO)"</b> für Share-of-Voice, Ranking und Pro-Produkt-Auswertung (Zahnzusatz, Sterbegeld, Risikoleben).</span>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -430,7 +430,7 @@
     <div class="flex items-start justify-between flex-wrap gap-3">
       <div>
         <h2 class="text-2xl font-bold text-ergo-dark mb-2">LLM-Sichtbarkeit (GEO-Projekt)</h2>
-        <p class="text-sm text-gray-600">Live-Daten aus dem parallel laufenden GEO-Visibility-Tool · Marken-Sichtbarkeit in ChatGPT, Gemini, Claude</p>
+        <p class="text-sm text-gray-600">Live-Daten aus dem GEO-Visibility-Tool · Marken-Sichtbarkeit in <span id="geoLlmList">Gemini &amp; ChatGPT</span></p>
       </div>
       <div id="geoStatusBadge"></div>
     </div>
@@ -842,7 +842,7 @@
 </main>
 
 <footer class="bg-ergo-dark text-white text-center py-6 mt-12">
-  <div class="text-sm">© 2026 ERGO LLM-Sichtbarkeits-Projekt · Erstellt mit Claude · Datenstand: 2026-04-25</div>
+  <div class="text-sm">© 2026 ERGO LLM-Sichtbarkeits-Projekt · Erstellt mit Claude · Datenstand: <span id="footerDatenstand">—</span></div>
 </footer>
 
 <script>
@@ -2276,6 +2276,26 @@ function buildGapCharts() {
 
 // ============= GEO TAB =============
 function buildGeoTab() {
+  // 16.07.2026: Datenstand + LLM-Liste kommen aus dem Snapshot statt hartkodiert.
+  // Vorher stand im Footer dauerhaft "2026-04-25" und die Liste nannte Claude (seit Wochen aus).
+  try {
+    var _d = (GEO_SNAPSHOT.finished_at || GEO_SNAPSHOT.started_at || '').slice(0,10);
+    var _f = document.getElementById('footerDatenstand');
+    if (_f && _d) _f.textContent = _d.split('-').reverse().join('.');
+    var _n = {gemini:'Gemini', chatgpt:'ChatGPT', claude:'Claude', grok:'Grok', perplexity:'Perplexity',
+              'google-ai-overview':'Google AI Overview', 'google-ai-mode':'Google AI Mode'};
+    var _live = (GEO_SNAPSHOT.llms||[]).filter(function(l){
+      var tot = 0, ps = GEO_SNAPSHOT.products || {};
+      for (var p in ps) {
+        var bs = ((ps[p].summary_by_llm||{})[l]||{}).brands || [];
+        for (var i=0;i<bs.length;i++) tot += (bs[i].mentions||0);
+      }
+      return tot > 0;
+    }).map(function(l){ return _n[l]||l; });
+    var _e = document.getElementById('geoLlmList');
+    if (_e && _live.length) _e.textContent = _live.join(' & ');
+  } catch(e) {}
+
   const data = GEO_SNAPSHOT;
   // Status-Badge
   const badge = document.getElementById('geoStatusBadge');

@@ -86,6 +86,47 @@
     return Object.assign({est:eff.effect_std_pp, lo:lo, hi:hi, p:eff.prob_direction}, base||{});
   }
 
+  // Entarteter Fit: Kanal ohne Daten (z.B. LLM-Ausfall) liefert Koeffizient 0 mit P=1,0.
+  // Das darf NICHT als "gesichert kein Effekt" durchgehen.
+  function isDead(fit){
+    if(!fit) return false;
+    if(fit.available===false) return true;
+    var vals=[];
+    var de=fit.drivers_eff;
+    if(de){ Object.keys(de).forEach(function(k){
+      ["within","between"].forEach(function(lv){ if(de[k]&&de[k][lv]) vals.push(de[k][lv].effect_std_pp); }); }); }
+    ["within_effect","between_effect"].forEach(function(k){ if(fit[k]) vals.push(fit[k].effect_std_pp); });
+    if(!vals.length) return false;
+    return vals.every(function(v){ return v===0 || v==null; });
+  }
+  function deadNote(fit){
+    return (fit&&fit.note) ? fit.note
+      : "Für diesen Kanal liegen keine Messdaten vor (LLM-Ausfall?) — es wird bewusst kein Effekt ausgewiesen.";
+  }
+  function deadBanner(txt){
+    return '<div style="border:1px solid #f3d7a5;background:#fdf6e6;border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+      '<b style="font-size:12.5px;color:#8a6d00">⚠ Keine Daten in diesem Kanal</b>'+
+      '<div style="font-size:11.5px;color:#6b5b28;margin-top:3px">'+txt+'</div></div>';
+  }
+
+  // combined poolt grounded+ungrounded. Ist ein Teilkanal tot, sind die combined-Werte
+  // durch dessen Null-Zellen verduennt - sie sehen plausibel aus, sind es aber nicht.
+  function contaminated(C){
+    if(mode!=="c") return null;
+    var lm=C.level_model||{};
+    var bad=[];
+    if(isDead(lm.grounded) || isDead((lm.price_footprint_joint||{}).grounded)) bad.push("grounded (Web-Suche)");
+    if(isDead(lm.ungrounded) || isDead((lm.price_footprint_joint||{}).ungrounded)) bad.push("ungrounded (ChatGPT)");
+    return bad.length ? bad.join(" und ") : null;
+  }
+  function contamBanner(which){
+    return '<div style="border:1px solid #f3d7a5;background:#fdf6e6;border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+      '<b style="font-size:12.5px;color:#8a6d00">⚠ Werte verzerrt</b>'+
+      '<div style="font-size:11.5px;color:#6b5b28;margin-top:3px">Der Kanal <b>'+which+'</b> liefert keine Daten. '+
+      '„Kombiniert" rechnet dessen Null-Werte mit — die Zahlen unten sind dadurch nach unten verzerrt und nicht mit früheren Ständen vergleichbar. '+
+      'Bitte auf einen Einzelkanal umschalten.</div></div>';
+  }
+
   function driverRows(C){
     var lm=C.level_model||{}; var m=seg(lm)||{};
     var pm=segOf(lm.price_model)||{};
@@ -169,6 +210,14 @@
 
   /* ---------- Forest-Plot (HTML/CSS), aufgeraeumt ---------- */
   function forestPlot(C){
+    var lm0=C.level_model||{};
+    var seg0=seg(lm0), j0=segOf(lm0.price_footprint_joint);
+    if(isDead(seg0) && isDead(j0)){
+      return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;margin-bottom:14px">'+
+        '<div style="font-size:13px;font-weight:700;margin-bottom:8px">Treiber-Ranking — was bewegt die Sichtbarkeit? <span style="font-weight:500;color:#9ca3af">('+modeLbl()+')</span></div>'+
+        deadBanner(deadNote(seg0)+' Bitte den Kanal umschalten oder den nächsten Lauf abwarten.')+'</div>';
+    }
+    var contam=contaminated(C);
     var rows=driverRows(C);
     var mx=1;
     rows.forEach(function(r){ mx=Math.max(mx, Math.abs(r.est||0), Math.abs(r.lo||0), Math.abs(r.hi||0)); });
@@ -213,6 +262,7 @@
     }).join('');
     return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;margin-bottom:14px">'+
       '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Treiber-Ranking — was bewegt die Sichtbarkeit? <span style="font-weight:500;color:#9ca3af">('+modeLbl()+')</span></div>'+
+      (contam?contamBanner(contam):'')+
       '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Quadrat = bester Schätzwert (pp Sichtbarkeit je +1 Standardabweichung) · farbiges Band = 95%-Unsicherheitsbereich · dicke Mittellinie = kein Effekt. Berührt das Band die Mittellinie, kann der Effekt noch Zufall sein.</div>'+
       '<div style="display:grid;grid-template-columns:215px 1fr 84px;gap:10px;font-size:10px;color:#c0c4cb"><div></div><div style="display:flex;justify-content:space-between;padding:0 2px"><span>−'+num(mx,0)+' pp</span><span>0</span><span>+'+num(mx,0)+' pp</span></div><div style="text-align:right">Effekt</div></div>'+
       body+
@@ -284,7 +334,12 @@
   /* ---------- Kachel Ebene A ---------- */
   function tileA(C){
     var lm=C.level_model||{}; var m=seg(lm);
-    if(!m||!m.available) return '<div style="font-size:13px;color:#6b7280">Für diese Auswahl noch zu wenige Daten.</div>';
+    if(!m||!m.available) return '<div style="font-size:13px;color:#6b7280">'+((m&&m.note)?m.note:'Für diese Auswahl noch zu wenige Daten.')+'</div>';
+    if(isDead(m)) return deadBanner(deadNote(m));
+    var _cont=contaminated(C); if(_cont) return contamBanner(_cont)+tileABody(C,m);
+    return tileABody(C,m);
+  }
+  function tileABody(C,m){
     var ar=m.authority_ranking||[]; var lead=m.leader;
     var al=ar.filter(function(a){return a.brand===lead;})[0]||{}; var er=ar.filter(function(a){return a.brand==="ERGO";})[0]||{};
     var we=m.within_effect||{}; var be=m.between_effect||{}; var bstable=(m.between_loo||{}).sign_stable;
@@ -332,6 +387,7 @@
     var pfj=(C.level_model||{}).price_footprint_joint||{};
     var j=segOf(pfj);
     var rp=(j&&j.available&&j.drivers_eff)?j.drivers_eff.relprice:null;
+    if(isDead(j)) return ' <b>Preis</b> ist in diesem Kanal nicht bewertbar — es liegen keine Messdaten vor.';
     if(!rp||!rp.between) return ' <b>Preis</b> ist mangels Daten noch nicht bewertbar.';
     var b=rp.between||{}, w=rp.within||{};
     var s='';

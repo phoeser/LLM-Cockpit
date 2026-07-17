@@ -85,6 +85,22 @@ def _day(ts):
     return (ts or "")[:10]
 
 
+# 17.07.2026 (Audit A2): Marken-Namen aus Events/History normalisieren, damit
+# dieselbe Marke nicht doppelt gezaehlt wird ("Cosmos Direkt" vs. "CosmosDirekt").
+# .strip() gegen Rand-Whitespace + explizite Alias-Zusammenfuehrung.
+_BRAND_ALIASES = {
+    "Cosmos Direkt": "CosmosDirekt",
+    "cosmos direkt": "CosmosDirekt",
+}
+
+
+def _norm_brand(name):
+    if name is None:
+        return name
+    s = str(name).strip()
+    return _BRAND_ALIASES.get(s, s)
+
+
 def load_events():
     if not EVENTS_FILE.exists():
         print("FEHLER: %s nicht gefunden" % EVENTS_FILE)
@@ -117,7 +133,7 @@ def build_sov_series_from_history(llm=None):
             continue
         if (r.get("llm") or None) != llm:
             continue
-        day, brand, pct = r.get("date"), r.get("brand"), r.get("sov_pct")
+        day, brand, pct = r.get("date"), _norm_brand(r.get("brand")), r.get("sov_pct")
         if not day or not brand or pct is None:
             continue
         series.setdefault(brand, {})[day] = float(pct)  # letzter Wert/Tag gewinnt
@@ -251,7 +267,7 @@ def build_sov_series_for_llms(llm_set):
         llm = r.get("llm")
         if not llm or llm not in llm_set:
             continue
-        day, brand, pct = r.get("date"), r.get("brand"), r.get("sov_pct")
+        day, brand, pct = r.get("date"), _norm_brand(r.get("brand")), r.get("sov_pct")
         if not day or not brand or pct is None:
             continue
         series.setdefault(brand, {}).setdefault(day, []).append(float(pct))
@@ -288,7 +304,7 @@ def build_sov_series(events):
         if pct is None:
             continue
         day = _day(e.get("timestamp"))
-        brand = e.get("brand")
+        brand = _norm_brand(e.get("brand"))
         if not day or not brand:
             continue
         series.setdefault(brand, {})[day] = float(pct)
@@ -1008,6 +1024,18 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
             }
         except Exception as _e:
             validation = {"error": str(_e)[:120]}
+    # 17.07.2026 (Audit A5): Wenn das Out-of-Sample-R2 <= 0 ist, sagen die Treiber
+    # SoV NICHT besser voraus als die reine Marken-Basislinie -> die geschaetzten
+    # Einzeleffekte sind nicht belastbar (Spurious-Gefahr, vgl. review_positive).
+    # 'significant' NICHT umdefinieren, nur ein zusaetzliches reliable-Flag + Hinweis.
+    if validate and isinstance(validation, dict) and multivar.get("available"):
+        _oos_r2 = (validation.get("out_of_sample") or {}).get("r2_oos_vs_baseline")
+        if _oos_r2 is not None and _oos_r2 <= 0:
+            for _c in (multivar.get("coefficients") or {}).values():
+                if isinstance(_c, dict):
+                    _c["reliable"] = False
+                    _prev = _c.get("note")
+                    _c["note"] = ((_prev + " ") if _prev else "") + "OOS<=0: Einzeleffekte nicht belastbar"
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
@@ -1093,6 +1121,12 @@ def footprint_level_analysis():
     def _target(key):
         xs = [c["footprint"] for c in cells]
         ys = [c[key] for c in cells]
+        # Audit A1: Segment ohne einen einzigen Messwert (Engine-Ausfall) NICHT
+        # als "0,0 — kein Effekt" ausweisen. Regel: keine Daten ist kein Befund.
+        if sum(ys) <= 1e-9:
+            return {"available": False,
+                    "note": ("Segment ohne Messwerte im Snapshot (Engine-Ausfall?) — "
+                             "nicht berechnet (Regel: keine Daten ist kein Befund).")}
         r = pearson(xs, ys)
         rho = spearman(xs, ys)
         pts = [{"brand": c["brand"], "time": c["time"], "y": c[key],
@@ -1297,7 +1331,9 @@ def _mundlak_fit(cells, xkey, ykey, min_cells=10):
         actual = ybar[lead] - ybar[b]; expl = bb * (xbar[lead] - xbar[b])
         gaps[b] = {"vs": lead, "actual_gap_pp": round(actual, 2),
                    "explained_by_footprint_pp": round(expl, 2),
-                   "share_explained": round(expl / actual, 2) if abs(actual) > 1e-6 else None}
+                   # 17.07.2026 (Audit A4): share_explained bei 1.0 kappen (>100 % ist
+                   # ein Overfitting-Symptom auf nur 7 Marken, vgl. Audit-Punkt E7).
+                   "share_explained": round(min(expl / actual, 1.0), 2) if abs(actual) > 1e-6 else None}
     auth = sorted(brands, key=lambda b: -xbar[b])
     _loo = []
     for _drop in brands:
@@ -1379,9 +1415,12 @@ BRAND_SIZE = {  # grobe Groessen-/Bekanntheits-Naeherung (0-100), Basis GDV-Mark
 }
 
 
-def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0):
+def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0, leader_override=None):
     """Mundlak/CRE mit MEHREREN Treibern gemeinsam: je Treiber Within+Between, die
-    Between-Effekte kontrollieren einander (so trennt sich z.B. Groesse vom Footprint)."""
+    Between-Effekte kontrollieren einander (so trennt sich z.B. Groesse vom Footprint).
+    leader_override (Audit A3): Referenzmarke der gap_decomposition wird von aussen
+    vorgegeben (Leader des VOLLEN Segments), damit alle abgeleiteten Modelle gegen
+    dieselbe Marke zerlegen statt gegen den je-Subset wechselnden max(ybar)."""
     brands = sorted({c["brand"] for c in cells})
     topics = sorted({c["topic"] for c in cells})
     n = len(cells)
@@ -1465,7 +1504,13 @@ def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0):
                     "Exakter Wild-Cluster-Bootstrap ueber alle %d Vorzeichen-Vektoren (G=%d Marken). "
                     "Kleinstmoeglicher p-Wert bei dieser Fallzahl: %.4f." % (2 ** _g, _g, 1.0 / (2 ** _g)))
         eff.setdefault(k, {})[kind] = rec
-    lead = max(ybar, key=lambda b: ybar[b])
+    # 17.07.2026 (Audit A3): Referenzmarke konsistent halten. Wenn ein Leader des
+    # vollen Segments vorgegeben ist und im Subset vorkommt, gegen ihn zerlegen;
+    # sonst Fallback auf die sichtbarste Marke des Subsets.
+    if leader_override and leader_override in ybar:
+        lead = leader_override
+    else:
+        lead = max(ybar, key=lambda b: ybar[b])
     gaps = {}
     for b in brands:
         if b == lead:
@@ -1555,7 +1600,7 @@ def _cross_source_check(own_cells):
         return {"available": False, "note": "Kein footprint_pct in peec_footprint.json."}
 
     tmap = {"zahnzusatz": "Zahnzusatz", "sterbegeld": "Sterbegeld", "risikoleben": "Risikoleben",
-            "berufsunfaehigkeit": "Berufsunf\u00e4higkeit", "rechtsschutz": "Rechtsschutz",
+            "berufsunfaehigkeit": "Berufsunfähigkeit", "rechtsschutz": "Rechtsschutz",
             "haftpflicht": "Haftpflicht", "hausrat": "Hausrat", "kfz": "Kfz", "unfall": "Unfall",
             "krankenhauszusatz": "Krankenhauszusatz"}
     own = {}
@@ -1608,7 +1653,7 @@ def _load_peec_cells():
     if not PEEC_FILE.exists():
         return None
     tmap = {"Zahnzusatz": "zahnzusatz", "Sterbegeld": "sterbegeld", "Risikoleben": "risikoleben",
-            "Berufsunf\u00e4higkeit": "berufsunfaehigkeit", "Berufsunfaehigkeit": "berufsunfaehigkeit",
+            "Berufsunfähigkeit": "berufsunfaehigkeit", "Berufsunfaehigkeit": "berufsunfaehigkeit",
             "Rechtsschutz": "rechtsschutz", "Haftpflicht": "haftpflicht", "Hausrat": "hausrat",
             "Kfz": "kfz", "Unfall": "unfall", "Krankenhauszusatz": "krankenhauszusatz", "Reise": "reise"}
     bmap = {"HUK24": "HUK-Coburg"}
@@ -1639,6 +1684,48 @@ def _load_peec_cells():
             "sov_g": (100.0 * mc_g.get((b, pid), 0.0) / tot_g[pid]) if tot_g.get(pid) else None,
             "sov_all": (100.0 * m / tot_all[pid]) if tot_all.get(pid) else None}
     return out or None
+
+
+def _structure_segment(fit_x, pfj_seg, guard_note):
+    """Audit A4: robuste, zweistufige Gap-Zerlegung fuers UI (kein Kausalnachweis).
+    Autoritaet (Groesse+Footprint, statistisch nicht trennbar) kommt aus dem
+    1-Treiber-Level-Fit des VOLLEN Segments; der Preis-Beitrag separat aus dem
+    2-Treiber-Modell (price_footprint_joint, dank A3 gegen denselben Leader).
+    Beide Beitraege werden auf [0, gap] bzw. das Restbudget gekappt."""
+    if not (isinstance(fit_x, dict) and fit_x.get("available")):
+        return {"available": False, "note": (fit_x or {}).get("note", guard_note)}
+    gd = (fit_x.get("gap_decomposition") or {}).get("ERGO")
+    if not gd:
+        return {"available": False,
+                "note": "ERGO ist Leader oder fehlt im Segment — keine Gap-Zerlegung."}
+    gap = gd.get("actual_gap_pp")
+    auth_raw = gd.get("explained_by_footprint_pp")
+    if gap is None or auth_raw is None:
+        return {"available": False, "note": "Gap/Autoritaets-Beitrag nicht bestimmbar."}
+    leader = gd.get("vs") or fit_x.get("leader")
+    auth = min(max(auth_raw, 0.0), gap) if gap > 0 else 0.0
+    auth_capped = bool(abs(auth - auth_raw) > 1e-9)
+    price_raw = 0.0
+    if isinstance(pfj_seg, dict) and pfj_seg.get("available"):
+        _pgd = (pfj_seg.get("gap_decomposition") or {}).get("ERGO")
+        if _pgd:
+            price_raw = (_pgd.get("contrib_pp") or {}).get("relprice", 0.0) or 0.0
+    price = min(max(price_raw, 0.0), max(gap - auth, 0.0))
+    price_capped = bool(abs(price - price_raw) > 1e-9)
+    rest = max(gap - auth - price, 0.0)
+    return {
+        "available": True,
+        "leader": leader,
+        "gap_pp": round(gap, 2),
+        "authority_pp": round(auth, 2),
+        "authority_capped": auth_capped,
+        "price_pp": round(price, 2),
+        "price_capped": price_capped,
+        "rest_pp": round(rest, 2),
+        "note": ("Autoritaet = Groesse+Footprint (statistisch nicht trennbar, Audit 17.07.); "
+                 "Preis separat aus dem 2-Treiber-Modell; Beitraege gekappt. "
+                 "Zerlegung, kein Kausalnachweis."),
+    }
 
 
 def level_model_mundlak():
@@ -1687,9 +1774,37 @@ def level_model_mundlak():
             av = [s.get(e, 0.0) for e in _engines_present(sbl, llms)]
             cells_c.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(av) / len(av) if av else 0.0)})
-    fit_g = _mundlak_fit(cells_g, "cite_share", "sov")
-    fit_u = _mundlak_fit(cells_u, "cite_share", "sov")
-    fit_c = _mundlak_fit(cells_c, "cite_share", "sov")
+    # ── 17.07.2026 (Audit A1): Ausfall-Guard ──────────────────────────────────
+    # Am 16.07. lieferte Gemini fuer alle Themen 0. Die combined-Zelle mittelt
+    # ueber alle Engines, hatte dadurch Varianz und wurde MIT den Nullen gerechnet
+    # -> ein kuenstlicher 6,6-pp-Gap. Regel: "keine Daten ist kein Befund". Ein
+    # Engine-Segment ohne einen einzigen Messwert (Summe aller SoV ~ 0) wird NICHT
+    # berechnet, und combined mittelt nur ueber Segmente MIT Daten.
+    _GUARD_NOTE = ("Segment ohne Messwerte im Snapshot (Engine-Ausfall?) — nicht "
+                   "berechnet (Regel: keine Daten ist kein Befund).")
+    seg_g_ok = sum(c["sov"] for c in cells_g) > 1e-9
+    seg_u_ok = sum(c["sov"] for c in cells_u) > 1e-9
+    fit_g = (_mundlak_fit(cells_g, "cite_share", "sov") if seg_g_ok
+             else {"available": False, "n_cells": len(cells_g), "note": _GUARD_NOTE})
+    fit_u = (_mundlak_fit(cells_u, "cite_share", "sov") if seg_u_ok
+             else {"available": False, "n_cells": len(cells_u), "note": _GUARD_NOTE})
+    # combined nur aus Engines mit Daten: faellt ein Segment aus, rechnet combined
+    # allein auf dem verbleibenden Segment (statt die Nullen einzumischen).
+    _combined_note = None
+    if seg_g_ok and seg_u_ok:
+        pass  # cells_c wie gebaut (alle Engines)
+    elif seg_u_ok:
+        cells_c = [dict(c) for c in cells_u]
+        _combined_note = "Combined nutzt nur ungrounded (grounded-Segment ohne Messwerte im Snapshot)."
+    elif seg_g_ok:
+        cells_c = [dict(c) for c in cells_g]
+        _combined_note = "Combined nutzt nur grounded (ungrounded-Segment ohne Messwerte im Snapshot)."
+    seg_c_ok = seg_g_ok or seg_u_ok
+    fit_c = (_mundlak_fit(cells_c, "cite_share", "sov") if seg_c_ok
+             else {"available": False, "n_cells": len(cells_c), "note": _GUARD_NOTE})
+    if _combined_note and isinstance(fit_c, dict):
+        fit_c["combined_note"] = _combined_note
+    _seg_ok = {"grounded": seg_g_ok, "ungrounded": seg_u_ok, "combined": seg_c_ok}
     # #17: Relativpreis als zusaetzlicher Treiber (nur Produkte mit Preisdaten)
     _rp = _relprice_map()
     for _cs in (cells_g, cells_u, cells_c):
@@ -1697,8 +1812,16 @@ def level_model_mundlak():
             v = _rp.get(c["topic"], {}).get(c["brand"])
             if v is not None:
                 c["relprice"] = v
+    # Audit A3: Leader je Segment EINMAL aus dem vollen Zellenset bestimmen und an
+    # die abgeleiteten Modelle durchreichen (konsistente Referenzmarke, s. Audit E8).
+    _full_leader = {"grounded": fit_g.get("leader") if isinstance(fit_g, dict) else None,
+                    "ungrounded": fit_u.get("leader") if isinstance(fit_u, dict) else None,
+                    "combined": fit_c.get("leader") if isinstance(fit_c, dict) else None}
     price_model = {}
     for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+        if not _seg_ok[_en]:
+            price_model[_en] = {"available": False, "note": _GUARD_NOTE}
+            continue
         _pc = [c for c in _cs if "relprice" in c]
         price_model[_en] = (_mundlak_fit(_pc, "relprice", "sov", min_cells=6)
                             if len(_pc) >= 6 else
@@ -1709,11 +1832,15 @@ def level_model_mundlak():
     # Modell zeigt den Preis-Effekt BEREINIGT um den Footprint und umgekehrt).
     price_footprint_joint = {}
     for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+        if not _seg_ok[_en]:
+            price_footprint_joint[_en] = {"available": False, "note": _GUARD_NOTE}
+            continue
         _pc = [c for c in _cs if "relprice" in c]
-        price_footprint_joint[_en] = (_mundlak_multi(_pc, ["cite_share", "relprice"], "sov")
-                                      if len(_pc) >= 10 else
-                                      {"available": False, "n_cells": len(_pc),
-                                       "note": "Zu wenige Zellen mit Preis UND Footprint."})
+        price_footprint_joint[_en] = (
+            _mundlak_multi(_pc, ["cite_share", "relprice"], "sov", leader_override=_full_leader[_en])
+            if len(_pc) >= 10 else
+            {"available": False, "n_cells": len(_pc),
+             "note": "Zu wenige Zellen mit Preis UND Footprint."})
 
     # (15.07.2026) Voll-Zerlegung fuer die Ursachenanalyse vs. Marktfuehrer:
     # Groesse + Footprint + Preis GEMEINSAM (kontrollieren einander). Achtung
@@ -1721,20 +1848,26 @@ def level_model_mundlak():
     # Aufteilung dieser beiden ist nur als Tendenz zu lesen (im UI kenntlich machen).
     full_joint = {}
     for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+        if not _seg_ok[_en]:
+            full_joint[_en] = {"available": False, "note": _GUARD_NOTE}
+            continue
         _fc = [c for c in _cs if ("relprice" in c and c["brand"] in BRAND_SIZE)]
         for c in _fc:
             c["size"] = BRAND_SIZE[c["brand"]]
-        full_joint[_en] = (_mundlak_multi(_fc, ["cite_share", "size", "relprice"], "sov")
-                           if len(_fc) >= 12 else
-                           {"available": False, "n_cells": len(_fc),
-                            "note": "Zu wenige Zellen mit Preis+Groesse+Footprint."})
+        full_joint[_en] = (
+            _mundlak_multi(_fc, ["cite_share", "size", "relprice"], "sov", leader_override=_full_leader[_en])
+            if len(_fc) >= 12 else
+            {"available": False, "n_cells": len(_fc),
+             "note": "Zu wenige Zellen mit Preis+Groesse+Footprint."})
 
     # #16 2. Treiber: Groesse/Bekanntheit gemeinsam mit Footprint (Effekte kontrollieren einander)
     for c in cells_c:
         if c["brand"] in BRAND_SIZE:
             c["size"] = BRAND_SIZE[c["brand"]]
     _joint_cells = [c for c in cells_c if ("size" in c and "cite_share" in c)]
-    joint_model = _mundlak_multi(_joint_cells, ["cite_share", "size"], "sov")
+    # Audit A1: joint_model laeuft auf dem combined-Segment — nur rechnen, wenn dort Daten sind.
+    joint_model = (_mundlak_multi(_joint_cells, ["cite_share", "size"], "sov")
+                   if seg_c_ok else {"available": False, "note": _GUARD_NOTE})
     # 2026-07-16 entfernt: die frühere "drivers"-Kartenliste war toter Code — kein Frontend
     # hat sie je gelesen (gerendert wird ausschliesslich korrelation_upgrade.js aus
     # "drivers_eff" des Joint-Modells). Sie hat zweimal Arbeit verursacht, weil dort
@@ -1783,8 +1916,13 @@ def level_model_mundlak():
             with_peec = {
                 "available": _n_add > 0,
                 "n_cells_added": _n_add,
-                "grounded": _mundlak_multi(aug_g, ["cite_share", "src_peec"], "sov"),
-                "combined": _mundlak_multi(aug_c, ["cite_share", "src_peec"], "sov"),
+                # Audit A1: nur rechnen, wenn das jeweilige Basis-Segment (eigener Crawl)
+                # Messwerte hat — sonst wuerde der Peec-augmentierte Fit die 0-Zellen
+                # des toten eigenen Kanals mitverrechnen.
+                "grounded": (_mundlak_multi(aug_g, ["cite_share", "src_peec"], "sov")
+                             if seg_g_ok else {"available": False, "note": _GUARD_NOTE}),
+                "combined": (_mundlak_multi(aug_c, ["cite_share", "src_peec"], "sov")
+                             if seg_c_ok else {"available": False, "note": _GUARD_NOTE}),
                 "validation": {"n_common_cells": len(_vx),
                                "pearson_r": (round(_r, 3) if _r is not None
                                              else (round(_rc, 3) if _rc is not None else None)),
@@ -1825,6 +1963,14 @@ def level_model_mundlak():
     except Exception as _xe:
         _xsrc = {"available": False, "note": "Cross-Source-Check fehlgeschlagen: " + str(_xe)[:100]}
 
+    # Audit A4: robuste Struktur-Zusammenfassung je Segment fuers UI (Autoritaet +
+    # Preis + Rest, gekappt). Ersetzt die nicht kommunizierbare 3-Treiber-Zerlegung.
+    structure_summary = {
+        "grounded": _structure_segment(fit_g, price_footprint_joint.get("grounded"), _GUARD_NOTE),
+        "ungrounded": _structure_segment(fit_u, price_footprint_joint.get("ungrounded"), _GUARD_NOTE),
+        "combined": _structure_segment(fit_c, price_footprint_joint.get("combined"), _GUARD_NOTE),
+    }
+
     return {"available": True, "driver": "cite_share",
             "citation_engine_mix": _cmix,
             "cross_source_validation": _xsrc,
@@ -1832,6 +1978,7 @@ def level_model_mundlak():
             "price_model": price_model, "joint_model": joint_model,
             "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,
             "full_joint": full_joint,
+            "structure_summary": structure_summary,
             "note": ("Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = "
                      "Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). "
                      "WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst "

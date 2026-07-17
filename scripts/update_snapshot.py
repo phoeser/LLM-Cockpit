@@ -37,9 +37,13 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
     """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API.
     Token ist optional -- fuer oeffentliche Repos nicht noetig.
     Falls Token ungueltig (401/403), wird ohne Token nochmal versucht."""
+    # 17.07.2026: Legacy-Pfad "Geo/data/runs/latest.json" ENTFERNT. Dieser tote Baum
+    # existiert im GEO-Repo noch und steht seit dem 22.04.2026 still. Bei einem 404 im
+    # Primaerpfad zog das Cockpit klaglos drei Monate alte Daten und wies sie als
+    # aktuellen Stand aus - ohne Warnung, ohne dass jemand es haette merken koennen.
+    # Ein fehlender Snapshot muss als Luecke sichtbar werden, nicht als alter Befund.
     paths = [
         f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
-        f"https://api.github.com/repos/{repo}/contents/Geo/data/runs/latest.json",
     ]
     # Versuch 1: mit Token (falls gesetzt)
     for url in paths:
@@ -67,6 +71,33 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
 
     print("WARN: latest.json nicht ladbar (alle Pfade/Token) -- behalte letzten Stand, kein Abbruch.")
     return None
+
+
+# Maximales Alter eines GEO-Snapshots. Der Crawl laeuft naechtlich; alles jenseits
+# weniger Tage bedeutet, dass die Kette stillsteht. Grosszuegig gewaehlt, damit ein
+# einzelner Ausfall (oder die eingestandene Free-Tier-Verzoegerung von 4-8 h) nicht
+# gleich blockiert.
+MAX_SNAPSHOT_AGE_DAYS = 7
+
+
+def _snapshot_age_days(geo: dict):
+    """Alter des Snapshots in Tagen, oder None wenn kein Zeitstempel lesbar ist."""
+    import datetime as _dt
+    raw = (geo or {}).get("started_at") or (geo or {}).get("finished_at")
+    if not raw:
+        rid = (geo or {}).get("run_id") or ""
+        try:
+            raw = _dt.datetime.strptime(rid[:20], "%Y-%m-%dT%H-%M-%SZ").replace(
+                tzinfo=_dt.timezone.utc).isoformat()
+        except Exception:
+            return None
+    try:
+        ts = _dt.datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=_dt.timezone.utc)
+        return (_dt.datetime.now(_dt.timezone.utc) - ts).total_seconds() / 86400.0
+    except Exception:
+        return None
 
 
 # ── Zitierte-Quellen-Auswertung (Roadmap Punkt 2) ───────────────────────────
@@ -249,6 +280,28 @@ def main():
         print("WARN: Kein neuer GEO-Snapshot -- Nightly laeuft mit letztem Stand weiter (kein Abbruch).")
         return
     print(f"   Run-ID: {geo.get('run_id')}, dry_run={geo.get('dry_run')}")
+
+    # 17.07.2026: Alter pruefen, egal aus welchem Pfad der Snapshot kam. Ein veralteter
+    # Stand darf nicht als aktueller Befund durchgehen - das war der Weg, auf dem die
+    # April-Daten ins Dashboard kamen.
+    _age = _snapshot_age_days(geo)
+    if _age is None:
+        print("WARN: Snapshot ohne lesbaren Zeitstempel -- Alter nicht pruefbar, fahre fort.")
+    elif _age > MAX_SNAPSHOT_AGE_DAYS:
+        print(f"FEHLER: GEO-Snapshot ist {_age:.1f} Tage alt (Grenze {MAX_SNAPSHOT_AGE_DAYS}). "
+              f"Run-ID {geo.get('run_id')}. Das Cockpit wuerde veraltete Zahlen als aktuellen "
+              f"Stand ausweisen -- Abbruch, letzter Stand bleibt stehen.")
+        return
+    else:
+        print(f"   Snapshot-Alter: {_age:.2f} Tage (ok)")
+
+    # 17.07.2026 (Review #8): dry_run-Daten duerfen das Dashboard nicht anfassen. Bisher
+    # wurde dry_run nur GEDRUCKT (Zeile darueber) und die Dummy-Daten dann ganz normal
+    # verarbeitet und committet.
+    if geo.get("dry_run"):
+        print(f"ABBRUCH: Snapshot stammt aus einem dry_run (Run-ID {geo.get('run_id')}) und "
+              f"enthaelt Dummy-Daten. Er wird nicht ins Dashboard uebernommen.")
+        return
 
     snapshot = transform_to_dashboard_format(geo)
 

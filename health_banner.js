@@ -47,14 +47,15 @@
     var out = { broken: [], allZero: false, ageDays: null, snapDate: null, ok: true };
     if (!g || !g.products) return out;
 
-    var llms = (Array.isArray(g.llms) && g.llms.length) ? g.llms.slice() : null;
-    if (!llms) {
-      llms = [];
-      for (var pid0 in g.products) {
-        var sbl0 = g.products[pid0].summary_by_llm || {};
-        for (var k in sbl0) if (llms.indexOf(k) < 0) llms.push(k);
-      }
+    // Fix 2026-07-15: Nur LLMs pruefen, die im Snapshot wirklich Produktdaten haben.
+    // g.llms kann pausierte LLMs enthalten (z.B. Perplexity nach Abschaltung) —
+    // die loesten frueher einen FALSCHEN "liefert keine Daten"-Alarm aus.
+    var llms = [];
+    for (var pid0 in g.products) {
+      var sbl0 = g.products[pid0].summary_by_llm || {};
+      for (var k in sbl0) if (llms.indexOf(k) < 0) llms.push(k);
     }
+    if (!llms.length && Array.isArray(g.llms)) llms = g.llms.slice();
 
     var totals = {};
     llms.forEach(function (l) { totals[l] = 0; });
@@ -140,3 +141,7 @@
       .catch(function () { /* still: kein falscher Alarm bei Netzfehler */ });
   });
 })();
+
+/* Loader (15.07.2026): Navigations-Redesign nachladen — health_banner.js ist
+   auf allen Dashboard-Varianten eingebunden, so braucht es keinen Template-Edit. */
+(function(){ try{ var s=document.createElement("script"); s.src="nav_redesign.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();

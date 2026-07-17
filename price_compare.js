@@ -92,13 +92,43 @@
     return out.slice(0,2).join(" · ");
   }
 
+  // 17.07.2026: Frueher stand hier der hartkodierte Satz "Der Preis-Crawl deckt aktuell
+  // Zahnzusatz, Sterbegeld und Risikoleben ab." Er war falsch (der Crawl deckt sieben
+  // Produkte) und erschien als Erklaerung unter JEDEM leeren Produkt. Jetzt aus den
+  // Daten abgeleitet - damit kann er nicht wieder veralten.
+  // Muss auf das AKTUELL gewaehlte Profil filtern. Sonst listet der Satz Produkte, die
+  // auf der eigenen Card darueber gerade "noch keine Preisdaten" melden - er stand dann
+  // z.B. auf der Sterbegeld-Card und nannte Sterbegeld als abgedeckt.
+  // "Preisdaten" statt "Preis-Crawl": ein Teil stammt aus der manuellen Vollerhebung
+  // (price_manual.json), nicht aus dem Check24-Crawl.
+  function coveredProductsNote(){
+    var ps = (data.products||{});
+    var names = [];
+    Object.keys(ps).forEach(function(k){
+      var prof = ((ps[k]||{}).profiles || {})[profile];
+      if(!prof) return;
+      var bs = prof.brands || {};
+      var any = Object.keys(bs).some(function(b){
+        return b.indexOf("_other_")!==0 && ALLOWED.indexOf(b)>=0;
+      });
+      if(any){
+        var hit = null;
+        for(var i=0;i<SICHT.length;i++){ if(SICHT[i][0]===k){ hit=SICHT[i][1]; break; } }
+        names.push(hit || k);
+      }
+    });
+    if(!names.length) return "Für dieses Altersprofil liegen derzeit keine Preisdaten vor.";
+    if(names.length===1) return "Preisdaten liegen in diesem Profil nur für "+names[0]+" vor.";
+    return "Preisdaten liegen in diesem Profil für "+names.slice(0,-1).join(", ")+" und "+names[names.length-1]+" vor.";
+  }
+
   function productCard(pid, pname){
     var prod = (data.products||{})[pid];
     var wrap = document.createElement("div");
     wrap.className="bg-white rounded-xl shadow p-6 mb-6";
     if(!prod || !prod.profiles || !prod.profiles[profile]){
       wrap.innerHTML='<h3 style="font-size:16px;font-weight:600;margin:0">'+pname+'</h3>'+
-        '<p style="font-size:12px;color:#9ca3af;margin:8px 0 0">Noch keine Check24-Preisdaten. Der Preis-Crawl deckt aktuell Zahnzusatz, Sterbegeld und Risikoleben ab.</p>';
+        '<p style="font-size:12px;color:#9ca3af;margin:8px 0 0">Noch keine Check24-Preisdaten. '+coveredProductsNote()+'</p>';
       return wrap;
     }
     var brands = prod.profiles[profile].brands || {};

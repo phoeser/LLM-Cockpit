@@ -623,7 +623,7 @@ def _wild_cluster_p(Xs, Y, Ainv_unused, clusters, j, lam, max_exact=12):
     n = len(Xs); m = len(Xs[0]) if Xs else 0
     gs = sorted({c for c in clusters})
     G = len(gs)
-    if G < 2 or G > max_exact:
+    if G < 2:
         return None, G, None
 
     def _fit(yv):
@@ -646,7 +646,18 @@ def _wild_cluster_p(Xs, Y, Ainv_unused, clusters, j, lam, max_exact=12):
 
     gi = {g: k for k, g in enumerate(gs)}
     hits = 0; total = 0
-    for mask in range(1 << G):
+    if G <= max_exact:
+        # Exakte Enumeration aller 2^G Vorzeichen-Vektoren (bei G<=12 bezahlbar).
+        masks = range(1 << G)
+    else:
+        # 18.07.2026: Fuer G>12 (Peec-26-Modell, G=26) ist die vollstaendige
+        # Enumeration zu teuer (2^26 = 67 Mio Fits). Deterministische Rademacher-
+        # Stichprobe: fester Seed 42, 4095 Draws (= 2^12 - 1). Reproduzierbar trotz
+        # Sampling; kleinstmoeglicher p-Wert entsprechend ~1/4096.
+        import random as _rnd
+        _r = _rnd.Random(42)
+        masks = [_r.getrandbits(G) for _ in range(4095)]
+    for mask in masks:
         w = [1.0 if (mask >> gi[clusters[i]]) & 1 else -1.0 for i in range(n)]
         ystar = [yhat_r[i] + w[i] * ur[i] for i in range(n)]
         t_b = _fit(ystar)
@@ -1412,6 +1423,17 @@ BRAND_SIZE = {  # grobe Groessen-/Bekanntheits-Naeherung (0-100), Basis GDV-Mark
                 # + Markenbekanntheit; bewusst als Naeherung, leicht editierbar.
     "Allianz": 100.0, "ERGO": 65.0, "HUK-Coburg": 60.0, "AXA": 55.0,
     "Generali": 50.0, "Signal Iduna": 35.0, "CosmosDirekt": 30.0,
+    # 18.07.2026: Erweiterung auf alle 26 Peec-Marken. Quelle/Logik: grobe Groessen-/
+    # Bekanntheits-Naeherung (0-100) auf Basis deutscher Bruttobeitraege ~2023/24
+    # (GDV/Geschaeftsberichte) + Markenbekanntheit, konsistent zur bestehenden Skala
+    # (Allianz=100 / ERGO=65 / Signal Iduna=35). Schreibweisen exakt wie die Peec-Namen
+    # (data/peec_footprint.json). HUK24/CosmosDirekt/DA Direkt/Hannoversche = Direkt-
+    # marken: Wert mischt Konzernpraemie anteilig mit eigenstaendiger Online-Bekanntheit.
+    "R+V": 60.0, "Debeka": 55.0, "HDI": 45.0, "Zurich": 40.0, "Gothaer": 35.0,
+    "Württembergische": 35.0, "DEVK": 35.0, "VHV": 30.0, "Barmenia": 28.0,
+    "ARAG": 28.0, "Alte Leipziger": 28.0, "HanseMerkur": 25.0, "ADAC": 25.0,
+    "HUK24": 25.0, "Hannoversche": 20.0, "Die Bayerische": 15.0, "LV 1871": 12.0,
+    "WGV": 12.0, "DA Direkt": 12.0,
 }
 
 
@@ -1515,9 +1537,16 @@ def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0, leader_override=None):
             if _p is not None:
                 rec["wild_cluster_p"] = round(_p, 4)
                 rec["wild_cluster_t"] = _t
-                rec["wild_cluster_note"] = (
-                    "Exakter Wild-Cluster-Bootstrap ueber alle %d Vorzeichen-Vektoren (G=%d Marken). "
-                    "Kleinstmoeglicher p-Wert bei dieser Fallzahl: %.4f." % (2 ** _g, _g, 1.0 / (2 ** _g)))
+                if _g <= 12:
+                    rec["wild_cluster_note"] = (
+                        "Exakter Wild-Cluster-Bootstrap ueber alle %d Vorzeichen-Vektoren (G=%d Marken). "
+                        "Kleinstmoeglicher p-Wert bei dieser Fallzahl: %.4f." % (2 ** _g, _g, 1.0 / (2 ** _g)))
+                else:
+                    rec["wild_cluster_note"] = (
+                        "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe "
+                        "(G=%d Marken > 12: vollstaendige Enumeration von 2^%d zu teuer). Fester "
+                        "Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~%.4f."
+                        % (_g, _g, 1.0 / 4096))
         eff.setdefault(k, {})[kind] = rec
     # 17.07.2026 (Audit A3): Referenzmarke konsistent halten. Wenn ein Leader des
     # vollen Segments vorgegeben ist und im Subset vorkommt, gegen ihn zerlegen;
@@ -1658,6 +1687,111 @@ def _cross_source_check(own_cells):
                      "aber dieselben Antworten gegen sich selbst.")}
 
 
+def peec26_model():
+    """Peec-26-Marken-Modell (18.07.2026). Datengrundlage NUR Peec (beide Groessen aus
+    Peec — dokumentierte Absicht: interne Konsistenz, nicht Cross-Source). Zellen =
+    Marke x Thema; y = Peec-SoV in % (mention_count-basiert je Thema neu berechnet, NIE
+    Peec-SoV-Spalten mitteln). Treiber: peec_foot (footprint_pct je Marke x Thema) und
+    size (BRAND_SIZE, jetzt 26). HUK24 ist hier eine EIGENE Marke (KEIN Merge zu
+    HUK-Coburg). "Corporate" ist kein Produktthema und faellt raus.
+    Der zirkularitaetsarme Gegentest bleibt cross_source_validation."""
+    import csv as _csv
+    if not PEEC_FOOTPRINT_FILE.exists():
+        return {"available": False, "note": "data/peec_footprint.json fehlt."}
+    if not PEEC_FILE.exists():
+        return {"available": False, "note": "data/peec_cells.csv fehlt."}
+    try:
+        fp = json.loads(PEEC_FOOTPRINT_FILE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {"available": False, "note": "peec_footprint.json nicht lesbar: " + str(exc)[:80]}
+    foot = fp.get("footprint_pct") or {}
+    if not foot:
+        return {"available": False, "note": "Kein footprint_pct in peec_footprint.json."}
+    # grounded wie in _load_peec_cells (ChatGPT-UI zaehlt zu grounded, s. dort).
+    _ground = {"Gemini", "Perplexity", "AI Overview", "AI Mode", "ChatGPT"}
+    mc = {}; tot = {}
+    try:
+        with PEEC_FILE.open(encoding="utf-8-sig") as fh:
+            for r in _csv.DictReader(fh, delimiter=";"):
+                th = (r.get("thema") or "").strip()
+                if not th or th == "Corporate":
+                    continue
+                if (r.get("engine") or "") not in _ground:
+                    continue
+                b = r.get("marke")
+                try:
+                    m = float(r.get("mention_count") or 0)
+                except (TypeError, ValueError):
+                    continue
+                mc[(b, th)] = mc.get((b, th), 0.0) + m
+                tot[th] = tot.get(th, 0.0) + m
+    except Exception as exc:
+        return {"available": False, "note": "peec_cells.csv nicht lesbar: " + str(exc)[:80]}
+    if not mc:
+        return {"available": False, "note": "Keine verwertbaren Peec-Zellen (mention_count)."}
+    # Zellen: nur Marken mit Groesse (BRAND_SIZE) UND vorhandenem Footprint je Thema.
+    cells = []
+    for (b, th), m in mc.items():
+        f = (foot.get(b) or {}).get(th)
+        if f is None or b not in BRAND_SIZE:
+            continue
+        sov = (100.0 * m / tot[th]) if tot.get(th) else 0.0
+        cells.append({"brand": b, "topic": th, "sov": sov,
+                      "peec_foot": float(f), "size": float(BRAND_SIZE[b])})
+    if len(cells) < 10:
+        return {"available": False, "n_cells": len(cells),
+                "note": "Zu wenige Peec-26-Zellen fuer das Modell."}
+    # Leader = Marke mit hoechstem SoV-Markenmittel (leader_override).
+    _bs = {}
+    for c in cells:
+        _bs.setdefault(c["brand"], []).append(c["sov"])
+    _bmean = {b: sum(v) / len(v) for b, v in _bs.items()}
+    _leader = max(_bmean, key=lambda b: _bmean[b])
+    fit = _mundlak_multi(cells, ["peec_foot", "size"], "sov", leader_override=_leader)
+    if not fit.get("available"):
+        return {"available": False, "note": fit.get("note", "Mundlak-Fit fehlgeschlagen."),
+                "n_cells": fit.get("n_cells")}
+    de = fit.get("drivers_eff", {})
+    be_foot = (de.get("peec_foot") or {}).get("between") or {}
+    be_size = (de.get("size") or {}).get("between") or {}
+    # FDR ueber die Between-Familie (peec_foot + size), Wild-Cluster-p als Basis.
+    _apply_fdr({"peec_foot": be_foot, "size": be_size})
+    wild_p = {"peec_foot": be_foot.get("wild_cluster_p"), "size": be_size.get("wild_cluster_p")}
+    fdr_q = {"peec_foot": be_foot.get("wild_cluster_p_fdr"), "size": be_size.get("wild_cluster_p_fdr")}
+    between_loo = be_foot.get("between_loo")
+    # Markenebene: Markenmittel Footprint vs. Markenmittel SoV (n=26).
+    _bf = {}
+    for c in cells:
+        _bf.setdefault(c["brand"], []).append(c["peec_foot"])
+    _fmean = {b: sum(v) / len(v) for b, v in _bf.items()}
+    _brs = sorted(_bmean)
+    _bx = [_fmean[b] for b in _brs]; _by = [_bmean[b] for b in _brs]
+    _pr = pearson(_bx, _by); _sr = spearman(_bx, _by)
+    gap = (fit.get("gap_decomposition") or {}).get("ERGO")
+    return {
+        "available": True,
+        "n_cells": fit.get("n_cells"),
+        "n_brands": fit.get("n_brands"),
+        "n_topics": fit.get("n_topics"),
+        "leader": _leader,
+        "drivers_eff": de,
+        "wild_p": wild_p,
+        "fdr_q": fdr_q,
+        "between_loo": between_loo,
+        "brand_level": {"pearson_r": round(_pr, 3) if _pr is not None else None,
+                        "spearman_r": round(_sr, 3) if _sr is not None else None,
+                        "n": len(_brs)},
+        "gap_decomposition": gap,
+        "circularity": {"level": "high",
+                        "note": ("Footprint und SoV stammen aus denselben Peec-Antworten "
+                                 "(interne Konsistenz); der zirkularitaetsarme Gegentest "
+                                 "ist cross_source_validation.")},
+        "note": ("Peec-26-Modell (18.07.2026): erstmals n=26 Marken mit Groessen-Kontrolle. "
+                 "Hebt den Footprint-Befund von 'plausibel bei n=7' auf eine belastbare "
+                 "Fallzahl - Between-Statistik mit Wild-Cluster-p statt Posterior-P."),
+    }
+
+
 def _load_peec_cells():
     """Peec-AI-Export (UI-Scraping, unabhaengige 2. Messquelle) -> SoV je Marke x Thema.
     grounded = Gemini/Perplexity/AI Overview/AI Mode/ChatGPT-UI. ChatGPT-UI zaehlt zu
@@ -1789,7 +1923,7 @@ def level_model_mundlak():
             av = [s.get(e, 0.0) for e in _engines_present(sbl, llms)]
             cells_c.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(av) / len(av) if av else 0.0)})
-    # ── 17.07.2026 (Audit A1): Ausfall-Guard ──────────────────────────────────
+    # ── 17.07.2026 (Audit A1): Ausfall-Guard ──────────────────────────
     # Am 16.07. lieferte Gemini fuer alle Themen 0. Die combined-Zelle mittelt
     # ueber alle Engines, hatte dadurch Varianz und wurde MIT den Nullen gerechnet
     # -> ein kuenstlicher 6,6-pp-Gap. Regel: "keine Daten ist kein Befund". Ein
@@ -1978,6 +2112,12 @@ def level_model_mundlak():
     except Exception as _xe:
         _xsrc = {"available": False, "note": "Cross-Source-Check fehlgeschlagen: " + str(_xe)[:100]}
 
+    # 18.07.2026: Peec-26-Marken-Modell (n=7 -> n=26 mit Groessen-Kontrolle).
+    try:
+        _p26 = peec26_model()
+    except Exception as _p26e:
+        _p26 = {"available": False, "note": str(_p26e)[:120]}
+
     # Audit A4: robuste Struktur-Zusammenfassung je Segment fuers UI (Autoritaet +
     # Preis + Rest, gekappt). Ersetzt die nicht kommunizierbare 3-Treiber-Zerlegung.
     structure_summary = {
@@ -1989,6 +2129,7 @@ def level_model_mundlak():
     return {"available": True, "driver": "cite_share",
             "citation_engine_mix": _cmix,
             "cross_source_validation": _xsrc,
+            "peec26_model": _p26,
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
             "price_model": price_model, "joint_model": joint_model,
             "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,

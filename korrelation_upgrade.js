@@ -68,8 +68,17 @@
     if(p!=null && p>0.5 && p<1){
       var z=probitInv(p); // |mu|/sigma
       if(z && z>1e-6){ var sig=Math.abs(e.effect_std_pp)/z; lo=e.effect_std_pp-1.96*sig; hi=e.effect_std_pp+1.96*sig; }
-    } else if(p>=1){ lo=e.effect_std_pp*0.7; hi=e.effect_std_pp*1.3; } // P=1.0: konservatives Band
-    return Object.assign({est:e.effect_std_pp, lo:lo, hi:hi, p:p}, base||{});
+    }
+    // 17.07.2026: Frueher wurde bei P>=1 ein Band aus effect*0.7/1.3 erzeugt und als
+    // "95%-Konfidenzintervall" ausgewiesen - der Kommentar behauptete "konservativ",
+    // tatsaechlich war es frei erfunden. Weil cite_share.prob_direction in ALLEN
+    // Segmenten exakt 1,0 ist, traf das nicht einen Randfall, sondern die groesste
+    // Zeile des Plots. Dazu kann ein +-30%-Band um einen Wert !=0 die Nulllinie
+    // konstruktionsbedingt nie beruehren - die Legende ("Beruehrt das Band die
+    // Mittellinie, kann der Effekt noch Zufall sein") lieferte damit fuer jede
+    // P=1-Zeile ein garantiertes "gesichert". Kein Band ist besser als ein erfundenes.
+    var noCI = (p!=null && p>=1);
+    return Object.assign({est:e.effect_std_pp, lo:lo, hi:hi, p:p, noCI:noCI}, base||{});
   }
 
   /* ---------- Forest-Plot-Datenaufbereitung ----------
@@ -136,10 +145,13 @@
     // -- Footprint Markenniveau: bevorzugt aus dem gemeinsamen Modell (bereinigt um Preis) --
     var r1=null;
     if(je && je.cite_share && je.cite_share.between){
+      // 17.07.2026: stable kam frueher aus m.between_loo - dem SOLO-Fit, waehrend der
+      // Schaetzwert daneben aus dem GEMEINSAMEN Modell stammt. Zwei Modelle in einer
+      // Zeile. Seit heute rechnet _mundlak_multi sein eigenes LOO; das nehmen wir.
       r1=jointRow(je.cite_share.between,{
         label:"Zitations-Footprint — Markenniveau", group:"Zitations-Footprint (Autorität)", level:"zwischen Marken",
         sub:"Bereinigt um den Preis (gemeinsames Mundlak-Modell)",
-        stable:(m.between_loo||{}).sign_stable, ctrl:"mittelbar",
+        stable:((je.cite_share.between.between_loo)||{}).sign_stable, ctrl:"mittelbar",
         nTxt:"n eff. = "+(joint.n_brands||"?")+" Marken · gemeinsam mit Preis geschätzt",
         plain:"Marken mit dauerhaft höherer Quellpräsenz sind sichtbarer — auch nach Preis-Kontrolle der stärkste Treiber."});
     }
@@ -165,10 +177,15 @@
     // -- Relativpreis: bevorzugt aus dem gemeinsamen Modell (bereinigt um Footprint) --
     var r3=null;
     if(je && je.relprice && je.relprice.between){
+      // 17.07.2026: stable kam frueher aus pm.between_loo - dem BIVARIATEN price_model,
+      // waehrend der Schaetzwert aus dem gemeinsamen Modell stammt. Am 17.07. meldete
+      // das Chip dadurch "stabil", obwohl der gemeinsame Preis-Effekt im ungrounded-
+      // Kanal das Vorzeichen kippt, sobald Signal Iduna wegfaellt: coef -5,37 -> +5,75.
+      // (Die LOO-Spanne ist in coef, nicht in effect_std_pp - nicht vergleichen.)
       r3=jointRow(je.relprice.between,{
         label:"Relativpreis — Markenniveau", group:"Relativpreis (Preisniveau vs. günstigstem Anbieter)", level:"zwischen Marken",
         sub:"Bereinigt um den Footprint (gemeinsames Modell, ohne DKV)",
-        stable:(pm.between_loo||{}).sign_stable, ctrl:"strukturell",
+        stable:((je.relprice.between.between_loo)||{}).sign_stable, ctrl:"strukturell",
         nTxt:"n eff. = "+(joint.n_brands||"?")+" Marken · gemeinsam mit Footprint geschätzt",
         plain:"Marken mit höherem Preisniveau sind im Schnitt weniger sichtbar. ACHTUNG: Markenvergleich über nur "+(joint.n_brands||"?")+" Marken — vermengt mit allem, was Marken sonst unterscheidet. Kein belegter Hebel."});
     }
@@ -235,7 +252,8 @@
       }
       var cf=r.events?{t:"kein belastbarer Effekt",c:"#6b7280",bg:"#eef0f2"}:conf(r.p,r.stable);
       var col=r.events?"#9ca3af":barColFor(cf);
-      var ciTitle=(r.lo!=null&&r.hi!=null)?('95%-Konfidenzintervall: '+signed(r.lo,1)+' bis '+signed(r.hi,1)+' pp'):'';
+      var ciTitle=(r.lo!=null&&r.hi!=null)?('95%-Konfidenzintervall: '+signed(r.lo,1)+' bis '+signed(r.hi,1)+' pp')
+                 :(r.noCI?'Konfidenzintervall nicht rekonstruierbar: Der Posterior meldet P=1,0, daraus laesst sich keine Streuung zurueckrechnen. Der Punkt ist der Schaetzwert ohne Unsicherheitsband.':'');
       var plot='<div title="'+ciTitle+'" style="position:relative;height:26px;background:'+(i%2?'#fbfbfc':'#f7f8fa')+';border-radius:4px;overflow:hidden">'+grid+
         '<div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c8ccd2"></div>';
       if(r.lo!=null&&r.hi!=null){
@@ -250,11 +268,12 @@
       plot+='</div>';
       var eff=r.events?"~0":signed(r.est,1)+" pp";
       var unstable=(r.stable===false&&!r.events)?' <span style="font-size:10px;color:#b45309" title="Vorzeichen wechselt, wenn einzelne Marken weggelassen werden (Leave-one-out)">↔ instabil</span>':"";
+      var noCIChip=(r.noCI&&!r.events)?' <span style="font-size:10px;color:#9ca3af" title="Der Posterior meldet P=1,0 — daraus laesst sich keine Streuung zurueckrechnen. Frueher stand hier ein erfundenes Band.">ohne CI</span>':"";
       var lblTxt = r.level || r.label;
       var indent = r.level ? 'padding-left:9px;border-left:2px solid #e5e7eb;' : '';
       return head+'<div style="display:grid;grid-template-columns:215px 1fr 84px;align-items:center;gap:10px;padding:7px 0;'+(r.level?'':'border-top:1px solid #f4f5f6')+'">'+
           '<div style="'+indent+'"><div style="font-size:12.5px;font-weight:600;line-height:1.25" title="'+(r.label||'')+' — '+(r.sub||'')+'">'+lblTxt+'</div>'+
-          '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:3px">'+confChip(cf)+ampelChip(r.ctrl)+unstable+'</div>'+
+          '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:3px">'+confChip(cf)+ampelChip(r.ctrl)+unstable+noCIChip+'</div>'+
           '<div style="font-size:10px;color:#b3b8bf;margin-top:2px">'+(r.nTxt||'')+'</div></div>'+
           '<div>'+plot+'<div style="font-size:10.5px;color:#8b919a;margin-top:3px;line-height:1.35">'+r.plain+'</div></div>'+
           '<div style="font-size:13px;font-weight:700;text-align:right;color:'+(r.events?'#9ca3af':'#1a1a2e')+'">'+eff+'</div>'+
@@ -289,6 +308,16 @@
     if(md) md.textContent="("+modeLbl()+")";
     var pts=ar.filter(function(a){return a.mean_cite_share_pct!=null && a.mean_sov_pct!=null;});
     if(pts.length<3){ if(noteEl) noteEl.textContent="Zu wenige Marken mit Daten."; return; }
+    // 17.07.2026: Bei totem Kanal lagen alle sieben Punkte auf y=0, die OLS-Steigung war
+    // +0,00 und die Notiz meldete, die "Verwertung" der Quellpraesenz sei GUT. Ein Chart
+    // aus lauter Nullen ist kein Befund - erst gar nicht zeichnen.
+    if(isDead(m) || pts.every(function(q){ return !q.mean_sov_pct && !q.mean_cite_share_pct; })){
+      if(scatterChart){ try{scatterChart.destroy();}catch(e){} scatterChart=null; }
+      if(cv && cv.getContext){ try{ cv.getContext("2d").clearRect(0,0,cv.width,cv.height); }catch(e){} }
+      if(noteEl) noteEl.innerHTML='<b>Keine Daten in diesem Kanal</b> — vermutlich ein LLM-Ausfall. '+
+        'Ohne Messwerte gäbe der Scatter nur Nullen wieder; er wird deshalb nicht gezeichnet.';
+      return;
+    }
     // OLS y = a + b x
     var n=pts.length, sx=0, sy=0, sxx=0, sxy=0;
     pts.forEach(function(p){ sx+=p.mean_cite_share_pct; sy+=p.mean_sov_pct; sxx+=p.mean_cite_share_pct*p.mean_cite_share_pct; sxy+=p.mean_cite_share_pct*p.mean_sov_pct; });
@@ -409,12 +438,88 @@
     return s;
   }
 
+  // Sucht einen Kanal, in dem der Zusammenhang NICHT selbstbezueglich gemessen ist, und
+  // berichtet, was dort steht. Frueher stand die Aussage ("grounded ist nicht
+  // signifikant") fest im Text - sie waere still falsch geworden, sobald sich die Daten
+  // aendern. Genau der Fehler, den dieser Patch abstellen soll.
+  function indepHint(lm){
+    var cands=[["grounded","grounded (Web-Suche)"],["ungrounded","ungrounded (ChatGPT)"],["combined","kombiniert"]];
+    for(var i=0;i<cands.length;i++){
+      var f=lm[cands[i][0]]; if(!f) continue;
+      var c=f.circularity||{};
+      if(c.level!=="none") continue;
+      if(isDead(f)) continue;
+      var be=f.between_effect||{};
+      if(be.prob_direction==null) continue;
+      var sicher = be.prob_direction>=0.95;
+      return ' <b>Im unabhängig gemessenen Kanal ('+cands[i][1]+') ist derselbe Zusammenhang '+
+             (sicher?('ebenfalls erkennbar (P='+num(be.prob_direction,2)+') — das stützt ihn.'):
+                     ('nicht gesichert (P='+num(be.prob_direction,2)+').'))+'</b>';
+    }
+    return '';
+  }
+
   function fazit(C){
     var lm=C.level_model||{}; var m=seg(lm)||{}; var ar=m.authority_ranking||[];
     var al=ar.filter(function(a){return a.brand===m.leader;})[0]||{}; var er=ar.filter(function(a){return a.brand==="ERGO";})[0]||{};
-    var over=(er.mean_sov_pct!=null && er.mean_cite_share_pct!=null && er.mean_sov_pct>er.mean_cite_share_pct)?
-      (' <b>Lichtblick:</b> ERGO macht aus seiner Quellpräsenz überdurchschnittlich viel Sichtbarkeit ('+num(er.mean_sov_pct,0)+' % SoV bei nur '+num(er.mean_cite_share_pct,0)+' % Zitatanteil, siehe Scatter) — die eigentliche Baustelle ist also die Quellpräsenz selbst, nicht die „Verwertung".'):'';
-    return '<b>Kurz gesagt:</b> Sichtbarkeit kommt aus <b>Quellpräsenz</b>, nicht aus einzelnen Aktionen. ERGO ist in den zitierten Quellen schwächer vertreten ('+num(er.mean_cite_share_pct,0)+' % vs. '+(m.leader||"Allianz")+' '+num(al.mean_cite_share_pct,0)+' %) — genau das erklärt den Großteil des Rückstands.'+over+priceSentence(C)+' <b>Hebel:</b> eigene Inhalte zitierfähig ausbauen, priorisiert dort, wo heute Portale dominieren. Ob das kausal wirkt, prüfen wir über Experimente (Maßnahmen-Wirkung / DiD).';
+
+    // 17.07.2026: Ohne Guard rendert fazit() auch bei totem Kanal. leader faellt per max()
+    // ueber lauter Nullen auf ERGO, und direkt unter dem "Keine Daten"-Banner stand dann
+    // "ERGO ist in den zitierten Quellen schwaecher vertreten (5 % vs. ERGO 5 %)".
+    // Fehlende Daten duerfen keinen Befund erzeugen.
+    if(isDead(m)){
+      return '<b>Kurz gesagt:</b> Für diesen Kanal liegen <b>keine Messdaten</b> vor — vermutlich ein '+
+             'LLM-Ausfall. Es wird bewusst kein Fazit gezogen: Eine Lücke ist kein Befund. '+
+             'Bitte auf einen Kanal mit Daten umschalten oder den nächsten Lauf abwarten.';
+    }
+    var _contF=contaminated(C);
+    if(_contF){
+      return '<b>Kurz gesagt:</b> „Kombiniert" rechnet gerade die Null-Werte des ausgefallenen Kanals <b>'+
+             _contF+'</b> mit. Die Zahlen sind dadurch nach unten verzerrt — ein Fazit daraus wäre '+
+             'irreführend. Bitte auf einen Einzelkanal umschalten.';
+    }
+
+    // Review #1, am 17.07. gemessen statt vermutet: Footprint-Treiber (cite_share) und
+    // Zielgroesse (SoV) stammen beide aus LLM-Antworten. Im Lauf 2026-07-16 kamen 59 von
+    // 60 Zitaten aus ChatGPT. Im ungrounded-Kanal ist der SoV ebenfalls ChatGPT -> das
+    // Modell regressiert eine Messung gegen eine zweite Zusammenfassung derselben
+    // Antworten (r=+0,984, p<0,001). Im grounded-Kanal (SoV aus Gemini) faellt derselbe
+    // Zusammenhang auf r=+0,489, p=0,265 - nicht signifikant. Der Befund existiert genau
+    // dort, wo er sich selbst misst. Solange das gilt, wird er nicht als Befund ausgegeben.
+    var circ = m.circularity || {};
+    if(circ.level === "high"){
+      return '<b>Kurz gesagt:</b> In diesem Kanal lässt sich <b>nicht sagen</b>, ob Quellpräsenz die '+
+             'Sichtbarkeit treibt. '+(circ.share_same_engine!=null?('<b>'+num(100*circ.share_same_engine,0)+' %</b> der '):'Nahezu alle ')+
+             'Zitate stammen aus derselben Engine, die hier auch die Sichtbarkeit misst — Treiber und '+
+             'Zielgröße sind zwei Auswertungen derselben Antworten. Der hohe Zusammenhang ist zu einem '+
+             'unbekannten Teil ein Messartefakt.'+indepHint(lm)+' Belastbar wird das erst mit einer '+
+             'unabhängigen Quelle (Peec-Domain-Report) oder mit zeitlichem Vorlauf.'+priceSentence(C);
+    }
+
+    // Datengetrieben statt fester Erzaehlung. Vorher stand hier unbedingt "ERGO ist in den
+    // zitierten Quellen schwaecher vertreten (X % vs. LEADER Y %)". Am 17.07. ergab das im
+    // Default-View: "schwaecher vertreten (5 % vs. CosmosDirekt 1 %)" - 5 ist nicht kleiner
+    // als 1. Der Marktfuehrer hatte den NIEDRIGSTEN Zitatanteil im Feld.
+    var erC=er.mean_cite_share_pct, alC=al.mean_cite_share_pct;
+    var lead = m.leader || "der Marktführer";
+    var over=(er.mean_sov_pct!=null && erC!=null && er.mean_sov_pct>erC)?
+      (' <b>Lichtblick:</b> ERGO macht aus seiner Quellpräsenz überdurchschnittlich viel Sichtbarkeit ('+
+       num(er.mean_sov_pct,0)+' % SoV bei nur '+num(erC,0)+' % Zitatanteil, siehe Scatter) — die Baustelle '+
+       'wäre dann die Quellpräsenz selbst, nicht die „Verwertung".'):'';
+    if(erC==null || alC==null){
+      return '<b>Kurz gesagt:</b> Für diese Auswahl fehlen die Zitatanteile — es wird kein Fazit gezogen.'+priceSentence(C);
+    }
+    if(erC < alC){
+      return '<b>Kurz gesagt:</b> ERGO ist in den zitierten Quellen schwächer vertreten ('+num(erC,0)+' % vs. '+
+             lead+' '+num(alC,0)+' %). Das geht mit dem Rückstand einher — ob es ihn <i>verursacht</i>, '+
+             'ist damit nicht gezeigt.'+over+priceSentence(C)+' <b>Hebel:</b> eigene Inhalte zitierfähig '+
+             'ausbauen, priorisiert dort, wo heute Portale dominieren. Ob das wirkt, prüfen wir über '+
+             'Experimente (Maßnahmen-Wirkung / DiD).';
+    }
+    return '<b>Kurz gesagt:</b> Die Quellpräsenz erklärt den Rückstand hier <b>nicht</b>: ERGO ist mit '+
+           num(erC,0)+' % Zitatanteil <b>stärker</b> in den Quellen vertreten als '+lead+' ('+num(alC,0)+' %) '+
+           'und trotzdem weniger sichtbar ('+num(er.mean_sov_pct,1)+' % vs. '+num(al.mean_sov_pct,1)+' % SoV). '+
+           'In diesem Kanal wirkt etwas anderes — der Footprint-Hebel greift hier nicht.'+priceSentence(C);
   }
 
   function details(C){

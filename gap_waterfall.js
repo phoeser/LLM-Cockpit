@@ -29,6 +29,32 @@
   function seg(o){ return o?(mode==="g"?o.grounded:(mode==="u"?o.ungrounded:o.combined)):null; }
   function modeLbl(){ return mode==="g"?"grounded (Web-Suche)":(mode==="u"?"ungrounded (ChatGPT)":"kombiniert"); }
 
+  // 17.07.2026: Eigene Kopie des isDead-Guards aus korrelation_upgrade.js - diese Datei
+  // ist eine separate IIFE und kommt an die Funktion dort nicht heran.
+  // Zweck: Faellt ein Kanal aus, sind alle SoV-Werte 0; leader faellt dann per max()
+  // ueber lauter Nullen auf die erstbeste Marke, und die Box fragt "Warum liegt X vor Y?"
+  // ueber einem leeren Balken. Vorsorglicher Guard - am 17.07.2026 ist KEIN Kanal tot
+  // (grounded lebt: leader=CosmosDirekt, SoV 0,7-23,7 %).
+  function isDead(fit){
+    if(!fit) return false;
+    if(fit.available===false) return true;
+    var vals=[];
+    var de=fit.drivers_eff;
+    if(de){ Object.keys(de).forEach(function(k){
+      ["within","between"].forEach(function(lv){ if(de[k]&&de[k][lv]) vals.push(de[k][lv].effect_std_pp); }); }); }
+    ["within_effect","between_effect"].forEach(function(k){ if(fit[k]) vals.push(fit[k].effect_std_pp); });
+    if(!vals.length) return false;
+    return vals.every(function(v){ return v===0 || v==null; });
+  }
+  function deadBox(){
+    return '<h3 style="font-size:16px;font-weight:700;margin:0">Ursachenanalyse</h3>'+
+      '<div style="border:1px solid #f3d7a5;background:#fdf6e6;border-radius:10px;padding:12px 14px;margin-top:10px">'+
+      '<b style="font-size:12.5px;color:#8a6d00">⚠ Keine Daten in diesem Kanal</b>'+
+      '<div style="font-size:11.5px;color:#6b5b28;margin-top:3px">Für den Kanal <b>'+modeLbl()+'</b> liegen keine Messdaten vor '+
+      '(vermutlich ein LLM-Ausfall). Ohne Messwerte gibt es keinen Rückstand zu zerlegen — '+
+      'es wird bewusst weder Marktführer noch Ursache benannt.</div></div>';
+  }
+
   function sovOf(m, brand){
     var ar = (m&&m.authority_ranking) || [];
     for (var i=0;i<ar.length;i++){ if(ar[i].brand===brand) return ar[i].mean_sov_pct; }
@@ -41,13 +67,13 @@
                [seg(lm.price_footprint_joint), "Footprint + Preis (gemeinsam geschätzt)", {cite_share:COL.foot, relprice:COL.price}] ];
     for(var i=0;i<srcs.length;i++){
       var j=srcs[i][0];
-      if(j && j.available && j.gap_decomposition && j.gap_decomposition[brand] && j.gap_decomposition[brand].contrib_pp){
+      if(j && j.available && !isDead(j) && j.gap_decomposition && j.gap_decomposition[brand] && j.gap_decomposition[brand].contrib_pp){
         return { g:j.gap_decomposition[brand], leader:j.leader, label:srcs[i][1], cols:srcs[i][2],
                  brands:Object.keys(j.gap_decomposition), joint:true, n:j.n_cells, nb:j.n_brands, nt:j.n_topics };
       }
     }
     var m=seg(lm)||{};
-    if(m.available && m.gap_decomposition && m.gap_decomposition[brand]){
+    if(m.available && !isDead(m) && m.gap_decomposition && m.gap_decomposition[brand]){
       var g0=m.gap_decomposition[brand];
       return { g:{actual_gap_pp:g0.actual_gap_pp, contrib_pp:{cite_share:g0.explained_by_footprint_pp}},
                leader:m.leader, label:"nur Footprint (Mundlak-Between)", cols:{cite_share:COL.foot},
@@ -106,6 +132,17 @@
       if(anchor && anchor.nextSibling) host.insertBefore(box, anchor.nextSibling);
       else if(anchor) host.appendChild(box);
       else host.insertBefore(box, host.firstChild);
+    }
+    // Guard zuerst: bei totem Kanal gar nicht erst zerlegen.
+    // NUR der Basiskanal wird geprueft. full_joint/price_footprint_joint stehen schon
+    // dann auf available:false, wenn zu wenige PREIS-Zellen da sind (<12 bzw. <10) -
+    // das ist kein LLM-Ausfall. Wuerde man sie mitpruefen, meldete die Box "keine Daten,
+    // vermutlich LLM-Ausfall" bei bloss duennen Preisdaten, und der Fallback in
+    // decompFor() auf "nur Footprint" - der genau fuer diesen Fall gebaut ist - waere
+    // toter Code. Ist der Basiskanal tot, sind die Joint-Modelle es ohnehin.
+    if(isDead(seg(lm))){
+      box.innerHTML = deadBox();
+      return;
     }
     var d = decompFor(lm, brand);
     if(!d){

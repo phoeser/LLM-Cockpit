@@ -103,6 +103,7 @@
       <button data-tab="contentgeo" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Content (GEO)</button>
       <button data-tab="preisvergleich" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Preisvergleich</button>
       <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
+      <button data-tab="peec" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Peec AI</button>
     </div>
   </div>
 </nav>
@@ -795,6 +796,96 @@
 </section>
 
 <!-- ===== TAB: HANDLUNGSEMPFEHLUNGEN (inkl. GAP-Analyse) ===== -->
+<!-- ===== PEEC AI TAB (v3, 2026-07-17) ===== -->
+<section data-content="peec" class="tab-content hidden">
+  <div class="max-w-7xl mx-auto px-6 py-6">
+    <div class="flex items-baseline justify-between flex-wrap gap-2 mb-1">
+      <h2 class="text-xl font-bold">Peec AI – zweite Messquelle (UI-Scraping)</h2>
+      <span class="text-xs text-gray-500">Datenstand Peec: <span id="peecAsOf">–</span> · aktualisiert sich mit dem wöchentlichen Peec-Export</span>
+    </div>
+    <p class="text-sm text-gray-600 mb-4">Unabhängige Validierung des Treibermodells: Peec misst dieselben Marken &times; Themen über ChatGPT, Gemini, AI Overview, AI Mode und Perplexity (366 Prompts, echte UI-Antworten). Footprint = zitatgewichteter Anteil der Quellen mit Markenerwähnung je Thema.</p>
+    <div id="peecHealth"></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="peecCards"></div>
+    <div class="bg-white rounded-xl shadow p-5 mb-6">
+      <h3 class="font-semibold mb-1">Zitations-Footprint je Marke &times; Thema <span class="text-xs font-normal text-gray-500">(% der Zitate im Thema, deren Quelle die Marke erwähnt · Top 10 Marken)</span></h3>
+      <p class="text-xs text-gray-500 mb-3">Validierung: Footprint erklärt die Peec-Sichtbarkeit mit r&nbsp;=&nbsp;0,83 über 312 Zellen – unabhängige Replikation des eigenen Treibermodell-Kernbefunds (r&nbsp;&asymp;&nbsp;0,82–0,83).</p>
+      <div class="overflow-x-auto"><table class="w-full text-xs" id="peecHeat"></table></div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-semibold mb-3">ERGO je Sparte: Footprint vs. Sichtbarkeit (Peec)</h3>
+        <table class="w-full text-xs" id="peecErgoTbl"></table>
+      </div>
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-semibold mb-3">Integriertes Modell (eigener Crawl + Peec-Zellen)</h3>
+        <div id="peecModel" class="text-sm"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+function renderPeecTab(){
+  const P = window.PEEC_DATA;
+  const cardsEl = document.getElementById('peecCards');
+  if (!P) { cardsEl.innerHTML = '<div class="col-span-4 bg-white rounded-xl shadow p-5 text-sm text-gray-500">Peec-Daten (data/peec_footprint.json) noch nicht geladen – erscheinen nach dem nächsten wöchentlichen Peec-Export bzw. Reload.</div>'; return; }
+  document.getElementById('peecAsOf').textContent = P.as_of || '–';
+  const wp = (window.CORRELATION_IMPACT && CORRELATION_IMPACT.level_model && CORRELATION_IMPACT.level_model.with_peec) || null;
+  const val = wp && wp.validation || {};
+  document.getElementById('peecHealth').innerHTML = (val.data_health)
+    ? '<div class="bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg p-3 mb-4"><b>Datenqualität:</b> '+val.data_health+'</div>' : '';
+  function avgObj(o){ const v=Object.values(o||{}); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; }
+  function fmt(v){ return v!=null ? v.toFixed(1)+' %' : '–'; }
+  function heatColor(v){ if(v==null) return 'transparent'; const x=Math.min(v,50)/50; return 'rgba(220,0,40,'+(0.06+0.5*x).toFixed(2)+')'; }
+  const r = (val.combined && val.combined.pearson_r != null) ? val.combined.pearson_r : (val.pearson_r != null ? val.pearson_r : null);
+  const de = wp && wp.combined && wp.combined.drivers_eff && wp.combined.drivers_eff.cite_share || null;
+  const fpE = avgObj(P.footprint_pct && P.footprint_pct['ERGO']), fpA = avgObj(P.footprint_pct && P.footprint_pct['Allianz']);
+  const cards = [
+    ['Konvergenz eigener Crawl ↔ Peec', r!=null ? ('r = '+r.toFixed(2)) : '–', ((val.combined&&val.combined.n)||val.n_common_cells||0)+' gemeinsame Zellen'],
+    ['Peec-Zellen im Modell', wp ? (wp.n_cells_added||0) : '–', 'zusätzlich zu den eigenen Zellen'],
+    ['Footprint-Effekt (integriert, between)', de && de.between ? (de.between.coef.toFixed(2)+' Pp/Pp') : '–', de && de.between ? ('P(Richtung) '+Math.round(100*de.between.prob_direction)+' %') : ''],
+    ['Footprint ERGO vs. Allianz', fpE.toFixed(1)+' % vs. '+fpA.toFixed(1)+' %', 'Ø über 12 Themen (Peec)']
+  ];
+  cardsEl.innerHTML = cards.map(c =>
+    '<div class="bg-white rounded-xl shadow p-4"><div class="text-xs text-gray-500 uppercase tracking-wide">'+c[0]+'</div>'+
+    '<div class="text-2xl font-bold mt-1">'+c[1]+'</div><div class="text-xs text-gray-500 mt-1">'+c[2]+'</div></div>').join('');
+  const tps = (P.topics||[]).filter(t => t !== 'Corporate');
+  const top = (P.brands||[]).slice(0,10);
+  let html = '<thead><tr><th class="text-left p-1">Marke</th>'+tps.map(t=>'<th class="p-1 text-right">'+t.replace('Berufsunfähigkeit','BU').replace('Krankenhauszusatz','KH-Zusatz')+'</th>').join('')+'</tr></thead><tbody>';
+  top.forEach(b => {
+    const own = b==='ERGO';
+    html += '<tr class="'+(own?'bg-red-50 font-semibold':'')+'"><td class="p-1 whitespace-nowrap">'+b+(own?' ★':'')+'</td>';
+    tps.forEach(t => {
+      const v = (P.footprint_pct[b]||{})[t];
+      html += '<td class="p-1 text-right" style="background:'+heatColor(v)+'">'+(v!=null? v.toFixed(0)+' %':'–')+'</td>';
+    });
+    html += '</tr>';
+  });
+  document.getElementById('peecHeat').innerHTML = html + '</tbody>';
+  let rows = tps.map(t => ({t:t, fp:(P.footprint_pct['ERGO']||{})[t], fa:(P.footprint_pct['Allianz']||{})[t],
+                            vis:((P.peec_visibility_pct||{})['ERGO']||{})[t], sov:((P.peec_sov_pct||{})['ERGO']||{})[t]}))
+                .sort((a,b)=>(a.vis||0)-(b.vis||0));
+  document.getElementById('peecErgoTbl').innerHTML =
+    '<thead><tr><th class="text-left p-1">Thema</th><th class="p-1 text-right">Footprint ERGO</th><th class="p-1 text-right">Footprint Allianz</th><th class="p-1 text-right">Visibility</th><th class="p-1 text-right">SoV</th></tr></thead><tbody>'+
+    rows.map(x=>'<tr class="border-t"><td class="p-1">'+x.t+'</td><td class="p-1 text-right">'+fmt(x.fp)+'</td><td class="p-1 text-right text-gray-500">'+fmt(x.fa)+'</td><td class="p-1 text-right font-semibold">'+fmt(x.vis)+'</td><td class="p-1 text-right">'+fmt(x.sov)+'</td></tr>').join('')+'</tbody>';
+  const m = document.getElementById('peecModel');
+  if (!wp || !wp.available) {
+    m.innerHTML = '<p class="text-gray-500 text-sm">Noch keine integrierten Modell-Ergebnisse (with_peec) im nächtlichen Lauf.</p>';
+  } else {
+    const g = wp.combined || {};
+    const d = g.drivers_eff && g.drivers_eff.cite_share || {};
+    const sp = g.drivers_eff && g.drivers_eff.src_peec || {};
+    m.innerHTML =
+      '<ul class="space-y-2 text-sm">'+
+      '<li><b>'+(g.n_cells||'–')+' Zellen</b> ('+(g.n_brands||'–')+' Marken × '+(g.n_topics||'–')+' Themen, eigener Crawl + Peec mit Quellen-Dummy)</li>'+
+      (d.between? '<li>Footprint <b>between</b> (Autorität): <b>'+d.between.coef.toFixed(2)+' Pp SoV je Pp Footprint</b> · P(Richtung) '+Math.round(100*d.between.prob_direction)+' %</li>':'')+
+      (d.within? '<li>Footprint <b>within</b> (Hebel im Thema): '+d.within.coef.toFixed(2)+' Pp/Pp · P '+Math.round(100*d.within.prob_direction)+' %</li>':'')+
+      (sp.within? '<li class="text-gray-500">Quellen-Dummy (Niveau UI vs. API): '+sp.within.coef.toFixed(1)+' Pp – erwartbar, stört die Treiber-Schätzung nicht</li>':'')+
+      '</ul><p class="text-xs text-gray-500 mt-3">'+(wp.note||'')+'</p>';
+  }
+}
+window.renderPeecTab = renderPeecTab;
+</script>
+
 <section data-content="actions" class="tab-content hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <div class="flex items-start justify-between flex-wrap gap-2">
@@ -3377,7 +3468,8 @@ function buildGeoTab() {
     bewertungen: ['buildSentimentChart','buildSentimentSourceTable','renderProductSentiment','renderRecentReviews','buildReviewThemes'],
     ratings: ['renderRatingsTables'],
     presse: ['buildPressTab'],
-    korrelation: ['renderCorrelationTab']
+    korrelation: ['renderCorrelationTab'],
+    peec: ['renderPeecTab']
   };
   function rebuildTab(tab) {
     const fns = TAB_BUILDERS[tab] || [];
@@ -3478,7 +3570,8 @@ function buildGeoTab() {
         __v3_loadJSON('data/correlation_impact.json'),
         __v3_loadJSONL('data/sov_history.jsonl'),
         __v3_loadJSON('data/review_themes.json'),
-        __v3_loadJSON('data/intervention_results.json')
+        __v3_loadJSON('data/intervention_results.json'),
+        __v3_loadJSON('data/peec_footprint.json')
       ]);
       GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
@@ -3491,6 +3584,7 @@ function buildGeoTab() {
       window.SOV_HISTORY = res[11] || [];
       window.REVIEW_THEMES = res[12] || null;
       window.INTERVENTIONS = res[13] || null;
+      window.PEEC_DATA = res[14] || null;
       // v3: gecrawlte Anbieter-URLs in PROVIDERS einmischen (#11)
       try {
         var __pc = window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.providers;

@@ -130,6 +130,109 @@ def build_sov_series_from_history(llm=None):
 GROUNDED_LLMS = {"gemini", "perplexity"}
 
 
+def _citation_engine_mix(products):
+    """Wie viele Zitate stammen aus welcher Engine? (Grundlage der Zirkularitaets-Pruefung)"""
+    mix = {}
+    for pd in (products or {}).values():
+        by = ((pd.get("cited_sources") or {}).get("by_llm") or {})
+        for eng, v in by.items():
+            # Summe der counts, nicht Anzahl der Domains: cite_share summiert ebenfalls
+            # count. Heute identisch (max(count)==1), aber sonst latent inkonsistent.
+            if isinstance(v, dict):
+                n = v.get("total")
+            elif isinstance(v, list):
+                n = sum((r or {}).get("count", 1) or 1 for r in v)
+            else:
+                n = v
+            mix[eng] = mix.get(eng, 0) + (n or 0)
+    return mix
+
+
+def _circularity(cite_mix, sov_engines):
+    """Anteil der Zitate, der aus genau den Engines stammt, die auch den SoV liefern.
+
+    17.07.2026 — Kern von Review-Punkt 1, jetzt gemessen statt vermutet.
+    Der Footprint-Treiber (cite_share) und die Zielgroesse (SoV) werden aus LLM-Antworten
+    gebildet. Stammen beide aus DERSELBEN Engine, regressiert das Modell eine Messung
+    gegen eine zweite Zusammenfassung derselben Antworten: Eine Antwort, die Allianz
+    nennt, verlinkt im selben Atemzug allianz.de. Das erzeugt r-Werte um 0,98, die wie
+    ein starker Befund aussehen und keiner sind.
+
+    Am Lauf 2026-07-16 gemessen (60 Zitate: 59 chatgpt, 1 gemini):
+        ungrounded (SoV=chatgpt):            98,3 % der Zitate aus derselben Engine
+                                             -> r=+0,984, p<0,001   ZIRKULAER
+        grounded  (SoV=gemini/perplexity):    1,7 % der Zitate aus derselben Engine
+                                             -> r=+0,489, p=0,265   NICHT signifikant
+    Der Effekt verschwindet also genau dort, wo er unabhaengig gemessen wird. Solange
+    das so ist, darf "Quellpraesenz erklaert den Rueckstand" nicht als Befund
+    kommuniziert werden — das Frontend liest dieses Feld und schreibt es dazu.
+    """
+    total = sum(cite_mix.values()) or 0
+    if not total:
+        return {"share_same_engine": None, "level": "unknown", "n_citations": 0,
+                "note": "Keine Zitate im Lauf — Zirkularitaet nicht pruefbar."}
+    same = sum(n for e, n in cite_mix.items() if e in set(sov_engines or []))
+    share = same / total
+    if share >= 0.5:
+        lvl = "high"
+        note = ("%.0f %% der Zitate stammen aus derselben Engine, die hier auch die Sichtbarkeit "
+                "misst. Treiber und Zielgroesse sind zwei Zusammenfassungen derselben Antworten — "
+                "der Zusammenhang ist zu einem unbekannten Teil ein Messartefakt und darf nicht "
+                "als Befund gelesen werden.") % (100 * share)
+    elif share >= 0.15:
+        lvl = "partial"
+        note = ("%.0f %% der Zitate stammen aus einer Engine, die hier auch die Sichtbarkeit misst — "
+                "der Zusammenhang ist teilweise selbstbezueglich.") % (100 * share)
+    else:
+        lvl = "none"
+        note = ("Nur %.0f %% der Zitate stammen aus einer Engine, die hier auch die Sichtbarkeit misst. "
+                "Der Zusammenhang ist in diesem Kanal unabhaengig gemessen.") % (100 * share)
+    return {"share_same_engine": round(share, 4), "level": lvl,
+            "n_citations": total, "n_same_engine": same,
+            "cite_mix": dict(sorted(cite_mix.items(), key=lambda kv: -kv[1])),
+            "sov_engines": list(sov_engines or []), "note": note}
+
+
+def _engines_present(sbl, engines):
+    """Nur die Engines, die fuer dieses Produkt wirklich ausgewertet haben.
+
+    17.07.2026. Vorher wurde ueber die KONFIGURIERTE Engine-Liste gemittelt:
+        gv = [s.get(e, 0.0) for e in grounded]      # grounded = [gemini, perplexity]
+        sov = sum(gv) / len(gv)
+    perplexity steht in `llms`, lieferte aber in 0 von 11 Produkten Daten. Sein Fehlen
+    ging als 0.0 in den Mittelwert und der Divisor blieb 2 - **jeder grounded-SoV war
+    exakt halbiert** (verifiziert an allen 7 Marken: ERGO 4,96 statt 9,92 %).
+    Rangfolge und Korrelation bleiben unberuehrt (alle Marken derselbe Faktor), die
+    ausgewiesenen Prozentwerte und die Steigung nicht.
+
+    Wichtige Unterscheidung: Eine Engine, die gelaufen ist und die Marke NICHT genannt
+    hat, gehoert mit 0.0 in den Mittelwert - das ist ein echtes Ergebnis. Nur eine
+    Engine, die gar nicht ausgewertet hat (fehlt in summary_by_llm) oder deren Prompts
+    allesamt gescheitert sind (prompts_total == 0, siehe metrics.py-Fix vom selben Tag),
+    darf den Nenner nicht aufblaehen. Deshalb wird auf summary_by_llm geprueft und nicht
+    auf die Marken-Treffer.
+    """
+    out = []
+    for e in engines:
+        blk = (sbl or {}).get(e)
+        if not isinstance(blk, dict):
+            continue                      # Engine hat fuer dieses Produkt nicht geliefert
+        pt = blk.get("prompts_total")
+        if pt is not None and pt <= 0:
+            continue                      # Engine gelistet, aber alle Prompts gescheitert
+        # Dritter Fall, gleiche Klasse: Engine gelistet, prompts_total>0, aber KEINE
+        # einzige Marke genannt. pipeline_health.py klassifiziert das als broken_llm.
+        # Eine Antwort, in der keine der 7 Marken vorkommt, ist praktisch immer ein
+        # Ausfall (Fehlermeldung, Themenverfehlung) - und ginge sonst als "alle Marken
+        # bei 0 %" in den Mittelwert. Genau der Halbierungs-Bug in neuer Gestalt.
+        _brands = blk.get("brands")
+        if isinstance(_brands, list) and _brands and not any(
+                (br or {}).get("mentions") or (br or {}).get("share_of_voice") for br in _brands):
+            continue
+        out.append(e)
+    return out
+
+
 def build_sov_series_for_llms(llm_set):
     """SoV je Marke gemittelt ueber die LLMs in llm_set (z.B. alle grounded).
     Mittelt die per-LLM-SoV pro (Tag, Marke)."""
@@ -834,8 +937,8 @@ def footprint_level_analysis():
                 sov.setdefault(br.get("name"), {})[eng] = br.get("share_of_voice") or 0.0
         for b in set(list(sov.keys()) + list(cc.keys())):
             s = sov.get(b, {})
-            gv = [s.get(e, 0.0) for e in grounded]
-            uv = [s.get(e, 0.0) for e in ungrounded]
+            gv = [s.get(e, 0.0) for e in _engines_present(sbl, grounded)]
+            uv = [s.get(e, 0.0) for e in _engines_present(sbl, ungrounded)]
             cells.append({"brand": b, "time": pid, "footprint": cc.get(b, 0),
                           "sov_g": 100.0 * (sum(gv) / len(gv) if gv else 0.0),
                           "sov_u": 100.0 * (sum(uv) / len(uv) if uv else 0.0)})
@@ -918,8 +1021,8 @@ def citation_category_analysis():
                 sov.setdefault(br.get("name"), {})[eng] = br.get("share_of_voice") or 0.0
         for b in set(list(sov.keys()) + list(cc.keys())):
             s = sov.get(b, {})
-            gv = [s.get(e, 0.0) for e in grounded]
-            uv = [s.get(e, 0.0) for e in ungrounded]
+            gv = [s.get(e, 0.0) for e in _engines_present(sbl, grounded)]
+            uv = [s.get(e, 0.0) for e in _engines_present(sbl, ungrounded)]
             share = (100.0 * cc.get(b, 0) / total) if total else 0.0
             cells.append({"brand": b, "time": pid, "cite_share": share,
                           "sov_g": 100.0 * (sum(gv) / len(gv) if gv else 0.0),
@@ -1132,7 +1235,7 @@ BRAND_SIZE = {  # grobe Groessen-/Bekanntheits-Naeherung (0-100), Basis GDV-Mark
 }
 
 
-def _mundlak_multi(cells, xkeys, ykey):
+def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0):
     """Mundlak/CRE mit MEHREREN Treibern gemeinsam: je Treiber Within+Between, die
     Between-Effekte kontrollieren einander (so trennt sich z.B. Groesse vom Footprint)."""
     brands = sorted({c["brand"] for c in cells})
@@ -1198,6 +1301,36 @@ def _mundlak_multi(cells, xkeys, ykey):
         contrib = {k: round(eff[k]["between"]["coef"] * (xbar[k][lead] - xbar[k][b]), 2) for k in xkeys}
         gaps[b] = {"vs": lead, "actual_gap_pp": round(actual, 2), "contrib_pp": contrib,
                    "explained_pp": round(sum(contrib.values()), 2)}
+    # 17.07.2026: Leave-one-out AUCH im gemeinsamen Modell (Review #4).
+    # Vorher gab es LOO nur im bivariaten _mundlak_fit. Das Frontend zeigte den
+    # Schaetzwert aus DIESEM Modell und daneben das Stabilitaets-Chip aus dem
+    # bivariaten price_model - zwei verschiedene Modelle in einer Zeile. Das Chip
+    # meldete "stabil" ueber eine Zahl, deren Stabilitaet nie geprueft worden war.
+    # Bei 6-7 Marken ist genau das die entscheidende Pruefung: Jede einzelne Marke
+    # IST hier ein nennenswerter Teil der Stichprobe.
+    if _loo_depth < 1:
+        for k in xkeys:
+            _vals = []
+            for _drop in brands:
+                _sub = [c for c in cells if c["brand"] != _drop]
+                if len({c["brand"] for c in _sub}) < 3:
+                    continue
+                _f = _mundlak_multi(_sub, xkeys, ykey, _loo_depth=_loo_depth + 1)
+                if not _f.get("available"):
+                    continue
+                _b = (_f.get("drivers_eff", {}).get(k) or {}).get("between") or {}
+                if _b.get("coef") is not None:
+                    _vals.append({"dropped": _drop, "coef": _b["coef"]})
+            if _vals:
+                _cs = [v["coef"] for v in _vals]
+                eff[k]["between"]["between_loo"] = {
+                    "min": min(_cs), "max": max(_cs),
+                    "sign_stable": bool(all(x > 0 for x in _cs) or all(x < 0 for x in _cs)),
+                    "n_refits": len(_cs),
+                    "per_brand": {v["dropped"]: v["coef"] for v in _vals},
+                    "note": ("Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. "
+                             "sign_stable=false heisst: Der Effekt haengt an einzelnen Marken.")}
+
     return {"available": True, "n_cells": n, "n_brands": len(brands), "n_topics": len(topics),
             "drivers_eff": eff, "leader": lead, "gap_decomposition": gaps,
             "note": "Gemeinsames Mundlak-Modell; Between-Effekte kontrollieren einander (Groesse vs. Footprint sauber getrennt)."}
@@ -1293,14 +1426,14 @@ def level_model_mundlak():
                     sov.setdefault(nm, {})[eng] = br.get("share_of_voice") or 0.0
         for b in sov:
             s = sov[b]
-            gv = [s.get(e, 0.0) for e in grounded]
-            uv = [s.get(e, 0.0) for e in ungrounded]
+            gv = [s.get(e, 0.0) for e in _engines_present(sbl, grounded)]
+            uv = [s.get(e, 0.0) for e in _engines_present(sbl, ungrounded)]
             share = (100.0 * cc.get(b, 0) / total) if total else 0.0
             cells_g.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(gv) / len(gv) if gv else 0.0)})
             cells_u.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(uv) / len(uv) if uv else 0.0)})
-            av = [s.get(e, 0.0) for e in llms]
+            av = [s.get(e, 0.0) for e in _engines_present(sbl, llms)]
             cells_c.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(av) / len(av) if av else 0.0)})
     fit_g = _mundlak_fit(cells_g, "cite_share", "sov")
@@ -1421,7 +1554,18 @@ def level_model_mundlak():
                          "Footprint-Effekt ueber beide Quellen.")}
     except Exception as _pe:
         with_peec = {"available": False, "note": "Peec-Integration fehlgeschlagen: " + str(_pe)[:120]}
+    # 17.07.2026: Zirkularitaet je Kanal messen und an den Fit haengen (Review #1).
+    _cmix = _citation_engine_mix(products)
+    for _fit, _engs in ((fit_g, grounded), (fit_u, ungrounded), (fit_c, llms)):
+        if isinstance(_fit, dict):
+            _fit["circularity"] = _circularity(_cmix, _engs)
+    for _blk in (price_footprint_joint, full_joint):
+        for _en, _engs in (("grounded", grounded), ("ungrounded", ungrounded), ("combined", llms)):
+            if isinstance(_blk.get(_en), dict):
+                _blk[_en]["circularity"] = _circularity(_cmix, _engs)
+
     return {"available": True, "driver": "cite_share",
+            "citation_engine_mix": _cmix,
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
             "price_model": price_model, "joint_model": joint_model,
             "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,

@@ -1923,7 +1923,7 @@ def level_model_mundlak():
             av = [s.get(e, 0.0) for e in _engines_present(sbl, llms)]
             cells_c.append({"brand": b, "topic": pid, "cite_share": share,
                             "sov": 100.0 * (sum(av) / len(av) if av else 0.0)})
-    # ── 17.07.2026 (Audit A1): Ausfall-Guard ──────────────────────────
+    # ── 17.07.2026 (Audit A1): Ausfall-Guard ──────────────────────────────────
     # Am 16.07. lieferte Gemini fuer alle Themen 0. Die combined-Zelle mittelt
     # ueber alle Engines, hatte dadurch Varianz und wurde MIT den Nullen gerechnet
     # -> ein kuenstlicher 6,6-pp-Gap. Regel: "keine Daten ist kein Befund". Ein

@@ -42,6 +42,7 @@ REVIEW_HISTORY_FILE = Path("data/review_history.json")
 OUT_FILE = Path("data/correlation_impact.json")
 PRICE_FILE = Path("data/price_comparison.json")  # #17: Preis als Treiber
 PEEC_FILE = Path("data/peec_cells.csv")  # Peec-AI-Export (2. Messquelle, 2026-07-15)
+PEEC_FOOTPRINT_FILE = Path("data/peec_footprint.json")  # Peec-URL-Footprint (17.07.2026)
 PRICE_MANUAL_FILE = Path("data/price_manual.json")  # manuelle Preis-Vollerhebung 14.07.2026
 
 # Optionaler Lag in Tagen: Wirkung tritt evtl. verzoegert auf. 0 = gleiches Intervall.
@@ -498,6 +499,149 @@ def _ridge_posterior(Xs, Y, lam, center=None):
     ss = sum((Y[i] - yhat[i]) ** 2 for i in range(n))
     sig2 = ss / max(n - m, 1)
     return beta, Ainv, sig2
+
+
+def _apply_fdr(res, key="wild_cluster_p", out="wild_cluster_p_fdr", alpha=0.05):
+    """Benjamini-Hochberg ueber ALLE Between-Tests im Ergebnisbaum.
+
+    17.07.2026, Review #3: "Keine Mehrfachtest-Korrektur - 130 Effekte mit
+    prob_direction, 74 als signifikant ausgewiesen." Wer genug Effekte rechnet, findet
+    zwangslaeufig welche. Bei 130 Tests und alpha=0,05 sind rund 7 Zufallstreffer zu
+    erwarten - man weiss nur nicht, welche.
+
+    BH kontrolliert die False-Discovery-Rate: Von den als signifikant ausgewiesenen
+    Effekten sind im Erwartungswert hoechstens alpha falsch positiv. Weniger streng als
+    Bonferroni und fuer diesen Zweck das passende Mass - wir wollen Kandidaten finden,
+    nicht eine einzelne Hypothese absichern.
+
+    Gerechnet wird ueber die Wild-Cluster-p-Werte (nicht ueber prob_direction): Nur die
+    sind echte p-Werte. prob_direction ist ein Posterior-Mass und war ausserdem in 61
+    von 130 Faellen exakt 1,0.
+    """
+    found = []
+
+    def walk(o):
+        if isinstance(o, dict):
+            if isinstance(o.get(key), (int, float)):
+                found.append(o)
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    walk(res)
+    if not found:
+        return res
+    ordered = sorted(found, key=lambda d: d[key])
+    n = len(ordered)
+    # BH: q_i = min over j>=i von (p_j * n / j), monoton von hinten
+    prev = 1.0
+    for i in range(n - 1, -1, -1):
+        q = min(prev, ordered[i][key] * n / (i + 1))
+        ordered[i][out] = round(min(q, 1.0), 4)
+        prev = q
+    for d in ordered:
+        d["fdr_note"] = ("Benjamini-Hochberg ueber die %d Between-Tests dieses Modellblocks. "
+                         "Signifikant nach Korrektur: %s (alpha=%.2f). "
+                         "EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests "
+                         "voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung "
+                         "aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur "
+                         "ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren."
+                         % (n, "ja" if d[out] < alpha else "nein", alpha))
+        d["fdr_n_tests"] = n
+        d["fdr_family"] = "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+    return res
+
+
+def _cluster_robust_var(Xs, Y, beta, Ainv, clusters):
+    """Cluster-robuste Sandwich-Varianz. Rueckgabe: (V, G) oder (None, G).
+
+    17.07.2026, Review #3. Vorher: sig2 = ss/(n-m) — iid-Residualvarianz. Die
+    unterstellt, dass jede Zelle eine unabhaengige Beobachtung ist. Sie ist es nicht:
+    Die 77 Zellen stammen aus 7 Marken; Zellen derselben Marke sind korreliert. Die
+    Freiheitsgrade rechneten mit n=53 statt mit 7 Marken, die Themen-Fixed-Effects
+    waren nicht abgezogen. Nachgerechnet: SE_iid 0,044 vs. SE_cluster 0,073 - Faktor 1,6.
+
+    Cluster = Marke. Kleinstichproben-Korrektur wie ueblich: G/(G-1) * (n-1)/(n-m).
+    ACHTUNG: Mit G=7 ist die asymptotische Cluster-Inferenz unzuverlaessig (Faustregel
+    G>=30). Deshalb wird zusaetzlich der Wild-Cluster-Bootstrap gerechnet, siehe
+    _wild_cluster_p(); der ist bei kleinem G das richtige Werkzeug.
+    """
+    n = len(Xs); m = len(Xs[0]) if Xs else 0
+    if not n or not m:
+        return None, 0
+    resid = [Y[i] - sum(Xs[i][a] * beta[a] for a in range(m)) for i in range(n)]
+    scores = {}
+    for i in range(n):
+        g = clusters[i]
+        row = scores.setdefault(g, [0.0] * m)
+        for a in range(m):
+            row[a] += Xs[i][a] * resid[i]
+    G = len(scores)
+    if G < 2:
+        return None, G
+    meat = [[0.0] * m for _ in range(m)]
+    for row in scores.values():
+        for a in range(m):
+            for b in range(m):
+                meat[a][b] += row[a] * row[b]
+    c = (G / (G - 1.0)) * ((n - 1.0) / max(n - m, 1))
+    V = [[c * sum(Ainv[a][k] * meat[k][l] * Ainv[l][b]
+                  for k in range(m) for l in range(m)) for b in range(m)] for a in range(m)]
+    return V, G
+
+
+def _wild_cluster_p(Xs, Y, Ainv_unused, clusters, j, lam, max_exact=12):
+    """Wild-Cluster-Bootstrap (Rademacher, restringiert auf H0: beta_j = 0).
+
+    Bei kleinem G (hier 7 Marken) ist das der Standard statt asymptotischer
+    Cluster-SE. Charme dieser Fallzahl: Mit G Clustern gibt es nur 2^G Vorzeichen-
+    Vektoren - bei G=7 also 128. Die zaehlen wir VOLLSTAENDIG durch, statt zufaellig
+    zu ziehen. Der Test ist damit exakt und reproduzierbar (kein Seed noetig).
+
+    Grenze der Methode, die mitberichtet wird: Der kleinstmoegliche p-Wert ist
+    1/2^G = 0,0078 bei G=7. Ein Effekt kann hier also nie "p < 0,001" erreichen,
+    egal wie stark er ist. Das ist keine Schwaeche des Effekts, sondern der Fallzahl.
+    """
+    n = len(Xs); m = len(Xs[0]) if Xs else 0
+    gs = sorted({c for c in clusters})
+    G = len(gs)
+    if G < 2 or G > max_exact:
+        return None, G, None
+
+    def _fit(yv):
+        b, Ai, _ = _ridge_posterior(Xs, yv, lam)
+        V, _ = _cluster_robust_var(Xs, yv, b, Ai, clusters)
+        if V is None or V[j][j] <= 0:
+            return None
+        return b[j] / (V[j][j] ** 0.5)
+
+    t_obs = _fit(Y)
+    if t_obs is None:
+        return None, G, None
+
+    # Restringiertes Modell: Spalte j raus -> Residuen unter H0
+    idx = [a for a in range(m) if a != j]
+    Xr = [[row[a] for a in idx] for row in Xs]
+    br, _, _ = _ridge_posterior(Xr, Y, lam)
+    yhat_r = [sum(Xr[i][a] * br[a] for a in range(len(idx))) for i in range(n)]
+    ur = [Y[i] - yhat_r[i] for i in range(n)]
+
+    gi = {g: k for k, g in enumerate(gs)}
+    hits = 0; total = 0
+    for mask in range(1 << G):
+        w = [1.0 if (mask >> gi[clusters[i]]) & 1 else -1.0 for i in range(n)]
+        ystar = [yhat_r[i] + w[i] * ur[i] for i in range(n)]
+        t_b = _fit(ystar)
+        if t_b is None:
+            continue
+        total += 1
+        if abs(t_b) >= abs(t_obs) - 1e-12:
+            hits += 1
+    if not total:
+        return None, G, None
+    return hits / total, G, round(t_obs, 3)
 
 
 def multivariate_impact(points_raw, min_with=6, candidate_types=None, feature_key="x",
@@ -1282,16 +1426,45 @@ def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0):
         v = sum(x * x for x in col) / max(n - 1, 1); sd.append(v ** 0.5 if v > 1e-12 else 1.0)
     p = len(cols)
     Xs = [[cols[j][i] / sd[j] for j in range(p)] for i in range(n)]
-    beta, Ainv, sig2 = _ridge_posterior(Xs, Yc, n * 0.1)
+    _lam = n * 0.1
+    beta, Ainv, sig2 = _ridge_posterior(Xs, Yc, _lam)
+    # 17.07.2026 (Review #3): Cluster = Marke. Die Zellen einer Marke sind nicht
+    # unabhaengig; die iid-Varianz unterschaetzt die Streuung um rund den Faktor 1,6.
+    _clusters = [c["brand"] for c in cells]
+    _V, _G = _cluster_robust_var(Xs, Yc, beta, Ainv, _clusters)
     def _sdraw(v):
         m = sum(v) / len(v); return (sum((x - m) ** 2 for x in v) / max(len(v) - 1, 1)) ** 0.5
     eff = {}
     for j, (kind, k) in enumerate(names):
         mu = beta[j] / sd[j]
-        sigma = (max(sig2 * Ainv[j][j], 0.0) ** 0.5) / sd[j]
-        pdir = max(_norm_cdf(mu / sigma), 1.0 - _norm_cdf(mu / sigma)) if sigma > 1e-12 else 1.0
-        eff.setdefault(k, {})[kind] = {"coef": round(mu, 3), "prob_direction": round(pdir, 3),
-                                       "effect_std_pp": round(mu * _sdraw(rawcols[j]), 2)}
+        sigma_iid = (max(sig2 * Ainv[j][j], 0.0) ** 0.5) / sd[j]
+        sigma_cl = ((max(_V[j][j], 0.0) ** 0.5) / sd[j]) if _V is not None else None
+        sigma = sigma_cl if (sigma_cl and sigma_cl > 1e-12) else sigma_iid
+        # 17.07.2026: Frueher stand hier "else 1.0" - eine entartete Streuung (sigma=0,
+        # z.B. bei totem Kanal) wurde damit zu P=1,0 = "sehr sicher". Fehlende
+        # Information darf nicht als maximale Sicherheit erscheinen. Jetzt None.
+        pdir = (max(_norm_cdf(mu / sigma), 1.0 - _norm_cdf(mu / sigma))
+                if (sigma and sigma > 1e-12) else None)
+        rec = {"coef": round(mu, 3),
+               "prob_direction": round(pdir, 3) if pdir is not None else None,
+               "effect_std_pp": round(mu * _sdraw(rawcols[j]), 2),
+               "se_iid": round(sigma_iid, 4) if sigma_iid else None,
+               "se_cluster": round(sigma_cl, 4) if sigma_cl else None,
+               "se_inflation": (round(sigma_cl / sigma_iid, 2)
+                                if (sigma_cl and sigma_iid and sigma_iid > 1e-12) else None),
+               "n_clusters": _G}
+        # Wild-Cluster-Bootstrap nur fuer die Between-Effekte: Das sind die Aussagen
+        # ueber MARKEN, und genau dort ist G=7 die eigentliche Fallzahl. Fuer Within
+        # (Marke gegen sich selbst ueber Themen) traegt die Zellzahl.
+        if kind == "between" and _loo_depth < 1:
+            _p, _g, _t = _wild_cluster_p(Xs, Yc, Ainv, _clusters, j, _lam)
+            if _p is not None:
+                rec["wild_cluster_p"] = round(_p, 4)
+                rec["wild_cluster_t"] = _t
+                rec["wild_cluster_note"] = (
+                    "Exakter Wild-Cluster-Bootstrap ueber alle %d Vorzeichen-Vektoren (G=%d Marken). "
+                    "Kleinstmoeglicher p-Wert bei dieser Fallzahl: %.4f." % (2 ** _g, _g, 1.0 / (2 ** _g)))
+        eff.setdefault(k, {})[kind] = rec
     lead = max(ybar, key=lambda b: ybar[b])
     gaps = {}
     for b in brands:
@@ -1345,6 +1518,84 @@ def _card_from_joint(label, k, joint, controllability, plain_tmpl, unit):
             "effect_std_pp": es, "prob_direction": pdir, "confidence": _conf_badge(pdir),
             "sign_stable": None, "n_cells": joint.get("n_cells"), "controllability": controllability,
             "plain": (plain_tmpl.format(es=es) if es is not None else None), "unit": unit}
+
+
+def _cross_source_check(own_cells):
+    """Footprint aus Peec gegen den EIGENEN SoV — der zirkularitaetsfreie Test.
+
+    17.07.2026, Antwort auf Review-Punkt 1. Alle bisherigen Belege fuer
+    "Quellpraesenz -> Sichtbarkeit" hatten Treiber und Zielgroesse aus derselben
+    Quelle und waren damit zu einem unbekannten Teil Messartefakt:
+
+        eigener Crawl, ungrounded:  ChatGPT-Zitate vs. ChatGPT-SoV   r=+0,998
+        eigener Crawl, grounded:    ChatGPT-Zitate vs. Gemini-SoV    r=+0,860
+        Peec intern:                Peec-URLs      vs. Peec-SoV      r=+0,798
+
+    Auch der Peec-interne Wert ist NICHT unabhaengig: Die zitierten URLs stammen aus
+    denselben Peec-Antworten, die den SoV liefern. (Die Uebergabe vom 17.07. nannte ihn
+    faelschlich eine "unabhaengige Replikation" — das ist hiermit korrigiert.)
+
+    Dieser Test kreuzt zwei getrennte Messsysteme:
+        Treiber    = Peec-Footprint (UI-Scraping, zitierte URLs, 366 Prompts, 5 Engines)
+        Zielgroesse = eigener grounded-SoV (Gemini-API, eigener Crawl)
+    Kein gemeinsames Antwortmaterial -> Zirkularitaet konstruktiv ausgeschlossen.
+
+    Ergebnis am Lauf 2026-07-17: Zellebene r=+0,728 (n=70, p<1e-12),
+    Markenebene r=+0,823 (n=7, p=0,023). Die Markenebene ist der ehrlichere Wert —
+    die 70 Zellen stammen aus nur 7 Marken und sind nicht unabhaengig.
+    """
+    if not PEEC_FOOTPRINT_FILE.exists():
+        return {"available": False, "note": "data/peec_footprint.json fehlt."}
+    try:
+        fp = json.loads(PEEC_FOOTPRINT_FILE.read_text(encoding="utf-8"))
+        foot = fp.get("footprint_pct") or {}
+    except Exception as exc:
+        return {"available": False, "note": "peec_footprint.json nicht lesbar: " + str(exc)[:80]}
+    if not foot:
+        return {"available": False, "note": "Kein footprint_pct in peec_footprint.json."}
+
+    tmap = {"zahnzusatz": "Zahnzusatz", "sterbegeld": "Sterbegeld", "risikoleben": "Risikoleben",
+            "berufsunfaehigkeit": "Berufsunf\u00e4higkeit", "rechtsschutz": "Rechtsschutz",
+            "haftpflicht": "Haftpflicht", "hausrat": "Hausrat", "kfz": "Kfz", "unfall": "Unfall",
+            "krankenhauszusatz": "Krankenhauszusatz"}
+    own = {}
+    for c in own_cells:
+        th = tmap.get(c.get("topic"))
+        if th and isinstance(c.get("sov"), (int, float)):
+            own.setdefault(c["brand"], {})[th] = c["sov"]
+
+    xs = []; ys = []; brands = set()
+    for b, tv in foot.items():
+        for t, f in (tv or {}).items():
+            v = (own.get(b) or {}).get(t)
+            if isinstance(v, (int, float)) and isinstance(f, (int, float)):
+                xs.append(f); ys.append(v); brands.add(b)
+    r_cell = pearson(xs, ys) if len(xs) >= 4 else None
+
+    bx = []; by = []
+    for b in sorted(brands):
+        fv = [f for t, f in (foot.get(b) or {}).items()
+              if isinstance((own.get(b) or {}).get(t), (int, float))]
+        tv = [own[b][t] for t in (foot.get(b) or {})
+              if isinstance((own.get(b) or {}).get(t), (int, float))]
+        if fv:
+            bx.append(sum(fv) / len(fv)); by.append(sum(tv) / len(tv))
+    r_brand = pearson(bx, by) if len(bx) >= 4 else None
+
+    return {"available": bool(r_brand is not None or r_cell is not None),
+            "driver": "Peec-Footprint (UI-Scraping, zitierte URLs)",
+            "target": "eigener grounded-SoV (Gemini-API)",
+            "n_cells": len(xs), "n_brands": len(bx),
+            "pearson_r_cells": round(r_cell, 3) if r_cell is not None else None,
+            "pearson_r_brands": round(r_brand, 3) if r_brand is not None else None,
+            "circularity": {"share_same_engine": 0.0, "level": "none",
+                            "note": "Treiber und Zielgroesse stammen aus getrennten Messsystemen "
+                                    "(Peec-UI-Scraping vs. eigene Gemini-API). Kein gemeinsames "
+                                    "Antwortmaterial - Zirkularitaet konstruktiv ausgeschlossen."},
+            "note": ("Zirkularitaetsfreier Test des Kernbefunds. Markenebene ist der ehrlichere "
+                     "Wert: Die Zellen stammen aus nur wenigen Marken und sind nicht unabhaengig. "
+                     "Zum Vergleich: Peec-Footprint gegen Peec-eigenen SoV liegt hoeher, misst "
+                     "aber dieselben Antworten gegen sich selbst.")}
 
 
 def _load_peec_cells():
@@ -1564,8 +1815,19 @@ def level_model_mundlak():
             if isinstance(_blk.get(_en), dict):
                 _blk[_en]["circularity"] = _circularity(_cmix, _engs)
 
+    # FDR ueber alle Between-Tests des Level-Modells (nach dem Bau aller Bloecke)
+    for _blk in (price_footprint_joint, full_joint):
+        _apply_fdr(_blk)
+    _apply_fdr(joint_model)
+
+    try:
+        _xsrc = _cross_source_check(cells_g)
+    except Exception as _xe:
+        _xsrc = {"available": False, "note": "Cross-Source-Check fehlgeschlagen: " + str(_xe)[:100]}
+
     return {"available": True, "driver": "cite_share",
             "citation_engine_mix": _cmix,
+            "cross_source_validation": _xsrc,
             "grounded": fit_g, "ungrounded": fit_u, "combined": fit_c,
             "price_model": price_model, "joint_model": joint_model,
             "with_peec": with_peec, "price_footprint_joint": price_footprint_joint,

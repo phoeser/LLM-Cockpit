@@ -6,6 +6,8 @@
    2. Die 10 Anbieter-Tabs wandern in ein Dropdown
       "Anbieter-Webseiten" (Wunsch 15.07.).
    Geladen via health_banner.js (Loader am Dateiende).
+   Fix 15.07. abends: Menue haengt am document.body (position:fixed),
+   weil die Tab-Leiste per overflow das absolute Menue abgeschnitten hat.
    ============================================================ */
 (function () {
   "use strict";
@@ -39,8 +41,9 @@
     btn.removeAttribute("data-tab");
     var menu=document.createElement("div");
     menu.id="brandDDMenu";
-    menu.style.cssText="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:70;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.15);padding:6px;min-width:190px";
-    wrap.appendChild(btn); wrap.appendChild(menu);
+    menu.style.cssText="display:none;position:fixed;z-index:9000;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.15);padding:6px;min-width:190px;max-height:70vh;overflow-y:auto";
+    wrap.appendChild(btn);
+    document.body.appendChild(menu); // an body: Tab-Leiste hat overflow und wuerde das Menue abschneiden
     container.insertBefore(wrap, firstBrand);
     BRANDS.forEach(function(k){
       var b=document.querySelector('.tab-btn[data-tab="'+k+'"]');
@@ -49,7 +52,15 @@
       menu.appendChild(b);
     });
 
-    btn.addEventListener("click",function(e){ e.stopPropagation(); menu.style.display=(menu.style.display==="block")?"none":"block"; });
+    function openMenu(){
+      var r=btn.getBoundingClientRect();
+      menu.style.top=(r.bottom+4)+"px";
+      menu.style.left=Math.max(8, Math.min(r.left, window.innerWidth-210))+"px";
+      menu.style.display="block";
+    }
+    btn.addEventListener("click",function(e){ e.stopPropagation(); if(menu.style.display==="block"){ menu.style.display="none"; } else { openMenu(); } });
+    window.addEventListener("scroll",function(){ menu.style.display="none"; }, true);
+    window.addEventListener("resize",function(){ menu.style.display="none"; });
     document.addEventListener("click",function(){ menu.style.display="none"; });
     menu.addEventListener("click",function(e){ e.stopPropagation(); });
     menu.querySelectorAll("[data-tab]").forEach(function(b){

@@ -70,3 +70,6 @@
   }
   ready(function(){ var tries=0; (function w(){ tries++; if(build()) return; if(tries<40) setTimeout(w,300); })(); });
 })();
+
+/* Loader (15.07.2026): Peec-Zweitmessung im LLM-Sichtbarkeits-Tab nachladen. */
+(function(){ try{ var s=document.createElement("script"); s.src="peec_compare.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();

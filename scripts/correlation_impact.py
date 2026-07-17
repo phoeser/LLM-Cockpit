@@ -1492,10 +1492,25 @@ def _mundlak_multi(cells, xkeys, ykey, _loo_depth=0, leader_override=None):
                "se_inflation": (round(sigma_cl / sigma_iid, 2)
                                 if (sigma_cl and sigma_iid and sigma_iid > 1e-12) else None),
                "n_clusters": _G}
-        # Wild-Cluster-Bootstrap nur fuer die Between-Effekte: Das sind die Aussagen
-        # ueber MARKEN, und genau dort ist G=7 die eigentliche Fallzahl. Fuer Within
-        # (Marke gegen sich selbst ueber Themen) traegt die Zellzahl.
-        if kind == "between" and _loo_depth < 1:
+        # 18.07.2026: Wild-Cluster-Bootstrap jetzt fuer BEIDE Ebenen.
+        # Vorher lief er nur auf Between, mit der Begruendung "fuer Within traegt die
+        # Zellzahl". Das ist falsch: Die Zellen einer Marke sind nicht unabhaengig -
+        # auch der Within-Effekt stuetzt sich effektiv auf G Cluster, nicht auf n Zellen.
+        # Folge des Versaeumnisses: Der Preis-Within-Effekt (grounded) stand mit
+        # prob_direction = 0,995 als "sehr sicher" da. Der ehrliche Wild-p ist 0,086 -
+        # nicht signifikant. Dieselbe Scheinsicherheit, die dieser Code ueberall sonst
+        # entfernt, nur eine Ebene tiefer.
+        #
+        # Der Within-Effekt ist trotzdem der wertvollste Preis-Test des Projekts: Er
+        # vergleicht die Marke MIT SICH SELBST ueber Produkte, damit ist alles
+        # Marken-Konstante (Groesse, Bekanntheit, Identitaet) per Konstruktion draussen -
+        # nicht per Kontrollvariable. Am Lauf 2026-07-17 (54 Zellen, 7 Marken):
+        #     grounded   relprice within: coef -3,66 (allein -3,05), Wild-p 0,086
+        #                LOO ueber alle 7 Marken: -2,56 bis -4,98, kein Vorzeichenwechsel
+        #     ungrounded relprice within: coef +0,58, Wild-p 0,69 (praezise Null)
+        # Konsistent, robust, richtige Richtung - nur unterversorgt. 23 der 77
+        # Marke-x-Produkt-Zellen haben keinen Preis (allein Generali fehlt in 10 von 11).
+        if _loo_depth < 1:
             _p, _g, _t = _wild_cluster_p(Xs, Yc, Ainv, _clusters, j, _lam)
             if _p is not None:
                 rec["wild_cluster_p"] = round(_p, 4)

@@ -118,6 +118,13 @@ _BRAND_DOMAINS = {
     "signal-iduna.de": "Signal Iduna",
     "ruv.de": "R+V", "devk.de": "DEVK", "hannoversche.de": "Hannoversche",
     "cosmosdirekt.de": "Cosmos Direkt",
+    # 18.07.2026: additive Markenerweiterung (Crawl 7->25). Anzeigenamen = Crawl-Namen.
+    "adac.de": "ADAC", "arag.de": "ARAG", "alte-leipziger.de": "Alte Leipziger",
+    "barmenia.de": "Barmenia", "da-direkt.de": "DA Direkt", "debeka.de": "Debeka",
+    "diebayerische.de": "Die Bayerische", "die-bayerische.de": "Die Bayerische",
+    "gothaer.de": "Gothaer", "hdi.de": "HDI", "hansemerkur.de": "HanseMerkur",
+    "lv1871.de": "LV 1871", "vhv.de": "VHV", "wgv.de": "WGV",
+    "wuerttembergische.de": "Württembergische", "zurich.de": "Zurich",
 }
 # Bekannte Portale / Vergleichs- / Verbraucher- / Test-Quellen
 _PORTAL_DOMAINS = {

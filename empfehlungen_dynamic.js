@@ -12,7 +12,7 @@
   "use strict";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded",fn); }
   function pp(v){ return (v==null||isNaN(v))?"—":((v>0?"+":"")+(Math.round(v*10)/10).toFixed(1).replace(".",",")+" pp"); }
-  var DOM2BRAND={"ergo.de":"ERGO","ergo-reiseversicherung.de":"ERGO","dkv.com":"ERGO","allianz.de":"Allianz","axa.de":"AXA","generali.de":"Generali","cosmosdirekt.de":"CosmosDirekt","huk.de":"HUK-Coburg","huk24.de":"HUK-Coburg","signal-iduna.de":"Signal Iduna"};
+  var DOM2BRAND={"ergo.de":"ERGO","ergo-reiseversicherung.de":"ERGO","dkv.com":"ERGO","allianz.de":"Allianz","axa.de":"AXA","generali.de":"Generali","cosmosdirekt.de":"CosmosDirekt","huk.de":"HUK-Coburg","huk24.de":"HUK-Coburg","signal-iduna.de":"Signal Iduna","adac.de":"ADAC","arag.de":"ARAG","alte-leipziger.de":"Alte Leipziger","barmenia.de":"Barmenia","da-direkt.de":"DA Direkt","devk.de":"DEVK","debeka.de":"Debeka","diebayerische.de":"Die Bayerische","die-bayerische.de":"Die Bayerische","gothaer.de":"Gothaer","hdi.de":"HDI","hannoversche.de":"Hannoversche","hansemerkur.de":"HanseMerkur","lv1871.de":"LV 1871","ruv.de":"R+V","vhv.de":"VHV","wgv.de":"WGV","wuerttembergische.de":"Württembergische","zurich.de":"Zurich"};
 
   function card(prio, title, body, why, amp){
     var pc = prio==="hoch"?"#b91c1c":(prio==="mittel"?"#b45309":"#64748b");

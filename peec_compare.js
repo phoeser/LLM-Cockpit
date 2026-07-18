@@ -45,8 +45,12 @@
       }).catch(function(){ return null; });
   }
 
+  // 18.07.2026 Fix: dashboard_v3 haelt GEO_SNAPSHOT als top-level `let` — das
+  // landet NICHT auf window. Erst lexikalische Bindung versuchen, dann window
+  // (health_banner.js spiegelt zusaetzlich).
+  function snapData(){ try{ if(typeof GEO_SNAPSHOT!=="undefined" && GEO_SNAPSHOT) return GEO_SNAPSHOT; }catch(e){} return window.GEO_SNAPSHOT||null; }
   function ownSov(){
-    var g=window.GEO_SNAPSHOT;
+    var g=snapData();
     if(!g||!g.products) return null;
     var out={};
     Object.keys(g.products).forEach(function(pid){

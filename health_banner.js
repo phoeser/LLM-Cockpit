@@ -137,7 +137,17 @@
   ready(function () {
     fetch(SNAP_URL + "?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (g) { if (g) render(analyze(g)); })
+      .then(function (g) {
+        if (!g) return;
+        // Fix 18.07.2026: dashboard_v3 deklariert GEO_SNAPSHOT als top-level
+        // `let` — das landet NICHT auf window. Die Runtime-Module (Uebersicht,
+        // Empfehlungen, Peec-Vergleich, Korrelation Block 3, Themen-Hotspots)
+        // lesen aber window.GEO_SNAPSHOT und blieben im echten Browser leer
+        // (jsdom-Tests setzten window direkt — daher dort gruen). Da dieses
+        // Modul dieselbe Datei ohnehin laedt, wird sie hier gespiegelt.
+        if (!window.GEO_SNAPSHOT) window.GEO_SNAPSHOT = g;
+        render(analyze(g));
+      })
       .catch(function () { /* still: kein falscher Alarm bei Netzfehler */ });
   });
 })();

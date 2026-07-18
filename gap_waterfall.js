@@ -89,8 +89,13 @@
   var DOM2BRAND = { "ergo.de":"ERGO","ergo-reiseversicherung.de":"ERGO","dkv.com":"ERGO","allianz.de":"Allianz",
     "allianzdirect.de":"Allianz","axa.de":"AXA","generali.de":"Generali","cosmosdirekt.de":"CosmosDirekt",
     "huk.de":"HUK-Coburg","huk24.de":"HUK-Coburg","signal-iduna.de":"Signal Iduna" };
+  // 18.07.2026 Fix: dashboard_v3 haelt GEO_SNAPSHOT als top-level `let` — das
+  // landet NICHT auf window. Erst lexikalische Bindung versuchen, dann window
+  // (health_banner.js spiegelt zusaetzlich). Vorher fehlten die Hotspots im
+  // echten Browser dauerhaft.
+  function snapData(){ try{ if(typeof GEO_SNAPSHOT!=="undefined" && GEO_SNAPSHOT) return GEO_SNAPSHOT; }catch(e){} return window.GEO_SNAPSHOT||null; }
   function topicHotspots(brand, leader){
-    var g=window.GEO_SNAPSHOT;
+    var g=snapData();
     if(!g || !g.products) return null;
     var engines = mode==="g"?["gemini"]:(mode==="u"?["chatgpt"]:["gemini","chatgpt"]);
     var rows=[];
@@ -230,6 +235,11 @@
     box.querySelectorAll(".gwb").forEach(function(btn){
       btn.addEventListener("click", function(){ render(host, lm, btn.getAttribute("data-b")); });
     });
+
+    // 18.07.2026 Fix: GEO_SNAPSHOT laedt asynchron — fehlen die Hotspots noch,
+    // spaeter erneut rendern (vorher fehlten sie dauerhaft, wenn der Snapshot
+    // beim ersten Render noch nicht da war).
+    if(!hs){ if((render.__hsTries=(render.__hsTries||0)+1)<=30) setTimeout(function(){ render(host, lm, curBrand); },600); }
   }
 
   function build(){

@@ -317,7 +317,11 @@
   var BMAP={ "HUK24":"HUK-Coburg" };
   function pearson(x,y){ var n=x.length; if(n<3) return null; var mx=0,my=0; x.forEach(function(v){mx+=v;}); y.forEach(function(v){my+=v;}); mx/=n; my/=n; var c=0,vx=0,vy=0; for(var i=0;i<n;i++){ c+=(x[i]-mx)*(y[i]-my); vx+=(x[i]-mx)*(x[i]-mx); vy+=(y[i]-my)*(y[i]-my); } return (vx>0&&vy>0)?c/Math.sqrt(vx*vy):null; }
   function ranks(v){ var s=v.map(function(x,i){return [x,i];}).sort(function(a,b){return a[0]-b[0];}); var r=new Array(v.length); s.forEach(function(p,i){ r[p[1]]=i; }); return r; }
-  function ownSov(){ var g=window.GEO_SNAPSHOT; if(!g||!g.products) return null; var out={};
+  // 18.07.2026 Fix: dashboard_v3 haelt GEO_SNAPSHOT als top-level `let` — das
+  // landet NICHT auf window. Erst lexikalische Bindung versuchen, dann window
+  // (health_banner.js spiegelt zusaetzlich). Ursache des leeren Quellen-Vergleichs.
+  function snapData(){ try{ if(typeof GEO_SNAPSHOT!=="undefined" && GEO_SNAPSHOT) return GEO_SNAPSHOT; }catch(e){} return window.GEO_SNAPSHOT||null; }
+  function ownSov(){ var g=snapData(); if(!g||!g.products) return null; var out={};
     Object.keys(g.products).forEach(function(pid){ var brands=(((g.products[pid].summary_by_llm)||{}).gemini||{}).brands||[]; out[pid]={_name:g.products[pid].name||pid}; brands.forEach(function(b){ out[pid][b.name]=100*(b.share_of_voice||0); }); });
     return out; }
   function loadPeecCells(){
@@ -330,6 +334,7 @@
         var pid=TMAP[(c[idx.thema]||"").trim()]; if(!pid) continue; var b=BMAP[c[idx.marke]]||c[idx.marke];
         var m=parseFloat(c[idx.mention_count]||0)||0; mc[pid]=mc[pid]||{}; mc[pid][b]=(mc[pid][b]||0)+m; tot[pid]=(tot[pid]||0)+m; }
       var out={}; Object.keys(mc).forEach(function(pid){ out[pid]={}; Object.keys(mc[pid]).forEach(function(b){ out[pid][b]=tot[pid]?100*mc[pid][b]/tot[pid]:0; }); });
+      if(!Object.keys(out).length) return null; // leeres Parse-Ergebnis NIE cachen — spaeter erneut versuchen
       window.__KORR_PEEC_CELLS=out; return out;
     }).catch(function(){ return null; });
   }
@@ -338,12 +343,20 @@
       '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Zwei unabhaengige Messungen derselben Sache. Niveau-Unterschiede sind methodisch normal (Peec verteilt ueber 26 Marken, der eigene Crawl ueber 7) — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
       '<div id="korrDiffBox" style="border:1px solid #eee;border-radius:11px;padding:14px 16px"><div style="font-size:12px;color:#9ca3af">Quellen-Vergleich wird geladen (data/peec_cells.csv) …</div></div></div>';
   }
+  var fb3Wait=0;
   function fillBlock3(){
     var box=document.getElementById("korrDiffBox"); if(!box) return;
     var own=ownSov();
-    if(!own){ box.innerHTML='<div style="font-size:12px;color:#9ca3af">Eigener Crawl (GEO_SNAPSHOT) noch nicht geladen — Vergleich erscheint nach Reload.</div>'; return; }
+    if(!own){
+      // 18.07.2026 Fix: GEO_SNAPSHOT laedt asynchron — warten statt aufgeben
+      // (vorher blieb hier dauerhaft der "nach Reload"-Text stehen).
+      if(fb3Wait++<40){ setTimeout(fillBlock3,500); return; }
+      box.innerHTML='<div style="font-size:12px;color:#9ca3af">Eigener Crawl (data/geo_snapshot.json) nicht ladbar — Vergleich erscheint nach Reload. <b>Keine Ersatz-Nullen.</b></div>'; return;
+    }
     loadPeecCells().then(function(peec){
-      if(!box) box=document.getElementById("korrDiffBox"); if(!box) return;
+      // 18.07.2026 Fix: Box IMMER frisch greifen — renderPanel kann das DOM
+      // inzwischen neu aufgebaut haben (die alte Referenz waere detached).
+      box=document.getElementById("korrDiffBox"); if(!box) return;
       if(!peec){ box.innerHTML='<div style="font-size:12px;color:#9ca3af">Peec-Zellen (data/peec_cells.csv) nicht erreichbar — der Quellen-Vergleich wird beim naechsten Reload gezeigt. <b>Keine Ersatz-Nullen.</b></div>'; return; }
       var rowsHtml="", allOwn=[], allPeec=[];
       var pids=Object.keys(own).filter(function(p){ return peec[p]; });

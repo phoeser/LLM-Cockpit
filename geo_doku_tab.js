@@ -255,19 +255,32 @@
   /* ============================================================
      Tab-Integration (additiv, idempotent, rebuild-sicher)
      ============================================================ */
+  /* HOTFIX 18.07.2026: Das Dashboard schaltet Tabs KLASSENBASIERT
+     (classList 'hidden', dashboard_v3 ~Z. 3495) — die erste Fassung dieses
+     Moduls versteckte Sections per Inline-style.display. Inline gewinnt gegen
+     Klassen: Nach einem Klick auf 'Dokumentation' blieben ALLE Reiter leer.
+     Jetzt exakt der Mechanismus des Dashboards; dazu ein Repair-Sweep, der
+     verirrte Inline-Styles entfernt (ausser data-content="domain", das im
+     Markup bewusst inline versteckt ist). */
+  function clearStrayInline(){
+    [].slice.call(document.querySelectorAll('section[data-content]')).forEach(function(s){
+      if(s.getAttribute("data-content")==="domain") return;
+      if(s.style && s.style.display==="none") s.style.display="";
+    });
+  }
   function showDoku(){
-    // alle Content-Sections verstecken
-    [].slice.call(document.querySelectorAll('section[data-content]')).forEach(function(s){ s.style.display="none"; });
-    var sec=document.getElementById("dokuSection"); if(sec) sec.style.display="";
-    // alle Tab-Buttons inaktiv, unseren aktiv
-    [].slice.call(document.querySelectorAll('.tab-btn')).forEach(function(b){
-      if(b.classList.contains("tab-active")){ b.classList.remove("tab-active"); b.classList.add("tab-inactive"); }
+    clearStrayInline();
+    [].slice.call(document.querySelectorAll('[data-tab]')).forEach(function(b){
+      b.classList.remove("tab-active"); b.classList.add("tab-inactive");
     });
     var btn=document.getElementById("dokuTabBtn");
     if(btn){ btn.classList.remove("tab-inactive"); btn.classList.add("tab-active"); }
+    [].slice.call(document.querySelectorAll('[data-content]')).forEach(function(s){ s.classList.add("hidden"); });
+    var sec=document.getElementById("dokuSection"); if(sec) sec.classList.remove("hidden");
+    try{ window.scrollTo({top:0,behavior:"smooth"}); }catch(e){}
   }
   function hideDoku(){
-    var sec=document.getElementById("dokuSection"); if(sec) sec.style.display="none";
+    var sec=document.getElementById("dokuSection"); if(sec) sec.classList.add("hidden");
     var btn=document.getElementById("dokuTabBtn");
     if(btn){ btn.classList.remove("tab-active"); btn.classList.add("tab-inactive"); }
   }
@@ -294,7 +307,7 @@
     var sec=document.createElement("section");
     sec.id="dokuSection";
     sec.setAttribute("data-content","doku");
-    sec.style.display="none";
+    sec.className="tab-content hidden"; // HOTFIX: Klassen-Mechanismus statt Inline-Style
     sec.innerHTML=sectionHTML();
     ref.parentNode.appendChild(sec);
     return true;

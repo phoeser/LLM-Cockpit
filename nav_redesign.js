@@ -8,6 +8,9 @@
    3. (17.07.) Peec-Tab unter LLM-Sichtbarkeit konsolidiert:
       Peec fuehrend (QUELLE 1), eigener Crawl (QUELLE 2),
       Abweichungsanalyse dazwischen.
+   4. (18.07.) Loader laedt zusaetzlich geo_wirkung.js — Umbau des
+      LLM-Sichtbarkeits-Reiters nach GEO-Metrik-Logik (Wirkung ->
+      Kreuz-Matrix -> Hebel/Fruehindikator), Punkt 4 + 2b.
    Geladen via health_banner.js (Loader am Dateiende).
    ============================================================ */
 (function () {
@@ -96,6 +99,8 @@
     head.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px"><span style="font-size:11px;font-weight:800;color:#fff;background:#6b7280;border-radius:5px;padding:3px 9px">QUELLE 2 · Eigener Crawl</span><span style="font-size:11px;color:#6b7280">API-Messung (Gemini grounded + ChatGPT), 7 Marken, täglich</span></div>';
     geo.insertBefore(head, geo.firstChild);
     geo.insertBefore(wrapP, geo.firstChild);
+    // 18.07.: geo_wirkung.js setzt sich per insertBefore(geo.firstChild) VOR diese
+    // Bloecke — Reihenfolge dann: Wirkung&Hebel -> QUELLE 1 (Peec) -> QUELLE 2.
     var tries=0;
     (function place(){ tries++;
       var cmp=document.getElementById("peecCmpBox");
@@ -117,9 +122,9 @@
   });
 })();
 
-/* Loader (15.07.2026): Zusatzmodule nachladen. */
+/* Loader (15.07.2026, erweitert 18.07.): Zusatzmodule nachladen. */
 (function(){ try{
-  ["peec_compare.js","overview_upgrade.js","empfehlungen_dynamic.js"].forEach(function(f){
+  ["peec_compare.js","overview_upgrade.js","empfehlungen_dynamic.js","geo_wirkung.js"].forEach(function(f){
     var s=document.createElement("script"); s.src=f+"?t="+Date.now(); document.body.appendChild(s);
   });
 }catch(e){} })();

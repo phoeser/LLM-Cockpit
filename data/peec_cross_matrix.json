@@ -1,0 +1,667 @@
+{
+  "as_of": "2026-07-17",
+  "window": "2026-06-18..2026-07-17",
+  "methode": "get_url_report dimensions=['chat_id'] je Topic (zitierte Quellen-URLs je Antwort) + list_chats fuer chat_id->Kanal. Je Topic x Kanal Zaehlung ueber die Chats, die mindestens eine zitierte URL haben. ergo_erwaehnt = Chat mit ERGO in mentioned_brand_ids mindestens einer zitierten URL; ergo_zitiert = Chat mit mindestens einer URL auf ergo.de (inkl. Subdomains); beides = erwaehnt UND zitiert; keins = weder noch. Allianz analog (allianz.de/allianzdeutschland.de/allianzdirect.de).",
+  "grenzen": [
+    "n_chats zaehlt nur Antworten MIT mindestens einer zitierten Quelle; Antworten ohne Web-Quellen (bei ChatGPT haeufig) erscheinen hier nicht.",
+    "ergo_erwaehnt basiert auf mentioned_brand_ids der zitierten URLs, nicht auf dem Antwort-Volltext; eine Marke, die genannt aber in keiner zitierten Quelle steht, wird hier nicht als erwaehnt gezaehlt.",
+    "Perplexity (perplexity-0) ist im Projekt derzeit inaktiv -> keine Daten (keine_daten=true), NICHT 0."
+  ],
+  "kanaele": {
+    "openai-0": "ChatGPT",
+    "google-0": "AI Overview",
+    "google-1": "AI Mode",
+    "google-2": "Gemini",
+    "perplexity-0": "Perplexity"
+  },
+  "topics": {
+    "Corporate": {
+      "openai-0": {
+        "n_chats": 1035,
+        "ergo_erwaehnt": 866,
+        "ergo_zitiert": 65,
+        "ergo_beides": 65,
+        "ergo_keins": 169,
+        "allianz_erwaehnt": 955,
+        "allianz_zitiert": 125,
+        "allianz_beides": 125,
+        "allianz_keins": 80,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 974,
+        "ergo_erwaehnt": 831,
+        "ergo_zitiert": 15,
+        "ergo_beides": 15,
+        "ergo_keins": 143,
+        "allianz_erwaehnt": 949,
+        "allianz_zitiert": 120,
+        "allianz_beides": 120,
+        "allianz_keins": 25,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 1016,
+        "ergo_erwaehnt": 728,
+        "ergo_zitiert": 26,
+        "ergo_beides": 26,
+        "ergo_keins": 288,
+        "allianz_erwaehnt": 928,
+        "allianz_zitiert": 129,
+        "allianz_beides": 129,
+        "allianz_keins": 88,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 12,
+        "ergo_erwaehnt": 11,
+        "ergo_zitiert": 1,
+        "ergo_beides": 1,
+        "ergo_keins": 1,
+        "allianz_erwaehnt": 11,
+        "allianz_zitiert": 0,
+        "allianz_beides": 0,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Hausrat": {
+      "openai-0": {
+        "n_chats": 885,
+        "ergo_erwaehnt": 469,
+        "ergo_zitiert": 79,
+        "ergo_beides": 79,
+        "ergo_keins": 416,
+        "allianz_erwaehnt": 836,
+        "allianz_zitiert": 501,
+        "allianz_beides": 501,
+        "allianz_keins": 49,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 808,
+        "ergo_erwaehnt": 537,
+        "ergo_zitiert": 135,
+        "ergo_beides": 135,
+        "ergo_keins": 271,
+        "allianz_erwaehnt": 659,
+        "allianz_zitiert": 407,
+        "allianz_beides": 407,
+        "allianz_keins": 149,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 882,
+        "ergo_erwaehnt": 469,
+        "ergo_zitiert": 110,
+        "ergo_beides": 110,
+        "ergo_keins": 413,
+        "allianz_erwaehnt": 591,
+        "allianz_zitiert": 270,
+        "allianz_beides": 270,
+        "allianz_keins": 291,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 4,
+        "ergo_erwaehnt": 3,
+        "ergo_zitiert": 0,
+        "ergo_beides": 0,
+        "ergo_keins": 1,
+        "allianz_erwaehnt": 3,
+        "allianz_zitiert": 1,
+        "allianz_beides": 1,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Krankenhauszusatz": {
+      "openai-0": {
+        "n_chats": 889,
+        "ergo_erwaehnt": 799,
+        "ergo_zitiert": 349,
+        "ergo_beides": 349,
+        "ergo_keins": 90,
+        "allianz_erwaehnt": 750,
+        "allianz_zitiert": 400,
+        "allianz_beides": 400,
+        "allianz_keins": 139,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 766,
+        "ergo_erwaehnt": 652,
+        "ergo_zitiert": 260,
+        "ergo_beides": 260,
+        "ergo_keins": 114,
+        "allianz_erwaehnt": 643,
+        "allianz_zitiert": 231,
+        "allianz_beides": 231,
+        "allianz_keins": 123,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 873,
+        "ergo_erwaehnt": 627,
+        "ergo_zitiert": 244,
+        "ergo_beides": 244,
+        "ergo_keins": 246,
+        "allianz_erwaehnt": 623,
+        "allianz_zitiert": 163,
+        "allianz_beides": 163,
+        "allianz_keins": 250,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 11,
+        "ergo_erwaehnt": 5,
+        "ergo_zitiert": 2,
+        "ergo_beides": 2,
+        "ergo_keins": 6,
+        "allianz_erwaehnt": 3,
+        "allianz_zitiert": 0,
+        "allianz_beides": 0,
+        "allianz_keins": 8,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Unfall": {
+      "openai-0": {
+        "n_chats": 886,
+        "ergo_erwaehnt": 507,
+        "ergo_zitiert": 130,
+        "ergo_beides": 127,
+        "ergo_keins": 376,
+        "allianz_erwaehnt": 777,
+        "allianz_zitiert": 413,
+        "allianz_beides": 413,
+        "allianz_keins": 109,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 818,
+        "ergo_erwaehnt": 559,
+        "ergo_zitiert": 370,
+        "ergo_beides": 369,
+        "ergo_keins": 258,
+        "allianz_erwaehnt": 671,
+        "allianz_zitiert": 416,
+        "allianz_beides": 416,
+        "allianz_keins": 147,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 872,
+        "ergo_erwaehnt": 465,
+        "ergo_zitiert": 178,
+        "ergo_beides": 178,
+        "ergo_keins": 407,
+        "allianz_erwaehnt": 599,
+        "allianz_zitiert": 361,
+        "allianz_beides": 361,
+        "allianz_keins": 273,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 4,
+        "ergo_erwaehnt": 2,
+        "ergo_zitiert": 1,
+        "ergo_beides": 1,
+        "ergo_keins": 2,
+        "allianz_erwaehnt": 2,
+        "allianz_zitiert": 1,
+        "allianz_beides": 1,
+        "allianz_keins": 2,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Wohngebäude": {
+      "openai-0": {
+        "n_chats": 874,
+        "ergo_erwaehnt": 538,
+        "ergo_zitiert": 159,
+        "ergo_beides": 157,
+        "ergo_keins": 334,
+        "allianz_erwaehnt": 701,
+        "allianz_zitiert": 335,
+        "allianz_beides": 335,
+        "allianz_keins": 173,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 832,
+        "ergo_erwaehnt": 532,
+        "ergo_zitiert": 76,
+        "ergo_beides": 72,
+        "ergo_keins": 296,
+        "allianz_erwaehnt": 685,
+        "allianz_zitiert": 347,
+        "allianz_beides": 347,
+        "allianz_keins": 147,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 872,
+        "ergo_erwaehnt": 343,
+        "ergo_zitiert": 45,
+        "ergo_beides": 45,
+        "ergo_keins": 529,
+        "allianz_erwaehnt": 548,
+        "allianz_zitiert": 257,
+        "allianz_beides": 256,
+        "allianz_keins": 323,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 7,
+        "ergo_erwaehnt": 6,
+        "ergo_zitiert": 0,
+        "ergo_beides": 0,
+        "ergo_keins": 1,
+        "allianz_erwaehnt": 6,
+        "allianz_zitiert": 1,
+        "allianz_beides": 1,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Risikoleben": {
+      "openai-0": {
+        "n_chats": 869,
+        "ergo_erwaehnt": 736,
+        "ergo_zitiert": 299,
+        "ergo_beides": 299,
+        "ergo_keins": 133,
+        "allianz_erwaehnt": 791,
+        "allianz_zitiert": 534,
+        "allianz_beides": 534,
+        "allianz_keins": 78,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 799,
+        "ergo_erwaehnt": 640,
+        "ergo_zitiert": 363,
+        "ergo_beides": 363,
+        "ergo_keins": 159,
+        "allianz_erwaehnt": 717,
+        "allianz_zitiert": 476,
+        "allianz_beides": 476,
+        "allianz_keins": 82,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 860,
+        "ergo_erwaehnt": 518,
+        "ergo_zitiert": 264,
+        "ergo_beides": 264,
+        "ergo_keins": 342,
+        "allianz_erwaehnt": 585,
+        "allianz_zitiert": 324,
+        "allianz_beides": 324,
+        "allianz_keins": 275,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 10,
+        "ergo_erwaehnt": 5,
+        "ergo_zitiert": 3,
+        "ergo_beides": 3,
+        "ergo_keins": 5,
+        "allianz_erwaehnt": 7,
+        "allianz_zitiert": 4,
+        "allianz_beides": 4,
+        "allianz_keins": 3,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Berufsunfähigkeit": {
+      "openai-0": {
+        "n_chats": 874,
+        "ergo_erwaehnt": 723,
+        "ergo_zitiert": 53,
+        "ergo_beides": 53,
+        "ergo_keins": 151,
+        "allianz_erwaehnt": 845,
+        "allianz_zitiert": 493,
+        "allianz_beides": 493,
+        "allianz_keins": 29,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 848,
+        "ergo_erwaehnt": 716,
+        "ergo_zitiert": 32,
+        "ergo_beides": 32,
+        "ergo_keins": 132,
+        "allianz_erwaehnt": 807,
+        "allianz_zitiert": 323,
+        "allianz_beides": 323,
+        "allianz_keins": 41,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 882,
+        "ergo_erwaehnt": 702,
+        "ergo_zitiert": 44,
+        "ergo_beides": 44,
+        "ergo_keins": 180,
+        "allianz_erwaehnt": 791,
+        "allianz_zitiert": 243,
+        "allianz_beides": 243,
+        "allianz_keins": 91,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 9,
+        "ergo_erwaehnt": 6,
+        "ergo_zitiert": 0,
+        "ergo_beides": 0,
+        "ergo_keins": 3,
+        "allianz_erwaehnt": 7,
+        "allianz_zitiert": 2,
+        "allianz_beides": 2,
+        "allianz_keins": 2,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Zahnzusatz": {
+      "openai-0": {
+        "n_chats": 413,
+        "ergo_erwaehnt": 368,
+        "ergo_zitiert": 89,
+        "ergo_beides": 89,
+        "ergo_keins": 45,
+        "allianz_erwaehnt": 405,
+        "allianz_zitiert": 262,
+        "allianz_beides": 262,
+        "allianz_keins": 8,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 362,
+        "ergo_erwaehnt": 354,
+        "ergo_zitiert": 67,
+        "ergo_beides": 67,
+        "ergo_keins": 8,
+        "allianz_erwaehnt": 361,
+        "allianz_zitiert": 250,
+        "allianz_beides": 250,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 418,
+        "ergo_erwaehnt": 363,
+        "ergo_zitiert": 39,
+        "ergo_beides": 39,
+        "ergo_keins": 55,
+        "allianz_erwaehnt": 394,
+        "allianz_zitiert": 219,
+        "allianz_beides": 219,
+        "allianz_keins": 24,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 8,
+        "ergo_erwaehnt": 6,
+        "ergo_zitiert": 2,
+        "ergo_beides": 2,
+        "ergo_keins": 2,
+        "allianz_erwaehnt": 7,
+        "allianz_zitiert": 3,
+        "allianz_beides": 3,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Rechtsschutz": {
+      "openai-0": {
+        "n_chats": 881,
+        "ergo_erwaehnt": 727,
+        "ergo_zitiert": 65,
+        "ergo_beides": 65,
+        "ergo_keins": 154,
+        "allianz_erwaehnt": 793,
+        "allianz_zitiert": 317,
+        "allianz_beides": 317,
+        "allianz_keins": 88,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 845,
+        "ergo_erwaehnt": 722,
+        "ergo_zitiert": 80,
+        "ergo_beides": 80,
+        "ergo_keins": 123,
+        "allianz_erwaehnt": 777,
+        "allianz_zitiert": 364,
+        "allianz_beides": 364,
+        "allianz_keins": 68,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 884,
+        "ergo_erwaehnt": 490,
+        "ergo_zitiert": 100,
+        "ergo_beides": 100,
+        "ergo_keins": 394,
+        "allianz_erwaehnt": 670,
+        "allianz_zitiert": 301,
+        "allianz_beides": 301,
+        "allianz_keins": 214,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 9,
+        "ergo_erwaehnt": 8,
+        "ergo_zitiert": 1,
+        "ergo_beides": 1,
+        "ergo_keins": 1,
+        "allianz_erwaehnt": 8,
+        "allianz_zitiert": 1,
+        "allianz_beides": 1,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Kfz": {
+      "openai-0": {
+        "n_chats": 887,
+        "ergo_erwaehnt": 494,
+        "ergo_zitiert": 36,
+        "ergo_beides": 36,
+        "ergo_keins": 393,
+        "allianz_erwaehnt": 882,
+        "allianz_zitiert": 532,
+        "allianz_beides": 532,
+        "allianz_keins": 5,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 851,
+        "ergo_erwaehnt": 538,
+        "ergo_zitiert": 22,
+        "ergo_beides": 22,
+        "ergo_keins": 313,
+        "allianz_erwaehnt": 829,
+        "allianz_zitiert": 585,
+        "allianz_beides": 585,
+        "allianz_keins": 22,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 879,
+        "ergo_erwaehnt": 404,
+        "ergo_zitiert": 37,
+        "ergo_beides": 37,
+        "ergo_keins": 475,
+        "allianz_erwaehnt": 782,
+        "allianz_zitiert": 473,
+        "allianz_beides": 473,
+        "allianz_keins": 97,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 8,
+        "ergo_erwaehnt": 6,
+        "ergo_zitiert": 1,
+        "ergo_beides": 1,
+        "ergo_keins": 2,
+        "allianz_erwaehnt": 8,
+        "allianz_zitiert": 4,
+        "allianz_beides": 4,
+        "allianz_keins": 0,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Haftpflicht": {
+      "openai-0": {
+        "n_chats": 880,
+        "ergo_erwaehnt": 590,
+        "ergo_zitiert": 89,
+        "ergo_beides": 89,
+        "ergo_keins": 290,
+        "allianz_erwaehnt": 828,
+        "allianz_zitiert": 475,
+        "allianz_beides": 475,
+        "allianz_keins": 52,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 799,
+        "ergo_erwaehnt": 636,
+        "ergo_zitiert": 57,
+        "ergo_beides": 57,
+        "ergo_keins": 163,
+        "allianz_erwaehnt": 739,
+        "allianz_zitiert": 439,
+        "allianz_beides": 439,
+        "allianz_keins": 60,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 883,
+        "ergo_erwaehnt": 567,
+        "ergo_zitiert": 66,
+        "ergo_beides": 66,
+        "ergo_keins": 316,
+        "allianz_erwaehnt": 717,
+        "allianz_zitiert": 311,
+        "allianz_beides": 311,
+        "allianz_keins": 166,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 5,
+        "ergo_erwaehnt": 4,
+        "ergo_zitiert": 1,
+        "ergo_beides": 1,
+        "ergo_keins": 1,
+        "allianz_erwaehnt": 4,
+        "allianz_zitiert": 3,
+        "allianz_beides": 3,
+        "allianz_keins": 1,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    },
+    "Sterbegeld": {
+      "openai-0": {
+        "n_chats": 881,
+        "ergo_erwaehnt": 681,
+        "ergo_zitiert": 317,
+        "ergo_beides": 317,
+        "ergo_keins": 200,
+        "allianz_erwaehnt": 845,
+        "allianz_zitiert": 658,
+        "allianz_beides": 658,
+        "allianz_keins": 36,
+        "keine_daten": false
+      },
+      "google-0": {
+        "n_chats": 816,
+        "ergo_erwaehnt": 709,
+        "ergo_zitiert": 353,
+        "ergo_beides": 353,
+        "ergo_keins": 107,
+        "allianz_erwaehnt": 744,
+        "allianz_zitiert": 531,
+        "allianz_beides": 531,
+        "allianz_keins": 72,
+        "keine_daten": false
+      },
+      "google-1": {
+        "n_chats": 885,
+        "ergo_erwaehnt": 648,
+        "ergo_zitiert": 249,
+        "ergo_beides": 249,
+        "ergo_keins": 237,
+        "allianz_erwaehnt": 681,
+        "allianz_zitiert": 362,
+        "allianz_beides": 362,
+        "allianz_keins": 204,
+        "keine_daten": false
+      },
+      "google-2": {
+        "n_chats": 8,
+        "ergo_erwaehnt": 7,
+        "ergo_zitiert": 3,
+        "ergo_beides": 3,
+        "ergo_keins": 1,
+        "allianz_erwaehnt": 8,
+        "allianz_zitiert": 4,
+        "allianz_beides": 4,
+        "allianz_keins": 0,
+        "keine_daten": false
+      },
+      "perplexity-0": {
+        "n_chats": 0,
+        "keine_daten": true
+      }
+    }
+  }
+}

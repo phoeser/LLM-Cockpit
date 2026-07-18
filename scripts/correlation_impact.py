@@ -1079,6 +1079,14 @@ FP_BRAND_DOMAINS = {
     "axa.de": "AXA", "generali.de": "Generali", "signal-iduna.de": "Signal Iduna",
     "cosmosdirekt.de": "CosmosDirekt", "cosmos-direkt.de": "CosmosDirekt",
     "hannoversche.de": "Hannoversche", "ruv.de": "R+V", "devk.de": "DEVK",
+    # 18.07.2026: Markenerweiterung Crawl 7->25 (geo-visibility-tool ee3c2fb). Namen
+    # exakt wie BRAND_SIZE-Schluessel, sonst filtert footprint_level_analysis sie raus.
+    "adac.de": "ADAC", "arag.de": "ARAG", "alte-leipziger.de": "Alte Leipziger",
+    "barmenia.de": "Barmenia", "da-direkt.de": "DA Direkt", "debeka.de": "Debeka",
+    "diebayerische.de": "Die Bayerische", "die-bayerische.de": "Die Bayerische",
+    "gothaer.de": "Gothaer", "hdi.de": "HDI", "hansemerkur.de": "HanseMerkur",
+    "lv1871.de": "LV 1871", "vhv.de": "VHV", "wgv.de": "WGV",
+    "wuerttembergische.de": "Württembergische", "zurich.de": "Zurich",
 }
 
 

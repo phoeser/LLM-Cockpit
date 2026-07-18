@@ -37,6 +37,17 @@
   };
   var STAND="Auditwert 18.07. — dynamisch ab dem naechsten Nightly";
 
+  /* ---- Footprint-Definition (Punkt 2, 18.07.2026): einmal als Info-Box,
+         zusaetzlich als Tooltip ueberall dort, wo Footprint-Zahlen stehen. ---- */
+  var FOOTDEF="Zitations-Footprint = Anteil der markeneigenen Domain an allen zitierten URLs je Thema. Peec: footprint_pct, 26 Marken, 5 Engines. Eigener Crawl: cite_share, 7 Marken, Gemini grounded.";
+  function footInfoBox(){
+    return '<div style="border:1px solid #dbe4fb;background:#f4f7fe;border-radius:11px;padding:12px 15px;margin:0 0 14px">'+
+      '<div style="font-size:12.5px;font-weight:700;color:#1d4ed8;margin-bottom:3px">ℹ Was ist der Zitations-Footprint?</div>'+
+      '<div style="font-size:12px;color:#374151;line-height:1.55">Der <b>Zitations-Footprint</b> ist der <b>Anteil der markeneigenen Domain an allen zitierten URLs</b> je Thema — also: wie oft verweisen die LLM-Antworten auf Quellen der Marke selbst (z.&nbsp;B. ergo.de), gemessen an allen Quellenangaben. '+
+      '<b>Peec</b> misst ihn als <code>footprint_pct</code> ueber <b>26 Marken</b> und 5 Engines; der <b>eigene Crawl</b> als <code>cite_share</code> ueber <b>7 Marken</b> (Gemini, grounded). '+
+      'Wichtig fuers Handeln: Die Antwortformulierung der LLMs laesst sich nicht steuern — die <b>Zitierfaehigkeit der eigenen Inhalte</b> schon. Alle Footprint-Zahlen in diesem Reiter (Forest, Scatter, Zerlegung) sind in dieser Definition gemessen.</div></div>';
+  }
+
   function badge(txt,kind){
     var c={ok:["#067d3a","#e6f5ec"],warn:["#8a6d00","#fdf3d7"],muted:["#6b7280","#eef0f2"],info:["#1d4ed8","#e7eefe"]}[kind]||["#6b7280","#eef0f2"];
     return '<span style="font-size:10px;font-weight:700;color:'+c[0]+';background:'+c[1]+';border-radius:4px;padding:2px 7px;white-space:nowrap">'+txt+'</span>';
@@ -114,7 +125,7 @@
     // K1 Footprint -> Sichtbarkeit (FUEHREND, Peec-26)
     var belastbar=(P.wild_p!=null && P.wild_p<0.05 && P.loo && P.loo.sign_stable);
     cards.push(card({
-      title:"Footprint → Sichtbarkeit <span style='font-weight:600;color:#1d4ed8'>(fuehrend)</span>",
+      title:'<span title="'+FOOTDEF+'">Footprint → Sichtbarkeit</span> <span style="font-weight:600;color:#1d4ed8">(fuehrend)</span>',
       value:signed(P.eff,1)+" pp", sub:"SoV je +1&nbsp;SD Quellpraesenz", accent:"#067d3a",
       badge: (P.dyn&&belastbar)?badge("belastbar (n="+(P.n_brands||26)+")","ok"):badge("ab naechstem Nightly","warn"),
       plain:"Marken mit mehr Quellen-Footprint sind sichtbarer. Wild-Cluster-p "+num(P.wild_p,4)+
@@ -180,8 +191,8 @@
     var rows=[]; var P=p26Get(C); var O=ownFootGet(C);
     // Zeile 1: Peec-26 Footprint-Between (fuehrend), Wild-p statt Posterior-P
     rows.push({
-      label:"Zitations-Footprint — Peec-26 (fuehrend)",
-      sub:"Between (26 Marken, groessenbereinigt) · Peec, engine-uebergreifend",
+      label:'<span title="'+FOOTDEF+'">Zitations-Footprint — Peec-26 (fuehrend)</span>',
+      sub:"Between (26 Marken, groessenbereinigt) · Peec, engine-uebergreifend · Anteil eigener Domain an zitierten URLs",
       est:P.eff, wild_p:P.wild_p, stable:(P.loo&&P.loo.sign_stable),
       chip: (P.wild_p!=null?("Wild-p "+num(P.wild_p,4)):("Wild-p "+num(FB.peec26.wild_p,4))),
       kind: (P.wild_p!=null&&P.wild_p<0.05&&P.loo&&P.loo.sign_stable)?"ok":"warn",
@@ -191,8 +202,8 @@
     // Zeile 2: eigener Crawl Footprint-Between (grounded)
     if(O){
       rows.push({
-        label:"Zitations-Footprint — eigener Crawl",
-        sub:"Between (7 Marken, grounded/Gemini) · zur Konsistenzpruefung",
+        label:'<span title="'+FOOTDEF+'">Zitations-Footprint — eigener Crawl</span>',
+        sub:"Between (7 Marken, grounded/Gemini) · zur Konsistenzpruefung · Anteil eigener Domain an zitierten URLs (cite_share)",
         est:O.eff, wild_p:O.wild_p, pdir:O.pdir, stable:(O.loo&&O.loo.sign_stable),
         chip: (O.wild_p!=null?("Wild-p "+num(O.wild_p,4)):((O.pdir!=null&&O.pdir>=1)?"P=1,0":("P="+num(O.pdir,2)))),
         kind: (O.stable? "ok":"warn"),
@@ -289,7 +300,7 @@
     try{
       scatterChart=new Chart(cv,{data:data,options:{responsive:true,maintainAspectRatio:false,animation:false,
         plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ var r=ctx.raw||{}; if(r.brand==null) return null; var res=r.y-(a+b*r.x); return r.brand+": "+num(r.y,1)+"% SoV bei "+num(r.x,1)+"% Footprint ("+(res>=0?"+":"")+num(res,1)+" pp vs. erwartet)"; }}}},
-        scales:{x:{title:{display:true,text:"Zitations-Footprint % (Peec)"}},y:{title:{display:true,text:"Peec Share of Voice %"},beginAtZero:true}}}});
+        scales:{x:{title:{display:true,text:"Zitations-Footprint % (Peec) — Anteil eigener Domain an zitierten URLs"}},y:{title:{display:true,text:"Peec Share of Voice %"},beginAtZero:true}}}});
     }catch(e){}
     if(noteEl){
       var er=pts.filter(function(p){return p.brand==="ERGO";})[0];
@@ -438,7 +449,7 @@
         '<h3 style="font-size:17px;font-weight:700;margin:0">Korrelationsanalyse — was treibt die LLM-Sichtbarkeit? '+peecBadgeTop(C)+'</h3>'+
         '<p style="font-size:12px;color:#6b7280;margin:3px 0 0">Nur validierte Befunde. <b>Peec AI</b> ist die fuehrende Quelle (26 Marken), der <b>eigene Crawl</b> steht getrennt daneben, dazwischen eine Differenzanalyse. Kein grounded/ungrounded-Umschalter mehr — die Kernaussage ist engine-uebergreifend.</p>'+
       '</div>'+
-      block1(C)+ block2(C)+ block3Skeleton();
+      footInfoBox()+ block1(C)+ block2(C)+ block3Skeleton();
     // Block 5 als eigene Karte direkt nach korrSynth -> gap_waterfall (Block 4) schiebt sich dazwischen
     var meth=document.getElementById("korrMethodik");
     if(!meth){ meth=document.createElement("div"); meth.id="korrMethodik"; meth.className="bg-white rounded-xl shadow p-6 mb-6"; }

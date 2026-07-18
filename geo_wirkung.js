@@ -100,6 +100,13 @@
       .then(function(t){ var p=parsePeec(t); if(p) window.__GW_CELLS=p; return p; })
       .catch(function(){ return null; });
   }
+  function loadNordstern(){
+    if(window.__GW_NS) return Promise.resolve(window.__GW_NS);
+    return fetch("data/peec_nordstern.json?t="+Date.now(),{cache:"no-store"})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ if(j&&j.ergo) window.__GW_NS=j; return window.__GW_NS||null; })
+      .catch(function(){ return null; });
+  }
 
   /* ============================================================
      Eigener Crawl je Kanal. Ausfall-Guard: Produkt mit Kanal-SoV-Summe 0
@@ -239,12 +246,34 @@
       plain: (P&&P.sent!=null)? "Ton des Peec-Antworttextes zu ERGO (ø ueber Themen, Kanal "+chanLbl()+")."
              : "<b>Kein Peec-Sentiment ladbar</b> — erscheint nach Reload. Keine Ersatz-Null.",
       foot:"⚠ Peec-Antwort-Sentiment ≠ Kundenbewertungs-Sentiment (eigener Sentiment-Reiter) — nicht mischen." }));
-    // 5) Nordstern — EHRLICH, keine Zahl
-    cards.push(kpiCard({ id:"gwNordstern",
-      title:"Nordstern: Empfehlungsrate (positiv genannt)", badge:badge("noch nicht messbar","warn"),
-      value:"noch nicht messbar", accent:GREY,
-      plain:"Braucht Sentiment auf Prompt-Ebene (positiv genannt je einzelner Antwort). Kommt gegebenenfalls aus der Peec-API-Exploration. Bis dahin bewusst <b>keine Ersatz-Zahl</b>.",
-      foot:"Zielgroesse — noch keine belastbare Messung vorhanden" }));
+    // 5) Nordstern — Empfehlungsrate light (Naeherung aus Prompt-Ebene, seit 18.07.2026).
+    // Echte Empfehlungs-Klassifikation (NLP auf Antwort-Volltexten) weiterhin offen.
+    var NS=window.__GW_NS||null;
+    var nsKey= gwMode==="g"?"grounded":(gwMode==="u"?"ui_mixed":"alle");
+    var nsE=NS&&NS.ergo?NS.ergo[nsKey]:null;
+    var nsA=NS&&NS.allianz_benchmark?NS.allianz_benchmark[nsKey]:null;
+    if(nsE && !nsE.keine_daten && nsE.empfehlungsrate_light_pct!=null){
+      cards.push(kpiCard({ id:"gwNordstern",
+        title:"Nordstern: Empfehlungsrate light", badge:badge("Naeherung","warn"),
+        value:num(nsE.empfehlungsrate_light_pct,1)+" %", accent:ERGO_RED, sub:"Kanal "+chanLbl(),
+        plain:"ERGO genannt UND Peec-Sentiment &ge; 60: <b>"+nsE.n_ergo_positiv+"</b> von "+nsE.n_prompts+
+          " Prompts mit Daten (Nennrate "+num(nsE.nennrate_pct,1)+" %)."+
+          ((nsA && !nsA.keine_daten && nsA.empfehlungsrate_light_pct!=null)?" Allianz-Benchmark: <b>"+num(nsA.empfehlungsrate_light_pct,1)+" %</b>.":"")+
+          " <b>Naeherung</b> — keine echte Empfehlungs-Klassifikation (braeuchte NLP auf den Antwort-Volltexten).",
+        foot:"Quelle: data/peec_nordstern.json · Stand "+(NS.as_of||"?")+" · Methode: Nennung + Sentiment&ge;60" }));
+    } else if(nsE && nsE.keine_daten){
+      cards.push(kpiCard({ id:"gwNordstern",
+        title:"Nordstern: Empfehlungsrate light", badge:badge("keine Daten im Kanal","warn"),
+        value:"keine Daten", accent:GREY,
+        plain:"Fuer Kanal "+chanLbl()+" liegen keine Peec-Prompt-Daten vor (z. B. Engine inaktiv). Bewusst <b>keine Ersatz-Null</b>.",
+        foot:"Quelle: data/peec_nordstern.json · Stand "+((NS&&NS.as_of)||"?") }));
+    } else {
+      cards.push(kpiCard({ id:"gwNordstern",
+        title:"Nordstern: Empfehlungsrate (positiv genannt)", badge:badge("noch nicht messbar","warn"),
+        value:"noch nicht messbar", accent:GREY,
+        plain:"peec_nordstern.json noch nicht ladbar. Bis dahin bewusst <b>keine Ersatz-Zahl</b>.",
+        foot:"Zielgroesse — Messung erscheint nach Reload" }));
+    }
     return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px">'+cards.join("")+'</div>';
   }
 
@@ -436,7 +465,8 @@
   var loadTries=0;
   function ensureData(host){
     // Peec-Zellen laden (einmal), Peec-Zeitraum merken; danach neu rendern.
-    loadCells().then(function(cells){
+    Promise.all([loadNordstern(), loadCells()]).then(function(rs){
+      var cells=rs[1];
       if(cells && !window.__GW_ZR){
         // Zeitraum aus Roh-CSV einmalig ziehen (nur fuers Datenstand-Label)
         fetch("data/peec_cells.csv?t="+Date.now(),{cache:"no-store"}).then(function(r){ return r.ok?r.text():null; }).then(function(t){

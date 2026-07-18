@@ -1,15 +1,16 @@
 /* ===========================================================================
    ERGO LLM-Cockpit — Ursachenanalyse "Warum liegt der Marktfuehrer vorn?" v3
-   (15.07.2026) Ausdifferenzierung:
-   1. Wasserfall mit DREI Treiber-Stufen aus level_model.full_joint
-      (Groesse + Footprint + Preis, kontrollieren einander; Fallback:
-      price_footprint_joint -> Footprint-only aus gap_decomposition).
-      Beitraege werden proportional gekappt, wenn Summe > Gap.
+   (Neuaufbau v5, 18.07.2026) Nur validierte Zerlegung:
+   1. Wasserfall ZWEISTUFIG aus level_model.structure_summary
+      (Autoritaet = Groesse+Footprint | Preis | Rest, gekappt) falls vorhanden,
+      sonst Footprint-only aus gap_decomposition. KEIN full_joint mehr
+      (3-Wege-Zerlegung ist laut Audit 17.07. nicht kommunizierbar).
+      Beitraege werden proportional gekappt, wenn Summe > Gap. Fix grounded.
    2. NEU: Themen-Hotspots — wo genau verliert die Marke gegen den
       Marktfuehrer? Je Thema: SoV-Gap + eigener Zitatanteil -> Prio-Label
       (Content-Luecke / Verwertung / fast gleichauf). Quelle: GEO_SNAPSHOT
       client-seitig (kein Pipeline-Feld noetig).
-   Modus folgt dem Synthese-Umschalter (window.__gwSetMode).
+   Fix grounded (der grounded/ungrounded-Umschalter ist im Neuaufbau v5 entfallen).
    =========================================================================== */
 (function () {
   "use strict";
@@ -23,18 +24,15 @@
   function pct(v){ return (v==null||isNaN(v))?"—":(Math.round(v*10)/10).toFixed(1).replace(".",",")+" %"; }
 
   var COL = { base:"#9aa0a8", size:"#6b7280", foot:"#b8860b", price:"#0e7490", rest:"#d9dce1", leader:"#dc0028" };
-  var LBL = { size:"Größe/Marktmacht", cite_share:"Footprint (Quellpräsenz)", relprice:"Preisniveau" };
-  var AMP = { size:"⚪", cite_share:"🟡", relprice:"🟢" };
+  var LBL = { authority:"Autorität (Größe + Footprint)", size:"Größe/Marktmacht", cite_share:"Footprint (Quellpräsenz)", relprice:"Preisniveau" };
+  var AMP = { authority:"🟡", size:"⚪", cite_share:"🟡", relprice:"🟢" };
   var mode = "g", curBrand = "ERGO";
   function seg(o){ return o?(mode==="g"?o.grounded:(mode==="u"?o.ungrounded:o.combined)):null; }
   function modeLbl(){ return mode==="g"?"grounded (Web-Suche)":(mode==="u"?"ungrounded (ChatGPT)":"kombiniert"); }
 
-  // 17.07.2026: Eigene Kopie des isDead-Guards aus korrelation_upgrade.js - diese Datei
-  // ist eine separate IIFE und kommt an die Funktion dort nicht heran.
-  // Zweck: Faellt ein Kanal aus, sind alle SoV-Werte 0; leader faellt dann per max()
+  // Guard: Faellt ein Kanal aus, sind alle SoV-Werte 0; leader faellt dann per max()
   // ueber lauter Nullen auf die erstbeste Marke, und die Box fragt "Warum liegt X vor Y?"
-  // ueber einem leeren Balken. Vorsorglicher Guard - am 17.07.2026 ist KEIN Kanal tot
-  // (grounded lebt: leader=CosmosDirekt, SoV 0,7-23,7 %).
+  // ueber einem leeren Balken. Vorsorglicher Guard gegen LLM-Ausfaelle.
   function isDead(fit){
     if(!fit) return false;
     if(fit.available===false) return true;
@@ -61,17 +59,22 @@
     return null;
   }
 
-  /* ---- Zerlegungs-Quelle waehlen: full_joint > price_footprint_joint > Footprint-only ---- */
+  /* ---- Zerlegungs-Quelle: structure_summary (Autorität|Preis|Rest) > Footprint-only ----
+     18.07.2026: full_joint (3-Wege cite/size/relprice) ist raus (Audit 17.07., E1:
+     Referenzmarke instabil, Attribution bei 7 Marken nicht identifiziert). Die
+     robuste Zusammenfassung kommt aus level_model.structure_summary; fehlt sie
+     (aelterer Nightly), faellt die Box auf die reine Footprint-Zerlegung zurueck. */
   function decompFor(lm, brand){
-    var srcs=[ [seg(lm.full_joint), "Größe + Footprint + Preis (gemeinsam geschätzt)", {size:COL.size, cite_share:COL.foot, relprice:COL.price}],
-               [seg(lm.price_footprint_joint), "Footprint + Preis (gemeinsam geschätzt)", {cite_share:COL.foot, relprice:COL.price}] ];
-    for(var i=0;i<srcs.length;i++){
-      var j=srcs[i][0];
-      if(j && j.available && !isDead(j) && j.gap_decomposition && j.gap_decomposition[brand] && j.gap_decomposition[brand].contrib_pp){
-        return { g:j.gap_decomposition[brand], leader:j.leader, label:srcs[i][1], cols:srcs[i][2],
-                 brands:Object.keys(j.gap_decomposition), joint:true, n:j.n_cells, nb:j.n_brands, nt:j.n_topics };
-      }
+    // 1) structure_summary (nur ERGO, zweistufig Autorität|Preis|Rest)
+    var ss = seg(lm.structure_summary);
+    if(brand==="ERGO" && ss && ss.available && ss.gap_pp!=null){
+      var contrib={}; if(ss.authority_pp!=null) contrib.authority=ss.authority_pp; if(ss.price_pp) contrib.relprice=ss.price_pp;
+      return { g:{actual_gap_pp:ss.gap_pp, contrib_pp:contrib, rest_pp:ss.rest_pp},
+               leader:ss.leader, label:"Autorität (Größe+Footprint) + Preis + Rest (Audit-Struktur)",
+               cols:{authority:COL.foot, relprice:COL.price}, brands:["ERGO"], joint:true,
+               n:null, nb:null, nt:null, structure:true };
     }
+    // 2) Footprint-only aus dem Basiskanal (Between/Mundlak)
     var m=seg(lm)||{};
     if(m.available && !isDead(m) && m.gap_decomposition && m.gap_decomposition[brand]){
       var g0=m.gap_decomposition[brand];
@@ -134,12 +137,6 @@
       else host.insertBefore(box, host.firstChild);
     }
     // Guard zuerst: bei totem Kanal gar nicht erst zerlegen.
-    // NUR der Basiskanal wird geprueft. full_joint/price_footprint_joint stehen schon
-    // dann auf available:false, wenn zu wenige PREIS-Zellen da sind (<12 bzw. <10) -
-    // das ist kein LLM-Ausfall. Wuerde man sie mitpruefen, meldete die Box "keine Daten,
-    // vermutlich LLM-Ausfall" bei bloss duennen Preisdaten, und der Fallback in
-    // decompFor() auf "nur Footprint" - der genau fuer diesen Fall gebaut ist - waere
-    // toter Code. Ist der Basiskanal tot, sind die Joint-Modelle es ohnehin.
     if(isDead(seg(lm))){
       box.innerHTML = deadBox();
       return;
@@ -170,7 +167,7 @@
     }).join("")+'</div>';
 
     // Balken
-    var order=["size","cite_share","relprice"];
+    var order=["authority","size","cite_share","relprice"];
     var segs=[{label:brand+" Basis (Ø SoV)",val:baseSov,col:COL.base,isBase:true}];
     order.forEach(function(k){ if(contrib[k]!=null) segs.push({label:(AMP[k]||"")+" "+(LBL[k]||k),val:contrib[k],col:d.cols[k]||COL.rest,k:k}); });
     if(rest>0.05) segs.push({label:"Rest / unerklärt",val:rest,col:COL.rest});
@@ -196,7 +193,7 @@
 
     var notes='<div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5">'+
       'Zerlegung: <b>'+d.label+'</b> · '+(d.n||"?")+' Zellen, '+(d.nb||"?")+' Marken, '+(d.nt||"?")+' Themen ('+modeLbl()+')'+(capped?' · Beiträge proportional auf 100 % des Gaps gekappt':'')+'. '+
-      (contrib.size!=null?'<b>Achtung Kollinearität:</b> Größe und Footprint sind bei so wenigen Marken statistisch schwer trennbar — ihre Aufteilung ist eine Tendenz, ihre <b>Summe</b> ist belastbar. ':'')+
+      ((contrib.size!=null||contrib.authority!=null)?'<b>Achtung:</b> Größe und Footprint sind bei so wenigen Marken statistisch nicht trennbar — sie werden bewusst als <b>eine</b> Autoritäts-Stufe geführt (keine 3-Wege-Aufteilung mehr). ':'')+
       '⚪ nicht beeinflussbar · 🟡 mittelbar (Portale/Quellen) · 🟢 direkt beeinflussbar. Zerlegung, kein Kausalnachweis.</div>';
 
     // Themen-Hotspots
@@ -226,8 +223,8 @@
 
     box.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
-        '<div><h3 style="font-size:16px;font-weight:700;margin:0">Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
-        '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">SoV-Abstand zerlegt in Treiber-Beiträge <span style="color:#9ca3af">('+modeLbl()+' · Modus folgt dem Umschalter oben)</span></p></div>'+
+        '<div><h3 style="font-size:16px;font-weight:700;margin:0">4 · Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
+        '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">SoV-Abstand zerlegt in Treiber-Beiträge <span style="color:#9ca3af">('+modeLbl()+')</span></p></div>'+
         sel+'</div>'+ bar + legend + notes + hsHtml;
 
     box.querySelectorAll(".gwb").forEach(function(btn){

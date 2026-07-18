@@ -213,6 +213,7 @@ class SimpleHTMLAnalyzer(HTMLParser):
         self.img_count = 0
         self.product_keywords = []
         self.product_keyword_counts = {}
+        self.text_length = 0
         self._in_title = False
         self._in_h1 = False
         self._current_text = ""
@@ -258,6 +259,13 @@ class SimpleHTMLAnalyzer(HTMLParser):
             self.product_keyword_counts[prod] = cnt
             if cnt > 0:
                 self.product_keywords.append(prod)
+        # Sichtbare Textlaenge (Content-Reichtum ggue. Template-Baseline).
+        # Baukasten-Boilerplate liegt empirisch bei ~22k-32k Zeichen; erst
+        # deutlich darueber liegt eigener, redaktioneller Text vor.
+        _vis = re.sub(r"(?is)<(script|style|noscript)[^>]*>.*?</\1>", " ", html)
+        _vis = re.sub(r"(?s)<[^>]+>", " ", _vis)
+        _vis = re.sub(r"\s+", " ", _vis)
+        self.text_length = len(_vis.strip())
         try:
             self.feed(html)
         except Exception:
@@ -303,36 +311,63 @@ class SimpleHTMLAnalyzer(HTMLParser):
             self._current_text += data
 
 
+# Empirische Template-Baseline (Live-Stichprobe n=10, 18.07.2026):
+# Vermittler-Subdomains liefern ~22k-32k sichtbare Zeichen reine Baukasten-
+# Boilerplate. Erst deutlich darueber liegt eigener redaktioneller Text vor.
+TEMPLATE_TEXT_BASELINE = 32000
+
+
 def classify_page_type(analysis):
-    """Klassifiziert eine Berater-Seite in einen Typ."""
-    features = []
-    if analysis["has_team"]:
-        features.append("agentur")
-    if analysis["has_blog"]:
-        features.append("blog")
-    if analysis["has_bewertungen"]:
-        features.append("bewertungen")
-    if analysis["has_video"]:
-        features.append("video")
-    if analysis["has_faq"]:
-        features.append("faq")
-    if analysis["has_google_maps"]:
-        features.append("maps")
-    if analysis["has_termin"]:
-        features.append("termin")
-    if analysis["has_contact_form"]:
-        features.append("kontakt")
-    individual_score = len(features)
+    """Klassifiziert eine Berater-Seite in einen Typ.
+
+    WICHTIG (Fix 18.07.2026): Die ERGO-Vermittler-Subdomains laufen alle auf
+    demselben Baukasten. Kontaktformular, Termin-Button, Ratgeber/Blog-Link,
+    Bewertungs-Widget, Google-Maps, FAQ, Vimeo-Einbettung und schema.org sind
+    TEMPLATE-STANDARD und auf praktisch jeder Seite vorhanden — sie belegen
+    KEINE Individualisierung. Live-Stichprobe (n=10): blog/bewertungen/termin/
+    kontakt je 10/10, video (vimeo) 10/10, alle 10 Produkt-Keywords 10/10.
+    Die alte Formel zaehlte genau diese Template-Features als "individuell" und
+    stufte damit ~100 %% der Seiten faelschlich als "individuell" ein.
+
+    Als echte Individualisierung zaehlen daher nur Signale, die ueber den
+    Baukasten hinausgehen:
+      - eigener redaktioneller Text deutlich ueber der Template-Baseline
+      - eine echte Team-/Mitarbeiter-Sektion (mehrere Personen)
+    Produkt-Keyword-Links definieren den Produktkatalog-Charakter, nicht
+    Individualisierung.
+    """
+    # Nur informativ mitgefuehrt, NICHT als Individualisierung gewertet:
+    template_features = [name for name, flag in (
+        ("blog", analysis.get("has_blog")),
+        ("bewertungen", analysis.get("has_bewertungen")),
+        ("termin", analysis.get("has_termin")),
+        ("kontakt", analysis.get("has_contact_form")),
+        ("maps", analysis.get("has_google_maps")),
+        ("faq", analysis.get("has_faq")),
+        ("video", analysis.get("has_video")),
+        ("rechner", analysis.get("has_calculator")),
+    ) if flag]
+
+    # Echte Individualisierungssignale (selten, ueber Baukasten hinaus):
+    individual = []
+    txt = analysis.get("text_length", 0) or 0
+    if txt > int(TEMPLATE_TEXT_BASELINE * 1.25):
+        individual.append("eigentext")
+    if analysis.get("has_team"):
+        individual.append("team")
+
+    individual_score = len(individual)
     prod_count = len(analysis.get("product_keywords", []))
-    if individual_score >= 4:
+
+    if individual_score >= 2:
         page_type = "individuell"
-        desc = "Stark individualisiert"
-    elif individual_score >= 2:
+        desc = "Nachweislich eigene Inhalte"
+    elif individual_score == 1:
         page_type = "angepasst"
-        desc = "Teilweise angepasst"
+        desc = "Template mit einzelner Individualisierung"
     elif prod_count >= 5:
         page_type = "produktkatalog"
-        desc = "Reiner Produktkatalog"
+        desc = "Template-Klon mit Produktkatalog"
     else:
         page_type = "minimal"
         desc = "Minimal/Standard-Template"
@@ -340,7 +375,8 @@ def classify_page_type(analysis):
         "type": page_type,
         "type_label": desc,
         "individual_score": individual_score,
-        "features": features,
+        "features": individual,
+        "template_features": template_features,
     }
 
 
@@ -388,6 +424,7 @@ def crawl_homepage(homepage):
             "has_google_maps": analyzer.has_google_maps,
             "product_keywords": analyzer.product_keywords,
             "product_keyword_counts": analyzer.product_keyword_counts,
+            "text_length": analyzer.text_length,
             "page_size_kb": round(len(raw) / 1024, 1),
         }
         classification = classify_page_type(result)

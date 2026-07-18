@@ -126,6 +126,9 @@ _BRAND_DOMAINS = {
     "lv1871.de": "LV 1871", "vhv.de": "VHV", "wgv.de": "WGV",
     "wuerttembergische.de": "Württembergische", "zurich.de": "Zurich",
 }
+# Eindeutige Anzeigenamen aller Marken der Domain-Map (fuer die kanalgetrennten
+# Zitatanteile). Aus _BRAND_DOMAINS abgeleitet, damit beide nie auseinanderlaufen.
+_BRAND_NAMES = sorted(set(_BRAND_DOMAINS.values()))
 # Bekannte Portale / Vergleichs- / Verbraucher- / Test-Quellen
 _PORTAL_DOMAINS = {
     "check24.de", "verivox.de", "finanztip.de", "verbraucherzentrale.de",
@@ -164,6 +167,10 @@ def _aggregate_cited_sources(per_llm_list, top_n=15):
     overall = Counter()
     by_llm = {}
     cat = Counter()
+    # A.3 (18.07.2026): kanalgetrennte, UNGEKAPPTE Marken-Zitatanteile je LLM.
+    # by_llm ist Top-N-gekappt und kann daher den ERGO/Allianz-Anteil je Kanal nicht
+    # tragen -- die Kreuz-Matrix (erwaehnt x zitiert) braucht ihn aber vollstaendig.
+    share_by_llm = {}
     total = 0
     for pl in (per_llm_list or []):
         llm = pl.get("llm")
@@ -181,6 +188,28 @@ def _aggregate_cited_sources(per_llm_list, top_n=15):
         if cc:
             by_llm[llm] = [{"domain": d, "count": n, "category": _classify_source(d)[0]}
                            for d, n in cc.most_common(top_n)]
+        # Kanalgetrennte Markenanteile -- vollstaendig, keine Top-N-Kappung.
+        # "Keine Daten ist kein Befund": Hatte dieser LLM in diesem Thema KEINE
+        # (nicht-verrauschten) Zitate, steht brands=None (unterscheidbar von
+        # gemessenen 0 %). Erst wenn Zitate existieren, sind die 0-Anteile der
+        # nicht zitierten Marken echte Messwerte (share 0.0, count 0).
+        llm_cited_total = sum(cc.values())
+        if llm_cited_total == 0:
+            share_by_llm[llm] = {"cited_total": 0, "brands": None}
+        else:
+            _bc = Counter()
+            for _d, _n in cc.items():
+                _kat, _label = _classify_source(_d)
+                if _kat in ("eigen", "wettbewerber"):
+                    _bc[_label] += _n
+            share_by_llm[llm] = {
+                "cited_total": llm_cited_total,
+                "brands": {
+                    _name: {"count": _bc.get(_name, 0),
+                            "share": round(_bc.get(_name, 0) / llm_cited_total * 100, 1)}
+                    for _name in _BRAND_NAMES
+                },
+            }
     if not total:
         return None
     def _fmt(counter, n):
@@ -190,6 +219,7 @@ def _aggregate_cited_sources(per_llm_list, top_n=15):
         "total": total,
         "overall": _fmt(overall, top_n),
         "by_llm": by_llm,
+        "cited_share_by_llm": share_by_llm,
         "by_category": {k: {"count": v, "share": round(v / total * 100, 1)}
                         for k, v in cat.most_common()},
     }

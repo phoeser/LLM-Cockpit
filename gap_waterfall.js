@@ -88,7 +88,13 @@
   /* ---- Themen-Hotspots aus GEO_SNAPSHOT (client-seitig) ---- */
   var DOM2BRAND = { "ergo.de":"ERGO","ergo-reiseversicherung.de":"ERGO","dkv.com":"ERGO","allianz.de":"Allianz",
     "allianzdirect.de":"Allianz","axa.de":"AXA","generali.de":"Generali","cosmosdirekt.de":"CosmosDirekt",
-    "huk.de":"HUK-Coburg","huk24.de":"HUK-Coburg","signal-iduna.de":"Signal Iduna" };
+    "huk.de":"HUK-Coburg","huk24.de":"HUK-Coburg","signal-iduna.de":"Signal Iduna",
+    // 18.07.2026: Markenerweiterung Crawl 7->25 (additiv, Namen wie Crawl/BRAND_SIZE)
+    "adac.de":"ADAC","arag.de":"ARAG","alte-leipziger.de":"Alte Leipziger","barmenia.de":"Barmenia",
+    "da-direkt.de":"DA Direkt","devk.de":"DEVK","debeka.de":"Debeka","diebayerische.de":"Die Bayerische",
+    "die-bayerische.de":"Die Bayerische","gothaer.de":"Gothaer","hdi.de":"HDI","hannoversche.de":"Hannoversche",
+    "hansemerkur.de":"HanseMerkur","lv1871.de":"LV 1871","ruv.de":"R+V","vhv.de":"VHV",
+    "wgv.de":"WGV","wuerttembergische.de":"Württembergische","zurich.de":"Zurich" };
   // 18.07.2026 Fix: dashboard_v3 haelt GEO_SNAPSHOT als top-level `let` — das
   // landet NICHT auf window. Erst lexikalische Bindung versuchen, dann window
   // (health_banner.js spiegelt zusaetzlich). Vorher fehlten die Hotspots im

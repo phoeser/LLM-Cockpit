@@ -324,7 +324,11 @@
   var TMAP={ "Zahnzusatz":"zahnzusatz","Sterbegeld":"sterbegeld","Risikoleben":"risikoleben",
     "Berufsunfähigkeit":"berufsunfaehigkeit","Rechtsschutz":"rechtsschutz","Haftpflicht":"haftpflicht",
     "Hausrat":"hausrat","Kfz":"kfz","Unfall":"unfall","Krankenhauszusatz":"krankenhauszusatz","Reise":"reise" };
-  var GROUND={ "Gemini":1,"Perplexity":1,"AI Overview":1,"AI Mode":1,"ChatGPT":1 };
+  // Punkt 5 (18.07.2026): grounded/ungrounded-Umschalter. Peec-Engines:
+  // Gemini/Perplexity/AI Overview/AI Mode = grounded, ChatGPT = UI (ui_mixed).
+  // Die CSV traegt das auch als Spalte engine_typ — die ist fuehrend.
+  var GROUNDED_ENGINES={ "Gemini":1,"Perplexity":1,"AI Overview":1,"AI Mode":1 };
+  var b3Mode="g"; // "g" grounded | "u" ChatGPT/UI | "all" alle Engines
   var BMAP={ "HUK24":"HUK-Coburg" };
   function pearson(x,y){ var n=x.length; if(n<3) return null; var mx=0,my=0; x.forEach(function(v){mx+=v;}); y.forEach(function(v){my+=v;}); mx/=n; my/=n; var c=0,vx=0,vy=0; for(var i=0;i<n;i++){ c+=(x[i]-mx)*(y[i]-my); vx+=(x[i]-mx)*(x[i]-mx); vy+=(y[i]-my)*(y[i]-my); } return (vx>0&&vy>0)?c/Math.sqrt(vx*vy):null; }
   function ranks(v){ var s=v.map(function(x,i){return [x,i];}).sort(function(a,b){return a[0]-b[0];}); var r=new Array(v.length); s.forEach(function(p,i){ r[p[1]]=i; }); return r; }
@@ -332,22 +336,47 @@
   // landet NICHT auf window. Erst lexikalische Bindung versuchen, dann window
   // (health_banner.js spiegelt zusaetzlich). Ursache des leeren Quellen-Vergleichs.
   function snapData(){ try{ if(typeof GEO_SNAPSHOT!=="undefined" && GEO_SNAPSHOT) return GEO_SNAPSHOT; }catch(e){} return window.GEO_SNAPSHOT||null; }
-  function ownSov(){ var g=snapData(); if(!g||!g.products) return null; var out={};
-    Object.keys(g.products).forEach(function(pid){ var brands=(((g.products[pid].summary_by_llm)||{}).gemini||{}).brands||[]; out[pid]={_name:g.products[pid].name||pid}; brands.forEach(function(b){ out[pid][b.name]=100*(b.share_of_voice||0); }); });
-    return out; }
+  // Eigene Crawl-Werte je Kanal. Ausfall-Guard: Ein Produkt, in dem der gewaehlte
+  // Kanal in Summe 0 Nennungen hat, gilt als "keine Daten" und wird uebersprungen
+  // (roter Faden des Projekts: fehlende Daten sind nie Null).
+  function ownSov(mode){
+    var g=snapData(); if(!g||!g.products) return null; var out={};
+    var engs= mode==="u"?["chatgpt"]:(mode==="all"?["gemini","chatgpt"]:["gemini"]);
+    Object.keys(g.products).forEach(function(pid){
+      var sbl=g.products[pid].summary_by_llm||{}; var acc={}, cnt={}, sum=0;
+      engs.forEach(function(e){ ((sbl[e]||{}).brands||[]).forEach(function(b){
+        var v=100*(b.share_of_voice||0); acc[b.name]=(acc[b.name]||0)+v; cnt[b.name]=(cnt[b.name]||0)+1; sum+=v; }); });
+      if(sum<=0) return; // Kanal in diesem Produkt ausgefallen/leer -> keine Zeile statt Nullen
+      var row={_name:g.products[pid].name||pid};
+      Object.keys(acc).forEach(function(bn){ row[bn]=acc[bn]/cnt[bn]; });
+      out[pid]=row;
+    });
+    return Object.keys(out).length?out:null;
+  }
   function loadPeecCells(){
-    if(window.__KORR_PEEC_CELLS) return Promise.resolve(window.__KORR_PEEC_CELLS);
+    if(window.__KORR_PEEC_CELLS3) return Promise.resolve(window.__KORR_PEEC_CELLS3);
     return fetch("data/peec_cells.csv?t="+Date.now(),{cache:"no-store"}).then(function(r){ return r.ok?r.text():null; }).then(function(t){
       if(!t) return null;
       var lines=t.replace(/^﻿/,"").split("\n"); var head=lines[0].split(";"); var idx={}; head.forEach(function(h,i){ idx[h.trim()]=i; });
-      var mc={}, tot={};
-      for(var i=1;i<lines.length;i++){ var c=lines[i].split(";"); if(c.length<5) continue; if(!GROUND[c[idx.engine]]) continue;
+      var mc={g:{},u:{},all:{}}, tot={g:{},u:{},all:{}};
+      for(var i=1;i<lines.length;i++){ var c=lines[i].split(";"); if(c.length<5) continue;
         var pid=TMAP[(c[idx.thema]||"").trim()]; if(!pid) continue; var b=BMAP[c[idx.marke]]||c[idx.marke];
-        var m=parseFloat(c[idx.mention_count]||0)||0; mc[pid]=mc[pid]||{}; mc[pid][b]=(mc[pid][b]||0)+m; tot[pid]=(tot[pid]||0)+m; }
-      var out={}; Object.keys(mc).forEach(function(pid){ out[pid]={}; Object.keys(mc[pid]).forEach(function(b){ out[pid][b]=tot[pid]?100*mc[pid][b]/tot[pid]:0; }); });
-      if(!Object.keys(out).length) return null; // leeres Parse-Ergebnis NIE cachen — spaeter erneut versuchen
-      window.__KORR_PEEC_CELLS=out; return out;
+        var cls=(idx.engine_typ!=null && c[idx.engine_typ]!=null && c[idx.engine_typ]!=="")
+              ? ((c[idx.engine_typ]||"").trim()==="grounded"?"g":"u")
+              : (GROUNDED_ENGINES[c[idx.engine]]?"g":"u");
+        var m=parseFloat(c[idx.mention_count]||0)||0;
+        [cls,"all"].forEach(function(k){ mc[k][pid]=mc[k][pid]||{}; mc[k][pid][b]=(mc[k][pid][b]||0)+m; tot[k][pid]=(tot[k][pid]||0)+m; }); }
+      var out={}; ["g","u","all"].forEach(function(k){ out[k]={}; Object.keys(mc[k]).forEach(function(pid){ out[k][pid]={}; Object.keys(mc[k][pid]).forEach(function(b){ out[k][pid][b]=tot[k][pid]?100*mc[k][pid][b]/tot[k][pid]:0; }); }); });
+      if(!Object.keys(out.all).length) return null; // leeres Parse-Ergebnis NIE cachen — spaeter erneut versuchen
+      window.__KORR_PEEC_CELLS3=out; return out;
     }).catch(function(){ return null; });
+  }
+  function b3ModeLbl(){ return b3Mode==="g"?"grounded (Web-Suche)":(b3Mode==="u"?"UI / ungrounded (ChatGPT)":"alle Engines"); }
+  function b3Btns(){
+    function btn(id,lbl){ var on=b3Mode===id; return '<button data-m="'+id+'" class="b3m" style="font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid '+(on?"#dc0028":"#ccc")+';background:'+(on?"#dc0028":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+lbl+'</button>'; }
+    return '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:9px"><span style="font-size:11px;font-weight:600;color:#6b7280">Kanal:</span>'+
+      btn("g","Grounded (Web-Suche)")+btn("u","UI / ChatGPT")+btn("all","Alle Engines")+
+      '<span style="font-size:10.5px;color:#9ca3af">Peec: Gemini, Perplexity, AI Overview, AI Mode = grounded · ChatGPT = UI. Eigener Crawl: Gemini = grounded · ChatGPT = ungrounded.</span></div>';
   }
   function block3Skeleton(){
     return '<div style="margin:16px 0 6px"><div style="font-size:14px;font-weight:700;color:#1a1a2e">3 · Quellen-Vergleich: Peec (fuehrend) vs. eigener Crawl</div>'+
@@ -357,18 +386,20 @@
   var fb3Wait=0;
   function fillBlock3(){
     var box=document.getElementById("korrDiffBox"); if(!box) return;
-    var own=ownSov();
+    var own=ownSov(b3Mode);
     if(!own){
       // 18.07.2026 Fix: GEO_SNAPSHOT laedt asynchron — warten statt aufgeben
       // (vorher blieb hier dauerhaft der "nach Reload"-Text stehen).
       if(fb3Wait++<40){ setTimeout(fillBlock3,500); return; }
-      box.innerHTML='<div style="font-size:12px;color:#9ca3af">Eigener Crawl (data/geo_snapshot.json) nicht ladbar — Vergleich erscheint nach Reload. <b>Keine Ersatz-Nullen.</b></div>'; return;
+      box.innerHTML=b3Btns()+'<div style="font-size:12px;color:#9ca3af">Eigener Crawl (data/geo_snapshot.json): fuer den Kanal <b>'+b3ModeLbl()+'</b> keine Daten ladbar — Vergleich erscheint nach Reload oder in einem anderen Kanal. <b>Keine Ersatz-Nullen.</b></div>'; b3Wire(box); return;
     }
-    loadPeecCells().then(function(peec){
+    loadPeecCells().then(function(cells){
       // 18.07.2026 Fix: Box IMMER frisch greifen — renderPanel kann das DOM
       // inzwischen neu aufgebaut haben (die alte Referenz waere detached).
       box=document.getElementById("korrDiffBox"); if(!box) return;
-      if(!peec){ box.innerHTML='<div style="font-size:12px;color:#9ca3af">Peec-Zellen (data/peec_cells.csv) nicht erreichbar — der Quellen-Vergleich wird beim naechsten Reload gezeigt. <b>Keine Ersatz-Nullen.</b></div>'; return; }
+      if(!cells){ box.innerHTML='<div style="font-size:12px;color:#9ca3af">Peec-Zellen (data/peec_cells.csv) nicht erreichbar — der Quellen-Vergleich wird beim naechsten Reload gezeigt. <b>Keine Ersatz-Nullen.</b></div>'; return; }
+      var peec=cells[b3Mode]||{};
+      if(!Object.keys(peec).length){ box.innerHTML=b3Btns()+'<div style="font-size:12px;color:#9ca3af">Peec: fuer den Kanal <b>'+b3ModeLbl()+'</b> keine Zellen im aktuellen Export. <b>Keine Ersatz-Nullen.</b></div>'; b3Wire(box); return; }
       var rowsHtml="", allOwn=[], allPeec=[];
       var pids=Object.keys(own).filter(function(p){ return peec[p]; });
       pids.forEach(function(pid){
@@ -388,8 +419,11 @@
           '<td style="padding:5px 8px;text-align:right;font-weight:700;color:'+rc+'">'+(rho==null?"—":num(rho,2))+'</td></tr>';
       });
       var rAll=pearson(allOwn,allPeec);
-      box.innerHTML='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:8px">'+
-        '<div style="font-size:12px;color:#4b5563;max-width:640px">ERGO-SoV je Thema: <b>Peec</b> (fuehrend, grounded-Engines inkl. AI Overview/AI Mode) vs. <b>eigener Crawl</b> (Gemini-API, grounded). Rechte Spalte: Rang-Konvergenz der Markenreihenfolge (Spearman-ρ).</div>'+
+      var srcTxt = b3Mode==="g" ? "<b>Peec</b> (grounded: Gemini, Perplexity, AI Overview, AI Mode) vs. <b>eigener Crawl</b> (Gemini-API, grounded)"
+                 : (b3Mode==="u" ? "<b>Peec</b> (ChatGPT-UI) vs. <b>eigener Crawl</b> (ChatGPT-API, ungrounded)"
+                                 : "<b>Peec</b> (alle 5 Engines) vs. <b>eigener Crawl</b> (Mittel aus Gemini + ChatGPT)");
+      box.innerHTML=b3Btns()+'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:8px">'+
+        '<div style="font-size:12px;color:#4b5563;max-width:640px">ERGO-SoV je Thema: '+srcTxt+'. Rechte Spalte: Rang-Konvergenz der Markenreihenfolge (Spearman-ρ).</div>'+
         '<span style="font-size:11px;font-weight:700;color:#067d3a;background:#e6f5ec;border-radius:6px;padding:4px 10px;white-space:nowrap">Gesamt-Korrelation r = '+(rAll==null?"—":num(rAll,2))+'</span></div>'+
         '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'+
         '<thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'+
@@ -397,7 +431,18 @@
         '<th style="padding:5px 8px;text-align:right">ERGO — eigener Crawl</th><th style="padding:5px 8px;text-align:right">Differenz</th>'+
         '<th style="padding:5px 8px;text-align:right" title="Spearman-Rangkorrelation der Markenreihenfolge (1,0 = identisch)">Rang-ρ</th></tr></thead>'+
         '<tbody>'+rowsHtml+'</tbody></table></div>'+
-        '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Rang-ρ ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Markenreihenfolge → Messung validiert. Grosse ERGO-Differenzen (&gt;10 pp) sind Pruef-Kandidaten (Prompt-Sets vergleichen). Niveau-Unterschiede folgen aus 26 vs. 7 Marken. Peec-Export 17.06.–16.07.</div>';
+        '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Rang-ρ ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Markenreihenfolge → Messung validiert. Grosse ERGO-Differenzen (&gt;10 pp) sind Pruef-Kandidaten (Prompt-Sets vergleichen). Niveau-Unterschiede folgen aus 26 vs. 7 Marken. Kanal: '+b3ModeLbl()+' · Peec-Export siehe data/peec_cells.csv (zeitraum-Spalte).</div>';
+      b3Wire(box);
+    });
+  }
+  // Umschalter-Verkabelung: setzt den Kanal und rendert Block 3 neu (Daten sind gecacht).
+  function b3Wire(box){
+    box.querySelectorAll(".b3m").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var m=btn.getAttribute("data-m");
+        if(m===b3Mode) return;
+        b3Mode=m; fb3Wait=0; fillBlock3();
+      });
     });
   }
 
@@ -447,7 +492,7 @@
     card0.innerHTML=
       '<div style="margin-bottom:14px">'+
         '<h3 style="font-size:17px;font-weight:700;margin:0">Korrelationsanalyse — was treibt die LLM-Sichtbarkeit? '+peecBadgeTop(C)+'</h3>'+
-        '<p style="font-size:12px;color:#6b7280;margin:3px 0 0">Nur validierte Befunde. <b>Peec AI</b> ist die fuehrende Quelle (26 Marken), der <b>eigene Crawl</b> steht getrennt daneben, dazwischen eine Differenzanalyse. Kein grounded/ungrounded-Umschalter mehr — die Kernaussage ist engine-uebergreifend.</p>'+
+        '<p style="font-size:12px;color:#6b7280;margin:3px 0 0">Nur validierte Befunde. <b>Peec AI</b> ist die fuehrende Quelle (26 Marken), der <b>eigene Crawl</b> steht getrennt daneben, dazwischen eine Differenzanalyse. Die Kernbefunde (Block 1/2) sind engine-uebergreifend; im Quellen-Vergleich (Block 3) und in der Ursachenanalyse (Block 4) laesst sich der Kanal <b>grounded / UI</b> umschalten.</p>'+
       '</div>'+
       footInfoBox()+ block1(C)+ block2(C)+ block3Skeleton();
     // Block 5 als eigene Karte direkt nach korrSynth -> gap_waterfall (Block 4) schiebt sich dazwischen

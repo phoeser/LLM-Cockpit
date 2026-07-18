@@ -166,10 +166,15 @@
     var rest=Math.max(0,gap-sum);
     if(baseSov==null||leadSov==null){ baseSov=0; leadSov=gap; }
 
-    // Marken-Umschalter
-    var sel='<div style="display:flex;gap:6px;flex-wrap:wrap">'+d.brands.map(function(o){
+    // Marken-Umschalter + Kanal-Umschalter (Punkt 5, 18.07.2026: grounded/ungrounded zurueck)
+    var brandSel='<div style="display:flex;gap:6px;flex-wrap:wrap">'+d.brands.map(function(o){
       var on=o===brand; return '<button data-b="'+o+'" class="gwb" style="font-size:11px;padding:3px 9px;border-radius:8px;border:1px solid '+(on?"#dc0028":"#ccc")+';background:'+(on?"#dc0028":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+o+'</button>';
     }).join("")+'</div>';
+    var modeSel='<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:10.5px;color:#9ca3af">Kanal:</span>'+["g","u","c"].map(function(k){
+      var lbl=k==="g"?"grounded":(k==="u"?"ungrounded":"kombiniert"); var on=mode===k;
+      return '<button data-m="'+k+'" class="gwm" style="font-size:10.5px;padding:2px 8px;border-radius:7px;border:1px solid '+(on?"#1a1a2e":"#ccc")+';background:'+(on?"#1a1a2e":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+lbl+'</button>';
+    }).join("")+'</div>';
+    var sel='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+modeSel+brandSel+'</div>';
 
     // Balken
     var order=["authority","size","cite_share","relprice"];
@@ -234,6 +239,9 @@
 
     box.querySelectorAll(".gwb").forEach(function(btn){
       btn.addEventListener("click", function(){ render(host, lm, btn.getAttribute("data-b")); });
+    });
+    box.querySelectorAll(".gwm").forEach(function(btn){
+      btn.addEventListener("click", function(){ mode=btn.getAttribute("data-m"); render(host, lm, curBrand); });
     });
 
     // 18.07.2026 Fix: GEO_SNAPSHOT laedt asynchron — fehlen die Hotspots noch,

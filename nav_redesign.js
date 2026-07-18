@@ -124,7 +124,7 @@
 
 /* Loader (15.07.2026, erweitert 18.07.): Zusatzmodule nachladen. */
 (function(){ try{
-  ["peec_compare.js","overview_upgrade.js","empfehlungen_dynamic.js","geo_wirkung.js"].forEach(function(f){
+  ["peec_compare.js","overview_upgrade.js","empfehlungen_dynamic.js","geo_wirkung.js","geo_doku_tab.js"].forEach(function(f){
     var s=document.createElement("script"); s.src=f+"?t="+Date.now(); document.body.appendChild(s);
   });
 }catch(e){} })();

@@ -2174,6 +2174,10 @@ MIN_FUNNEL_POINTS = 3
 # Ab welchem Anteil brauchbarer Klassifikationen die Seitentyp-Aufschluesselung
 # ueberhaupt berichtet wird. Darunter waere die Aufteilung eine Scheingenauigkeit.
 MIN_CLASS_COVERAGE = 0.30
+# Funnel-Stufen in Reihenfolge. Die uebrigen Tags sind Themenfelder (Corporate
+# Trust, Sustainability, ...) — inhaltlich anders gelagert und deshalb beim
+# teuren Wild-Cluster-Test nicht mitgerechnet.
+FUNNEL_ORDER = ["Awareness", "Consideration", "Decision", "Retention"]
 
 
 def _effect_ci(xs, ys, min_with_for_sig=8):
@@ -2199,12 +2203,19 @@ def _effect_ci(xs, ys, min_with_for_sig=8):
         se = math.sqrt(_v(with_v, m1) / len(with_v) + _v(without_v, m0) / len(without_v))
     lo = hi = None
     sig = None
+    pval = None
     if se is not None and se > 0:
         tc = t_critical(min(len(with_v), len(without_v)) - 1)
         if tc is not None:
             lo, hi = round(eff - tc * se, 3), round(eff + tc * se, 3)
             sig = bool(((lo > 0) or (hi < 0)) and len(with_v) >= min_with_for_sig)
-    return round(eff, 3), (round(se, 3) if se is not None else None), lo, hi, sig
+        # Zweiseitiger p-Wert. Normalapproximation — bei den hier ueblichen
+        # Gruppengroessen (dutzende bis hunderte Intervalle) vertretbar; sie ist
+        # bei kleinen df etwas ZU optimistisch, was die FDR-Korrektur konservativ
+        # nur teilweise auffaengt. Deshalb bleibt die KI-basierte Bewertung die
+        # fuehrende Groesse, der p-Wert dient der Mehrfachtest-Korrektur.
+        pval = round(2.0 * (1.0 - _norm_cdf(abs(eff / se))), 6)
+    return round(eff, 3), (round(se, 3) if se is not None else None), lo, hi, sig, pval
 
 
 def _citation_points():
@@ -2315,10 +2326,10 @@ def citation_target_analysis(events):
                       "grund": "zu wenige Intervalle mit diesem Ereignis"}
             continue
         r = pearson(xs, ys)
-        eff, se, lo, hi, sig = _effect_ci(xs, ys)
+        eff, se, lo, hi, sig, pv = _effect_ci(xs, ys)
         res[t] = {"label": TYPE_LABEL.get(t, t), "pearson_r": r,
                   "avg_citation_effect": eff, "effect_se": se,
-                  "ci95_low": lo, "ci95_high": hi, "significant": sig,
+                  "ci95_low": lo, "ci95_high": hi, "significant": sig, "p_value": pv,
                   "n_intervals": len(points),
                   "n_with_event": n_with, "type_confidence": type_confidence(n_with),
                   "available": True}
@@ -2329,7 +2340,7 @@ def citation_target_analysis(events):
     return base
 
 
-def funnel_stratified_analysis(events):
+def funnel_stratified_analysis(events, mv_prior=None):
     """Sichtbarkeit geschichtet nach Funnel-Stufe (Awareness/Consideration/Decision).
 
     Warum: Awareness und Decision verhalten sich nachweislich unterschiedlich
@@ -2444,10 +2455,10 @@ def funnel_stratified_analysis(events):
                           "available": False, "grund": "zu wenige Intervalle mit Ereignis"}
                 continue
             r = pearson(xs, ys)
-            eff, se, lo, hi, sig = _effect_ci(xs, ys)
+            eff, se, lo, hi, sig, pv = _effect_ci(xs, ys)
             imp[t] = {"label": TYPE_LABEL.get(t, t), "pearson_r": r,
                       "avg_sov_effect_pp": eff, "effect_se_pp": se,
-                      "ci95_low_pp": lo, "ci95_high_pp": hi, "significant": sig,
+                      "ci95_low_pp": lo, "ci95_high_pp": hi, "significant": sig, "p_value": pv,
                       "n_intervals": len(points),
                       "n_with_event": n_with, "type_confidence": type_confidence(n_with),
                       "available": True}
@@ -2456,9 +2467,128 @@ def funnel_stratified_analysis(events):
         for brand, bs in series[tag].items():
             if bs:
                 lvl[brand] = round(bs[max(bs)], 3)
+        # Multivariat INNERHALB der Stufe: kontrolliert die Treiber gegeneinander
+        # (Marken- + Zeit-Fixed-Effects). Ohne diesen Schritt bliebe die Schichtung
+        # anfaellig fuer Scheinkorrelationen durch Drittvariablen — genau das, was
+        # das Hauptmodell laengst abfaengt.
+        mv = None
+        try:
+            mv = multivariate_impact(points, prior_mean=mv_prior)
+            # Wild-Cluster-Bootstrap auch hier — sonst haetten die Stufenmodelle nur
+            # prob_direction (ein Posterior-Mass) und waeren damit optimistischer
+            # bewertet als das Hauptmodell. Geclustert nach Marke, wie dort.
+            # Signifikanz je Stufe ueber CLUSTER-ROBUSTE Standardfehler (Cluster = Marke),
+            # NICHT ueber den Wild-Cluster-Bootstrap wie im Hauptmodell.
+            # Grund, offen benannt: Der exakte Bootstrap rechnet 2^G Ridge-Fits je Treiber.
+            # Ueber die Stufen mit je 780 Punkten laeuft das minutenlang und sprengt den
+            # Nightly. Die Sandwich-Variante kostet einen Bruchteil.
+            # PREIS DIESER ENTSCHEIDUNG: Mit G=7 Marken ist die asymptotische
+            # Cluster-Inferenz unzuverlaessig (Faustregel G>=30) und tendenziell ZU
+            # optimistisch. Die Stufen-p-Werte sind deshalb schwaecher belegt als die
+            # des Hauptmodells und ausdruecklich als indikativ zu lesen.
+            if mv.get("available") and mv.get("types_used"):
+                _use = mv["types_used"]
+                _Y, _Xs, _sd = _design(points, _use, "x")
+                _lam = len(_Xs) * 0.5
+                _beta, _Ai, _s2 = _ridge_posterior(_Xs, _Y, _lam)
+                _cl = [pt["brand"] for pt in points]
+                _V, _G = _cluster_robust_var(_Xs, _Y, _beta, _Ai, _cl)
+                mv["inferenz"] = ("cluster-robuste Sandwich-SE, Cluster = Marke (G=%s). Das "
+                                  "Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist "
+                                  "hier zu teuer (2^G Ridge-Fits je Treiber auf %d Punkten). "
+                                  "Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit "
+                                  "und unterschaetzt die Unsicherheit tendenziell — deshalb gilt "
+                                  "ein Effekt hier nur als gesichert, wenn zusaetzlich die "
+                                  "Bayes-Richtungswahrscheinlichkeit >= 97,5 %% liegt."
+                                  % (_G, len(points)))
+                if _V:
+                    for _j, _t in enumerate(_use):
+                        _var = _V[_j][_j] if _j < len(_V) else None
+                        if not _var or _var <= 0:
+                            continue
+                        _se = (_var ** 0.5) / _sd[_j]
+                        _mu = _beta[_j] / _sd[_j]
+                        _z = abs(_mu / _se) if _se > 0 else 0.0
+                        _pv = round(2.0 * (1.0 - _norm_cdf(_z)), 4)
+                        _rec = mv["coefficients"].get(_t)
+                        if _rec:
+                            _rec["cluster_se"] = round(_se, 4)
+                            _rec["cluster_p"] = _pv
+                            # "significant" wird NICHT hier gesetzt — erst nach der
+                            # FDR-Korrektur weiter unten, und dann nur bei Einigkeit
+                            # beider Unsicherheitsmasse (siehe Begruendung dort).
+                            _rec["significant"] = False
+        except Exception as _ex:  # noqa: BLE001
+            mv = {"available": False, "note": f"multivariat fehlgeschlagen: {str(_ex)[:120]}"}
         per_tag[tag] = {"available": True, "n_intervalle": len(points),
                         "marken": sorted(series[tag]), "niveau_letzter_tag": lvl,
-                        "impact": imp}
+                        "impact": imp, "multivariat": mv}
+
+    # ---- Mehrfachtest-Korrektur ueber die GESAMTE Schichtung ----------------
+    # Ohne sie waere der Block methodisch angreifbar: 10 Tags x 11 Treibertypen
+    # sind rund 110 Tests. Bei alpha=0,05 waeren allein zufaellig ~5 "signifikante"
+    # Ergebnisse zu erwarten. Das Hauptmodell korrigiert nach Benjamini-Hochberg —
+    # die Schichtung muss es genauso tun, sonst produziert gerade der praezisere
+    # Block die unsaubereren Aussagen.
+    tests = []
+    for _tag, _blk in per_tag.items():
+        for _t, _im in (_blk.get("impact") or {}).items():
+            if isinstance(_im.get("p_value"), (int, float)):
+                tests.append(_im)
+    # Die multivariaten Stufen-Tests werden separat korrigiert (eigene Familie,
+    # anderes Verfahren) — ueber ihre Wild-Cluster-p-Werte.
+    # Eigene Testfamilie, eigene Korrektur — ueber die cluster-robusten p-Werte.
+    _apply_fdr({"funnel_mv": {t: (b.get("multivariat") or {}).get("coefficients") or {}
+                              for t, b in per_tag.items()}},
+               key="cluster_p", out="cluster_p_fdr")
+
+    # "Gesichert" nur, wenn BEIDE Unsicherheitsmasse zustimmen:
+    #   (a) FDR-korrigiertes q < 0,05 aus der cluster-robusten Sandwich-Varianz und
+    #   (b) Bayes-Richtungswahrscheinlichkeit >= 97,5 % aus dem Ridge-Posterior.
+    # Warum so konservativ: Beim ersten Lauf (20.07.2026) widersprachen sich die
+    # beiden deutlich — "Unbranded / Seitenaenderungen" kam auf cluster_p = 0,0003
+    # bei prob_direction 0,586, also praktisch einem Muenzwurf im Posterior. Solche
+    # Widersprueche entstehen, wenn die Sandwich-Varianz die Ridge-Schrumpfung nicht
+    # mitrechnet und die Unsicherheit dadurch unterschaetzt. Statt eines der beiden
+    # Masse zu bevorzugen, verlangen wir Einigkeit — im Zweifel lieber kein Befund
+    # als ein falscher.
+    _mv_sig = 0
+    for _tag, _blk in per_tag.items():
+        for _t, _rec in ((_blk.get("multivariat") or {}).get("coefficients") or {}).items():
+            _q = _rec.get("cluster_p_fdr")
+            _pd = _rec.get("prob_direction")
+            _ok = bool(isinstance(_q, (int, float)) and _q < 0.05
+                       and isinstance(_pd, (int, float)) and _pd >= 0.975
+                       and (_rec.get("n_with_event") or 0) >= 15)
+            _rec["significant"] = _ok
+            if not _ok and isinstance(_q, (int, float)) and _q < 0.05:
+                _rec["hinweis"] = ("q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit "
+                                   "erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind "
+                                   "sich uneinig, deshalb NICHT als gesichert gewertet.")
+            _mv_sig += 1 if _ok else 0
+    n_tests = len(tests)
+    if n_tests:
+        tests.sort(key=lambda d: d["p_value"])
+        prev = 1.0
+        for i in range(n_tests - 1, -1, -1):
+            q = min(prev, tests[i]["p_value"] * n_tests / (i + 1))
+            tests[i]["p_fdr"] = round(min(q, 1.0), 4)
+            prev = q
+        for d in tests:
+            # "gesichert" nach Korrektur nur, wenn ZUSAETZLICH die Mindest-Datenbasis
+            # steht — gleiche Konvention wie im Hauptmodell.
+            d["significant_fdr"] = bool(d["p_fdr"] < 0.05 and (d.get("n_with_event") or 0) >= 8)
+    base["fdr"] = {
+        "n_gesichert_multivariat": _mv_sig,
+        "n_tests": n_tests, "alpha": 0.05, "verfahren": "Benjamini-Hochberg",
+        "n_signifikant_vor_korrektur": sum(1 for d in tests if (d.get("p_value") or 1) < 0.05),
+        "n_signifikant_nach_korrektur": sum(1 for d in tests if d.get("significant_fdr")),
+        "hinweis": ("Korrigiert wird ueber alle Tag-x-Treiber-Tests dieses Blocks. "
+                    "EINSCHRAENKUNG: Benjamini-Hochberg setzt unabhaengige oder positiv "
+                    "abhaengige Tests voraus. Die Stufen sind es nicht — ein Prompt kann "
+                    "mehrere Tags tragen, die Schichten ueberlappen sich also. Die Korrektur "
+                    "ist damit eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren."),
+    }
 
     base["available"] = True
     base["messtage_je_tag"] = days_per_tag
@@ -2550,12 +2680,16 @@ def main():
         print("WARN level_model:", str(_e)[:120])
     # 19.07.2026: neue Peec-Datenquellen. Alle drei melden bei fehlender
     # Datenbasis available=False MIT Grund — nie eine 0.0.
+    # Gesamteffekte als Prior fuer die Stufenmodelle (Partial Pooling: duenne
+    # Schichten leihen Staerke vom Gesamtmodell, statt frei zu schwanken).
+    _prior_fs = {t: c.get("coef_pp_per_event_day", 0.0)
+                 for t, c in ((res.get("multivariate") or {}).get("coefficients") or {}).items()} or None
     try:
         res["citation_target"] = citation_target_analysis(events)
     except Exception as _e:
         print("WARN citation_target:", str(_e)[:120])
     try:
-        res["funnel_stratified"] = funnel_stratified_analysis(events)
+        res["funnel_stratified"] = funnel_stratified_analysis(events, mv_prior=_prior_fs)
     except Exception as _e:
         print("WARN funnel_stratified:", str(_e)[:120])
     try:

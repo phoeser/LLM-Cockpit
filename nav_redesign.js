@@ -101,12 +101,6 @@
     geo.insertBefore(wrapP, geo.firstChild);
     // 18.07.: geo_wirkung.js setzt sich per insertBefore(geo.firstChild) VOR diese
     // Bloecke — Reihenfolge dann: Wirkung&Hebel -> QUELLE 1 (Peec) -> QUELLE 2.
-    var tries=0;
-    (function place(){ tries++;
-      var cmp=document.getElementById("peecCmpBox");
-      if(cmp){ geo.insertBefore(cmp, head); return; }
-      if(tries<30) setTimeout(place, 500);
-    })();
     var tb=document.querySelector('[data-tab="geo"]');
     if(tb) tb.addEventListener("click",function(){
       [200,800].forEach(function(d){ setTimeout(function(){
@@ -124,7 +118,7 @@
 
 /* Loader (15.07.2026, erweitert 18.07.): Zusatzmodule nachladen. */
 (function(){ try{
-  ["peec_compare.js","overview_upgrade.js","empfehlungen_dynamic.js","geo_wirkung.js","geo_doku_tab.js"].forEach(function(f){
+  ["overview_upgrade.js","empfehlungen_dynamic.js","geo_wirkung.js","geo_doku_tab.js"].forEach(function(f){
     var s=document.createElement("script"); s.src=f+"?t="+Date.now(); document.body.appendChild(s);
   });
 }catch(e){} })();

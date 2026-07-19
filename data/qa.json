@@ -1,0 +1,95 @@
+{
+ "updated": "2026-07-19",
+ "contact": "phoeser@web.de",
+ "hinweis": "Antworten sind kuratiert und gegen Code und Rohdaten geprueft. Offene Fragen werden mit dem naechsten Update beantwortet.",
+ "items": [
+  {
+   "id": "faq-001",
+   "topic": "Datenquellen",
+   "q": "Woher kommen die Sichtbarkeitsdaten — und warum zwei Quellen?",
+   "a": "Primäre Quelle ist Peec AI: 26 Marken, 12 Themen, 5 Engines (inkl. Google AI Overview und AI Mode), wöchentliche Messung per UI-Scraping — also nah am echten Nutzererlebnis.\n\nZweite, unabhängige Quelle ist der eigene Crawl: 323 feste Prompts über 11 Produktkategorien (Zahnzusatz, BU, Kfz, Reise …), täglich um 23:10 UTC gegen die LLM-APIs. Beobachtet werden 25 Marken (ERGO + 24 Wettbewerber). Die zweite Quelle dient als Backup und Konsistenzprüfung — Abweichungen zwischen beiden werden im Reiter LLM-Sichtbarkeit ausgewiesen.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-002",
+   "topic": "Datenquellen",
+   "q": "Welche LLMs fragt der eigene Crawl ab, und wie oft?",
+   "a": "Gemini 2.5 Flash täglich, ChatGPT (gpt-4o-mini) an geraden, Perplexity (sonar) an ungeraden Kalendertagen — das alternierende Intervall dient der Kostenkontrolle. An Aus-Tagen wird der letzte Messstand der Engine fortgeschrieben (carry forward), da Share of Voice eine träge Bestandsgröße ist. Google AI Overview/AI Mode kommen bewusst aus Peec statt aus einem SERP-API-Dienst.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-003",
+   "topic": "Berechnung / Statistik",
+   "q": "Wie ist Share of Voice (SoV) definiert?",
+   "a": "SoV einer Marke = Anzahl ihrer Nennungen geteilt durch die Summe aller Markennennungen über alle LLM-Antworten eines Laufs. Daneben werden zwei weitere Kernmetriken je Antwort erhoben: die Position der Marke in Aufzählungen (1./2./3. genannt) und die Quellen-Zitierung (wird die Marken-Domain als Quelle verlinkt?).",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-004",
+   "topic": "Berechnung / Statistik",
+   "q": "Wie werden Marken erkannt und voneinander abgegrenzt?",
+   "a": "Über Alias-Listen mit Wortgrenzen-Matching. Direkttöchter zählen zur Muttermarke: HUK24 zu HUK-Coburg, „Allianz Direct“ zu Allianz, DKV zu ERGO. Seit 17.07.2026 zählen auch Zweitdomains als Zitat der Muttermarke (z. B. dkv.de für ERGO). Der Effekt der Umstellung wurde am echten Lauf vom 17.07. quantifiziert (ERGO: 60 auf 62 Zitate bei 646 Antworten) und per Backfill auf alle Alt-Läufe angewandt — sonst entstünde am Umstellungsdatum eine künstliche Stufe, die das Treibermodell als Effekt fehlinterpretieren könnte.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-005",
+   "topic": "Methodik",
+   "q": "Wie funktioniert das Treibermodell methodisch?",
+   "a": "Als intervall-basierte Event-Study: Aus aufeinanderfolgenden Messtagen werden je Marke Intervalle gebildet mit delta_SoV = SoV(Ende) − SoV(Start) als Zielgröße. Je Intervall wird gezählt, wie viele Events je Typ (Seitenänderungen, neue Seiten, Presse, Preis-, Bewertungs-, Wikipedia-Änderungen …) in das Fenster fallen. Je Event-Typ wird dann über alle Intervall-mal-Marke-Punkte berechnet: (a) die Pearson-Korrelation zwischen Event-Anzahl und delta_SoV und (b) der Event-Study-Effekt mean(delta_SoV mit Event) − mean(delta_SoV ohne Event) in Prozentpunkten.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-006",
+   "topic": "Methodik",
+   "q": "Wie belastbar sind die Treiber-Ergebnisse? Ist das kausal?",
+   "a": "Nein — es ist Korrelation, keine Kausalität: Events sind nicht randomisiert, Störgrößen (Saisonalität, Werbedruck, Modell-Updates der LLM-Anbieter) sind nicht kontrolliert. Die Ergebnisse priorisieren Hypothesen, sie beweisen keine Wirkung.\n\nDie Unsicherheit wird explizit ausgewiesen — Konfidenz nach Anzahl der SoV-Messtage: unter 6 Messtage „unzureichend“, 6–14 „vorläufig“, 15–29 „moderat“, ab 30 „belastbar“.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-007",
+   "topic": "Methodik",
+   "q": "Was passiert bei Datenausfällen einzelner Kanäle?",
+   "a": "Grundprinzip des Projekts: „Keine Daten ist kein Befund.“ Ein ausgefallener Kanal wird als fehlend markiert und niemals als 0 (= „gesichert kein Effekt“) gewertet. Ein Pipeline-Health-Check prüft nach jedem Lauf die Frische jedes Datenelements und färbt den Lauf rot, wenn Daten veraltet sind — sichtbar auch als Banner im Dashboard.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-008",
+   "topic": "Methodik",
+   "q": "Wie werden Seitenänderungen der Wettbewerber erfasst (Reiter Content Änderungen)?",
+   "a": "Täglicher Crawl aller getrackten Produkt- und Ratgeberseiten (aktuell rund 3.000 Seiten), Vergleich auf Textebene per Zeilen-Diff mit Ähnlichkeitsmaß. Rauschfilter: Änderungen mit Ähnlichkeit ab 97 % und höchstens 10 Diff-Zeilen sowie reine Umsortierungen werden verworfen (rotierende Teaser, Testimonials). Löschungen werden über HTTP 404/410 erkannt — seit 19.07.2026 auch für Seiten, die aus der Sitemap verschwunden sind und sonst nie wieder abgerufen würden. robots.txt wird respektiert, Abrufe sind pro Domain ratenlimitiert.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-009",
+   "topic": "Datenquellen",
+   "q": "Woher kommen die Preisdaten?",
+   "a": "Aus zwei Quellen: einer manuellen Vollerhebung über die Tarifrechner (price_manual.json) und einem Check24-Crawler. Wichtige Einschränkungen, offen dokumentiert: Check24 rendert Preise außer bei Kfz nicht im DOM (Anti-Scraping) — dort ist nur manuelle Ablesung möglich. Die Tarifrechner von ERGO, HUK und Allianz akzeptieren keine programmatischen Eingaben, die letzten Felder werden manuell erfasst. Preise werden der Marke zugeordnet, die der Sichtbarkeits-Matcher zählt — nicht der juristischen Gesellschaft.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-010",
+   "topic": "Berechnung / Statistik",
+   "q": "LLM-Antworten sind stochastisch — wie reproduzierbar sind die Messungen?",
+   "a": "Einzelantworten sind nicht deterministisch, deshalb misst das Modell nicht auf Antwort-, sondern auf Aggregat-Ebene: feste Prompt-Sets (323 Fragen), gleiche Modelle, tägliche Wiederholung — betrachtet werden Niveaus und Trends über viele Antworten, nicht einzelne Outputs. Alle Rohdaten (LLM-Antworten, Metriken, Events, Seiten-Snapshots) liegen versioniert im Git-Repository und sind vollständig nachvollziehbar. Die Peec-Messung dient zusätzlich als unabhängige Gegenprobe.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  },
+  {
+   "id": "faq-011",
+   "topic": "Sonstiges",
+   "q": "Wie aktuell sind die Zahlen im Dashboard?",
+   "a": "Der eigene Crawl startet täglich 23:10 UTC (GitHub-Scheduler verzögert typisch einige Stunden), das Cockpit verrechnet die Ergebnisse im Nightly um 04:30 UTC — morgens ist der Stand des Vortags verarbeitet. Peec-Daten kommen wöchentlich. Der Stand jedes einzelnen Datenelements ist im Pipeline-Health einsehbar; veraltete Daten lösen einen sichtbaren Frische-Alarm aus.",
+   "status": "beantwortet",
+   "answered_at": "2026-07-19"
+  }
+ ]
+}

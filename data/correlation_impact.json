@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T20:54:50Z",
+  "generated_at": "2026-07-19T22:53:34Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
   "multivariate": {
     "available": true,
@@ -3313,6 +3313,15 @@
     "quelle": "data/peec_segments_history.csv (Dimensionen date x tag_id)",
     "min_messpunkte": 3,
     "methode": "Je Funnel-Stufe eine eigene SoV-Zeitreihe je Marke; Event-Study wie im Hauptmodell, aber innerhalb der Stufe. Ein Prompt kann mehrere Tags tragen — die Schichten sind NICHT ueberschneidungsfrei.",
+    "fdr": {
+      "n_gesichert_multivariat": 0,
+      "n_tests": 90,
+      "alpha": 0.05,
+      "verfahren": "Benjamini-Hochberg",
+      "n_signifikant_vor_korrektur": 1,
+      "n_signifikant_nach_korrektur": 0,
+      "hinweis": "Korrigiert wird ueber alle Tag-x-Treiber-Tests dieses Blocks. EINSCHRAENKUNG: Benjamini-Hochberg setzt unabhaengige oder positiv abhaengige Tests voraus. Die Stufen sind es nicht — ein Prompt kann mehrere Tags tragen, die Schichten ueberlappen sich also. Die Korrektur ist damit eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren."
+    },
     "available": true,
     "messtage_je_tag": {
       "Awareness": 31,
@@ -3407,10 +3416,13 @@
             "ci95_low_pp": -0.696,
             "ci95_high_pp": 0.461,
             "significant": false,
+            "p_value": 0.690617,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -3420,10 +3432,13 @@
             "ci95_low_pp": -0.712,
             "ci95_high_pp": 0.902,
             "significant": false,
+            "p_value": 0.804738,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -3433,10 +3448,13 @@
             "ci95_low_pp": -0.665,
             "ci95_high_pp": 0.065,
             "significant": false,
+            "p_value": 0.107092,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -3446,10 +3464,13 @@
             "ci95_low_pp": -0.147,
             "ci95_high_pp": 0.454,
             "significant": false,
+            "p_value": 0.317769,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -3465,10 +3486,13 @@
             "ci95_low_pp": -0.713,
             "ci95_high_pp": 0.745,
             "significant": false,
+            "p_value": 0.963818,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -3478,10 +3502,13 @@
             "ci95_low_pp": -1.317,
             "ci95_high_pp": 0.79,
             "significant": false,
+            "p_value": 0.59605,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -3491,10 +3518,13 @@
             "ci95_low_pp": -1.613,
             "ci95_high_pp": 0.815,
             "significant": false,
+            "p_value": 0.420844,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -3504,10 +3534,13 @@
             "ci95_low_pp": -4.299,
             "ci95_high_pp": 3.404,
             "significant": false,
+            "p_value": 0.711723,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -3517,10 +3550,13 @@
             "ci95_low_pp": -1.777,
             "ci95_high_pp": 2.115,
             "significant": false,
+            "p_value": 0.809374,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -3528,6 +3564,146 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.5771,
+              "ci95_low": -1.2604,
+              "ci95_high": 0.1063,
+              "prob_positive": 0.049,
+              "prob_direction": 0.951,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.2988,
+              "cluster_p": 0.6779,
+              "cluster_p_fdr": 0.8429,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": -0.348,
+              "ci95_low": -0.8772,
+              "ci95_high": 0.1812,
+              "prob_positive": 0.099,
+              "prob_direction": 0.901,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.195,
+              "cluster_p": 0.0741,
+              "cluster_p_fdr": 0.2594,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.154,
+              "ci95_low": -0.2583,
+              "ci95_high": 0.5663,
+              "prob_positive": 0.768,
+              "prob_direction": 0.768,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.1243,
+              "cluster_p": 0.314,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": 0.0605,
+              "ci95_low": -0.0575,
+              "ci95_high": 0.1786,
+              "prob_positive": 0.842,
+              "prob_direction": 0.842,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.046,
+              "cluster_p": 0.1553,
+              "cluster_p_fdr": 0.453,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": -0.0104,
+              "ci95_low": -0.1321,
+              "ci95_high": 0.1114,
+              "prob_positive": 0.434,
+              "prob_direction": 0.566,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0522,
+              "cluster_p": 0.7885,
+              "cluster_p_fdr": 0.8816,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": 0.0043,
+              "ci95_low": -0.0024,
+              "ci95_high": 0.0111,
+              "prob_positive": 0.896,
+              "prob_direction": 0.896,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0026,
+              "cluster_p": 0.0269,
+              "cluster_p_fdr": 0.1255,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": 0.0004,
+              "ci95_low": -0.0044,
+              "ci95_high": 0.0051,
+              "prob_positive": 0.559,
+              "prob_direction": 0.559,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0023,
+              "cluster_p": 0.5593,
+              "cluster_p_fdr": 0.7387,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Consideration": {
@@ -3598,10 +3774,13 @@
             "ci95_low_pp": -0.156,
             "ci95_high_pp": 0.384,
             "significant": false,
+            "p_value": 0.40759,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -3611,10 +3790,13 @@
             "ci95_low_pp": -0.215,
             "ci95_high_pp": 0.572,
             "significant": false,
+            "p_value": 0.340628,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -3624,10 +3806,13 @@
             "ci95_low_pp": -0.143,
             "ci95_high_pp": 0.153,
             "significant": false,
+            "p_value": 0.944677,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -3637,10 +3822,13 @@
             "ci95_low_pp": -0.083,
             "ci95_high_pp": 0.14,
             "significant": false,
+            "p_value": 0.616613,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -3656,10 +3844,13 @@
             "ci95_low_pp": -0.261,
             "ci95_high_pp": 0.064,
             "significant": false,
+            "p_value": 0.20609,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -3669,10 +3860,13 @@
             "ci95_low_pp": -0.325,
             "ci95_high_pp": 0.297,
             "significant": false,
+            "p_value": 0.925186,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -3682,10 +3876,13 @@
             "ci95_low_pp": -1.047,
             "ci95_high_pp": 0.361,
             "significant": false,
+            "p_value": 0.23314,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -3695,10 +3892,13 @@
             "ci95_low_pp": -0.742,
             "ci95_high_pp": 1.149,
             "significant": false,
+            "p_value": 0.493315,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -3708,10 +3908,13 @@
             "ci95_low_pp": -0.99,
             "ci95_high_pp": 0.97,
             "significant": false,
+            "p_value": 0.977362,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -3719,6 +3922,146 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.6952,
+              "ci95_low": -0.9677,
+              "ci95_high": -0.4228,
+              "prob_positive": 0.0,
+              "prob_direction": 1.0,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.0911,
+              "cluster_p": 0.0078,
+              "cluster_p_fdr": 0.0762,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": -0.0239,
+              "ci95_low": -0.1883,
+              "ci95_high": 0.1405,
+              "prob_positive": 0.388,
+              "prob_direction": 0.612,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.0481,
+              "cluster_p": 0.2732,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": 0.0172,
+              "ci95_low": -0.1938,
+              "ci95_high": 0.2282,
+              "prob_positive": 0.563,
+              "prob_direction": 0.563,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.0847,
+              "cluster_p": 0.8415,
+              "cluster_p_fdr": 0.8925,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": 0.0133,
+              "ci95_low": -0.0338,
+              "ci95_high": 0.0604,
+              "prob_positive": 0.71,
+              "prob_direction": 0.71,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0143,
+              "cluster_p": 0.2063,
+              "cluster_p_fdr": 0.5349,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": 0.0038,
+              "ci95_low": -0.0447,
+              "ci95_high": 0.0524,
+              "prob_positive": 0.561,
+              "prob_direction": 0.561,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0245,
+              "cluster_p": 0.9947,
+              "cluster_p_fdr": 0.9947,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": -0.0007,
+              "ci95_low": -0.0034,
+              "ci95_high": 0.002,
+              "prob_positive": 0.312,
+              "prob_direction": 0.688,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0007,
+              "cluster_p": 0.2663,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": 0.0001,
+              "ci95_low": -0.0018,
+              "ci95_high": 0.002,
+              "prob_positive": 0.531,
+              "prob_direction": 0.531,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0006,
+              "cluster_p": 0.0863,
+              "cluster_p_fdr": 0.2877,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Corporate Trust": {
@@ -3789,10 +4132,13 @@
             "ci95_low_pp": -0.958,
             "ci95_high_pp": 1.226,
             "significant": false,
+            "p_value": 0.810065,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -3802,10 +4148,13 @@
             "ci95_low_pp": -1.802,
             "ci95_high_pp": 0.379,
             "significant": false,
+            "p_value": 0.170583,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -3815,10 +4164,13 @@
             "ci95_low_pp": -0.786,
             "ci95_high_pp": 0.636,
             "significant": false,
+            "p_value": 0.836415,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9939,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -3828,10 +4180,13 @@
             "ci95_low_pp": -0.504,
             "ci95_high_pp": 0.462,
             "significant": false,
+            "p_value": 0.932002,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -3847,10 +4202,13 @@
             "ci95_low_pp": -0.91,
             "ci95_high_pp": 1.233,
             "significant": false,
+            "p_value": 0.754013,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -3860,10 +4218,13 @@
             "ci95_low_pp": -1.202,
             "ci95_high_pp": 0.742,
             "significant": false,
+            "p_value": 0.616424,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -3873,10 +4234,13 @@
             "ci95_low_pp": -1.163,
             "ci95_high_pp": 1.725,
             "significant": false,
+            "p_value": 0.633726,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -3886,10 +4250,13 @@
             "ci95_low_pp": -5.272,
             "ci95_high_pp": 7.383,
             "significant": false,
+            "p_value": 0.595577,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -3899,10 +4266,13 @@
             "ci95_low_pp": -2.658,
             "ci95_high_pp": 2.03,
             "significant": false,
+            "p_value": 0.710013,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -3910,6 +4280,146 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": -0.3759,
+              "ci95_low": -1.2881,
+              "ci95_high": 0.5364,
+              "prob_positive": 0.21,
+              "prob_direction": 0.79,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.3632,
+              "cluster_p": 0.3004,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.371,
+              "ci95_low": -1.5491,
+              "ci95_high": 0.807,
+              "prob_positive": 0.269,
+              "prob_direction": 0.731,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.3602,
+              "cluster_p": 0.8201,
+              "cluster_p_fdr": 0.8862,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.3334,
+              "ci95_low": -0.3774,
+              "ci95_high": 1.0442,
+              "prob_positive": 0.821,
+              "prob_direction": 0.821,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.1609,
+              "cluster_p": 0.0583,
+              "cluster_p_fdr": 0.2279,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": -0.0126,
+              "ci95_low": -0.2225,
+              "ci95_high": 0.1973,
+              "prob_positive": 0.453,
+              "prob_direction": 0.547,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0563,
+              "cluster_p": 0.7729,
+              "cluster_p_fdr": 0.8816,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": -0.0037,
+              "ci95_low": -0.0118,
+              "ci95_high": 0.0045,
+              "prob_positive": 0.189,
+              "prob_direction": 0.811,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0022,
+              "cluster_p": 0.2337,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": -0.0031,
+              "ci95_low": -0.2066,
+              "ci95_high": 0.2004,
+              "prob_positive": 0.488,
+              "prob_direction": 0.512,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.1149,
+              "cluster_p": 0.9883,
+              "cluster_p_fdr": 0.9947,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": 0.0025,
+              "ci95_low": -0.0092,
+              "ci95_high": 0.0141,
+              "prob_positive": 0.661,
+              "prob_direction": 0.661,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0029,
+              "cluster_p": 0.173,
+              "cluster_p_fdr": 0.4765,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Customer Excellence": {
@@ -3980,10 +4490,13 @@
             "ci95_low_pp": -1.14,
             "ci95_high_pp": 0.731,
             "significant": false,
+            "p_value": 0.668858,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -3993,10 +4506,13 @@
             "ci95_low_pp": -0.588,
             "ci95_high_pp": 1.966,
             "significant": false,
+            "p_value": 0.256954,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -4006,10 +4522,13 @@
             "ci95_low_pp": -0.109,
             "ci95_high_pp": 0.949,
             "significant": false,
+            "p_value": 0.119982,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -4019,10 +4538,13 @@
             "ci95_low_pp": -0.478,
             "ci95_high_pp": 0.204,
             "significant": false,
+            "p_value": 0.430882,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4038,10 +4560,13 @@
             "ci95_low_pp": -1.655,
             "ci95_high_pp": 0.317,
             "significant": false,
+            "p_value": 0.158117,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -4051,10 +4576,13 @@
             "ci95_low_pp": -1.455,
             "ci95_high_pp": 0.615,
             "significant": false,
+            "p_value": 0.389897,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -4064,10 +4592,13 @@
             "ci95_low_pp": -2.172,
             "ci95_high_pp": 4.129,
             "significant": false,
+            "p_value": 0.447174,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -4077,10 +4608,13 @@
             "ci95_low_pp": -2.893,
             "ci95_high_pp": 2.23,
             "significant": false,
+            "p_value": 0.680293,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -4090,10 +4624,13 @@
             "ci95_low_pp": -3.414,
             "ci95_high_pp": 6.55,
             "significant": false,
+            "p_value": 0.382309,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -4101,6 +4638,148 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": -0.3669,
+              "ci95_low": -1.0866,
+              "ci95_high": 0.3529,
+              "prob_positive": 0.159,
+              "prob_direction": 0.841,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.2194,
+              "cluster_p": 0.0943,
+              "cluster_p_fdr": 0.3,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": 0.1641,
+              "ci95_low": -0.7653,
+              "ci95_high": 1.0936,
+              "prob_positive": 0.635,
+              "prob_direction": 0.635,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.2128,
+              "cluster_p": 0.0037,
+              "cluster_p_fdr": 0.0432,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)",
+              "hinweis": "q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind sich uneinig, deshalb NICHT als gesichert gewertet."
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": 0.1233,
+              "ci95_low": -0.0423,
+              "ci95_high": 0.2889,
+              "prob_positive": 0.928,
+              "prob_direction": 0.928,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0495,
+              "cluster_p": 0.0157,
+              "cluster_p_fdr": 0.0963,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": -0.0931,
+              "ci95_low": -0.6539,
+              "ci95_high": 0.4677,
+              "prob_positive": 0.373,
+              "prob_direction": 0.627,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.3786,
+              "cluster_p": 0.7475,
+              "cluster_p_fdr": 0.8816,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": -0.0476,
+              "ci95_low": -0.2082,
+              "ci95_high": 0.1129,
+              "prob_positive": 0.28,
+              "prob_direction": 0.72,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0404,
+              "cluster_p": 0.2886,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": 0.0031,
+              "ci95_low": -0.0061,
+              "ci95_high": 0.0123,
+              "prob_positive": 0.745,
+              "prob_direction": 0.745,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0055,
+              "cluster_p": 0.4087,
+              "cluster_p_fdr": 0.6116,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": 0.0024,
+              "ci95_low": -0.004,
+              "ci95_high": 0.0089,
+              "prob_positive": 0.768,
+              "prob_direction": 0.768,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0012,
+              "cluster_p": 0.0037,
+              "cluster_p_fdr": 0.0432,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)",
+              "hinweis": "q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind sich uneinig, deshalb NICHT als gesichert gewertet."
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Decision": {
@@ -4171,10 +4850,13 @@
             "ci95_low_pp": -0.188,
             "ci95_high_pp": 0.745,
             "significant": false,
+            "p_value": 0.24186,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -4184,10 +4866,13 @@
             "ci95_low_pp": -0.665,
             "ci95_high_pp": 0.484,
             "significant": false,
+            "p_value": 0.74023,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -4197,10 +4882,13 @@
             "ci95_low_pp": -0.393,
             "ci95_high_pp": 0.078,
             "significant": false,
+            "p_value": 0.189182,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -4210,10 +4898,13 @@
             "ci95_low_pp": -0.145,
             "ci95_high_pp": 0.203,
             "significant": false,
+            "p_value": 0.745664,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4229,10 +4920,13 @@
             "ci95_low_pp": -0.553,
             "ci95_high_pp": 0.454,
             "significant": false,
+            "p_value": 0.839282,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9939,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -4242,10 +4936,13 @@
             "ci95_low_pp": -0.624,
             "ci95_high_pp": 0.647,
             "significant": false,
+            "p_value": 0.969511,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -4255,10 +4952,13 @@
             "ci95_low_pp": -0.919,
             "ci95_high_pp": 0.832,
             "significant": false,
+            "p_value": 0.903864,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -4268,10 +4968,13 @@
             "ci95_low_pp": -2.235,
             "ci95_high_pp": 1.411,
             "significant": false,
+            "p_value": 0.471947,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -4281,10 +4984,13 @@
             "ci95_low_pp": -1.871,
             "ci95_high_pp": 1.123,
             "significant": false,
+            "p_value": 0.487559,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -4292,6 +4998,147 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.5134,
+              "ci95_low": -0.9562,
+              "ci95_high": -0.0706,
+              "prob_positive": 0.012,
+              "prob_direction": 0.988,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.0808,
+              "cluster_p": 0.4544,
+              "cluster_p_fdr": 0.6218,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": -0.0761,
+              "ci95_low": -0.3433,
+              "ci95_high": 0.1911,
+              "prob_positive": 0.288,
+              "prob_direction": 0.712,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.1055,
+              "cluster_p": 0.32,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": -0.048,
+              "ci95_low": -0.1269,
+              "ci95_high": 0.0309,
+              "prob_positive": 0.117,
+              "prob_direction": 0.883,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0461,
+              "cluster_p": 0.2622,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": 0.0472,
+              "ci95_low": -0.2956,
+              "ci95_high": 0.3901,
+              "prob_positive": 0.606,
+              "prob_direction": 0.606,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.1795,
+              "cluster_p": 0.7934,
+              "cluster_p_fdr": 0.8816,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": 0.0146,
+              "ci95_low": -0.0618,
+              "ci95_high": 0.0911,
+              "prob_positive": 0.646,
+              "prob_direction": 0.646,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0481,
+              "cluster_p": 0.6864,
+              "cluster_p_fdr": 0.8429,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": 0.0023,
+              "ci95_low": -0.002,
+              "ci95_high": 0.0067,
+              "prob_positive": 0.852,
+              "prob_direction": 0.852,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0016,
+              "cluster_p": 0.0165,
+              "cluster_p_fdr": 0.0963,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": 0.0016,
+              "ci95_low": -0.0015,
+              "ci95_high": 0.0047,
+              "prob_positive": 0.849,
+              "prob_direction": 0.849,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0009,
+              "cluster_p": 0.0023,
+              "cluster_p_fdr": 0.0432,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)",
+              "hinweis": "q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind sich uneinig, deshalb NICHT als gesichert gewertet."
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Digital Innovation": {
@@ -4362,10 +5209,13 @@
             "ci95_low_pp": -0.894,
             "ci95_high_pp": 0.907,
             "significant": false,
+            "p_value": 0.989002,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -4375,10 +5225,13 @@
             "ci95_low_pp": -1.601,
             "ci95_high_pp": 1.053,
             "significant": false,
+            "p_value": 0.664319,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -4388,10 +5241,13 @@
             "ci95_low_pp": -0.772,
             "ci95_high_pp": 0.723,
             "significant": false,
+            "p_value": 0.948812,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -4401,10 +5257,13 @@
             "ci95_low_pp": -0.647,
             "ci95_high_pp": 0.323,
             "significant": false,
+            "p_value": 0.513173,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4420,10 +5279,13 @@
             "ci95_low_pp": -0.807,
             "ci95_high_pp": 1.431,
             "significant": false,
+            "p_value": 0.561904,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -4433,10 +5295,13 @@
             "ci95_low_pp": -1.674,
             "ci95_high_pp": 0.884,
             "significant": false,
+            "p_value": 0.512719,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -4446,10 +5311,13 @@
             "ci95_low_pp": -1.998,
             "ci95_high_pp": 1.194,
             "significant": false,
+            "p_value": 0.537463,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -4459,10 +5327,13 @@
             "ci95_low_pp": -3.673,
             "ci95_high_pp": 4.723,
             "significant": false,
+            "p_value": 0.690543,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -4472,10 +5343,13 @@
             "ci95_low_pp": -4.232,
             "ci95_high_pp": 3.037,
             "significant": false,
+            "p_value": 0.647961,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -4483,6 +5357,146 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.8026,
+              "ci95_low": -1.8897,
+              "ci95_high": 0.2845,
+              "prob_positive": 0.074,
+              "prob_direction": 0.926,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.3226,
+              "cluster_p": 0.2784,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": -0.3113,
+              "ci95_low": -1.1531,
+              "ci95_high": 0.5305,
+              "prob_positive": 0.234,
+              "prob_direction": 0.766,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.3151,
+              "cluster_p": 0.3228,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.2237,
+              "ci95_low": -0.4322,
+              "ci95_high": 0.8796,
+              "prob_positive": 0.748,
+              "prob_direction": 0.748,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.241,
+              "cluster_p": 0.4188,
+              "cluster_p_fdr": 0.6116,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": 0.1015,
+              "ci95_low": -0.0921,
+              "ci95_high": 0.2952,
+              "prob_positive": 0.848,
+              "prob_direction": 0.848,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0987,
+              "cluster_p": 0.3215,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": -0.0947,
+              "ci95_low": -0.2825,
+              "ci95_high": 0.093,
+              "prob_positive": 0.161,
+              "prob_direction": 0.839,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0994,
+              "cluster_p": 0.3655,
+              "cluster_p_fdr": 0.6092,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": -0.008,
+              "ci95_low": -0.0155,
+              "ci95_high": -0.0005,
+              "prob_positive": 0.019,
+              "prob_direction": 0.981,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0035,
+              "cluster_p": 0.0475,
+              "cluster_p_fdr": 0.2078,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": -0.006,
+              "ci95_low": -0.0168,
+              "ci95_high": 0.0047,
+              "prob_positive": 0.136,
+              "prob_direction": 0.864,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0062,
+              "cluster_p": 0.4619,
+              "cluster_p_fdr": 0.6218,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Market Presence": {
@@ -4553,10 +5567,13 @@
             "ci95_low_pp": -0.442,
             "ci95_high_pp": 0.669,
             "significant": false,
+            "p_value": 0.688119,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -4566,10 +5583,13 @@
             "ci95_low_pp": -0.747,
             "ci95_high_pp": 0.749,
             "significant": false,
+            "p_value": 0.997522,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -4579,10 +5599,13 @@
             "ci95_low_pp": -0.708,
             "ci95_high_pp": 0.24,
             "significant": false,
+            "p_value": 0.333358,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -4592,10 +5615,13 @@
             "ci95_low_pp": -0.31,
             "ci95_high_pp": 0.235,
             "significant": false,
+            "p_value": 0.784763,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4611,10 +5637,13 @@
             "ci95_low_pp": -1.013,
             "ci95_high_pp": 1.333,
             "significant": false,
+            "p_value": 0.776584,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -4624,10 +5653,13 @@
             "ci95_low_pp": -0.497,
             "ci95_high_pp": 1.412,
             "significant": false,
+            "p_value": 0.309331,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -4637,10 +5669,13 @@
             "ci95_low_pp": -1.329,
             "ci95_high_pp": 0.718,
             "significant": false,
+            "p_value": 0.465033,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -4650,10 +5685,13 @@
             "ci95_low_pp": -2.554,
             "ci95_high_pp": 3.071,
             "significant": false,
+            "p_value": 0.769627,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -4663,10 +5701,13 @@
             "ci95_low_pp": -2.986,
             "ci95_high_pp": 3.546,
             "significant": false,
+            "p_value": 0.812015,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -4674,6 +5715,146 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.6885,
+              "ci95_low": -1.3136,
+              "ci95_high": -0.0634,
+              "prob_positive": 0.015,
+              "prob_direction": 0.985,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.1055,
+              "cluster_p": 0.0256,
+              "cluster_p_fdr": 0.1255,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": 0.3317,
+              "ci95_low": -0.1523,
+              "ci95_high": 0.8158,
+              "prob_positive": 0.91,
+              "prob_direction": 0.91,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.3153,
+              "cluster_p": 0.2931,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.1759,
+              "ci95_low": -0.2012,
+              "ci95_high": 0.553,
+              "prob_positive": 0.82,
+              "prob_direction": 0.82,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.195,
+              "cluster_p": 0.4507,
+              "cluster_p_fdr": 0.6218,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": -0.0647,
+              "ci95_low": -0.1761,
+              "ci95_high": 0.0467,
+              "prob_positive": 0.127,
+              "prob_direction": 0.873,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0265,
+              "cluster_p": 0.0098,
+              "cluster_p_fdr": 0.0762,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": -0.0093,
+              "ci95_low": -0.1173,
+              "ci95_high": 0.0987,
+              "prob_positive": 0.433,
+              "prob_direction": 0.567,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0455,
+              "cluster_p": 0.9207,
+              "cluster_p_fdr": 0.9619,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": -0.0049,
+              "ci95_low": -0.011,
+              "ci95_high": 0.0013,
+              "prob_positive": 0.062,
+              "prob_direction": 0.938,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0018,
+              "cluster_p": 0.0586,
+              "cluster_p_fdr": 0.2279,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": -0.0027,
+              "ci95_low": -0.007,
+              "ci95_high": 0.0017,
+              "prob_positive": 0.115,
+              "prob_direction": 0.885,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0018,
+              "cluster_p": 0.3517,
+              "cluster_p_fdr": 0.6005,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Sustainability": {
@@ -4744,10 +5925,13 @@
             "ci95_low_pp": -0.655,
             "ci95_high_pp": 1.453,
             "significant": false,
+            "p_value": 0.4582,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -4757,10 +5941,13 @@
             "ci95_low_pp": -1.416,
             "ci95_high_pp": 1.077,
             "significant": false,
+            "p_value": 0.775181,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -4770,10 +5957,13 @@
             "ci95_low_pp": -0.806,
             "ci95_high_pp": 0.719,
             "significant": false,
+            "p_value": 0.911589,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -4783,10 +5973,13 @@
             "ci95_low_pp": -0.777,
             "ci95_high_pp": 0.216,
             "significant": false,
+            "p_value": 0.26818,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4802,10 +5995,13 @@
             "ci95_low_pp": -0.245,
             "ci95_high_pp": 1.995,
             "significant": false,
+            "p_value": 0.104059,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -4815,10 +6011,13 @@
             "ci95_low_pp": -0.405,
             "ci95_high_pp": 2.674,
             "significant": false,
+            "p_value": 0.118352,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -4828,10 +6027,13 @@
             "ci95_low_pp": -4.455,
             "ci95_high_pp": 1.938,
             "significant": false,
+            "p_value": 0.335325,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -4841,10 +6043,13 @@
             "ci95_low_pp": -6.873,
             "ci95_high_pp": 4.687,
             "significant": false,
+            "p_value": 0.547289,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -4854,10 +6059,13 @@
             "ci95_low_pp": -6.127,
             "ci95_high_pp": 3.591,
             "significant": false,
+            "p_value": 0.468772,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -4865,6 +6073,146 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -1.3678,
+              "ci95_low": -2.5631,
+              "ci95_high": -0.1724,
+              "prob_positive": 0.012,
+              "prob_direction": 0.988,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.4924,
+              "cluster_p": 0.0632,
+              "cluster_p_fdr": 0.2328,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": 0.8872,
+              "ci95_low": -0.0384,
+              "ci95_high": 1.8129,
+              "prob_positive": 0.97,
+              "prob_direction": 0.97,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.383,
+              "cluster_p": 0.0206,
+              "cluster_p_fdr": 0.1109,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": -0.2535,
+              "ci95_low": -0.46,
+              "ci95_high": -0.047,
+              "prob_positive": 0.008,
+              "prob_direction": 0.992,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0952,
+              "cluster_p": 0.009,
+              "cluster_p_fdr": 0.0762,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.1808,
+              "ci95_low": -0.5404,
+              "ci95_high": 0.902,
+              "prob_positive": 0.688,
+              "prob_direction": 0.688,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.4583,
+              "cluster_p": 0.7403,
+              "cluster_p_fdr": 0.8816,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": 0.019,
+              "ci95_low": -0.1939,
+              "ci95_high": 0.232,
+              "prob_positive": 0.57,
+              "prob_direction": 0.57,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0688,
+              "cluster_p": 0.8229,
+              "cluster_p_fdr": 0.8862,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": 0.0072,
+              "ci95_low": -0.0046,
+              "ci95_high": 0.019,
+              "prob_positive": 0.884,
+              "prob_direction": 0.884,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0064,
+              "cluster_p": 0.177,
+              "cluster_p_fdr": 0.4765,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": -0.005,
+              "ci95_low": -0.0133,
+              "ci95_high": 0.0033,
+              "prob_positive": 0.119,
+              "prob_direction": 0.881,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0028,
+              "cluster_p": 0.1534,
+              "cluster_p_fdr": 0.453,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Unbranded": {
@@ -4935,10 +6283,13 @@
             "ci95_low_pp": -0.117,
             "ci95_high_pp": 0.327,
             "significant": false,
+            "p_value": 0.354201,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -4948,10 +6299,13 @@
             "ci95_low_pp": -0.142,
             "ci95_high_pp": 0.368,
             "significant": false,
+            "p_value": 0.350092,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -4961,10 +6315,13 @@
             "ci95_low_pp": -0.157,
             "ci95_high_pp": 0.065,
             "significant": false,
+            "p_value": 0.415188,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -4974,10 +6331,13 @@
             "ci95_low_pp": -0.073,
             "ci95_high_pp": 0.099,
             "significant": false,
+            "p_value": 0.76712,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4993,10 +6353,13 @@
             "ci95_low_pp": -0.226,
             "ci95_high_pp": 0.169,
             "significant": false,
+            "p_value": 0.764493,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -5006,10 +6369,13 @@
             "ci95_low_pp": -0.293,
             "ci95_high_pp": 0.294,
             "significant": false,
+            "p_value": 0.996232,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -5019,10 +6385,13 @@
             "ci95_low_pp": -0.735,
             "ci95_high_pp": 0.161,
             "significant": false,
+            "p_value": 0.117112,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -5032,10 +6401,13 @@
             "ci95_low_pp": -1.161,
             "ci95_high_pp": 0.814,
             "significant": false,
+            "p_value": 0.576357,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -5045,10 +6417,13 @@
             "ci95_low_pp": -0.842,
             "ci95_high_pp": 0.818,
             "significant": false,
+            "p_value": 0.967908,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -5056,6 +6431,148 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.6497,
+              "ci95_low": -0.8629,
+              "ci95_high": -0.4364,
+              "prob_positive": 0.0,
+              "prob_direction": 1.0,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.0626,
+              "cluster_p": 0.0017,
+              "cluster_p_fdr": 0.0432,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)",
+              "hinweis": "q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind sich uneinig, deshalb NICHT als gesichert gewertet."
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.0104,
+              "ci95_low": -0.1182,
+              "ci95_high": 0.1391,
+              "prob_positive": 0.563,
+              "prob_direction": 0.563,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.0228,
+              "cluster_p": 0.4194,
+              "cluster_p_fdr": 0.6116,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": 0.0079,
+              "ci95_low": -0.0289,
+              "ci95_high": 0.0448,
+              "prob_positive": 0.664,
+              "prob_direction": 0.664,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.011,
+              "cluster_p": 0.2457,
+              "cluster_p_fdr": 0.5649,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": 0.0055,
+              "ci95_low": -0.1596,
+              "ci95_high": 0.1707,
+              "prob_positive": 0.526,
+              "prob_direction": 0.526,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.0765,
+              "cluster_p": 0.9452,
+              "cluster_p_fdr": 0.973,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": -0.0019,
+              "ci95_low": -0.0399,
+              "ci95_high": 0.0361,
+              "prob_positive": 0.461,
+              "prob_direction": 0.539,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.0179,
+              "cluster_p": 0.7559,
+              "cluster_p_fdr": 0.8816,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": -0.0003,
+              "ci95_low": -0.0017,
+              "ci95_high": 0.0012,
+              "prob_positive": 0.363,
+              "prob_direction": 0.637,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0003,
+              "cluster_p": 0.0164,
+              "cluster_p_fdr": 0.0963,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": 0.0002,
+              "ci95_low": -0.0019,
+              "ci95_high": 0.0023,
+              "prob_positive": 0.586,
+              "prob_direction": 0.586,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0005,
+              "cluster_p": 0.0003,
+              "cluster_p_fdr": 0.021,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)",
+              "hinweis": "q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind sich uneinig, deshalb NICHT als gesichert gewertet."
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       },
       "Workplace Culture": {
@@ -5126,10 +6643,13 @@
             "ci95_low_pp": -0.937,
             "ci95_high_pp": 0.519,
             "significant": false,
+            "p_value": 0.573357,
             "n_intervals": 780,
             "n_with_event": 42,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -5139,10 +6659,13 @@
             "ci95_low_pp": -0.156,
             "ci95_high_pp": 1.508,
             "significant": false,
+            "p_value": 0.087686,
             "n_intervals": 780,
             "n_with_event": 19,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "press_mention": {
             "label": "Pressemitteilungen",
@@ -5152,10 +6675,13 @@
             "ci95_low_pp": -0.583,
             "ci95_high_pp": 0.619,
             "significant": false,
+            "p_value": 0.952846,
             "n_intervals": 780,
             "n_with_event": 63,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9975,
+            "significant_fdr": false
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
@@ -5165,10 +6691,13 @@
             "ci95_low_pp": -0.52,
             "ci95_high_pp": 0.249,
             "significant": false,
+            "p_value": 0.48949,
             "n_intervals": 780,
             "n_with_event": 141,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -5184,10 +6713,13 @@
             "ci95_low_pp": -0.313,
             "ci95_high_pp": 1.22,
             "significant": false,
+            "p_value": 0.218135,
             "n_intervals": 780,
             "n_with_event": 22,
             "type_confidence": "belastbar",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
@@ -5197,10 +6729,13 @@
             "ci95_low_pp": -0.47,
             "ci95_high_pp": 0.987,
             "significant": false,
+            "p_value": 0.451633,
             "n_intervals": 780,
             "n_with_event": 17,
             "type_confidence": "moderat",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "price_change": {
             "label": "Preis-Aenderungen",
@@ -5210,10 +6745,13 @@
             "ci95_low_pp": -2.772,
             "ci95_high_pp": 1.293,
             "significant": false,
+            "p_value": 0.373308,
             "n_intervals": 780,
             "n_with_event": 7,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "wikipedia_change": {
             "label": "Wikipedia-Ausbau (±)",
@@ -5223,10 +6761,13 @@
             "ci95_low_pp": -7.197,
             "ci95_high_pp": -0.081,
             "significant": false,
+            "p_value": 0.001138,
             "n_intervals": 780,
             "n_with_event": 4,
             "type_confidence": "unzureichend",
-            "available": true
+            "available": true,
+            "p_fdr": 0.1024,
+            "significant_fdr": false
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
@@ -5236,10 +6777,13 @@
             "ci95_low_pp": -1.491,
             "ci95_high_pp": 4.003,
             "significant": false,
+            "p_value": 0.204386,
             "n_intervals": 780,
             "n_with_event": 5,
             "type_confidence": "vorlaeufig",
-            "available": true
+            "available": true,
+            "p_fdr": 0.9876,
+            "significant_fdr": false
           },
           "rating_status_change": {
             "label": "Testsieger-/Rating-Trend (±)",
@@ -5247,6 +6791,147 @@
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
           }
+        },
+        "multivariat": {
+          "available": true,
+          "method": "Bayes-Panel-Ridge (Marken-+Zeit-FE, analytisches Posterior, Partial Pooling)",
+          "lambda": 390.0,
+          "pooled_prior": true,
+          "n_points": 780,
+          "n_brands": 26,
+          "types_used": [
+            "page_change",
+            "page_new",
+            "press_mention",
+            "news_mention",
+            "review_change",
+            "review_volume",
+            "price_change"
+          ],
+          "types_excluded_too_few": [
+            "domain_change",
+            "wikipedia_change",
+            "portal_rank_change",
+            "rating_status_change"
+          ],
+          "exploratory": false,
+          "coefficients": {
+            "price_change": {
+              "label": "Preis-Aenderungen",
+              "coef_pp_per_event_day": -0.7692,
+              "ci95_low": -1.5973,
+              "ci95_high": 0.059,
+              "prob_positive": 0.034,
+              "prob_direction": 0.966,
+              "significant": false,
+              "n_with_event": 7,
+              "cluster_se": 0.3646,
+              "cluster_p": 0.3858,
+              "cluster_p_fdr": 0.6116,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_change": {
+              "label": "Bewertungs-Trend (±)",
+              "coef_pp_per_event_day": 0.1616,
+              "ci95_low": -0.338,
+              "ci95_high": 0.6613,
+              "prob_positive": 0.737,
+              "prob_direction": 0.737,
+              "significant": false,
+              "n_with_event": 22,
+              "cluster_se": 0.2881,
+              "cluster_p": 0.6449,
+              "cluster_p_fdr": 0.8208,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "review_volume": {
+              "label": "Bewertungs-Volumen",
+              "coef_pp_per_event_day": 0.1285,
+              "ci95_low": -0.5128,
+              "ci95_high": 0.7698,
+              "prob_positive": 0.653,
+              "prob_direction": 0.653,
+              "significant": false,
+              "n_with_event": 17,
+              "cluster_se": 0.1511,
+              "cluster_p": 0.396,
+              "cluster_p_fdr": 0.6116,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "press_mention": {
+              "label": "Pressemitteilungen",
+              "coef_pp_per_event_day": 0.099,
+              "ci95_low": -0.0486,
+              "ci95_high": 0.2465,
+              "prob_positive": 0.906,
+              "prob_direction": 0.906,
+              "significant": false,
+              "n_with_event": 63,
+              "cluster_se": 0.1125,
+              "cluster_p": 0.3969,
+              "cluster_p_fdr": 0.6116,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "news_mention": {
+              "label": "News-Erwaehnungen",
+              "coef_pp_per_event_day": 0.0325,
+              "ci95_low": -0.1106,
+              "ci95_high": 0.1755,
+              "prob_positive": 0.672,
+              "prob_direction": 0.672,
+              "significant": false,
+              "n_with_event": 141,
+              "cluster_se": 0.0749,
+              "cluster_p": 0.6186,
+              "cluster_p_fdr": 0.8019,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            },
+            "page_new": {
+              "label": "Neue Seiten",
+              "coef_pp_per_event_day": -0.0051,
+              "ci95_low": -0.0109,
+              "ci95_high": 0.0006,
+              "prob_positive": 0.04,
+              "prob_direction": 0.96,
+              "significant": false,
+              "n_with_event": 19,
+              "cluster_se": 0.0014,
+              "cluster_p": 0.0035,
+              "cluster_p_fdr": 0.0432,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)",
+              "hinweis": "q < 0,05, aber die Bayes-Richtungswahrscheinlichkeit erreicht 97,5 % nicht — die beiden Unsicherheitsmasse sind sich uneinig, deshalb NICHT als gesichert gewertet."
+            },
+            "page_change": {
+              "label": "Seitenaenderungen (Wettbewerb)",
+              "coef_pp_per_event_day": -0.0044,
+              "ci95_low": -0.0126,
+              "ci95_high": 0.0038,
+              "prob_positive": 0.147,
+              "prob_direction": 0.853,
+              "significant": false,
+              "n_with_event": 42,
+              "cluster_se": 0.0038,
+              "cluster_p": 0.4365,
+              "cluster_p_fdr": 0.6218,
+              "fdr_note": "Benjamini-Hochberg ueber die 70 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 70,
+              "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+            }
+          },
+          "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert.",
+          "inferenz": "cluster-robuste Sandwich-SE, Cluster = Marke (G=26). Das Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist hier zu teuer (2^G Ridge-Fits je Treiber auf 780 Punkten). Die Sandwich-Variante rechnet die Ridge-Schrumpfung nicht mit und unterschaetzt die Unsicherheit tendenziell — deshalb gilt ein Effekt hier nur als gesichert, wenn zusaetzlich die Bayes-Richtungswahrscheinlichkeit >= 97,5 % liegt."
         }
       }
     },

@@ -1028,6 +1028,12 @@ window.renderPeecTab = renderPeecTab;
   <h2 class="text-2xl font-bold text-ergo-dark mb-1">Methodik &amp; Fragen</h2>
   <p class="text-sm text-gray-600 mb-6">Fragen zur Methodik, den Datenquellen oder einzelnen Zahlen sind ausdrücklich erwünscht — sie werden kuratiert und faktengeprüft gegen Code und Rohdaten beantwortet. Offene Fragen werden mit dem nächsten Update beantwortet und erscheinen dann hier.</p>
   <div class="bg-white rounded-xl p-5 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Methodik im Detail</h3>
+    <p class="text-sm text-gray-600 mb-4">Vollständige Beschreibung von Erhebung, Berechnung und bekannten Grenzen. Kapitelweise aufklappbar.</p>
+    <div id="methodikBody"><div class="text-sm text-gray-400">Lade Methodik…</div></div>
+  </div>
+
+  <div class="bg-white rounded-xl p-5 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-1">Messgüte: zwei unabhängige Matcher im Vergleich</h3>
     <p class="text-sm text-gray-600 mb-4">Peec und unser eigener Crawl erkennen Markennennungen unabhängig voneinander. Auf derselben Stichprobe von Antworten laufen beide Verfahren — daraus ergibt sich eine belastbare Schätzung des Messfehlers.</p>
     <div id="mvalBody"><div class="text-sm text-gray-400">Lade Messgüte…</div></div>
@@ -3560,6 +3566,7 @@ function buildGeoTab() {
     safeCall('buildSegmentsTab');
     safeCall('buildPeecActions');
     safeCall('buildQuellenTab');
+    safeCall('buildMethodik');
     safeCall('buildMatcherValidation');
     safeCall('buildQaTab');
   }
@@ -4302,6 +4309,96 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
   window.__qSetCmp=function(b){ window.__qCmp=b; window.__quellenRender(window.__QSRC); };
   window.__qSetUrlCls=function(c){ window.__qUrlCls=c; window.__quellenRender(window.__QSRC); };
+
+  // ---------- Methodik-Kapitel (aufklappbar, Zahlen live aus den Daten) ----------
+  window.buildMethodik = function(){
+    var host=document.getElementById('methodikBody'); if(!host) return;
+    Promise.all([
+      fetch('data/methodik.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+      fetch('data/correlation_impact.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+      fetch('data/matcher_validation.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    ]).then(function(res){ window.__MDOC=res; window.__methodikRender(res[0],res[1],res[2]); });
+  };
+  function __mdLive(ci, mv){
+    var L={};
+    if(ci){
+      L.messtage=ci.sov_measure_days; L.intervalle=nfmt(ci.n_intervals_total);
+      L.range=(ci.sov_measure_range||[]).join(' bis ');
+      L.n_marken=(ci.brands_with_sov||[]).length;
+      var f=ci.funnel_stratified||{};
+      var aw=(f.je_tag||{}).Awareness||{};
+      L.funnel_intervalle=nfmt(aw.n_intervalle||0);
+      var p=ci.page_change_types||{};
+      // aus den Rohzahlen rechnen, nicht aus dem gerundeten Feld — sonst weicht
+      // die Anzeige um eine Nachkommastelle vom Log des Skripts ab.
+      L.klass_pct=(p.n_page_change ? (p.n_klassifiziert/p.n_page_change*100) : 0).toFixed(1);
+      var v=ci.validation||{};
+      L.oos=(v.out_of_sample||{}).r2_oos_vs_baseline;
+      L.placebo=v.placebo_false_positive_rate;
+    }
+    if(mv&&mv.gesamt){
+      L.mval_n=mv.stichprobe?mv.stichprobe.ausgewertet:'–';
+      L.mval_vergleiche=nfmt(mv.gesamt.vergleiche);
+      L.mval_pct=mv.gesamt.uebereinstimmung_pct;
+      L.mval_kappa=mv.gesamt.kappa;
+      L.mval_abw=nfmt((mv.gesamt.nur_peec||0)+(mv.gesamt.nur_eigen||0))+' von '+nfmt(mv.gesamt.vergleiche);
+    }
+    return L;
+  }
+  function __mdFmt(t, L){
+    // Platzhalter fuellen; fehlende Werte klar kennzeichnen statt still zu leeren
+    t=String(t||'').replace(/\{\{(\w+)\}\}/g, function(m,k){
+      return (L[k]===undefined||L[k]===null) ? '<span class="text-amber-600">[Wert nicht verfügbar]</span>' : String(L[k]);
+    });
+    t=esc(t).replace(/&lt;span class="text-amber-600"&gt;\[Wert nicht verfügbar\]&lt;\/span&gt;/g,
+                     '<span class="text-amber-600">[Wert nicht verfügbar]</span>');
+    // leichtes Markdown: **fett**, `code`, > Zitat, Absaetze
+    t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+       .replace(/`([^`]+)`/g,'<code class="bg-gray-100 px-1 rounded text-xs">$1</code>');
+    var out='';
+    t.split(/\n\n+/).forEach(function(p){
+      p=p.trim(); if(!p) return;
+      if(p.indexOf('&gt; ')===0){
+        out+='<div class="border-l-4 border-gray-300 pl-3 my-2 font-mono text-xs text-gray-700">'+p.slice(5).replace(/\n/g,'<br>')+'</div>';
+      } else if(/^- /.test(p)){
+        out+='<ul class="list-disc ml-5 my-2">'+p.split('\n').map(function(li){
+          return '<li>'+li.replace(/^- /,'')+'</li>';}).join('')+'</ul>';
+      } else {
+        out+='<p class="my-2">'+p.replace(/\n/g,'<br>')+'</p>';
+      }
+    });
+    return out;
+  }
+  window.__methodikRender = function(doc, ci, mv){
+    var host=document.getElementById('methodikBody'); if(!host) return;
+    if(!doc||!(doc.kapitel||[]).length){
+      host.innerHTML='<div class="text-sm text-gray-400">Methodik-Text nicht geladen (<code>data/methodik.json</code>).</div>';
+      return;
+    }
+    var L=__mdLive(ci,mv);
+    var open=window.__mdOpen||{};
+    var h='<div class="text-xs text-gray-500 mb-3">'+esc(doc.hinweis||'')+'</div>';
+    (doc.kapitel||[]).forEach(function(k,i){
+      var isOpen=!!open[k.id];
+      h+='<div class="border rounded-xl mb-2 bg-white overflow-hidden">'
+        +'<button onclick="window.__mdToggle(\''+esc(k.id)+'\')" class="w-full text-left px-4 py-3 flex items-center gap-2 hover:bg-gray-50">'
+        +'<span class="text-gray-400 text-sm">'+(isOpen?'▼':'▶')+'</span>'
+        +'<span class="font-semibold text-ergo-dark text-sm">'+(i+1)+'. '+esc(k.titel)+'</span></button>'
+        +'<div class="px-4 pb-4 text-sm text-gray-700 leading-relaxed'+(isOpen?'':' hidden')+'">'+__mdFmt(k.text,L)+'</div></div>';
+    });
+    h+='<div class="flex gap-3 mt-3"><button onclick="window.__mdAll(true)" class="text-xs text-gray-600 underline">Alle aufklappen</button>'
+      +'<button onclick="window.__mdAll(false)" class="text-xs text-gray-600 underline">Alle zuklappen</button></div>';
+    host.innerHTML=h;
+  };
+  window.__mdToggle=function(id){
+    window.__mdOpen=window.__mdOpen||{}; window.__mdOpen[id]=!window.__mdOpen[id];
+    var d=window.__MDOC||[]; window.__methodikRender(d[0],d[1],d[2]);
+  };
+  window.__mdAll=function(v){
+    var d=window.__MDOC||[]; var doc=d[0]||{}; window.__mdOpen={};
+    (doc.kapitel||[]).forEach(function(k){ window.__mdOpen[k.id]=v; });
+    window.__methodikRender(d[0],d[1],d[2]);
+  };
 
   // ---------- Messgüte: Matcher-Vergleich Peec vs. eigener Crawl ----------
   window.buildMatcherValidation = function(){

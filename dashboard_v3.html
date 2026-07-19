@@ -104,6 +104,7 @@
       <button data-tab="preisvergleich" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Preisvergleich</button>
       <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
       <button data-tab="peec" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Peec AI</button>
+      <button data-tab="quellen" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Quellen &amp; Zitate</button>
       <button data-tab="qa" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">❓ Methodik &amp; Fragen</button>
     </div>
   </div>
@@ -1001,6 +1002,13 @@ window.renderPeecTab = renderPeecTab;
     <p class="text-sm text-gray-600">Monatspreise je Produkt und Altersprofil im Wettbewerbsvergleich. ERGO hervorgehoben.</p>
   </div>
   <div id="preisvergleichBody"></div>
+</section>
+
+<section data-content="quellen" class="tab-content hidden">
+  <h2 class="text-2xl font-bold text-ergo-dark mb-1">Quellen &amp; Zitate</h2>
+  <p class="text-sm text-gray-600 mb-6">Welche Webseiten die KI-Engines lesen und zitieren, wenn sie über Versicherungen sprechen. Quelle: Peec AI, rollierendes 30-Tage-Fenster.</p>
+  <div id="quellenKpis" class="grid md:grid-cols-4 gap-4 mb-6"></div>
+  <div id="quellenBody"><div class="text-sm text-gray-400">Lade Quellen-Daten…</div></div>
 </section>
 
 <section data-content="qa" class="tab-content hidden">
@@ -3531,6 +3539,7 @@ function buildGeoTab() {
     safeCall('buildBeraterCannibalization');
     safeCall('buildDriverGap');
     safeCall('buildReviewThemes');
+    safeCall('buildQuellenTab');
     safeCall('buildQaTab');
   }
   async function __v3_loadJSON(path) {
@@ -3998,6 +4007,115 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
   window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
   window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};
+
+  // ---------- Quellen & Zitate (Peec Domain-/URL-Report) ----------
+  var CLS_COLOR = {'You':'bg-red-100 text-red-700','Competitor':'bg-orange-100 text-orange-700',
+    'Editorial':'bg-blue-100 text-blue-700','Aggregator':'bg-purple-100 text-purple-700',
+    'UGC':'bg-emerald-100 text-emerald-700','Broker':'bg-amber-100 text-amber-700',
+    'Institutional':'bg-slate-100 text-slate-700','Reference':'bg-cyan-100 text-cyan-700'};
+  var CLS_DE = {'You':'Eigene Domain','Competitor':'Wettbewerber','Editorial':'Redaktionell',
+    'Aggregator':'Vergleichsportal','UGC':'Nutzerinhalte','Broker':'Makler',
+    'Institutional':'Institution','Reference':'Nachschlagewerk','Other':'Sonstige'};
+  var TYP_DE = {'Comparison':'Vergleichsseite','Product Page':'Produktseite','Category Page':'Kategorieseite',
+    'Listicle':'Listenartikel','Article':'Artikel','How-To Guide':'Ratgeber','Homepage':'Startseite',
+    'Profile':'Profil','Discussion':'Diskussion','Alternative':'Alternativen','Other':'Sonstige'};
+  function clsBadge(c){ var lbl=CLS_DE[c]||c||'—'; return '<span class="px-2 py-0.5 rounded-full text-xs whitespace-nowrap '+(CLS_COLOR[c]||'bg-gray-100 text-gray-600')+'">'+esc(lbl)+'</span>'; }
+  function nfmt(n){ return (n==null?'–':Number(n).toLocaleString('de-DE')); }
+  window.buildQuellenTab = function(){
+    var host=document.getElementById('quellenBody'); if(!host) return;
+    fetch('data/peec_sources.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(d){ window.__QSRC=d; window.__quellenRender(d); })
+      .catch(function(){ window.__quellenRender(null); });
+  };
+  window.__quellenRender = function(d){
+    var host=document.getElementById('quellenBody'), kpi=document.getElementById('quellenKpis');
+    if(!host) return;
+    if(!d || !(d.domains||[]).length){
+      host.innerHTML='<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Quellen-Daten. <code>scripts/export_peec_sources.py</code> erzeugt <code>data/peec_sources.json</code>.</div>';
+      if(kpi) kpi.innerHTML=''; return;
+    }
+    var doms=d.domains||[], urls=d.urls||[], mix=d.brand_class_mix||{};
+    var own=(d.own_brands||['ERGO'])[0];
+    var totalCit=doms.reduce(function(a,x){return a+(x.cit||0);},0);
+    var ownDom=doms.filter(function(x){return x.cls==='You';});
+    var ownCit=ownDom.reduce(function(a,x){return a+(x.cit||0);},0);
+    var top=doms[0]||{};
+    if(kpi){
+      var card=function(lbl,val,sub,col){return '<div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 '+col+'"><div class="text-xs uppercase text-gray-500 font-semibold">'+lbl+'</div><div class="text-2xl font-bold text-ergo-dark mt-1">'+val+'</div><div class="text-xs text-gray-500 mt-1">'+sub+'</div></div>';};
+      kpi.innerHTML=card('Meistzitierte Quelle',esc(top.domain||'–'),nfmt(top.cit)+' Zitate · '+(CLS_DE[top.cls]||top.cls||''),'border-ergo-red')
+        +card('Zitate eigener Domain',nfmt(ownCit),ownDom.length?esc(ownDom[0].domain):'—','border-emerald-500')
+        +card('Anteil eigener Domain',totalCit?((ownCit/totalCit*100).toFixed(1)+' %'):'–','an den Top-'+doms.length+' Quellen','border-blue-500')
+        +card('Zeitraum',(d.window&&d.window.days?d.window.days+' Tage':'–'),(d.window?esc(d.window.start)+' bis '+esc(d.window.end):''),'border-gray-400');
+    }
+    var h='';
+    var byCls={}; doms.forEach(function(x){var k=x.cls||'Other'; byCls[k]=(byCls[k]||0)+(x.cit||0);});
+    var clsList=Object.keys(byCls).sort(function(a,b){return byCls[b]-byCls[a];});
+    h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><div class="text-base font-bold text-ergo-dark mb-3">Quellen-Mix: welche Art von Seiten die Engines zitieren</div>';
+    clsList.forEach(function(k){
+      var pct=totalCit?(byCls[k]/totalCit*100):0;
+      h+='<div class="flex items-center gap-3 mb-2"><div class="w-40 text-sm text-right">'+clsBadge(k)+'</div>'
+        +'<div class="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden"><div style="width:'+pct.toFixed(1)+'%;background:'+(k==='You'?'#DC0028':'#94a3b8')+'" class="h-4"></div></div>'
+        +'<div class="w-32 text-xs text-gray-600 text-right">'+nfmt(byCls[k])+' ('+pct.toFixed(1)+' %)</div></div>';
+    });
+    h+='<div class="text-xs text-gray-500 mt-3">Anteile beziehen sich auf die Top-'+doms.length+' Domains nach Zitaten, nicht auf alle Quellen.</div></div>';
+    h+='<div class="bg-white rounded-xl p-4 shadow mb-6"><div class="text-base font-bold text-ergo-dark mb-2">Meistzitierte Quell-Domains</div>'
+      +'<div style="max-height:420px;overflow:auto"><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr>'
+      +'<th class="text-left py-1">Domain</th><th class="text-left">Typ</th><th class="text-right">Zitate</th><th class="text-right">Abrufe</th><th class="text-right">Antworten</th></tr></thead><tbody>';
+    doms.forEach(function(x){
+      var hl=(x.cls==='You')?' class="bg-red-50 font-semibold"':'';
+      h+='<tr'+hl+' style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc(x.domain||'')+'</td><td>'+clsBadge(x.cls)+'</td>'
+        +'<td class="text-right">'+nfmt(x.cit)+'</td><td class="text-right text-gray-500">'+nfmt(x.ret)+'</td><td class="text-right text-gray-500">'+nfmt(x.chats)+'</td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+    var brandsAvail=Object.keys(mix).sort(function(a,b){
+      var sa=0,sb=0; Object.keys(mix[a]||{}).forEach(function(k){sa+=mix[a][k];}); Object.keys(mix[b]||{}).forEach(function(k){sb+=mix[b][k];});
+      return sb-sa;});
+    if(brandsAvail.length){
+      var others=brandsAvail.filter(function(b){return b!==own;});
+      var cmp=window.__qCmp; if(!cmp || others.indexOf(cmp)<0) cmp=others[0];
+      window.__qCmp=cmp;
+      var types={}; [own,cmp].forEach(function(b){ Object.keys(mix[b]||{}).forEach(function(t){types[t]=(types[t]||0)+mix[b][t];}); });
+      var tlist=Object.keys(types).sort(function(a,b){return types[b]-types[a];});
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><div class="flex items-center gap-3 flex-wrap mb-3">'
+        +'<div class="text-base font-bold text-ergo-dark">Seitentypen im Vergleich: '+esc(own)+' vs.</div>'
+        +'<select onchange="window.__qSetCmp(this.value)" class="border border-gray-300 rounded-lg px-3 py-1 text-sm bg-white">'
+        +others.map(function(b){return '<option value="'+esc(b)+'"'+(b===cmp?' selected':'')+'>'+esc(b)+'</option>';}).join('')
+        +'</select></div>';
+      h+='<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Seitentyp</th><th class="text-right">'+esc(own)+'</th><th class="text-right">'+esc(cmp)+'</th><th class="text-right">Differenz</th></tr></thead><tbody>';
+      var so=0,sc=0;
+      tlist.forEach(function(t){
+        var a=(mix[own]||{})[t]||0, b=(mix[cmp]||{})[t]||0; so+=a; sc+=b;
+        var diff=a-b, cl=diff<0?'text-red-600':'text-emerald-600';
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc(TYP_DE[t]||t)+'</td><td class="text-right">'+nfmt(a)+'</td><td class="text-right">'+nfmt(b)+'</td><td class="text-right '+cl+'">'+(diff>0?'+':'')+nfmt(diff)+'</td></tr>';
+      });
+      h+='<tr class="font-bold"><td class="py-1.5">Summe</td><td class="text-right">'+nfmt(so)+'</td><td class="text-right">'+nfmt(sc)+'</td><td class="text-right '+(so<sc?'text-red-600':'text-emerald-600')+'">'+((so-sc)>0?'+':'')+nfmt(so-sc)+'</td></tr>';
+      h+='</tbody></table><div class="text-xs text-gray-500 mt-3">Gezählt werden Zitate auf Seiten, in deren Antwort die jeweilige Marke genannt wurde — ein <strong>Ko-Vorkommen</strong>, kein Nachweis, dass die Quelle die Nennung verursacht.</div></div>';
+    }
+    var urlCls={}; urls.forEach(function(u){var k=u.cls||'Other'; urlCls[k]=(urlCls[k]||0)+1;});
+    var pick=window.__qUrlCls||'all';
+    var fu=(pick==='all')?urls:urls.filter(function(u){return (u.cls||'Other')===pick;});
+    h+='<div class="bg-white rounded-xl p-4 shadow mb-6"><div class="flex items-center gap-3 flex-wrap mb-2">'
+      +'<div class="text-base font-bold text-ergo-dark">Meistzitierte Einzelseiten</div>'
+      +'<select onchange="window.__qSetUrlCls(this.value)" class="border border-gray-300 rounded-lg px-3 py-1 text-sm bg-white">'
+      +'<option value="all">Alle Seitentypen ('+urls.length+')</option>'
+      +Object.keys(urlCls).sort(function(a,b){return urlCls[b]-urlCls[a];}).map(function(k){return '<option value="'+esc(k)+'"'+(pick===k?' selected':'')+'>'+esc(TYP_DE[k]||k)+' ('+urlCls[k]+')</option>';}).join('')
+      +'</select></div>';
+    h+='<div style="max-height:480px;overflow:auto"><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Seite</th><th class="text-left">Typ</th><th class="text-right">Zitate</th></tr></thead><tbody>';
+    fu.forEach(function(u){
+      var isOwn=(u.url||'').indexOf('ergo.de')>=0;
+      h+='<tr'+(isOwn?' class="bg-red-50"':'')+' style="border-bottom:1px solid #f1f5f9"><td class="py-1.5"><a href="'+esc(u.url||'')+'" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all text-xs">'+esc(u.title||u.url||'')+'</a>'
+        +(u.title?'<div class="text-xs text-gray-400 break-all">'+esc(u.url||'')+'</div>':'')+'</td>'
+        +'<td class="text-xs text-gray-600 whitespace-nowrap">'+esc(TYP_DE[u.cls]||u.cls||'—')+'</td><td class="text-right">'+nfmt(u.cit)+'</td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+    h+='<div class="bg-gray-50 border rounded-xl p-4 text-xs text-gray-600 leading-relaxed">'
+      +'<div class="font-semibold text-gray-700 mb-1">Methodik &amp; Grenzen</div>'
+      +'<div>'+esc(d.methode||'')+'</div><div class="mt-1">'+esc(d.grenzen||'')+'</div>'
+      +'<div class="mt-1">Quelle: '+esc(d.source||'')+' · Stand: '+esc(d.as_of||'')+'</div></div>';
+    host.innerHTML=h;
+  };
+  window.__qSetCmp=function(b){ window.__qCmp=b; window.__quellenRender(window.__QSRC); };
+  window.__qSetUrlCls=function(c){ window.__qUrlCls=c; window.__quellenRender(window.__QSRC); };
 
   // ---------- Methodik & Fragen (Q&A) ----------
   var QA_MAIL = 'phoeser@web.de';

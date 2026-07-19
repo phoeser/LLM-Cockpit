@@ -736,9 +736,22 @@
 
 <!-- ===== TAB: KORRELATION (GEO × Cockpit) ===== -->
 <section data-content="korrelation" class="tab-content hidden">
+  <div class="mb-5">
+    <h2 class="text-2xl font-bold text-ergo-dark mb-1">Wirkt unsere Arbeit auf die LLM-Sichtbarkeit?</h2>
+    <p class="text-sm text-gray-600">Statistische Prüfung, ob messbare Ereignisse — Seitenänderungen, Presse, Preise, Bewertungen — mit Veränderungen der Sichtbarkeit einhergehen. Ergebnis zuerst, Details darunter.</p>
+  </div>
+  <div id="korrErgebnis"><div class="text-sm text-gray-400">Lade Auswertung…</div></div>
+
+  <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
+    <button onclick="window.__korrDetails()" class="w-full text-left px-5 py-3 flex items-center gap-2 hover:bg-gray-50">
+      <span id="korrDetArrow" class="text-gray-400 text-sm">▶</span>
+      <span class="font-semibold text-ergo-dark text-sm">Detailauswertungen und Rohdaten</span>
+      <span class="text-xs text-gray-400">— Event-Überblick, Maßnahmen-Wirkung, Tagesübersicht, SoV-Verlauf, Mentions, Event-Stream</span>
+    </button>
+  </div>
+  <div id="korrDetails" class="hidden">
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h2 class="text-2xl font-bold text-ergo-dark mb-2">🔗 Korrelation: Events × LLM-Sichtbarkeit</h2>
-    <p class="text-sm text-gray-600 mb-4">Event-Überblick der letzten 14 Tage — die validierte Impact-Analyse unten nutzt den gesamten Messzeitraum (siehe Badge).</p>
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">Event-Überblick (14 Tage)</h3>
     <div id="corrKPIs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
   </div>
 
@@ -795,6 +808,7 @@
   <!-- Status -->
   <div class="bg-blue-50 rounded-xl p-4 shadow mb-6">
     <p class="text-sm text-blue-800"><strong>Datenbasis:</strong> <span id="correlationDataStatus">wird berechnet…</span></p>
+  </div>
   </div>
 </section>
 
@@ -3508,7 +3522,7 @@ function buildGeoTab() {
     bewertungen: ['buildSentimentChart','buildSentimentSourceTable','renderProductSentiment','renderRecentReviews','buildReviewThemes'],
     ratings: ['renderRatingsTables'],
     presse: ['buildPressTab'],
-    korrelation: ['renderCorrelationTab'],
+    korrelation: ['renderCorrelationTab','buildKorrErgebnis'],
     peec: ['renderPeecTab']
   };
   function rebuildTab(tab) {
@@ -3560,6 +3574,7 @@ function buildGeoTab() {
     safeCall('buildContentGeo');
     safeCall('buildGeoSovTime');
     safeCall('renderCorrelationTab');
+    safeCall('buildKorrErgebnis');
     safeCall('buildBeraterCannibalization');
     safeCall('buildDriverGap');
     safeCall('buildReviewThemes');
@@ -4309,6 +4324,222 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
   window.__qSetCmp=function(b){ window.__qCmp=b; window.__quellenRender(window.__QSRC); };
   window.__qSetUrlCls=function(c){ window.__qUrlCls=c; window.__quellenRender(window.__QSRC); };
+
+  // ---------- Korrelation: Ergebnis-Übersicht (Neuaufbau 20.07.2026) ----------
+  // Leitidee: Was ein Analyst zuerst wissen will, steht oben — und zwar als Bild.
+  // Der Forest-Plot zeigt Effekt UND Konfidenzintervall; dass alle Intervalle die
+  // Null einschliessen, ist damit auf einen Blick sichtbar statt in einer Tabelle
+  // versteckt.
+  function _fmtPP(v){ return (v==null?'–':(v>0?'+':'')+Number(v).toFixed(2)); }
+  function _esc(s){ return esc(s); }
+
+  function forestPlot(rows, opts){
+    // rows: [{label, eff, lo, hi, n, sig, sub}]
+    opts = opts || {};
+    var W = 720, LBL = 210, PAD = 14, RH = 26;
+    var valid = rows.filter(function(r){ return r.eff!=null && r.lo!=null && r.hi!=null; });
+    if(!valid.length) return '<div class="text-sm text-gray-400 py-3">Keine schätzbaren Effekte in diesem Block.</div>';
+    var lo = Math.min.apply(null, valid.map(function(r){return r.lo;}));
+    var hi = Math.max.apply(null, valid.map(function(r){return r.hi;}));
+    var span = Math.max(hi-lo, 0.001), m = span*0.08;
+    lo -= m; hi += m;
+    if(lo>0) lo=-span*0.05; if(hi<0) hi=span*0.05;
+    var PW = W-LBL-PAD*2;
+    var x = function(v){ return LBL+PAD+((v-lo)/(hi-lo))*PW; };
+    var H = valid.length*RH+46;
+    var s = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;font-family:inherit" role="img">';
+    // Nulllinie
+    s += '<line x1="'+x(0).toFixed(1)+'" y1="6" x2="'+x(0).toFixed(1)+'" y2="'+(H-30)+'" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>';
+    valid.forEach(function(r,i){
+      var y = 20+i*RH;
+      var col = r.sig ? '#DC0028' : '#64748b';
+      s += '<text x="'+(LBL-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="12" fill="#282D37">'+_esc(r.label)+'</text>';
+      s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+y+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+y+'" stroke="'+col+'" stroke-width="2" opacity="0.55"/>';
+      s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+(y-4)+'" x2="'+x(r.lo).toFixed(1)+'" y2="'+(y+4)+'" stroke="'+col+'" stroke-width="2" opacity="0.55"/>';
+      s += '<line x1="'+x(r.hi).toFixed(1)+'" y1="'+(y-4)+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+(y+4)+'" stroke="'+col+'" stroke-width="2" opacity="0.55"/>';
+      s += '<circle cx="'+x(r.eff).toFixed(1)+'" cy="'+y+'" r="4.5" fill="'+col+'"/>';
+      s += '<title>'+_esc(r.label)+': '+_fmtPP(r.eff)+' pp, 95-%-KI ['+_fmtPP(r.lo)+'; '+_fmtPP(r.hi)+']'
+         +(r.n!=null?(', '+r.n+' Intervalle mit Ereignis'):'')+'</title>';
+    });
+    var yA = H-22;
+    s += '<line x1="'+(LBL+PAD)+'" y1="'+yA+'" x2="'+(LBL+PAD+PW)+'" y2="'+yA+'" stroke="#cbd5e1"/>';
+    [lo, (lo+hi)/2, hi].forEach(function(v){
+      s += '<text x="'+x(v).toFixed(1)+'" y="'+(yA+14)+'" text-anchor="middle" font-size="10" fill="#64748b">'+v.toFixed(1)+'</text>';
+    });
+    s += '<text x="'+(LBL+PAD+PW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="10" fill="#94a3b8">Effekt auf Share of Voice (Prozentpunkte je Intervall)</text>';
+    s += '</svg>';
+    return s;
+  }
+
+  function lineChartSVG(pts, opts){
+    opts=opts||{};
+    var W=720,H=180,L=44,R=10,T=12,B=26;
+    if(!pts.length) return '';
+    var ys=pts.map(function(p){return p.y;});
+    var ymin=Math.min.apply(null,ys), ymax=Math.max.apply(null,ys);
+    if(ymax===ymin){ ymax=ymin+1; }
+    var pad=(ymax-ymin)*0.1; ymin=Math.max(0,ymin-pad); ymax+=pad;
+    var px=function(i){ return L+(i/(pts.length-1||1))*(W-L-R); };
+    var py=function(v){ return T+(1-(v-ymin)/(ymax-ymin))*(H-T-B); };
+    var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;font-family:inherit">';
+    if(opts.threshold!=null){
+      s+='<line x1="'+L+'" y1="'+py(opts.threshold).toFixed(1)+'" x2="'+(W-R)+'" y2="'+py(opts.threshold).toFixed(1)+'" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>';
+      s+='<text x="'+(W-R)+'" y="'+(py(opts.threshold)-4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#b45309">Schwelle '+(opts.threshold*100).toFixed(0)+' %</text>';
+    }
+    var d=pts.map(function(p,i){ return (i?'L':'M')+px(i).toFixed(1)+' '+py(p.y).toFixed(1); }).join(' ');
+    s+='<path d="'+d+'" fill="none" stroke="#DC0028" stroke-width="2"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i).toFixed(1)+'" cy="'+py(p.y).toFixed(1)+'" r="2.5" fill="#DC0028"><title>'+_esc(p.x)+': '+(p.y*100).toFixed(1)+' %</title></circle>';
+    });
+    [ymin,ymax].forEach(function(v){
+      s+='<text x="'+(L-6)+'" y="'+(py(v)+3).toFixed(1)+'" text-anchor="end" font-size="10" fill="#64748b">'+(v*100).toFixed(0)+' %</text>';
+    });
+    s+='<text x="'+L+'" y="'+(H-6)+'" font-size="10" fill="#94a3b8">'+_esc(pts[0].x)+'</text>';
+    s+='<text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+_esc(pts[pts.length-1].x)+'</text>';
+    s+='</svg>';
+    return s;
+  }
+
+  window.buildKorrErgebnis = function(){
+    var host=document.getElementById('korrErgebnis'); if(!host) return;
+    Promise.all([
+      fetch('data/correlation_impact.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+      fetch('data/peec_fanout_rate.csv',{cache:'no-store'}).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;})
+    ]).then(function(res){ window.__KORR=res; window.__korrRender(res[0],res[1]); });
+  };
+
+  window.__korrRender = function(ci, fanCsv){
+    var host=document.getElementById('korrErgebnis'); if(!host) return;
+    if(!ci){ host.innerHTML='<div class="text-sm text-gray-400">Korrelationsdaten nicht geladen.</div>'; return; }
+    var h='';
+    // ---- 1. Kernaussage ----
+    var imp=ci.impact||{};
+    var sigMain=Object.keys(imp).filter(function(k){return imp[k].significant;});
+    var fs=ci.funnel_stratified||{}, fdr=fs.fdr||{};
+    var pct=ci.page_change_types||{};
+    var wja=(pct.wirkung_je_art)||{};
+    var sigAll=sigMain.length+(fdr.n_signifikant_nach_korrektur||0)+(fdr.n_gesichert_multivariat||0)+(wja.n_gesichert||0);
+    h+='<div class="rounded-xl p-5 mb-5 '+(sigAll?'bg-amber-50 border-l-4 border-amber-500':'bg-slate-50 border-l-4 border-slate-400')+'">'
+      +'<div class="text-lg font-bold text-ergo-dark mb-1">'+(sigAll?('⚠️ '+sigAll+' gesicherte Zusammenhänge'):'Kein Treiber ist statistisch gesichert')+'</div>'
+      +'<div class="text-sm text-gray-700 leading-relaxed">'
+      +(sigAll?'Vor der Interpretation die Konfidenzintervalle und die Mehrfachtest-Korrektur prüfen.'
+             :'In keinem der geprüften Modelle schließt ein Konfidenzintervall die Null aus — weder im Gesamtmodell, noch nach Funnel-Stufen, nach Änderungsart oder mit Zeitversatz. Das Modell zeigt derzeit <strong>Größenordnungen und Richtungen, keine belegten Wirkungen</strong>.')
+      +'</div>'
+      +'<div class="grid md:grid-cols-4 gap-3 mt-4">'
+      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Messtage</div><div class="text-xl font-bold text-ergo-dark">'+(ci.sov_measure_days||'–')+'</div><div class="text-xs text-gray-400">'+esc((ci.sov_measure_range||[]).join(' bis '))+'</div></div>'
+      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Intervall-Punkte</div><div class="text-xl font-bold text-ergo-dark">'+nfmt(ci.n_intervals_total)+'</div><div class="text-xs text-gray-400">'+((ci.brands_with_sov||[]).length)+' Marken</div></div>'
+      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Vorhersagegüte</div><div class="text-xl font-bold '+((((ci.validation||{}).out_of_sample||{}).r2_oos_vs_baseline||0)<0?'text-red-600':'text-ergo-dark')+'">'+(((ci.validation||{}).out_of_sample||{}).r2_oos_vs_baseline)+'</div><div class="text-xs text-gray-400">R² gegen Marken-Basislinie</div></div>'
+      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Placebo-Rate</div><div class="text-xl font-bold text-ergo-dark">'+((ci.validation||{}).placebo_false_positive_rate)+'</div><div class="text-xs text-gray-400">erwartet 0,05</div></div>'
+      +'</div></div>';
+
+    // ---- 2. Forest-Plot Gesamtmodell ----
+    var rows=Object.keys(imp).map(function(k){
+      var r=imp[k];
+      return {label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), eff:r.avg_sov_effect_pp,
+              lo:r.ci95_low_pp, hi:r.ci95_high_pp, n:r.n_with_event, sig:r.significant};
+    }).filter(function(r){return r.eff!=null;})
+      .sort(function(a,b){return Math.abs(b.eff)-Math.abs(a.eff);});
+    h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">Alle Treiber im Überblick</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Punkt = geschätzter Effekt, Balken = 95-%-Konfidenzintervall. Schneidet ein Balken die gestrichelte Nulllinie, ist der Effekt nicht von null unterscheidbar.</p>'
+      +forestPlot(rows)+'</div>';
+
+    // ---- 3. Funnel-Schichtung ----
+    if(fs.available){
+      var stufen=['Awareness','Consideration','Decision'].filter(function(t){return (fs.je_tag||{})[t];});
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Nach Funnel-Stufe getrennt</h3>'
+        +'<p class="text-xs text-gray-500 mb-3">Dieselbe Rechnung innerhalb jeder Stufe. '+nfmt((fs.je_tag[stufen[0]]||{}).n_intervalle)+' Intervalle je Stufe statt '+nfmt(ci.n_intervals_total)+' im Gesamtmodell — dadurch deutlich schmalere Intervalle, aber weiterhin kein gesicherter Effekt.</p>';
+      var frows=[];
+      stufen.forEach(function(st){
+        var im=((fs.je_tag[st]||{}).impact||{}).page_change;
+        if(im && im.available) frows.push({label:st, eff:im.avg_sov_effect_pp, lo:im.ci95_low_pp,
+                                           hi:im.ci95_high_pp, n:im.n_with_event, sig:im.significant_fdr});
+      });
+      var gm=imp.page_change;
+      if(gm) frows.push({label:'(Gesamtmodell)', eff:gm.avg_sov_effect_pp, lo:gm.ci95_low_pp, hi:gm.ci95_high_pp, n:gm.n_with_event, sig:gm.significant});
+      h+='<div class="text-xs font-semibold text-gray-600 mb-1">Seitenänderungen je Stufe</div>'+forestPlot(frows);
+      h+='<div class="text-xs text-gray-500 mt-2">'+nfmt(fdr.n_tests)+' Einzeltests, Benjamini-Hochberg-korrigiert: '
+        +nfmt(fdr.n_signifikant_vor_korrektur)+' vor, '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Korrektur signifikant.</div></div>';
+    }
+
+    // ---- 4. Web-Such-Rate ----
+    var fr=ci.fanout_regime||{};
+    if(fanCsv && fr.available){
+      var pts=[];
+      fanCsv.split(/\r?\n/).slice(1).forEach(function(l){
+        var c=l.split(';'); if(c.length<4||!c[0]) return;
+        var v=parseFloat(c[3]); if(!isNaN(v)) pts.push({x:c[0].replace(/^﻿/,''), y:v});
+      });
+      if(pts.length){
+        h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+          +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wie oft die Engines überhaupt im Web suchen</h3>'
+          +'<p class="text-xs text-gray-500 mb-3">Anteil der Antworten mit Web-Suche. In der Einbruchphase antworten die Modelle aus dem Gedächtnis — eine Seitenänderung <strong>kann</strong> dort nicht wirken. Das verdünnt jeden echten Effekt.</p>'
+          +lineChartSVG(pts,{threshold:fr.schwelle})
+          +'<div class="text-xs text-gray-500 mt-2">'+nfmt(fr.n_tage_web)+' von '+nfmt(fr.n_tage)+' Tagen web-gestützt · Spanne '
+          +(fr.rate_min*100).toFixed(1)+' % bis '+(fr.rate_max*100).toFixed(1)+' %.</div>';
+        var sens=fr.sensitivitaet_seitenaenderungen||{};
+        var srows=[];
+        Object.keys(sens).forEach(function(st){
+          var a=sens[st].alle_tage||{}, w=sens[st].nur_web_tage||{};
+          if(a.available) srows.push({label:st+' — alle Tage', eff:a.effekt_pp, lo:(a.ci95||[])[0], hi:(a.ci95||[])[1], n:a.n_mit_event, sig:a.gesichert});
+          if(w.available) srows.push({label:st+' — nur Web-Tage', eff:w.effekt_pp, lo:(w.ci95||[])[0], hi:(w.ci95||[])[1], n:w.n_mit_event, sig:w.gesichert});
+        });
+        if(srows.length) h+='<div class="text-xs font-semibold text-gray-600 mt-4 mb-1">Seitenänderungen: alle Tage gegen nur web-gestützte Tage</div>'+forestPlot(srows);
+        h+='</div>';
+      }
+    }
+
+    // ---- 5. Änderungsart ----
+    if(wja.available){
+      var ART={preis:'Preis',leistung:'Leistung',faq:'FAQ',copy:'Text/Copy',struktur:'Struktur',sonstiges:'Sonstiges',change:'unspezifisch'};
+      var arows=Object.keys(wja.je_art||{}).map(function(k){
+        var v=wja.je_art[k];
+        return v.available?{label:(ART[k]||k)+' ('+nfmt(v.n_events)+')', eff:v.avg_sov_effect_pp,
+                            lo:v.ci95_low_pp, hi:v.ci95_high_pp, n:v.n_with_event, sig:v.significant_fdr}:null;
+      }).filter(Boolean);
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wirkt es darauf an, <em>was</em> geändert wird?</h3>'
+        +'<p class="text-xs text-gray-500 mb-3">Seitenänderungen nach Art getrennt ('+((pct.abdeckung||0)*100).toFixed(1)+' % der '+nfmt(pct.n_page_change)+' Änderungen klassifiziert). '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert.</p>'
+        +forestPlot(arows)+'</div>';
+    }
+
+    // ---- 6. Zeitversatz ----
+    var la=ci.lag_analysis||{};
+    if(la.available){
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wirkt es vielleicht später?</h3>'
+        +'<p class="text-xs text-gray-500 mb-3">Korrelation je Zeitversatz. Eine echte Verzögerung zeigt einen glatten Verlauf; Springen deutet auf Zufall.</p>'
+        +'<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Treiber</th>'
+        +(la.getestete_lags||[]).map(function(l){return '<th class="text-right">'+l+' T</th>';}).join('')
+        +'<th class="text-left pl-3">Bewertung</th></tr></thead><tbody>';
+      Object.keys(la.bester_lag_je_treiber||{}).forEach(function(k){
+        var b=la.bester_lag_je_treiber[k];
+        var byLag={}; (b.verlauf||[]).forEach(function(v){byLag[v.lag]=v.r;});
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc((b.label||k).replace(/\(Wettbewerb\)/,'').trim())+'</td>'
+          +(la.getestete_lags||[]).map(function(l){
+            var r=byLag[l];
+            return '<td class="text-right '+(r==null?'text-gray-300':(Math.abs(r)>0.12?'font-semibold':''))+'">'+(r==null?'–':(r>0?'+':'')+r.toFixed(2))+'</td>';
+          }).join('')
+          +'<td class="pl-3 text-xs text-gray-500">'+esc(String(b.musterbewertung||'').split('—')[0])+'</td></tr>';
+      });
+      h+='</tbody></table><div class="text-xs text-gray-500 mt-2">'+esc(la.fazit||'')+'</div></div>';
+    }
+
+    // ---- 7. Wartende Auswertung ----
+    var ct=ci.citation_target||{};
+    if(ct.available===false){
+      h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-4 mb-5">'
+        +'<div class="font-semibold text-sm text-ergo-dark mb-1">In Vorbereitung: Zitate als zweite Zielgröße</div>'
+        +'<div class="text-xs text-gray-700 leading-relaxed">'+esc(ct.grund||'')+'</div></div>';
+    }
+    host.innerHTML=h;
+  };
+
+  window.__korrDetails=function(){
+    var d=document.getElementById('korrDetails'), a=document.getElementById('korrDetArrow');
+    if(!d) return; var hid=d.classList.toggle('hidden'); if(a) a.textContent=hid?'▶':'▼';
+  };
 
   // ---------- Methodik-Kapitel (aufklappbar, Zahlen live aus den Daten) ----------
   window.buildMethodik = function(){

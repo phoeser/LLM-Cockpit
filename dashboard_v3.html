@@ -104,6 +104,7 @@
       <button data-tab="preisvergleich" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Preisvergleich</button>
       <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
       <button data-tab="peec" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Peec AI</button>
+      <button data-tab="qa" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">❓ Methodik &amp; Fragen</button>
     </div>
   </div>
 </nav>
@@ -1001,6 +1002,13 @@ window.renderPeecTab = renderPeecTab;
   </div>
   <div id="preisvergleichBody"></div>
 </section>
+
+<section data-content="qa" class="tab-content hidden">
+  <h2 class="text-2xl font-bold text-ergo-dark mb-1">Methodik &amp; Fragen</h2>
+  <p class="text-sm text-gray-600 mb-6">Fragen zur Methodik, den Datenquellen oder einzelnen Zahlen sind ausdrücklich erwünscht — sie werden kuratiert und faktengeprüft gegen Code und Rohdaten beantwortet. Offene Fragen werden mit dem nächsten Update beantwortet und erscheinen dann hier.</p>
+  <div id="qaBody"><div class="text-sm text-gray-400">Lade Fragen &amp; Antworten…</div></div>
+</section>
+
 </main>
 
 <footer class="bg-ergo-dark text-white text-center py-6 mt-12">
@@ -3523,6 +3531,7 @@ function buildGeoTab() {
     safeCall('buildBeraterCannibalization');
     safeCall('buildDriverGap');
     safeCall('buildReviewThemes');
+    safeCall('buildQaTab');
   }
   async function __v3_loadJSON(path) {
     try { var r = await fetch(path, {cache:'no-store'}); if (!r.ok) return null; return await r.json(); }
@@ -3989,6 +3998,99 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
   window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
   window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};
+
+  // ---------- Methodik & Fragen (Q&A) ----------
+  var QA_MAIL = 'phoeser@web.de';
+  window.buildQaTab = function(){
+    var host = document.getElementById('qaBody'); if(!host) return;
+    fetch('data/qa.json', {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(qa){ window.__qaRender(qa || {items:[]}); })
+      .catch(function(){ window.__qaRender({items:[]}); });
+  };
+  function __qaBadge(t){ return t ? '<span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs whitespace-nowrap">'+esc(t)+'</span>' : ''; }
+  window.__qaRender = function(qa){
+    var host = document.getElementById('qaBody'); if(!host) return;
+    var items = (qa.items || []).slice();
+    var open = items.filter(function(x){ return x.status !== 'beantwortet'; });
+    var done = items.filter(function(x){ return x.status === 'beantwortet'; });
+    done.sort(function(a,b){ return (b.answered_at||'').localeCompare(a.answered_at||''); });
+    var h = '';
+    // Frage-Formular
+    h += '<div class="bg-white rounded-xl p-5 shadow mb-6">'
+      +'<div class="text-base font-bold text-ergo-dark mb-3">Neue Frage stellen</div>'
+      +'<div class="grid md:grid-cols-2 gap-3 mb-3">'
+      +'<select id="qaTopic" class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"><option>Methodik</option><option>Datenquellen</option><option>Berechnung / Statistik</option><option>Einzelner Wert im Dashboard</option><option>Sonstiges</option></select>'
+      +'<input id="qaName" type="text" placeholder="Name / Team (optional)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" />'
+      +'</div>'
+      +'<textarea id="qaText" rows="4" placeholder="Deine Frage — je konkreter (Reiter, Marke, Datum, Zahl), desto präziser die Antwort." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"></textarea>'
+      +'<div class="flex items-center gap-3 flex-wrap">'
+      +'<button onclick="window.__qaMail()" class="bg-ergo-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">📧 Per E-Mail senden</button>'
+      +'<button onclick="window.__qaCopy(this)" class="border border-gray-300 px-4 py-2 rounded-lg text-sm text-gray-700 hover:border-ergo-red">Frage kopieren</button>'
+      +'<a href="#" onclick="return window.__qaIssue()" class="text-xs text-gray-400 hover:text-gray-600 underline">alternativ als GitHub-Issue (Account nötig)</a>'
+      +'</div>'
+      +'<div class="text-xs text-gray-500 mt-2">Antworten werden kuratiert und gegen Code/Rohdaten geprüft — sie erscheinen mit dem nächsten Update in diesem Reiter.</div>'
+      +'</div>';
+    // Offene Fragen
+    h += '<div class="bg-white rounded-xl p-4 shadow mb-6">'
+      +'<div class="text-base font-bold text-ergo-dark mb-1">⏳ Offene Fragen <span class="text-xs font-normal text-gray-400">('+open.length+')</span></div>';
+    if(!open.length){ h += '<div class="text-sm text-gray-400 py-2">Aktuell keine offenen Fragen.</div>'; }
+    else {
+      open.forEach(function(x){
+        h += '<div class="border-b py-2 px-1 text-sm"><div class="flex items-center gap-2 flex-wrap">'+__qaBadge(x.topic)
+          +'<span class="text-xs text-gray-400">'+esc(x.asked_at||'')+(x.asked_by?(' · '+esc(x.asked_by)):'')+'</span></div>'
+          +'<div class="mt-1 font-medium text-ergo-dark">'+esc(x.q||'')+'</div>'
+          +'<div class="text-xs text-gray-400 mt-1">Antwort folgt mit dem nächsten Update.</div></div>';
+      });
+    }
+    h += '</div>';
+    // Beantwortete Fragen
+    h += '<div class="bg-white rounded-xl p-4 shadow mb-6">'
+      +'<div class="text-base font-bold text-ergo-dark mb-2">✅ Beantwortete Fragen <span class="text-xs font-normal text-gray-400">('+done.length+')</span></div>';
+    if(!done.length){ h += '<div class="text-sm text-gray-400 py-2">Noch keine beantworteten Fragen.</div>'; }
+    else {
+      done.forEach(function(x,i){
+        var ans = esc(x.a||'').replace(/\n/g,'<br>');
+        h += '<div class="border-b">'
+          +'<div class="flex items-start gap-2 py-2.5 px-1 cursor-pointer hover:bg-gray-50" onclick="window.__qaToggle('+i+')">'
+          +'<span id="qaArrow'+i+'" class="text-gray-400 select-none">▶</span>'
+          +'<div class="flex-1 min-w-0"><div class="font-medium text-ergo-dark text-sm">'+esc(x.q||'')+'</div>'
+          +'<div class="flex items-center gap-2 mt-1">'+__qaBadge(x.topic)+'<span class="text-xs text-gray-400">beantwortet '+esc(x.answered_at||'')+'</span></div></div>'
+          +'</div>'
+          +'<div id="qaAns'+i+'" class="hidden px-7 pb-3 text-sm text-gray-700 leading-relaxed">'+ans+'</div>'
+          +'</div>';
+      });
+    }
+    h += '</div>';
+    if(qa.updated) h += '<div class="text-xs text-gray-400">Stand Q&amp;A-Daten: '+esc(qa.updated)+'</div>';
+    host.innerHTML = h;
+  };
+  window.__qaToggle = function(i){ var d=document.getElementById('qaAns'+i), a=document.getElementById('qaArrow'+i); if(!d) return; var hid=d.classList.toggle('hidden'); if(a) a.textContent=hid?'▶':'▼'; };
+  function __qaCompose(){
+    var topic=(document.getElementById('qaTopic')||{}).value||'Sonstiges';
+    var name=(document.getElementById('qaName')||{}).value||'';
+    var text=((document.getElementById('qaText')||{}).value||'').trim();
+    if(!text){ alert('Bitte zuerst eine Frage eintragen.'); return null; }
+    return { topic:topic, name:name, text:text,
+      subject:'[LLM-Cockpit] Frage: '+topic,
+      body:'Frage:\n'+text+'\n\nThema: '+topic+(name?('\nName/Team: '+name):'')+'\nDatum: '+new Date().toISOString().slice(0,10) };
+  }
+  window.__qaMail = function(){
+    var c=__qaCompose(); if(!c) return;
+    location.href='mailto:'+QA_MAIL+'?subject='+encodeURIComponent(c.subject)+'&body='+encodeURIComponent(c.body);
+  };
+  window.__qaCopy = function(btn){
+    var c=__qaCompose(); if(!c) return;
+    var txt='An: '+QA_MAIL+'\nBetreff: '+c.subject+'\n\n'+c.body;
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){
+      if(btn){ btn.textContent='✓ Kopiert'; setTimeout(function(){btn.textContent='Frage kopieren';},2000); }
+    }).catch(function(){ prompt('Zum Kopieren (Strg+C):', txt); });
+  };
+  window.__qaIssue = function(){
+    var c=__qaCompose(); if(!c) return false;
+    window.open('https://github.com/phoeser/LLM-Cockpit/issues/new?title='+encodeURIComponent(c.subject)+'&body='+encodeURIComponent(c.body+'\n\n_Hinweis: dieses Repo ist öffentlich._'),'_blank');
+    return false;
+  };
 
 
 

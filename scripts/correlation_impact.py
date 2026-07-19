@@ -2153,6 +2153,383 @@ def level_model_mundlak():
                      "explorativ. Quelle: data/geo_snapshot.json.")}
 
 
+# ===========================================================================
+# Erweiterungen 19.07.2026 — neue Peec-Datenquellen im Treibermodell
+#
+# Alle drei Auswertungen sind ADDITIV: sie lassen das bestehende Modell
+# unberuehrt und schreiben eigene Bloecke in die Ausgabe. Jede meldet bei
+# fehlender Datenbasis ausdruecklich available=False MIT GRUND — niemals eine
+# 0.0, die wie "gesichert kein Effekt" aussieht (roter Faden dieses Projekts).
+# ===========================================================================
+
+PEEC_SNAP_DIR = Path("data/peec_snapshots")
+PEEC_SEGMENTS_FILE = Path("data/peec_segments.json")
+PEEC_SEGMENTS_HIST = Path("data/peec_segments_history.csv")
+
+# Mindestzahl Messpunkte, ab der ueberhaupt gerechnet wird.
+# 3 Punkte = 2 Intervalle: das ist die absolute Untergrenze fuer eine Steigung,
+# und selbst dann nur explorativ (type_confidence weist es aus).
+MIN_CITATION_POINTS = 3
+MIN_FUNNEL_POINTS = 3
+# Ab welchem Anteil brauchbarer Klassifikationen die Seitentyp-Aufschluesselung
+# ueberhaupt berichtet wird. Darunter waere die Aufteilung eine Scheingenauigkeit.
+MIN_CLASS_COVERAGE = 0.30
+
+
+def _effect_ci(xs, ys, min_with_for_sig=8):
+    """Effekt (mit vs. ohne Ereignis), Standardfehler und t-basiertes 95-%-KI.
+
+    Bewusst dieselbe Rechnung wie im Hauptmodell (analyze), damit die neuen
+    Bloecke nicht mit einer abweichenden Konvention danebenstehen: konservative
+    Freiheitsgrade (kleinere Gruppe - 1), "gesichert" nur wenn das KI die Null
+    ausschliesst UND genug Intervalle mit Ereignis vorliegen.
+    """
+    def _v(v, m):
+        return sum((z - m) ** 2 for z in v) / (len(v) - 1) if len(v) > 1 else 0.0
+
+    with_v = [y for x, y in zip(xs, ys) if x > 0]
+    without_v = [y for x, y in zip(xs, ys) if x <= 0]
+    if not with_v or not without_v:
+        return None, None, None, None, None
+    m1 = sum(with_v) / len(with_v)
+    m0 = sum(without_v) / len(without_v)
+    eff = m1 - m0
+    se = None
+    if len(with_v) > 1 and len(without_v) > 1:
+        se = math.sqrt(_v(with_v, m1) / len(with_v) + _v(without_v, m0) / len(without_v))
+    lo = hi = None
+    sig = None
+    if se is not None and se > 0:
+        tc = t_critical(min(len(with_v), len(without_v)) - 1)
+        if tc is not None:
+            lo, hi = round(eff - tc * se, 3), round(eff + tc * se, 3)
+            sig = bool(((lo > 0) or (hi < 0)) and len(with_v) >= min_with_for_sig)
+    return round(eff, 3), (round(se, 3) if se is not None else None), lo, hi, sig
+
+
+def _citation_points():
+    """Zitat-Zeitreihe je Marke aus den versionierten Peec-Quellen-Snapshots.
+
+    Quelle: data/peec_snapshots/<ENDE>_sources.json (wird vom Montags-Task
+    angelegt, eingefuehrt 19.07.2026). Je Snapshot und Marke die Summe der
+    citation_count ueber alle Domains, die dieser Marke gehoeren.
+    """
+    pts = {}
+    if not PEEC_SNAP_DIR.is_dir():
+        return pts, []
+    files = sorted(PEEC_SNAP_DIR.glob("*_sources.json"))
+    stamps = []
+    for f in files:
+        stamp = f.name.split("_")[0]
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        stamps.append(stamp)
+        for row in data.get("domains") or []:
+            b = _fp_dom2brand(row.get("domain"))
+            if not b:
+                continue
+            pts.setdefault(b, {})
+            pts[b][stamp] = pts[b].get(stamp, 0) + (row.get("cit") or 0)
+    return pts, sorted(set(stamps))
+
+
+def citation_target_analysis(events):
+    """Zitate als ZWEITE Zielgroesse neben Share of Voice.
+
+    Warum: SoV ist ein traeger Anteil zwischen wenigen Marken; die gemessenen
+    Effekte liegen bisher im Rauschen (Konfidenzintervalle ueberspannen die Null).
+    Zitate sind Zaehlgroessen im vier- bis fuenfstelligen Bereich und liegen
+    kausal NAEHER an der Ursache: Seitenaenderung -> Quelle wird gelesen/zitiert
+    -> Marke wird genannt. Bisher testen wir Anfang gegen Ende der Kette.
+
+    Der Block rechnet erst, wenn genug Snapshots vorliegen. Die Reihe beginnt
+    mit dem ersten Snapshot (19.07.2026) — vorher gibt es hier bewusst NICHTS
+    ausser einer Statusmeldung.
+    """
+    series, stamps = _citation_points()
+    n_pts = len(stamps)
+    base = {
+        "ziel": "Zitate je Marke (Peec citation_count, Summe ueber die Domains der Marke)",
+        "quelle": "data/peec_snapshots/<ENDE>_sources.json",
+        "n_messpunkte": n_pts,
+        "messpunkte": stamps,
+        "min_messpunkte": MIN_CITATION_POINTS,
+        "methode": ("Je Intervall zwischen zwei Snapshots: delta_Zitate je Marke gegen die "
+                    "Ereigniszahl je Typ im selben Fenster — dieselbe Event-Study-Logik wie "
+                    "beim SoV-Modell, nur mit der frueheren Zielgroesse in der Wirkungskette."),
+        "grenzen": ("Peec-Zitatzahlen stammen aus einem rollierenden 30-Tage-Fenster; zwei "
+                    "aufeinanderfolgende Snapshots ueberlappen sich also stark. Die Reihe ist "
+                    "gegluettet und traege — Effekte zeigen sich verzoegert und daempft. "
+                    "Ausserdem deckt der Export nur die Top-Domains ab, nicht den Long Tail."),
+    }
+    if n_pts < MIN_CITATION_POINTS:
+        base["available"] = False
+        base["grund"] = (
+            f"Erst {n_pts} Snapshot(s) vorhanden, benoetigt werden {MIN_CITATION_POINTS}. "
+            "Die Zitat-Zeitreihe beginnt mit dem ersten Quellen-Snapshot vom 19.07.2026 und "
+            "waechst woechentlich mit dem Montags-Task. KEINE Aussage moeglich — "
+            "das ist ausdruecklich kein gemessener Nulleffekt."
+        )
+        return base
+
+    ev = dedup_impact_events(events)
+    bydays = {}
+    for e in ev:
+        bydays.setdefault(e.get("brand"), {}).setdefault(_day(e.get("timestamp")), {})
+        t = e.get("event_type")
+        d = bydays[e["brand"]][_day(e.get("timestamp"))]
+        d[t] = d.get(t, 0) + 1
+
+    points = []
+    for brand, ser in series.items():
+        days_sorted = sorted(ser)
+        for i in range(len(days_sorted) - 1):
+            a, b = days_sorted[i], days_sorted[i + 1]
+            span = max(1, _days_between(a, b))
+            cnt = {}
+            for t in IMPACT_TYPES:
+                c = 0
+                for day, tc in (bydays.get(brand) or {}).items():
+                    if a <= day < b:
+                        c += tc.get(t, 0)
+                cnt[t] = c / span
+            points.append({"brand": brand, "days": span, "time": a,
+                           "y": (ser[b] - ser[a]) / span, "x": cnt})
+
+    if len(points) < 4:
+        base["available"] = False
+        base["grund"] = (f"Nur {len(points)} Intervall-Punkte — zu wenig fuer eine Schaetzung. "
+                         "KEINE Aussage, kein Nulleffekt.")
+        return base
+
+    res = {}
+    for t in IMPACT_TYPES:
+        xs = [p["x"].get(t, 0.0) for p in points]
+        ys = [p["y"] for p in points]
+        n_with = sum(1 for x in xs if x > 0)
+        if n_with < 3:
+            res[t] = {"label": TYPE_LABEL.get(t, t), "n_with_event": n_with,
+                      "available": False,
+                      "grund": "zu wenige Intervalle mit diesem Ereignis"}
+            continue
+        r = pearson(xs, ys)
+        eff, se, lo, hi, sig = _effect_ci(xs, ys)
+        res[t] = {"label": TYPE_LABEL.get(t, t), "pearson_r": r,
+                  "avg_citation_effect": eff, "effect_se": se,
+                  "ci95_low": lo, "ci95_high": hi, "significant": sig,
+                  "n_intervals": len(points),
+                  "n_with_event": n_with, "type_confidence": type_confidence(n_with),
+                  "available": True}
+    base["available"] = True
+    base["n_intervalle"] = len(points)
+    base["marken"] = sorted(series)
+    base["impact"] = res
+    return base
+
+
+def funnel_stratified_analysis(events):
+    """Sichtbarkeit geschichtet nach Funnel-Stufe (Awareness/Consideration/Decision).
+
+    Warum: Awareness und Decision verhalten sich nachweislich unterschiedlich
+    (Sichtbarkeit 9,7 % vs. 20,9 %, Messung 18.06.-18.07.2026). Ein gemeinsames
+    Modell mittelt das weg. Die Schichtung verdreifacht ausserdem die Datenpunkte
+    bei gleichem Zeitraum.
+
+    Braucht eine ZEITREIHE je Tag — data/peec_segments.json ist nur ein
+    30-Tage-Aggregat und reicht dafuer NICHT. Der Montags-Task exportiert ab
+    19.07.2026 zusaetzlich peec_segments_history.csv (Dimensionen date + tag_id).
+    """
+    base = {
+        "quelle": "data/peec_segments_history.csv (Dimensionen date x tag_id)",
+        "min_messpunkte": MIN_FUNNEL_POINTS,
+        "methode": ("Je Funnel-Stufe eine eigene SoV-Zeitreihe je Marke; Event-Study wie im "
+                    "Hauptmodell, aber innerhalb der Stufe. Ein Prompt kann mehrere Tags "
+                    "tragen — die Schichten sind NICHT ueberschneidungsfrei."),
+    }
+    if not PEEC_SEGMENTS_HIST.exists():
+        n_static = 0
+        if PEEC_SEGMENTS_FILE.exists():
+            try:
+                n_static = len(json.loads(PEEC_SEGMENTS_FILE.read_text(encoding="utf-8"))
+                               .get("segments") or [])
+            except Exception:  # noqa: BLE001
+                n_static = 0
+        base["available"] = False
+        base["grund"] = (
+            "Noch keine Tag-Zeitreihe vorhanden. data/peec_segments.json enthaelt "
+            f"{n_static} Marke-x-Tag-Zellen, aber nur als 30-Tage-Aggregat zu EINEM Stichtag — "
+            "daraus laesst sich keine Veraenderung ueber die Zeit rechnen. Der Montags-Task "
+            "exportiert ab 19.07.2026 zusaetzlich peec_segments_history.csv; die Reihe waechst "
+            "ab dann woechentlich. KEINE Aussage moeglich — kein gemessener Nulleffekt."
+        )
+        return base
+
+    rows = []
+    try:
+        import csv
+        with open(PEEC_SEGMENTS_HIST, encoding="utf-8-sig", newline="") as fh:
+            for r in csv.DictReader(fh, delimiter=";"):
+                rows.append(r)
+    except Exception as ex:  # noqa: BLE001
+        base["available"] = False
+        base["grund"] = f"peec_segments_history.csv nicht lesbar: {str(ex)[:120]}"
+        return base
+
+    series = {}
+    for r in rows:
+        tag = (r.get("tag") or r.get("tag_name") or "").strip()
+        brand = _norm_brand(r.get("marke") or r.get("brand") or "")
+        day = (r.get("datum") or r.get("date") or "").strip()[:10]
+        try:
+            sov = float(str(r.get("share_of_voice") or "").replace(",", ".")) * 100.0
+        except (TypeError, ValueError):
+            continue
+        if not (tag and brand and day):
+            continue
+        series.setdefault(tag, {}).setdefault(brand, {})[day] = sov
+
+    days_per_tag = {t: len({d for b in v.values() for d in b}) for t, v in series.items()}
+    usable = {t: n for t, n in days_per_tag.items() if n >= MIN_FUNNEL_POINTS}
+    if not usable:
+        base["available"] = False
+        base["grund"] = (f"Tag-Zeitreihe vorhanden, aber kein Tag erreicht {MIN_FUNNEL_POINTS} "
+                         f"Messtage (max. {max(days_per_tag.values()) if days_per_tag else 0}). "
+                         "KEINE Aussage moeglich.")
+        base["messtage_je_tag"] = days_per_tag
+        return base
+
+    # ---- Event-Study INNERHALB jeder Stufe ---------------------------------
+    ev = dedup_impact_events(events)
+    bydays = {}
+    for e in ev:
+        b = e.get("brand")
+        day = _day(e.get("timestamp"))
+        if not b or not day:
+            continue
+        bydays.setdefault(b, {}).setdefault(day, {})
+        t = e.get("event_type")
+        bydays[b][day][t] = bydays[b][day].get(t, 0) + 1
+
+    per_tag = {}
+    for tag in sorted(usable):
+        points = []
+        for brand, bs in series[tag].items():
+            days_sorted = sorted(bs)
+            for i in range(len(days_sorted) - 1):
+                a, b2 = days_sorted[i], days_sorted[i + 1]
+                span = max(1, _days_between(a, b2))
+                cnt = {}
+                for t in IMPACT_TYPES:
+                    c = 0
+                    for day, tc in (bydays.get(brand) or {}).items():
+                        if a <= day < b2:
+                            c += tc.get(t, 0)
+                    cnt[t] = c / span
+                points.append({"brand": brand, "days": span, "time": a,
+                               "y": (bs[b2] - bs[a]) / span, "x": cnt})
+        if len(points) < 10:
+            per_tag[tag] = {"available": False,
+                            "grund": f"nur {len(points)} Intervall-Punkte",
+                            "n_intervalle": len(points)}
+            continue
+        imp = {}
+        for t in IMPACT_TYPES:
+            xs = [pt["x"].get(t, 0.0) for pt in points]
+            ys = [pt["y"] for pt in points]
+            n_with = sum(1 for x in xs if x > 0)
+            if n_with < 3:
+                imp[t] = {"label": TYPE_LABEL.get(t, t), "n_with_event": n_with,
+                          "available": False, "grund": "zu wenige Intervalle mit Ereignis"}
+                continue
+            r = pearson(xs, ys)
+            eff, se, lo, hi, sig = _effect_ci(xs, ys)
+            imp[t] = {"label": TYPE_LABEL.get(t, t), "pearson_r": r,
+                      "avg_sov_effect_pp": eff, "effect_se_pp": se,
+                      "ci95_low_pp": lo, "ci95_high_pp": hi, "significant": sig,
+                      "n_intervals": len(points),
+                      "n_with_event": n_with, "type_confidence": type_confidence(n_with),
+                      "available": True}
+        # Niveau je Stufe (letzter Messtag) — fuer die Einordnung im Dashboard
+        lvl = {}
+        for brand, bs in series[tag].items():
+            if bs:
+                lvl[brand] = round(bs[max(bs)], 3)
+        per_tag[tag] = {"available": True, "n_intervalle": len(points),
+                        "marken": sorted(series[tag]), "niveau_letzter_tag": lvl,
+                        "impact": imp}
+
+    base["available"] = True
+    base["messtage_je_tag"] = days_per_tag
+    base["auswertbare_tags"] = sorted(usable)
+    base["je_tag"] = per_tag
+    # Die vollen Reihen bewusst NICHT hier ablegen (8.000+ Zeilen blaehen die
+    # Ausgabedatei auf) — sie stehen in data/peec_segments_history.csv.
+    base["reihen_quelle"] = str(PEEC_SEGMENTS_HIST)
+    return base
+
+
+def page_change_by_type(events):
+    """page_change nach Aenderungsart aufgeschluesselt (Preis/Leistung/FAQ/Copy/Struktur).
+
+    Warum: page_change ist bisher EIN Topf. Wenn Preisaenderungen wirken und
+    Copy-Aenderungen nicht, mittelt sich das im gemeinsamen Topf zu genau der
+    Null heraus, die das Modell heute zeigt.
+
+    Datenlage 19.07.2026: Der Gemini-Klassifikator war zu 99,7 % ausgefallen
+    (Thinking-Tokens frassen maxOutputTokens auf, finishReason MAX_TOKENS —
+    behoben in geo-visibility-tool 144b018). Brauchbare Klassifikationen
+    entstehen daher erst ab dem naechsten Crawl; Alt-Events blieben unklassifiziert,
+    ein Backfill ueber die gespeicherten added_lines/removed_lines waere moeglich.
+    """
+    total = 0
+    classified = 0
+    errors = 0
+    by_type = {}
+    for e in events:
+        if e.get("event_type") != "page_change":
+            continue
+        total += 1
+        c = (e.get("detail") or {}).get("classification")
+        if isinstance(c, dict) and c.get("type"):
+            classified += 1
+            k = str(c.get("type")).lower()
+            by_type.setdefault(k, {"n": 0, "brands": set()})
+            by_type[k]["n"] += 1
+            if e.get("brand"):
+                by_type[k]["brands"].add(e["brand"])
+        elif isinstance(c, dict):
+            errors += 1
+    cov = (classified / total) if total else 0.0
+    out = {
+        "n_page_change": total,
+        "n_klassifiziert": classified,
+        "n_klassifikations_fehler": errors,
+        "abdeckung": round(cov, 4),
+        "min_abdeckung": MIN_CLASS_COVERAGE,
+        "methode": ("Aenderungsart kommt aus dem Gemini-Diff-Klassifikator des GEO-Crawls "
+                    "(Feld detail.classification.type). Erst ab ausreichender Abdeckung wird "
+                    "die Aufschluesselung berichtet."),
+    }
+    if cov < MIN_CLASS_COVERAGE:
+        out["available"] = False
+        out["grund"] = (
+            f"Nur {classified} von {total} page_change-Events tragen eine brauchbare "
+            f"Klassifikation ({cov*100:.1f} %), noetig sind {MIN_CLASS_COVERAGE*100:.0f} %. "
+            f"Ursache: Der Klassifikator war zu 99,7 % ausgefallen (Thinking-Tokens von "
+            "gemini-2.5-flash frassen maxOutputTokens auf, finishReason MAX_TOKENS) — behoben "
+            "am 19.07.2026 (geo-visibility-tool 144b018). Ab dem naechsten Crawl entstehen "
+            "brauchbare Klassifikationen; Alt-Events brauchen einen Backfill. KEINE Aussage "
+            "zur Wirkung einzelner Aenderungsarten — kein gemessener Nulleffekt."
+        )
+        return out
+    out["available"] = True
+    out["nach_typ"] = {k: {"n": v["n"], "marken": sorted(v["brands"])}
+                       for k, v in sorted(by_type.items(), key=lambda kv: -kv[1]["n"])}
+    return out
+
+
 def main():
     events = load_events()
     if not events:
@@ -2171,6 +2548,20 @@ def main():
         res["level_model"] = level_model_mundlak()
     except Exception as _e:
         print("WARN level_model:", str(_e)[:120])
+    # 19.07.2026: neue Peec-Datenquellen. Alle drei melden bei fehlender
+    # Datenbasis available=False MIT Grund — nie eine 0.0.
+    try:
+        res["citation_target"] = citation_target_analysis(events)
+    except Exception as _e:
+        print("WARN citation_target:", str(_e)[:120])
+    try:
+        res["funnel_stratified"] = funnel_stratified_analysis(events)
+    except Exception as _e:
+        print("WARN funnel_stratified:", str(_e)[:120])
+    try:
+        res["page_change_types"] = page_change_by_type(events)
+    except Exception as _e:
+        print("WARN page_change_types:", str(_e)[:120])
     _prior = {t: c.get('coef_pp_per_event_day', 0.0)
               for t, c in ((res.get('multivariate') or {}).get('coefficients') or {}).items()} or None
     # 2026-06-04: zusaetzlich Impact je LLM (fuer die LLM-Auswahl im Dashboard)
@@ -2221,6 +2612,12 @@ def main():
     OUT_FILE.write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK: %s (Konfidenz=%s, SoV-Messtage=%d, Intervalle=%d)"
           % (OUT_FILE, res["confidence"], res["sov_measure_days"], res["n_intervals_total"]))
+    for _k, _lbl in (("citation_target", "Zitat-Zielgroesse"),
+                     ("funnel_stratified", "Funnel-Schichtung"),
+                     ("page_change_types", "Seitentyp-Aufschluesselung")):
+        _b = res.get(_k) or {}
+        print("  [%s] %s" % (_lbl, "aktiv" if _b.get("available") else
+                             ("noch keine Datenbasis: " + str(_b.get("grund", ""))[:110])))
     for t, r in res["impact"].items():
         print("  %-32s r=%s  Effekt=%s Pp  (n=%d, mit Event=%d)"
               % (r["label"], r["pearson_r"], r["avg_sov_effect_pp"], r["n_intervals"], r["n_with_event"]))

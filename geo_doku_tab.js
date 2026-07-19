@@ -70,6 +70,18 @@
     }
     return Object.assign({dyn:false},FB.xsrc);
   }
+  // Nordstern "Empfehlungsrate light" (Naeherung): geo_wirkung.js cacht
+  // data/peec_nordstern.json auf window.__GW_NS. Dynamisch lesen, sonst Fallback
+  // (Stand 18.07.2026) — nie Nullen. Muster wie p26Get/xsrcGet.
+  function nsGet(){
+    var j=window.__GW_NS;
+    function grd(node){ var v=node&&node.grounded; return (v&&!v.keine_daten&&v.empfehlungsrate_light_pct!=null)?v.empfehlungsrate_light_pct:null; }
+    if(j && j.ergo){
+      var e=grd(j.ergo);
+      if(e!=null) return { dyn:true, date:fmtDate(j.as_of), ergo:e, allianz:grd(j.allianz_benchmark) };
+    }
+    return { dyn:false, date:"18.07.2026", ergo:7.6, allianz:10.2 };
+  }
   // dashboard_v3 haelt GEO_SNAPSHOT als top-level `let` -> nicht auf window.
   // Erst lexikalische Bindung versuchen, dann window (health_banner.js spiegelt).
   function snapData(){ try{ if(typeof GEO_SNAPSHOT!=="undefined" && GEO_SNAPSHOT) return GEO_SNAPSHOT; }catch(e){} return window.GEO_SNAPSHOT||null; }
@@ -95,7 +107,8 @@
       shG:(shG!=null?shG:0.039), shU:(shU!=null?shU:0.961), shC:(shC!=null?shC:1.0), circDyn:circDyn,
       mixCg:(mix.chatgpt!=null?mix.chatgpt:1467), mixGe:(mix.gemini!=null?mix.gemini:60),
       mixDyn:(mix.chatgpt!=null||mix.gemini!=null),
-      oos:oos, plac:plac, npts:npts, evDyn:(oos!=null||plac!=null||npts!=null)
+      oos:oos, plac:plac, npts:npts, evDyn:(oos!=null||plac!=null||npts!=null),
+      NS:nsGet()
     };
   }
   function standLine(R){
@@ -188,7 +201,7 @@
   /* ============================================================
      Kapitel 3 — Metriken & Definitionen  (statisch: Definitionen)
      ============================================================ */
-  function kap3(){
+  function kap3(R){
     return tbl(["Metrik","Definition"],[
       ['Share of Voice (SoV)','Anteil der Marken-Nennungen an allen Marken-Nennungen, <b>je Produkt&times;Engine auf die Summe der Markennennungen normiert</b> (Summe = 100&nbsp;%). Ueber Produkte gemittelt.'],
       ['Visibility / Appearance-Rate','Anteil der Prompts/Antworten je Thema, in denen die Marke ueberhaupt erscheint.'],
@@ -196,7 +209,7 @@
       ['citation_rate','Anteil der Antworten, in denen mindestens eine Quelle der Marke zitiert wird.'],
       ['Footprint','<b>footprint_pct</b> (Peec, 26 Marken) bzw. <b>cite_share</b> (eigener Crawl, 7 Marken): Anteil der markeneigenen Domain an allen zitierten URLs je Thema.'],
       ['Peec-Sentiment','Skala 0&ndash;100, hoeher = positiver. ERGO ~51 (neutral). <b>&ne; Kundenbewertungs-Sentiment</b> des eigenen Crawls (Check24/Google-Reviews) — nie mischen.'],
-      ['Empfehlungsrate (Nordstern)','Anteil der Prompts je Thema, in denen die Marke <b>positiv</b> genannt wird. Noch nicht messbar — braucht Prompt-Level-Sentiment.']
+      ['Empfehlungsrate (Nordstern)','Anteil der Prompts, in denen die Marke <b>positiv</b> genannt wird — die eigentliche Zielgroesse. <b>Empfehlungsrate light</b> als <b>Naeherung</b> seit 18.07.2026: Nennung <b>und</b> Peec-Sentiment&nbsp;&ge;&nbsp;60. Grounded aktuell ERGO&nbsp;<b>'+num(R.NS.ergo,1)+'&nbsp;%</b> vs. Allianz&nbsp;<b>'+num(R.NS.allianz,1)+'&nbsp;%</b> '+srcOf(R.NS.dyn,R.NS.date)+'. Quelle: <code>data/peec_nordstern.json</code>, woechentlich. <b>Keine echte Empfehlungs-Klassifikation</b> — die braucht NLP auf den Antwort-Volltexten; die Datengrundlage dafuer (mention_contexts &plusmn;1&nbsp;Satz im eigenen Crawl, A.2b) wird seit 19.07.2026 erhoben.']
     ])+
     h("Kreuz-Matrix je Thema (erwaehnt &times; zitiert)")+
     'Zwei Achsen kombiniert. Schwellen: <b>erwaehnt</b> ab &ge;&nbsp;10&nbsp;% Appearance, <b>zitiert</b> ab &ge;&nbsp;5&nbsp;% Zitatanteil.'+
@@ -326,7 +339,7 @@
       '</div>'+
       chapter("dokuKap1","1 · Ueberblick &amp; Datenfluesse", true, kap1(R))+
       chapter("dokuKap2","2 · Aktualisierungs-Rhythmen", false, kap2(R))+
-      chapter("dokuKap3","3 · Metriken &amp; Definitionen", false, kap3())+
+      chapter("dokuKap3","3 · Metriken &amp; Definitionen", false, kap3(R))+
       chapter("dokuKap4","4 · Statistische Verfahren", false, kap4(R))+
       chapter("dokuKap5","5 · Interpretationsleitfaden", false, kap5(R))+
       chapter("dokuKap6","6 · Aenderungs-Log der Methodik", false, kap6(R));

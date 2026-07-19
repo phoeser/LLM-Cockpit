@@ -2657,6 +2657,83 @@ def page_change_by_type(events):
     out["available"] = True
     out["nach_typ"] = {k: {"n": v["n"], "marken": sorted(v["brands"])}
                        for k, v in sorted(by_type.items(), key=lambda kv: -kv[1]["n"])}
+
+    # ---- Event-Study JE AENDERUNGSART ---------------------------------------
+    # Der eigentliche Zweck: Wenn Preisaenderungen wirken und Copy-Aenderungen
+    # nicht, mittelt sich das im gemeinsamen page_change-Topf zu einer Null heraus.
+    sov = build_sov_series_from_history()
+    if not sov:
+        out["wirkung_je_art"] = {"available": False,
+                                 "grund": "Keine SoV-Historie verfuegbar."}
+        return out
+    bydays = {}
+    for e in dedup_impact_events(events):
+        if e.get("event_type") != "page_change":
+            continue
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        c = (e.get("detail") or {}).get("classification")
+        art = c.get("type") if isinstance(c, dict) else None
+        if not (b and day and art):
+            continue
+        bydays.setdefault(b, {}).setdefault(day, {})
+        bydays[b][day][art] = bydays[b][day].get(art, 0) + 1
+
+    arten = sorted(by_type, key=lambda k: -by_type[k]["n"])
+    points = []
+    for brand, ser in sov.items():
+        for i in range(len(ser) - 1):
+            a, ya = ser[i]
+            b2, yb = ser[i + 1]
+            span = max(1, _days_between(a, b2))
+            cnt = {}
+            for art in arten:
+                c = 0
+                for day, tc in (bydays.get(brand) or {}).items():
+                    if a <= day < b2:
+                        c += tc.get(art, 0)
+                cnt[art] = c / span
+            points.append({"brand": brand, "days": span, "time": a,
+                           "y": (yb - ya) / span, "x": cnt})
+    res = {}
+    for art in arten:
+        xs = [pt["x"].get(art, 0.0) for pt in points]
+        ys = [pt["y"] for pt in points]
+        n_with = sum(1 for x in xs if x > 0)
+        if n_with < 8:
+            res[art] = {"available": False, "n_with_event": n_with,
+                        "grund": "weniger als 8 Intervalle mit dieser Aenderungsart"}
+            continue
+        r = pearson(xs, ys)
+        eff, se, lo, hi, sig, pv = _effect_ci(xs, ys)
+        res[art] = {"available": True, "pearson_r": round(r, 3) if r is not None else None,
+                    "avg_sov_effect_pp": eff, "effect_se_pp": se,
+                    "ci95_low_pp": lo, "ci95_high_pp": hi,
+                    "p_value": pv, "significant": sig,
+                    "n_intervals": len(points), "n_with_event": n_with,
+                    "n_events": by_type[art]["n"]}
+    # Mehrfachtest-Korrektur ueber die Aenderungsarten
+    tests = [v for v in res.values() if isinstance(v.get("p_value"), (int, float))]
+    if tests:
+        tests.sort(key=lambda d: d["p_value"])
+        prev = 1.0
+        for i in range(len(tests) - 1, -1, -1):
+            q = min(prev, tests[i]["p_value"] * len(tests) / (i + 1))
+            tests[i]["p_fdr"] = round(min(q, 1.0), 4)
+            prev = q
+        for d in tests:
+            d["significant_fdr"] = bool(d["p_fdr"] < 0.05 and (d.get("n_with_event") or 0) >= 8)
+    out["wirkung_je_art"] = {
+        "available": True, "n_intervalle": len(points), "je_art": res,
+        "n_tests": len(tests),
+        "n_gesichert": sum(1 for d in tests if d.get("significant_fdr")),
+        "methode": ("Wie das Hauptmodell, aber page_change nach Aenderungsart getrennt. "
+                    "Benjamini-Hochberg ueber die Arten."),
+        "grenzen": ("Die Zuordnung stammt aus einem LLM-Klassifikator (Gemini) und ist nicht "
+                    "handgepruft. 'sonstiges' und 'struktur' sind Sammelkategorien und "
+                    "inhaltlich schwach — Befunde dort sind mit Vorsicht zu lesen. Preis- und "
+                    "Leistungsaenderungen sind die inhaltlich schaerfsten Kategorien, aber "
+                    "auch die seltensten."),
+    }
     return out
 
 

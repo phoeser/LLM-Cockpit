@@ -48,6 +48,9 @@
   function pearson(x,y){ var n=x.length; if(n<3) return null; var mx=0,my=0; x.forEach(function(v){mx+=v;}); y.forEach(function(v){my+=v;}); mx/=n; my/=n; var c=0,vx=0,vy=0; for(var i=0;i<n;i++){ c+=(x[i]-mx)*(y[i]-my); vx+=(x[i]-mx)*(x[i]-mx); vy+=(y[i]-my)*(y[i]-my); } return (vx>0&&vy>0)?c/Math.sqrt(vx*vy):null; }
   function ranks(v){ var s=v.map(function(x,i){return [x,i];}).sort(function(a,b){return a[0]-b[0];}); var r=new Array(v.length); s.forEach(function(p,i){ r[p[1]]=i; }); return r; }
   function mean(a){ if(!a||!a.length) return null; var s=0; for(var i=0;i<a.length;i++) s+=a[i]; return s/a.length; }
+  // Wilson-Score-Konfidenzintervall (95 %) fuer Anteil pos/n, Rueckgabe in Prozent.
+  function wilson95(pos,n){ if(pos==null||n==null||n<=0) return null; var z=1.96,z2=z*z,p=pos/n,d=1+z2/n;
+    var c=(p+z2/(2*n))/d, m=z*Math.sqrt(p*(1-p)/n + z2/(4*n*n))/d; return { lo:100*(c-m), hi:100*(c+m) }; }
 
   /* ============================================================
      Peec-Zellen: reiches Parsing (visibility/sov/sentiment/position je Marke)
@@ -193,6 +196,7 @@
       (o.value!=null?('<div style="font-size:21px;font-weight:800;color:'+(o.accent||INK)+';line-height:1.08"><span class="gwVal">'+o.value+'</span>'+
         (o.sub?(' <span style="font-size:11px;font-weight:500;color:'+MUTE+'">'+o.sub+'</span>'):'')+'</div>'):'')+
       (o.plain?('<div style="font-size:11.5px;color:#4b5563;line-height:1.45">'+o.plain+'</div>'):'')+
+      (o.extra?o.extra:'')+
       (o.foot?('<div style="font-size:10px;color:#b3b8bf;margin-top:auto;padding-top:2px">'+o.foot+'</div>'):'')+
     '</div>';
   }
@@ -205,6 +209,46 @@
   function chanLbl(){ return gwMode==="g"?"Grounded (Web-Suche)":(gwMode==="u"?"UI / ChatGPT":"Alle Engines"); }
   function h(n,txt){ return '<div style="font-size:14px;font-weight:700;color:'+INK+';margin:18px 0 2px">'+n+' · '+txt+'</div>'; }
   function sub(txt){ return '<div style="font-size:11.5px;color:'+MUTE+';margin:1px 0 10px">'+txt+'</div>'; }
+  // Themen-Aufriss (Top/Flop) fuer den aktiven Kanal — gleiche Methodik wie die Kanal-Bloecke.
+  // Faellt still weg, wenn je_thema fehlt (altes JSON) oder <2 Themen mit Daten.
+  function themeAufriss(NS,nsKey){
+    if(!NS||!NS.ergo||!NS.ergo.je_thema) return "";
+    var jtE=NS.ergo.je_thema, jtA=(NS.allianz_benchmark&&NS.allianz_benchmark.je_thema)||{};
+    var arr=[];
+    Object.keys(jtE).forEach(function(t){
+      var b=jtE[t]&&jtE[t][nsKey];
+      if(!b||b.keine_daten||b.empfehlungsrate_light_pct==null) return;
+      var a=jtA[t]&&jtA[t][nsKey];
+      arr.push({ t:t, n:b.n_prompts, e:b.empfehlungsrate_light_pct, nenn:b.nennrate_pct,
+        a:(a&&!a.keine_daten&&a.empfehlungsrate_light_pct!=null)?a.empfehlungsrate_light_pct:null });
+    });
+    if(arr.length<2) return "";
+    arr.sort(function(x,y){ return y.e-x.e; });
+    function row(r,mark){
+      var col=r.a==null?MUTE:(r.e>=r.a?"#067d3a":"#b91c1c");
+      return '<tr style="border-bottom:1px solid #f4f4f7">'+
+        '<td style="padding:3px 6px;color:#1e293b">'+mark+r.t+'</td>'+
+        '<td style="padding:3px 6px;text-align:right;color:'+GREY+'">'+r.n+'</td>'+
+        '<td style="padding:3px 6px;text-align:right;font-weight:700;color:'+ERGO_RED+'">'+pctS(r.e,1)+'</td>'+
+        '<td style="padding:3px 6px;text-align:right;color:'+col+'">'+(r.a==null?"—":pctS(r.a,1))+'</td></tr>';
+    }
+    var body="";
+    if(arr.length<=6){ arr.forEach(function(r){ body+=row(r,""); }); }
+    else {
+      arr.slice(0,3).forEach(function(r){ body+=row(r,"▲ "); });
+      body+='<tr><td colspan="4" style="padding:2px 6px;color:'+MUTE+';font-size:10px">…</td></tr>';
+      arr.slice(-3).forEach(function(r){ body+=row(r,"▼ "); });
+    }
+    return '<details style="margin-top:1px"><summary style="cursor:pointer;font-size:11px;font-weight:600;color:'+GREY+'">'+
+      'Themen-Aufriss'+(arr.length>6?" (Top-3 / Flop-3)":"")+' · Kanal '+chanLbl()+'</summary>'+
+      '<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:11px">'+
+      '<thead><tr style="color:#64748b;text-align:left"><th style="padding:2px 6px;font-weight:600">Thema</th>'+
+      '<th style="padding:2px 6px;font-weight:600;text-align:right">n</th>'+
+      '<th style="padding:2px 6px;font-weight:600;text-align:right">ERGO</th>'+
+      '<th style="padding:2px 6px;font-weight:600;text-align:right">Allianz</th></tr></thead><tbody>'+body+'</tbody></table>'+
+      '<div style="font-size:10px;color:#b3b8bf;margin-top:3px">Rate = Empfehlungsrate light (genannt &amp; Peec-Sentiment&ge;60). n = Prompt&times;Kanal-Beobachtungen. Farbe: ERGO &ge; Allianz gruen, sonst rot.</div>'+
+      '</div></details>';
+  }
 
   /* ============================================================
      BLOCK A — Wirkungsmetriken (KPI-Karten)
@@ -253,14 +297,28 @@
     var nsE=NS&&NS.ergo?NS.ergo[nsKey]:null;
     var nsA=NS&&NS.allianz_benchmark?NS.allianz_benchmark[nsKey]:null;
     if(nsE && !nsE.keine_daten && nsE.empfehlungsrate_light_pct!=null){
+      // 95 %-Wilson-CI aus n_positiv/n_prompts (client-seitig)
+      var ci=wilson95(nsE.n_ergo_positiv,nsE.n_prompts);
+      var ciTxt=ci?(" <span style=\"font-size:11px;font-weight:500;color:"+MUTE+"\">(95 %-CI "+num(ci.lo,1)+"–"+num(ci.hi,1)+")</span>"):"";
+      // Trend zur Vorwoche (Δ) — heute i. d. R. leer
+      var vw=(NS.vorwoche&&NS.vorwoche.ergo)?NS.vorwoche.ergo[nsKey]:null;
+      var trendTxt;
+      if(vw && vw.empfehlungsrate_light_pct!=null){
+        var dlt=nsE.empfehlungsrate_light_pct-vw.empfehlungsrate_light_pct;
+        trendTxt='<span style="color:'+arCol+';font-weight:700">'+(dlt>0.05?"▲":(dlt<-0.05?"▼":"→"))+" "+num(Math.abs(dlt),1)+' pp</span> vs. Vorwoche';
+      } else {
+        trendTxt='<span style="color:'+MUTE+'">Trend ab naechster Woche</span>';
+      }
       cards.push(kpiCard({ id:"gwNordstern",
         title:"Nordstern: Empfehlungsrate light", badge:badge("Naeherung","warn"),
-        value:num(nsE.empfehlungsrate_light_pct,1)+" %", accent:ERGO_RED, sub:"Kanal "+chanLbl(),
+        value:num(nsE.empfehlungsrate_light_pct,1)+" %"+ciTxt, accent:ERGO_RED, sub:"Kanal "+chanLbl(),
         plain:"ERGO genannt UND Peec-Sentiment &ge; 60: <b>"+nsE.n_ergo_positiv+"</b> von "+nsE.n_prompts+
-          " Prompts mit Daten (Nennrate "+num(nsE.nennrate_pct,1)+" %)."+
+          " <span title=\"Nennrate = Anteil der Prompt×Kanal-Beobachtungen mit mindestens einer ERGO-Nennung im 30-Tage-Fenster. Peec-Visibility zaehlt dagegen einzelne Antwortlaeufe — deshalb liegt die Nennrate deutlich hoeher.\">Prompt×Kanal-Beobachtungen (Nennrate "+num(nsE.nennrate_pct,1)+" %)</span>."+
           ((nsA && !nsA.keine_daten && nsA.empfehlungsrate_light_pct!=null)?" Allianz-Benchmark: <b>"+num(nsA.empfehlungsrate_light_pct,1)+" %</b>.":"")+
+          " Trend: "+trendTxt+"."+
           " <b>Naeherung</b> — keine echte Empfehlungs-Klassifikation (braeuchte NLP auf den Antwort-Volltexten).",
-        foot:"Quelle: data/peec_nordstern.json · Stand "+(NS.as_of||"?")+" · Methode: Nennung + Sentiment&ge;60" }));
+        extra:themeAufriss(NS,nsKey),
+        foot:"Quelle: data/peec_nordstern.json · Stand "+(NS.as_of||"?")+" · Methode: Nennung + Sentiment&ge;60. Nennrate = Anteil Beobachtungen mit &ge;1 ERGO-Nennung (30-Tage-Fenster); Peec-Visibility = Anteil einzelner Antwortlaeufe — daher Nennrate &gt; Visibility." }));
     } else if(nsE && nsE.keine_daten){
       cards.push(kpiCard({ id:"gwNordstern",
         title:"Nordstern: Empfehlungsrate light", badge:badge("keine Daten im Kanal","warn"),

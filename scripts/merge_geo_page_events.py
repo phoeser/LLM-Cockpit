@@ -54,6 +54,7 @@ BRAND_CANONICALIZE = {
     "huk_coburg": "HUK-Coburg",
     "huk": "HUK-Coburg",
     "cosmos_direkt": "Cosmos Direkt",
+    "cosmosdirekt": "Cosmos Direkt",
     "devk": "DEVK",
     "hannoversche": "Hannoversche",
     "r_v": "R+V",

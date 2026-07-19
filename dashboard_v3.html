@@ -4026,8 +4026,6 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       +'<textarea id="qaText" rows="4" placeholder="Deine Frage — je konkreter (Reiter, Marke, Datum, Zahl), desto präziser die Antwort." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"></textarea>'
       +'<div class="flex items-center gap-3 flex-wrap">'
       +'<button onclick="window.__qaMail()" class="bg-ergo-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">📧 Per E-Mail senden</button>'
-      +'<button onclick="window.__qaCopy(this)" class="border border-gray-300 px-4 py-2 rounded-lg text-sm text-gray-700 hover:border-ergo-red">Frage kopieren</button>'
-      +'<a href="#" onclick="return window.__qaIssue()" class="text-xs text-gray-400 hover:text-gray-600 underline">alternativ als GitHub-Issue (Account nötig)</a>'
       +'</div>'
       +'<div class="text-xs text-gray-500 mt-2">Antworten werden kuratiert und gegen Code/Rohdaten geprüft — sie erscheinen mit dem nächsten Update in diesem Reiter.</div>'
       +'</div>';
@@ -4079,18 +4077,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var c=__qaCompose(); if(!c) return;
     location.href='mailto:'+QA_MAIL+'?subject='+encodeURIComponent(c.subject)+'&body='+encodeURIComponent(c.body);
   };
-  window.__qaCopy = function(btn){
-    var c=__qaCompose(); if(!c) return;
-    var txt='An: '+QA_MAIL+'\nBetreff: '+c.subject+'\n\n'+c.body;
-    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){
-      if(btn){ btn.textContent='✓ Kopiert'; setTimeout(function(){btn.textContent='Frage kopieren';},2000); }
-    }).catch(function(){ prompt('Zum Kopieren (Strg+C):', txt); });
-  };
-  window.__qaIssue = function(){
-    var c=__qaCompose(); if(!c) return false;
-    window.open('https://github.com/phoeser/LLM-Cockpit/issues/new?title='+encodeURIComponent(c.subject)+'&body='+encodeURIComponent(c.body+'\n\n_Hinweis: dieses Repo ist öffentlich._'),'_blank');
-    return false;
-  };
+
 
 
 

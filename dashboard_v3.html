@@ -3905,6 +3905,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var host = document.getElementById('contentGeoBody');
     if(!host) return;
     var data = (window.GEO_PAGE_CHANGES || []).slice();
+    var BNORM = {'CosmosDirekt':'Cosmos Direkt'};
+    data.forEach(function(e){ if(BNORM[e.b]) e.b = BNORM[e.b]; });
     var kpiHost = document.getElementById('cgKpis');
     if(!data.length){
       host.innerHTML = '<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Seitenänderungen erfasst. <code>merge_geo_page_events.py</code> erzeugt <code>data/geo_page_changes.json</code> beim nächsten Nightly-Lauf.</div>';
@@ -3929,13 +3931,19 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var filtered=(_cgBrand==='all')?data:data.filter(function(e){return (e.b||'')===_cgBrand;});
     // globale Indizes fuer Toggle-Eindeutigkeit
     data.forEach(function(e,gi){e.__i=gi;});
-    function fbtn(label,val,cnt){return '<button onclick="window.__cgFilter(this.getAttribute(\'data-v\'))" data-v="'+esc(val)+'" class="px-3 py-1 text-xs rounded-full border transition '+(_cgBrand===val?'bg-ergo-red text-white border-ergo-red':'text-gray-600 border-gray-300 hover:border-ergo-red')+'">'+esc(label)+(cnt!=null?' ('+cnt+')':'')+'</button>';}
-    var bar='<div class="flex flex-wrap gap-2 mb-3">'+fbtn('Alle','all',data.length)+brands.map(function(b){return fbtn(b,b,byBrand[b]);}).join('')+'</div>';
+    if(_cgBrand!=='all' && !byBrand[_cgBrand]) _cgBrand='all';
+    var opts='<option value="all"'+(_cgBrand==='all'?' selected':'')+'>Alle Marken ('+data.length+')</option>'
+      +brands.map(function(b){return '<option value="'+esc(b)+'"'+(_cgBrand===b?' selected':'')+'>'+esc(b)+' ('+byBrand[b]+')</option>';}).join('');
+    var bar='<div class="flex items-center gap-3 flex-wrap">'
+      +'<label for="cgBrandSel" class="text-sm font-semibold text-ergo-dark">Marke:</label>'
+      +'<select id="cgBrandSel" onchange="window.__cgFilter(this.value)" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ergo-red">'+opts+'</select>'
+      +'<span class="text-xs text-gray-500">Filter greift auf alle '+data.length+' erfassten Einträge — angezeigt werden je Abschnitt die neuesten 200 Treffer.</span>'
+      +'</div>';
     function rowsFor(items){
       return items.map(function(e){
         var i=e.__i;
         var ts=(e.ts||'').replace('T',' ').replace('Z',' UTC');
-        var sim=(e.sim==null)?'–':(Math.round(e.sim*100)+'%');
+        var sim=(e.t==='page_removed'||e.sim==null)?'–':(Math.round(e.sim*100)+'%');
         var simColor=(e.sim!=null && e.sim<0.6)?'text-red-600 font-bold':'text-gray-700';
         var ac=(e.ac==null)?'':('<span class="text-emerald-600">+'+e.ac+'</span>');
         var rc=(e.rc==null)?'':(' <span class="text-red-600">-'+e.rc+'</span>');
@@ -3977,7 +3985,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     host.innerHTML='<div class="bg-white rounded-xl p-4 shadow mb-4">'+bar+'</div>'
       +section('✏️ Geänderte Seiten',changes,'Keine Änderungen im Zeitraum.')
       +section('🆕 Neue Seiten',news,'Keine neuen Seiten im Zeitraum erfasst.')
-      +section('🗑️ Gelöschte Seiten',removedP,'Noch keine Löschungen erfasst — die Erkennung (HTTP 404/410 beim täglichen Crawl) startet mit dem nächsten GEO-Lauf.');
+      +section('🗑️ Gelöschte Seiten',removedP,'Keine Löschungen im Zeitraum erfasst. Der Crawl prüft auch Seiten weiter, die aus der Sitemap verschwunden sind — liefert eine früher erfasste Seite HTTP 404/410, erscheint sie hier.');
   };
   window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
   window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};

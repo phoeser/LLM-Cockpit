@@ -897,6 +897,12 @@ window.renderPeecTab = renderPeecTab;
     <p class="text-sm text-gray-600">GAP-Analyse und priorisierte Maßnahmen auf einen Blick.</p>
   </div>
 
+  <div class="bg-white rounded-xl p-6 shadow mb-6">
+    <h3 class="text-xl font-bold text-ergo-dark mb-1">Peec-Empfehlungen nach Opportunity</h3>
+    <p class="text-sm text-gray-600 mb-4">Von Peec gescorte Maßnahmen — abgeleitet aus der Lücke zwischen zitierten Quellen und eigener Abdeckung. Priorität nach Opportunity-Stufe.</p>
+    <div id="peecActionsBody"><div class="text-sm text-gray-400">Lade Empfehlungen…</div></div>
+  </div>
+
   <!-- GAP-Analyse Bereich -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-xl font-bold text-ergo-dark mb-2">GAP-Analyse: ERGO vs. Wettbewerb</h3>
@@ -3479,7 +3485,7 @@ function buildGeoTab() {
     overview: ['buildOverviewMatrix','buildOverviewCharts'],
     gap: ['buildGapTable','buildGapCharts'],
     geo: ['buildGeoTab','renderGeoData_init'],
-    actions: ['buildActionCards','buildDriverGap'],
+    actions: ['buildActionCards','buildDriverGap','buildPeecActions'],
     domain: ['buildDomainFootprint'],
     bewertungen: ['buildSentimentChart','buildSentimentSourceTable','renderProductSentiment','renderRecentReviews','buildReviewThemes'],
     ratings: ['renderRatingsTables'],
@@ -3539,6 +3545,7 @@ function buildGeoTab() {
     safeCall('buildBeraterCannibalization');
     safeCall('buildDriverGap');
     safeCall('buildReviewThemes');
+    safeCall('buildPeecActions');
     safeCall('buildQuellenTab');
     safeCall('buildQaTab');
   }
@@ -4007,6 +4014,72 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
   window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
   window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};
+
+  // ---------- Peec Actions (gescorte Empfehlungen aus dem Quellen-Report) ----------
+  var TIER_LBL={3:'hoch',2:'mittel',1:'niedrig'};
+  var TIER_CLS={3:'bg-red-100 text-red-700',2:'bg-amber-100 text-amber-700',1:'bg-gray-100 text-gray-600'};
+  var GRP_CLS={'OWNED':'bg-red-50 text-red-700','EDITORIAL':'bg-blue-50 text-blue-700',
+    'REFERENCE':'bg-cyan-50 text-cyan-700','UGC':'bg-emerald-50 text-emerald-700'};
+  function mdLinks(t){
+    // Markdown-Links [Text](URL) -> <a>, alles andere escaped
+    var s=esc(t||'');
+    return s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function(m,txt,url){
+      return '<a href="'+url+'" target="_blank" rel="noopener" class="text-blue-600 hover:underline">'+txt+'</a>';
+    });
+  }
+  window.buildPeecActions = function(){
+    var host=document.getElementById('peecActionsBody'); if(!host) return;
+    fetch('data/peec_actions.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(d){ window.__PACT=d; window.__pactRender(d); })
+      .catch(function(){ window.__pactRender(null); });
+  };
+  window.__pactRender = function(d){
+    var host=document.getElementById('peecActionsBody'); if(!host) return;
+    if(!d || !(d.items||[]).length){
+      host.innerHTML='<div class="text-sm text-gray-400">Noch keine Peec-Empfehlungen. <code>scripts/export_peec_actions.py</code> erzeugt <code>data/peec_actions.json</code>.</div>';
+      return;
+    }
+    var items=d.items||[], slices=d.slices||[];
+    var groups={}; items.forEach(function(x){ groups[x.group]=(groups[x.group]||0)+1; });
+    var pick=window.__pactGrp||'all';
+    var fi=(pick==='all')?items:items.filter(function(x){return x.group===pick;});
+    var h='';
+    // Prioritaets-Slices
+    var top=slices.slice(0,6);
+    h+='<div class="grid md:grid-cols-3 gap-3 mb-5">';
+    top.forEach(function(s){
+      h+='<div class="border rounded-xl p-3 bg-white"><div class="flex items-center gap-2 mb-1">'
+        +'<span class="px-2 py-0.5 rounded text-xs '+(GRP_CLS[s.group]||'bg-gray-100 text-gray-600')+'">'+esc(s.group_de||s.group)+'</span>'
+        +'<span class="px-2 py-0.5 rounded-full text-xs '+(TIER_CLS[s.tier]||'bg-gray-100')+'">'+esc(TIER_LBL[s.tier]||'–')+'</span></div>'
+        +'<div class="font-semibold text-sm text-ergo-dark">'+esc(s.key_de||s.key||'')+'</div>'
+        +'<div class="text-xs text-gray-500 mt-1">Score '+(s.score!=null?s.score.toFixed(3):'–')
+        +(s.cov!=null?(' · Abdeckung '+(s.cov*100).toFixed(1)+' %'):'')+'</div></div>';
+    });
+    h+='</div>';
+    // Filter
+    h+='<div class="flex items-center gap-3 flex-wrap mb-3"><label class="text-sm font-semibold text-ergo-dark">Bereich:</label>'
+      +'<select onchange="window.__pactSet(this.value)" class="border border-gray-300 rounded-lg px-3 py-1 text-sm bg-white">'
+      +'<option value="all">Alle ('+items.length+')</option>'
+      +Object.keys(groups).map(function(g){
+        var lbl=(items.filter(function(x){return x.group===g;})[0]||{}).group_de||g;
+        return '<option value="'+esc(g)+'"'+(pick===g?' selected':'')+'>'+esc(lbl)+' ('+groups[g]+')</option>';}).join('')
+      +'</select></div>';
+    // Empfehlungen
+    fi.forEach(function(x){
+      h+='<div class="border-l-4 rounded-r-xl bg-white shadow-sm p-4 mb-3" style="border-color:'+(x.tier===3?'#DC0028':(x.tier===2?'#d97706':'#cbd5e1'))+'">'
+        +'<div class="flex items-center gap-2 flex-wrap mb-2">'
+        +'<span class="px-2 py-0.5 rounded text-xs '+(GRP_CLS[x.group]||'bg-gray-100 text-gray-600')+'">'+esc(x.group_de||x.group)+'</span>'
+        +'<span class="text-xs text-gray-500">'+esc(x.key_de||x.key||'')+'</span>'
+        +'<span class="px-2 py-0.5 rounded-full text-xs '+(TIER_CLS[x.tier]||'bg-gray-100')+'">Priorität '+esc(TIER_LBL[x.tier]||'–')+'</span>'
+        +'</div><div class="text-sm text-gray-700 leading-relaxed">'+mdLinks(x.text)+'</div></div>';
+    });
+    h+='<div class="bg-gray-50 border rounded-xl p-4 text-xs text-gray-600 leading-relaxed mt-4">'
+      +'<div class="font-semibold text-gray-700 mb-1">Methodik &amp; Grenzen</div>'
+      +'<div>'+esc(d.methode||'')+'</div><div class="mt-1">'+esc(d.grenzen||'')+'</div>'
+      +'<div class="mt-1">Quelle: '+esc(d.source||'')+' · Stand: '+esc(d.as_of||'')+'</div></div>';
+    host.innerHTML=h;
+  };
+  window.__pactSet=function(g){ window.__pactGrp=g; window.__pactRender(window.__PACT); };
 
   // ---------- Quellen & Zitate (Peec Domain-/URL-Report) ----------
   var CLS_COLOR = {'You':'bg-red-100 text-red-700','Competitor':'bg-orange-100 text-orange-700',

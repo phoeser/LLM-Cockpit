@@ -1027,6 +1027,11 @@ window.renderPeecTab = renderPeecTab;
 <section data-content="qa" class="tab-content hidden">
   <h2 class="text-2xl font-bold text-ergo-dark mb-1">Methodik &amp; Fragen</h2>
   <p class="text-sm text-gray-600 mb-6">Fragen zur Methodik, den Datenquellen oder einzelnen Zahlen sind ausdrücklich erwünscht — sie werden kuratiert und faktengeprüft gegen Code und Rohdaten beantwortet. Offene Fragen werden mit dem nächsten Update beantwortet und erscheinen dann hier.</p>
+  <div class="bg-white rounded-xl p-5 shadow mb-6">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Messgüte: zwei unabhängige Matcher im Vergleich</h3>
+    <p class="text-sm text-gray-600 mb-4">Peec und unser eigener Crawl erkennen Markennennungen unabhängig voneinander. Auf derselben Stichprobe von Antworten laufen beide Verfahren — daraus ergibt sich eine belastbare Schätzung des Messfehlers.</p>
+    <div id="mvalBody"><div class="text-sm text-gray-400">Lade Messgüte…</div></div>
+  </div>
   <div id="qaBody"><div class="text-sm text-gray-400">Lade Fragen &amp; Antworten…</div></div>
 </section>
 
@@ -3555,6 +3560,7 @@ function buildGeoTab() {
     safeCall('buildSegmentsTab');
     safeCall('buildPeecActions');
     safeCall('buildQuellenTab');
+    safeCall('buildMatcherValidation');
     safeCall('buildQaTab');
   }
   async function __v3_loadJSON(path) {
@@ -4296,6 +4302,60 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   };
   window.__qSetCmp=function(b){ window.__qCmp=b; window.__quellenRender(window.__QSRC); };
   window.__qSetUrlCls=function(c){ window.__qUrlCls=c; window.__quellenRender(window.__QSRC); };
+
+  // ---------- Messgüte: Matcher-Vergleich Peec vs. eigener Crawl ----------
+  window.buildMatcherValidation = function(){
+    var host=document.getElementById('mvalBody'); if(!host) return;
+    fetch('data/matcher_validation.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(d){ window.__MVAL=d; window.__mvalRender(d); })
+      .catch(function(){ window.__mvalRender(null); });
+  };
+  window.__mvalRender = function(d){
+    var host=document.getElementById('mvalBody'); if(!host) return;
+    if(!d || !d.gesamt){
+      host.innerHTML='<div class="text-sm text-gray-400">Noch keine Messgüte-Daten. <code>scripts/export_peec_chat_sample.py</code> erzeugt <code>data/matcher_validation.json</code>.</div>';
+      return;
+    }
+    var g=d.gesamt, st=d.stichprobe||{};
+    function kap(k){ if(k==null) return '–';
+      var lbl = k>=0.81?'nahezu perfekt':(k>=0.61?'stark':(k>=0.41?'moderat':'schwach'));
+      return k.toFixed(3)+' <span class="text-xs text-gray-500">('+lbl+')</span>'; }
+    var h='';
+    h+='<div class="grid md:grid-cols-4 gap-3 mb-4">'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">Übereinstimmung</div><div class="text-2xl font-bold text-ergo-dark">'+(g.uebereinstimmung_pct!=null?g.uebereinstimmung_pct.toFixed(2)+' %':'–')+'</div><div class="text-xs text-gray-400">'+nfmt(g.vergleiche)+' Marken-Vergleiche</div></div>'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">Cohens Kappa</div><div class="text-2xl font-bold text-ergo-dark">'+kap(g.kappa)+'</div><div class="text-xs text-gray-400">zufallsbereinigt</div></div>'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">Abweichungen</div><div class="text-2xl font-bold text-ergo-dark">'+nfmt(g.nur_peec+g.nur_eigen)+'</div><div class="text-xs text-gray-400">nur Peec '+nfmt(g.nur_peec)+' · nur eigener Crawl '+nfmt(g.nur_eigen)+'</div></div>'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">Stichprobe</div><div class="text-2xl font-bold text-ergo-dark">'+nfmt(st.ausgewertet)+'</div><div class="text-xs text-gray-400">Antworten · Seed '+esc(String(st.seed||''))+'</div></div>'
+      +'</div>';
+    var rows=(d.je_marke||[]).filter(function(m){return m.beide||m.nur_peec||m.nur_eigen;});
+    if(rows.length){
+      h+='<div class="mb-4"><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr>'
+        +'<th class="text-left py-1">Marke</th><th class="text-right">beide</th><th class="text-right">nur Peec</th>'
+        +'<th class="text-right">nur eigener Crawl</th><th class="text-right">Übereinst.</th><th class="text-right">Kappa</th></tr></thead><tbody>';
+      rows.forEach(function(m){
+        var bad=(m.nur_peec||m.nur_eigen);
+        h+='<tr style="border-bottom:1px solid #f1f5f9"'+(bad?' class="bg-amber-50"':'')+'><td class="py-1.5">'+esc(m.brand)+'</td>'
+          +'<td class="text-right">'+nfmt(m.beide)+'</td><td class="text-right">'+nfmt(m.nur_peec)+'</td>'
+          +'<td class="text-right">'+nfmt(m.nur_eigen)+'</td>'
+          +'<td class="text-right">'+(m.uebereinstimmung_pct!=null?m.uebereinstimmung_pct.toFixed(2)+' %':'–')+'</td>'
+          +'<td class="text-right">'+(m.kappa!=null?m.kappa.toFixed(3):'–')+'</td></tr>';
+      });
+      h+='</tbody></table><div class="text-xs text-gray-500 mt-2">Nur Marken mit mindestens einem Treffer. Marken ohne jede Nennung in der Stichprobe sind ausgeblendet.</div></div>';
+    }
+    var ab=d.abweichungen||[];
+    if(ab.length){
+      h+='<div class="border rounded-xl p-4 bg-gray-50 mb-4"><div class="font-semibold text-sm text-ergo-dark mb-2">Belege zu den Abweichungen ('+ab.length+')</div>';
+      ab.forEach(function(a){
+        h+='<div class="mb-2 pb-2 border-b last:border-0"><div class="text-xs"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800">'+esc(a.art)+'</span> <strong>'+esc(a.brand)+'</strong> <span class="text-gray-400">'+esc(a.engine||'')+'</span></div>'
+          +'<div class="text-xs font-mono text-gray-600 mt-1">…'+esc(a.auszug||'')+'…</div></div>';
+      });
+      h+='<div class="text-xs text-gray-500 mt-2">Ausschnitte auf 200 Zeichen begrenzt — Peecs Nutzungsbedingungen erlauben keine Weitergabe von Volltexten. Die Volltexte liegen lokal und sind auf Nachfrage einsehbar.</div></div>';
+    }
+    h+='<div class="text-xs text-gray-600 leading-relaxed"><div class="font-semibold text-gray-700 mb-1">Methodik &amp; Grenzen</div>'
+      +'<div>'+esc(d.methode||'')+'</div><div class="mt-1">'+esc(d.grenzen||'')+'</div>'
+      +'<div class="mt-1">Fenster: '+esc((d.window||{}).start||'')+' bis '+esc((d.window||{}).end||'')+' · Stand: '+esc(d.as_of||'')+'</div></div>';
+    host.innerHTML=h;
+  };
 
   // ---------- Methodik & Fragen (Q&A) ----------
   var QA_MAIL = 'phoeser@web.de';

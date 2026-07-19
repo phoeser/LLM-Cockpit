@@ -35,6 +35,7 @@ MCP_URL = "https://api.peec.ai/mcp"
 PROJECT_ID = os.environ.get("PEEC_PROJECT_ID", "or_9e1c1c57-28de-4714-bfc0-363bfa6a0757")
 OUT_FILE = Path("data/peec_segments.json")
 HIST_FILE = Path("data/peec_segments_history.csv")
+FANOUT_FILE = Path("data/peec_fanout_rate.csv")
 MAX_QUERY_PAGES = 5      # a 1000 Zeilen (API-Hardcap pro Seite)
 TOP_QUERIES = 300        # so viele distinkte Queries ins Dashboard
 
@@ -226,6 +227,58 @@ def main():
     except Exception as ex:  # noqa: BLE001
         print(f"[peec_segments] WARNUNG: Tag-Zeitreihe nicht abrufbar ({str(ex)[:120]}) — "
               "peec_segments_history.csv wird NICHT geschrieben (alte Datei bleibt stehen).")
+
+    # ---- Fanout-RATE je Tag (Kontrollvariable fuer das Treibermodell) -------
+    # Nicht die Zahl der Fanout-Queries: die haengt mechanisch an der Zahl der
+    # Antworten (gemessen ~1,05 Queries je Antwort mit Web-Suche) und waere als
+    # "Nachfrage"-Mass irrefuehrend. Aussagekraeftig ist der ANTEIL der Antworten,
+    # bei denen die Engine ueberhaupt im Web sucht: Bei einer web-gestuetzten
+    # Antwort tauchen andere Marken auf als bei einer aus dem Modellgedaechtnis.
+    # Gemessen 18.06.-18.07.2026 sprang dieser Anteil am 10.07. um das Zehnfache
+    # (von ~30 auf ~350 von rund 1.400 Antworten taeglich) — eine Verhaltens-
+    # aenderung der Engines, die das Treibermodell sonst als Effekt lesen koennte.
+    fan_rows = []
+    try:
+        from datetime import date as _date
+        _d0 = _date.fromisoformat(S)
+        _d1 = _date.fromisoformat(E)
+        _byday = {}
+        for _off in range(0, 20000, 1000):
+            _q = _tab(_call("list_search_queries", {
+                "project_id": PROJECT_ID, "start_date": S, "end_date": E,
+                "limit": 1000, "offset": _off}))
+            for _r in _q:
+                _dd = (_r.get("date") or "")[:10]
+                if _dd:
+                    _byday.setdefault(_dd, set()).add(_r.get("chat_id"))
+            if len(_q) < 1000:
+                break
+        _cur = _d0
+        while _cur <= _d1:
+            _ds = _cur.isoformat()
+            _tc = _call("list_chats", {"project_id": PROJECT_ID, "start_date": _ds,
+                                       "end_date": _ds, "limit": 1}).get("totalCount")
+            _fc = len(_byday.get(_ds) or ())
+            fan_rows.append({"datum": _ds, "chats_gesamt": _tc, "chats_mit_websuche": _fc,
+                             "fanout_rate": (round(_fc / _tc, 5) if _tc else None)})
+            _cur = _cur.replace(day=_cur.day)  # noop, Klarheit
+            from datetime import timedelta as _td
+            _cur = _cur + _td(days=1)
+        print(f"[peec_segments] Fanout-Rate fuer {len(fan_rows)} Tage berechnet")
+    except Exception as ex:  # noqa: BLE001
+        print(f"[peec_segments] WARNUNG: Fanout-Rate nicht berechenbar ({str(ex)[:120]})")
+
+    if fan_rows:
+        import csv as _csv2
+        FANOUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(FANOUT_FILE, "w", encoding="utf-8-sig", newline="") as fh:
+            w = _csv2.DictWriter(fh, fieldnames=["datum", "chats_gesamt",
+                                                 "chats_mit_websuche", "fanout_rate"],
+                                 delimiter=";")
+            w.writeheader()
+            for r in fan_rows:
+                w.writerow(r)
+        print(f"[peec_segments] {FANOUT_FILE} geschrieben")
 
     if hist_rows:
         import csv as _csv

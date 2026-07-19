@@ -3518,7 +3518,6 @@ function buildGeoTab() {
     safeCall('__beraterStats');
     safeCall('__beraterList');
     safeCall('buildContentGeo');
-    safeCall('buildPreisvergleich');
     safeCall('buildGeoSovTime');
     safeCall('renderCorrelationTab');
     safeCall('buildBeraterCannibalization');
@@ -3983,84 +3982,6 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   window.__cgFilter=function(b){_cgBrand=b;window.__cgRender();};
   window.__cgToggle=function(i){var d=document.getElementById('cgDetail'+i),a=document.getElementById('cgArrow'+i);if(!d)return;var h=d.classList.toggle('hidden');if(a)a.textContent=h?'▶':'▼';};
 
-  window.buildPreisvergleich = function(){
-    var host=document.getElementById('preisvergleichBody'); if(!host) return;
-    var data=window.PRICE_COMPARISON;
-    var products=data && data.products;
-    if(!products || !Object.keys(products).length){
-      host.innerHTML='<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Preisvergleichsdaten. <code>update_prices.py</code> erzeugt <code>data/price_comparison.json</code>.</div>';
-      return;
-    }
-    var BN={ergo:'ERGO',allianz:'Allianz',axa:'AXA',huk:'HUK-Coburg',generali:'Generali','signal-iduna':'Signal Iduna',ruv:'R+V',devk:'DEVK',hannoversche:'Hannoversche',cosmosdirekt:'Cosmos Direkt'};
-    // Nur echte Versicherungsgesellschaften anzeigen (keine Makler/Assekuradeure/Marken) — Pauls Vorgabe 04.06.2026
-    var INSURERS=['allianz','axa','ergo','huk','generali','signal iduna','r+v','devk','hannoversche','cosmos','gothaer','barmenia','dkv','arag','hallesche','continentale','münchener verein','muenchener verein','württembergische','wuerttembergische','stuttgarter','nürnberger','nuernberger','ideal','dela','hansemerkur','lv 1871','dialog','interrisk','wgv','verti','die bayerische','bayerische','debeka','da direkt','bavariadirekt','ukv','ottonova','lkh','sdk','alte oldenburger','europa','helvetia','baloise','zurich','signal','uelzener','janitos','inter ','die dortmunder','direkte leben','solidar','vrk','provinzial','vgh','swiss life','canada life','axa'];
-    function isInsurer(b){
-      if(b.indexOf('_other_')!==0) return true; // unsere getrackten Marken sind Versicherer
-      var n=b.slice(7).toLowerCase();
-      return INSURERS.some(function(w){ return n.indexOf(w)>=0; });
-    }
-    function disp(b){return b.indexOf('_other_')===0?b.slice(7):(BN[b]||b);}
-    function tracked(b){return b.indexOf('_other_')!==0;}
-    var out='';
-    if(data.as_of) out+='<p class="text-xs text-gray-400 mb-3">Stand: '+esc(data.as_of)+' · Quelle: Check24 (günstigster Monatsbeitrag je Tarif). Eigene Marken hervorgehoben, Wettbewerb ausgegraut.</p>';
-    Object.keys(products).forEach(function(pk){
-      var prod=products[pk]; var profs=prod.profiles||{}; var profKeys=Object.keys(profs);
-      // Nur das 50-Jahre-Profil anzeigen (Pauls Vorgabe 04.06.2026); Fallback: alle
-      if(profKeys.indexOf('age_50')>=0) profKeys=['age_50'];
-      var brandSet={}; profKeys.forEach(function(a){var pr=profs[a]; if(pr.brands) Object.keys(pr.brands).forEach(function(b){brandSet[b]=1;});});
-      var brands=Object.keys(brandSet).filter(isInsurer);
-      out+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">'+esc(prod.name||pk)+'</h3>';
-      if(prod.params) out+='<p class="text-xs text-gray-500 mb-3">'+esc(prod.params)+'</p>';
-      if(!brands.length){ out+='<p class="text-sm text-gray-500">Keine Tarife gefunden (Check24-Crawl unvollständig).</p></div>'; return; }
-      // Sortier-Basis: immer das 50-Jahre-Profil (Pauls Vorgabe)
-      var firstAge=(profKeys.indexOf('age_50')>=0)?'age_50':profKeys[0];
-      function price(b,a){var br=(profs[a].brands||{})[b]; return (br&&br.price!=null)?br.price:Infinity;}
-      // Bestes verfuegbares Rating je Versicherer (bevorzugt aeltestes Profil = 65 J.)
-      function ratingOf(b){ for(var i=profKeys.length-1;i>=0;i--){ var br=(profs[profKeys[i]].brands||{})[b]; if(br&&(br.grade!=null||br.customer_score!=null)) return br; } return null; }
-      function infoOf(b){ var pref=['age_50'].concat(profKeys); for(var i=0;i<pref.length;i++){ if(profKeys.indexOf(pref[i])<0)continue; var br=(profs[pref[i]].brands||{})[b]; if(br&&(br.tariff||br.waiting_period||br.leistung)) return br; } return null; }
-      var hasInfo=brands.some(function(b){return !!infoOf(b);});
-      var hasRatings=brands.some(function(b){return !!ratingOf(b);});
-      // Alle Produkte: rein nach Preis aufsteigend (Basis: 50-Jahre-Profil)
-      brands.sort(function(x,y){return price(x,firstAge)-price(y,firstAge);});
-      out+='<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b-2"><th class="py-2 px-2">Versicherer</th>';
-      profKeys.forEach(function(a){out+='<th class="py-2 px-2 text-right">'+esc(profs[a].label||a)+'</th>';});
-      var showCust=hasRatings&&pk!=='sterbegeld';
-      var hasLeistung=brands.some(function(b){var ii=infoOf(b);return ii&&ii.leistung;});
-      if(hasLeistung){ out+='<th class="py-2 px-2 text-left">Leistung (Tarif)</th>'; }
-      if(hasInfo){ out+='<th class="py-2 px-2 text-right">Wartezeit</th>'; }
-      if(hasRatings){ out+='<th class="py-2 px-2 text-right">Tarifnote (C24)</th>'; }
-      if(showCust){ out+='<th class="py-2 px-2 text-right">Kundenbewertung</th>'; }
-      out+='</tr></thead><tbody>';
-      brands.forEach(function(b){
-        var isE=(b==='ergo'), isT=tracked(b);
-        var info=hasInfo?infoOf(b):null;
-        out+='<tr class="border-b '+(isE?'bg-red-50 font-semibold':(isT?'':'text-gray-400'))+'"><td class="py-2 px-2">'+esc(disp(b))+(isE?' ★':'')+(isT?'':' <span class="text-xs">(Wettbewerb)</span>')+(info&&info.tariff?'<div class="text-xs text-gray-400 font-normal">Tarif: '+esc(info.tariff)+'</div>':'')+'</td>';
-        profKeys.forEach(function(a){var br=(profs[a].brands||{})[b]; var pr=(br&&br.price!=null)?br.price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'; out+='<td class="py-2 px-2 text-right">'+pr+'</td>';});
-        if(hasLeistung){ out+='<td class="py-2 px-2 text-left text-xs text-gray-600">'+(info&&info.leistung?esc(info.leistung):'–')+'</td>'; }
-        if(hasInfo){ out+='<td class="py-2 px-2 text-right">'+(info&&info.waiting_period?esc(info.waiting_period):'–')+'</td>'; }
-        if(hasRatings){
-          var rt=ratingOf(b);
-          var g='–';
-          if(rt&&rt.grade!=null){
-            var gl=rt.grade_label||'';
-            var gc=/hervorragend|exzellent/i.test(gl)?'bg-green-100 text-green-800':(/sehr gut|^gut/i.test(gl)?'bg-emerald-50 text-emerald-700':(/befriedigend|ausreichend/i.test(gl)?'bg-amber-50 text-amber-700':'bg-gray-100 text-gray-600'));
-            g='<span class="px-2 py-0.5 rounded text-xs '+gc+'">'+rt.grade.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+(gl?' '+esc(gl):'')+'</span>';
-          }
-          out+='<td class="py-2 px-2 text-right">'+g+'</td>';
-          if(showCust){
-            var c='–';
-            if(rt&&rt.customer_score!=null){
-              c='★ '+rt.customer_score.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+(rt.customer_count?' <span class="text-xs text-gray-400">('+rt.customer_count.toLocaleString('de-DE')+')</span>':'');
-            }
-            out+='<td class="py-2 px-2 text-right whitespace-nowrap">'+c+'</td>';
-          }
-        }
-        out+='</tr>';
-      });
-      out+='</tbody></table></div></div>';
-    });
-    host.innerHTML=out;
-  };
 
 
   // ===== Treiber-GAP: alle Sichtbarkeits-Treiber, ERGO vs. Wettbewerb (30 Tage) =====

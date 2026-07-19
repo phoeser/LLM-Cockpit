@@ -10,7 +10,7 @@
 (function () {
   "use strict";
 
-  var MAX_AGE_DAYS = 2;               // ab hier gilt der Snapshot als veraltet
+  var MAX_AGE_DAYS = 8;               // Crawl laeuft seit 18.07.2026 WOECHENTLICH (Mo 23:10 UTC) — 8 Tage decken den Wochen-Takt + Puffer ab
   var SNAP_URL = "data/geo_snapshot.json";
   var LLM_NAMES = { chatgpt: "ChatGPT", gemini: "Gemini", perplexity: "Perplexity", claude: "Claude", grok: "Grok" };
   var LLM_HINT = {
@@ -105,7 +105,7 @@
     }
     if (a.stale && !a.allZero) {
       msgs.push("Die LLM-Daten sind " + (a.ageDays !== null ? a.ageDays + " Tage" : "sehr") +
-        " alt (Snapshot vom " + fmtDate(a.snapDate) + "). Der naechtliche Lauf hat evtl. nicht aktualisiert.");
+        " alt (Snapshot vom " + fmtDate(a.snapDate) + "). Der woechentliche Crawl (Mo nachts) hat evtl. nicht aktualisiert.");
     }
 
     var bar = document.createElement("div");

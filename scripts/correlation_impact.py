@@ -58,6 +58,23 @@ PRICE_MANUAL_FILE = Path("data/price_manual.json")  # manuelle Preis-Vollerhebun
 # benannt, datiert und begruendet an EINE Stelle.
 STRUCTURAL_BREAKS = [
     {
+        "brand": "*",   # betrifft ALLE Marken
+        "date": "2026-07-21",
+        "grund": ("Markenerweiterung des Crawls von 7 auf 25 Marken (geo-visibility-tool "
+                  "ee3c2fb, wirksam mit dem ersten Lauf danach). Share of Voice ist ein "
+                  "ANTEIL an allen gezaehlten Nennungen — waechst der Nenner, faellt der "
+                  "Wert jeder Marke, ohne dass sich real etwas geaendert haette. "
+                  "Simuliert am Lauf 2026-07-17: ERGO 13,96 % (7 Marken) -> 7,01 % "
+                  "(25 Marken), Allianz 31,6 % -> 22,0 %. Ein Intervall ueber diesem Datum "
+                  "misst die Umstellung, nicht Wirkung."),
+        "nachrechenbar": False,
+        "warum_nicht": ("Rueckwaerts nicht moeglich: Fuer die 18 neuen Marken existieren in "
+                        "den Alt-Laeufen keine Nennungszahlen, sie wurden damals nicht "
+                        "gezaehlt. VORWAERTS waere eine durchgehende Reihe herstellbar, indem "
+                        "SoV zusaetzlich nur ueber die urspruenglichen 7 Marken gerechnet wird "
+                        "— die Einzelzahlen liegen je Lauf vor. Bisher nicht umgesetzt."),
+    },
+    {
         "brand": "ERGO",
         "date": "2026-07-20",
         "grund": ("DKV aus den ERGO-Aliasen entfernt (Entscheidung Paul). Vorher zaehlte "
@@ -75,7 +92,7 @@ STRUCTURAL_BREAKS = [
 def _spans_break(brand, start_day, end_day):
     """True, wenn ein Intervall ueber einen Strukturbruch dieser Marke laeuft."""
     for b in STRUCTURAL_BREAKS:
-        if b["brand"] != brand:
+        if b["brand"] not in ("*", brand):
             continue
         if start_day < b["date"] <= end_day:
             return b

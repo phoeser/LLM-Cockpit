@@ -34,6 +34,7 @@ from pathlib import Path
 MCP_URL = "https://api.peec.ai/mcp"
 PROJECT_ID = os.environ.get("PEEC_PROJECT_ID", "or_9e1c1c57-28de-4714-bfc0-363bfa6a0757")
 OUT_FILE = Path("data/peec_segments.json")
+HIST_FILE = Path("data/peec_segments_history.csv")
 MAX_QUERY_PAGES = 5      # a 1000 Zeilen (API-Hardcap pro Seite)
 TOP_QUERIES = 300        # so viele distinkte Queries ins Dashboard
 
@@ -190,6 +191,54 @@ def main():
             "stammt aus dem Peec-Projekt-Setup, nicht aus einer eigenen Erhebung."
         ),
     }
+    # ---- Tag-ZEITREIHE (date x tag_id) --------------------------------------
+    # Der Block oben ist ein 30-Tage-Aggregat zu EINEM Stichtag — daraus laesst
+    # sich keine Veraenderung ueber die Zeit rechnen. Fuer die Funnel-Schichtung
+    # im Treibermodell (correlation_impact.funnel_stratified_analysis) braucht es
+    # eine Reihe je Tag. Die CSV waechst nicht von selbst: sie wird bei jedem Lauf
+    # neu geschrieben, deckt aber das volle --days-Fenster ab.
+    hist_rows = []
+    try:
+        hrows = _tab(_call("get_brand_report", {
+            "project_id": PROJECT_ID, "start_date": S, "end_date": E, "limit": 10000,
+            "dimensions": ["date", "tag_id"],
+            "order_by": [{"field": "share_of_voice", "direction": "desc"}]}))
+        for r in hrows:
+            tid = r.get("tag_id")
+            if not tid:
+                continue
+            m = tag_meta.get(tid, {})
+            hist_rows.append({
+                "datum": (r.get("date") or "")[:10],
+                "marke": r.get("brand_name"),
+                "tag": m.get("name") or tid,
+                "gruppe": m.get("group") or "",
+                "share_of_voice": r.get("share_of_voice"),
+                "visibility": r.get("visibility"),
+                "mention_count": r.get("mention_count"),
+                "sentiment": r.get("sentiment"),
+                "position": r.get("position"),
+                "brand_id": r.get("brand_id"),
+                "tag_id": tid,
+            })
+        print(f"[peec_segments] {len(hist_rows)} Tag-Zeitreihen-Zeilen "
+              f"({len({r['datum'] for r in hist_rows})} Messtage)")
+    except Exception as ex:  # noqa: BLE001
+        print(f"[peec_segments] WARNUNG: Tag-Zeitreihe nicht abrufbar ({str(ex)[:120]}) — "
+              "peec_segments_history.csv wird NICHT geschrieben (alte Datei bleibt stehen).")
+
+    if hist_rows:
+        import csv as _csv
+        HIST_FILE.parent.mkdir(parents=True, exist_ok=True)
+        cols = ["datum", "marke", "tag", "gruppe", "share_of_voice", "visibility",
+                "mention_count", "sentiment", "position", "brand_id", "tag_id"]
+        with open(HIST_FILE, "w", encoding="utf-8-sig", newline="") as fh:
+            w = _csv.DictWriter(fh, fieldnames=cols, delimiter=";")
+            w.writeheader()
+            for r in sorted(hist_rows, key=lambda x: (x["datum"], x["tag"], x["marke"] or "")):
+                w.writerow(r)
+        print(f"[peec_segments] {HIST_FILE} geschrieben ({HIST_FILE.stat().st_size // 1024} KB)")
+
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"[peec_segments] {OUT_FILE} geschrieben ({OUT_FILE.stat().st_size // 1024} KB)")

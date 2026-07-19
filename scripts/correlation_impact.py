@@ -47,6 +47,41 @@ PEEC_FOOTPRINT_FILE = Path("data/peec_footprint.json")  # Peec-URL-Footprint (17
 PRICE_MANUAL_FILE = Path("data/price_manual.json")  # manuelle Preis-Vollerhebung 14.07.2026
 
 # Optionaler Lag in Tagen: Wirkung tritt evtl. verzoegert auf. 0 = gleiches Intervall.
+# ---------------------------------------------------------------------------
+# STRUKTURBRUECHE — Definitionsaenderungen, die die Zeitreihe einer Marke
+# unstetig machen. Ein Intervall, das ueber ein solches Datum laeuft, misst
+# nicht Wirkung, sondern die Umstellung selbst. Es wird deshalb aus dem
+# Treibermodell ausgeschlossen (nicht aus der Anzeige).
+#
+# Warum eine Registry und kein stiller Fix: Solche Bruecke sind der gefaehrlichste
+# Fehlertyp in diesem Projekt — sie sehen aus wie ein Effekt. Sie gehoeren
+# benannt, datiert und begruendet an EINE Stelle.
+STRUCTURAL_BREAKS = [
+    {
+        "brand": "ERGO",
+        "date": "2026-07-20",
+        "grund": ("DKV aus den ERGO-Aliasen entfernt (Entscheidung Paul). Vorher zaehlte "
+                  "jede DKV-Nennung als ERGO-Nennung. Gemessen am Lauf 2026-07-17: "
+                  "343 -> 288 Nennungen, also -16 %."),
+        "nachrechenbar": False,
+        "warum_nicht": ("Alt-Laeufe speichern nur 1.500 Zeichen je Antwort (77 % gekappt); "
+                        "eine Neuberechnung saehe nur den Anfang und wuerde die Historie "
+                        "beschaedigen. Ab 2026-07-20 werden Volltexte gespeichert, kuenftige "
+                        "Definitionsaenderungen sind damit rueckwirkend nachrechenbar."),
+    },
+]
+
+
+def _spans_break(brand, start_day, end_day):
+    """True, wenn ein Intervall ueber einen Strukturbruch dieser Marke laeuft."""
+    for b in STRUCTURAL_BREAKS:
+        if b["brand"] != brand:
+            continue
+        if start_day < b["date"] <= end_day:
+            return b
+    return None
+
+
 LAG_DAYS = 0
 # Event-Typen, deren Wirkung auf SoV untersucht wird (sov_change selbst ist die Zielgroesse).
 IMPACT_TYPES = [
@@ -920,6 +955,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
     #  - Spearman statt nur Pearson (robust bei nullinflationierten Counts)
     #  - Standardfehler (SE) des Effekts + Konfidenz JE TYP (aus n_with)
     review_pn = review_posneg_by_day()
+    _skipped_breaks = []
     points_raw = []
     for brand, ser in sov.items():
         bydays = counts.get(brand, {})
@@ -952,6 +988,10 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
             xmv["media_negative"] = mn / days
             xmv["review_positive"] = rp / days
             xmv["review_negative"] = rn / days
+            # Intervalle ueber einem Strukturbruch messen die Umstellung, nicht Wirkung.
+            if _spans_break(brand, start_day, end_day):
+                _skipped_breaks.append({"brand": brand, "von": start_day, "bis": end_day})
+                continue
             points_raw.append({"brand": brand, "days": days, "time": start_day,
                                "y": (end_pct - start_pct) / days, "x": cnt, "xmv": xmv})
     # Marken-Isolierung (optional): nur Intervalle dieser Marke
@@ -1055,6 +1095,8 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
         "validation": validation,
         "sov_source": sov_source,
         "lag_days": LAG_DAYS,  # Hauptmodell ohne Versatz; siehe Block "lag_analysis"
+        "structural_breaks": STRUCTURAL_BREAKS,
+        "intervals_skipped_breaks": _skipped_breaks,
         "sov_measure_days": len(measure_days),
         "sov_measure_range": [measure_days[0], measure_days[-1]] if measure_days else [],
         "brands_with_sov": sorted(sov.keys()),
@@ -1389,7 +1431,11 @@ def _relprice_map():
     #       uebersprungen; ueber das Feld c24_name sind sie aufloesbar (siehe unten).
     keymap = {"allianz": "Allianz", "ergo": "ERGO", "axa": "AXA", "generali": "Generali",
               "huk": "HUK-Coburg", "signal-iduna": "Signal Iduna", "cosmosdirekt": "CosmosDirekt",
-              "ruv": "R+V", "devk": "DEVK", "dkv": "ERGO"}
+              "ruv": "R+V", "devk": "DEVK"}
+    # 20.07.2026: "dkv" bewusst NICHT mehr auf ERGO gemappt — DKV ist seit heute
+    # keine ERGO-Marke mehr im Sichtbarkeits-Matcher (Entscheidung Paul). Preis- und
+    # Sichtbarkeitsseite sind damit wieder deckungsgleich; der Widerspruch vom
+    # 15.07. (Krankenhauszusatz-Ausschluss trotz DKV-Alias) ist aufgeloest.
 
     # Alias-Tabelle zur Aufloesung der _other_-Eintraege ueber c24_name.
     # HERKUNFT, nicht geraten: Jeder Anbietername aus price_comparison.json wurde am
@@ -1401,10 +1447,10 @@ def _relprice_map():
     # Gesellschaft. Die uebrigen 56 Namen (Continentale, DELA, SDK, Nuernberger, ...)
     # sind Anbieter ausserhalb unseres Trackings und bleiben draussen.
     # Fuer Direkttoechter heisst das bewusst: "Allianz Direct" -> Allianz,
-    # "ERGO Vorsorge" -> ERGO, "DKV" -> ERGO (DKV ist Alias der ERGO-Marke).
+    # "ERGO Vorsorge" -> ERGO. DKV gehört seit 20.07.2026 NICHT mehr dazu.
     ALIAS2BRAND = [
         ("allianz direct", "Allianz"), ("allianz", "Allianz"),
-        ("ergo vorsorge", "ERGO"), ("ergo", "ERGO"), ("dkv", "ERGO"),
+        ("ergo vorsorge", "ERGO"), ("ergo", "ERGO"),
         ("axa konzern", "AXA"), ("axa", "AXA"),
         ("signal iduna", "Signal Iduna"),
         ("cosmosdirekt", "CosmosDirekt"), ("cosmos direkt", "CosmosDirekt"),
@@ -1473,9 +1519,11 @@ def _relprice_map():
         # Crawler-Satz — gleiche Markenzahl, aber duennere Kernmarken-Abdeckung.
         if pid not in merged or len(prices) >= len(merged[pid]):
             merged[pid] = prices
-    # DKV-Ausschluss (15.07.2026): Krankenhauszusatz laeuft im ERGO-Konzern unter der
-    # Marke DKV — die Nennung zahlt nicht auf die ERGO-Markensichtbarkeit ein, der
-    # Preis darf ERGO daher nicht zugerechnet werden.
+    # DKV-Ausschluss (15.07.2026, seit 20.07. nur noch Sicherheitsnetz): Krankenhaus-
+    # zusatz laeuft im ERGO-Konzern unter der Marke DKV. Seit DKV aus den ERGO-Aliasen
+    # entfernt wurde, kommt hier ohnehin kein ERGO-Preis mehr an — die Zeile greift also
+    # normalerweise ins Leere. Sie bleibt stehen, falls eine Quelle den DKV-Preis doch
+    # einmal unter dem Schluessel "ergo" liefert.
     if "krankenhauszusatz" in merged:
         merged["krankenhauszusatz"] = {b: p for b, p in merged["krankenhauszusatz"].items() if b != "ERGO"}
         if len(merged["krankenhauszusatz"]) < 2:

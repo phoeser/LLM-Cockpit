@@ -32,6 +32,7 @@ Aufruf im Nightly NACH der Event-Sammlung (events.jsonl).
 """
 import json
 import math
+import re
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
@@ -1381,8 +1382,56 @@ def _relprice_map():
     Quellen: Crawler (data/price_comparison.json) + manuelle Vollerhebung 14.07.2026
     (data/price_manual.json). Je Produkt gewinnt die Quelle mit MEHR Marken (die
     manuelle Erhebung deckt 7 zusaetzliche Produkte ab, u.a. Rechtsschutz/Kfz/BU)."""
+    # 20.07.2026: Von 25 getrackten Marken hatten nur 7 Preise — nicht weil Daten
+    # fehlten, sondern weil diese Liste sie verwarf. Zwei Luecken behoben:
+    #   (a) "ruv" und "devk" stehen als regulaere Schluessel in price_comparison.json
+    #   (b) 67 Eintraege lagen in _other_-Sammelfeldern und wurden pauschal
+    #       uebersprungen; ueber das Feld c24_name sind sie aufloesbar (siehe unten).
     keymap = {"allianz": "Allianz", "ergo": "ERGO", "axa": "AXA", "generali": "Generali",
-              "huk": "HUK-Coburg", "signal-iduna": "Signal Iduna", "cosmosdirekt": "CosmosDirekt"}
+              "huk": "HUK-Coburg", "signal-iduna": "Signal Iduna", "cosmosdirekt": "CosmosDirekt",
+              "ruv": "R+V", "devk": "DEVK", "dkv": "ERGO"}
+
+    # Alias-Tabelle zur Aufloesung der _other_-Eintraege ueber c24_name.
+    # HERKUNFT, nicht geraten: Jeder Anbietername aus price_comparison.json wurde am
+    # 20.07.2026 durch den ECHTEN Sichtbarkeits-Matcher geschickt
+    # (analyzer/metrics.count_mentions aus dem GEO-Repo, Wortgrenzen-Logik).
+    # Uebernommen sind nur die 24 Namen, die GENAU EINE getrackte Marke trafen —
+    # null Mehrdeutigkeiten. Damit ist die Projektregel eingehalten: Der Preis gehoert
+    # zu der Marke, die der Sichtbarkeits-Matcher zaehlt, nicht zur juristischen
+    # Gesellschaft. Die uebrigen 56 Namen (Continentale, DELA, SDK, Nuernberger, ...)
+    # sind Anbieter ausserhalb unseres Trackings und bleiben draussen.
+    # Fuer Direkttoechter heisst das bewusst: "Allianz Direct" -> Allianz,
+    # "ERGO Vorsorge" -> ERGO, "DKV" -> ERGO (DKV ist Alias der ERGO-Marke).
+    ALIAS2BRAND = [
+        ("allianz direct", "Allianz"), ("allianz", "Allianz"),
+        ("ergo vorsorge", "ERGO"), ("ergo", "ERGO"), ("dkv", "ERGO"),
+        ("axa konzern", "AXA"), ("axa", "AXA"),
+        ("signal iduna", "Signal Iduna"),
+        ("cosmosdirekt", "CosmosDirekt"), ("cosmos direkt", "CosmosDirekt"),
+        ("generali", "Generali"),
+        ("hansemerkur", "HanseMerkur"),
+        ("arag", "ARAG"), ("adac", "ADAC"), ("devk", "DEVK"),
+        ("r+v", "R+V"), ("lv 1871", "LV 1871"),
+        ("da direkt", "DA Direkt"), ("da-direkt", "DA Direkt"),
+        ("die bayerische", "Die Bayerische"),
+        ("barmenia allgemeine", "Barmenia"),
+        ("vhv allgemeine", "VHV"), ("vhv", "VHV"),
+        # ACHTUNG: "Wuerttembergische Gemeinde-Versicherung" ist juristisch eine
+        # ANDERE Gesellschaft als die Wuerttembergische Versicherung. Der Matcher
+        # zaehlt eine solche Nennung aber als "Wuerttembergische" — nach der
+        # Projektregel folgt der Preis dieser Zuordnung. Bewusste Entscheidung.
+        ("württembergische", "Württembergische"), ("wuerttembergische", "Württembergische"),
+    ]
+
+    def _brand_from_name(nm):
+        """Loest einen c24-Anbieternamen auf die getrackte Marke auf.
+        Laengster Alias zuerst, damit 'Allianz Direct' nicht schon bei 'allianz' greift.
+        Wortgrenzen-Pruefung verhindert Treffer in Wortmitten."""
+        t = " " + re.sub(r"[^a-zäöüß0-9+ ]+", " ", str(nm or "").lower()).strip() + " "
+        for al, br in sorted(ALIAS2BRAND, key=lambda x: -len(x[0])):
+            if (" " + al + " ") in t:
+                return br
+        return None
 
     def _extract(path):
         try:
@@ -1394,10 +1443,19 @@ def _relprice_map():
             prof = (pr.get("profiles") or {}).get("age_50") or {}
             prices = {}
             for k, v in (prof.get("brands") or {}).items():
-                if k.startswith("_other_"):
+                p = v.get("price")
+                if not isinstance(p, (int, float)) or p <= 0:
                     continue
-                p = v.get("price"); nm = keymap.get(k)
-                if nm and isinstance(p, (int, float)) and p > 0:
+                if k.startswith("_other_"):
+                    # Sammeleintrag: ueber den Klarnamen aufloesen statt verwerfen.
+                    nm = _brand_from_name(v.get("c24_name") or k.replace("_other_", ""))
+                else:
+                    nm = keymap.get(k) or _brand_from_name(k)
+                if not nm:
+                    continue
+                # Mehrere Tarife derselben Marke je Produkt: guenstigsten nehmen
+                # (entspricht der Logik "was ein Interessent als Marktpreis sieht").
+                if nm not in prices or p < prices[nm]:
                     prices[nm] = p
             if len(prices) >= 2:
                 res[pid] = prices
@@ -1407,7 +1465,13 @@ def _relprice_map():
     manual = _extract(PRICE_MANUAL_FILE)
     merged = dict(crawler)
     for pid, prices in manual.items():
-        if pid not in merged or len(prices) > len(merged[pid]):
+        # 20.07.2026: >= statt > — bei GLEICHSTAND gewinnt die manuelle Vollerhebung.
+        # Grund: Sie ist unter dokumentierten, einheitlichen Bedingungen erhoben
+        # (gleiches Profil, gleiches Datum, Parameter im Feld "params" festgehalten),
+        # waehrend der Crawler nimmt, was Check24 gerade ausspielt. Ohne diese Regel
+        # kippte Rechtsschutz nach der Alias-Erweiterung vom manuellen Satz auf den
+        # Crawler-Satz — gleiche Markenzahl, aber duennere Kernmarken-Abdeckung.
+        if pid not in merged or len(prices) >= len(merged[pid]):
             merged[pid] = prices
     # DKV-Ausschluss (15.07.2026): Krankenhauszusatz laeuft im ERGO-Konzern unter der
     # Marke DKV — die Nennung zahlt nicht auf die ERGO-Markensichtbarkeit ein, der

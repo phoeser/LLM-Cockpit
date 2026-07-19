@@ -4332,72 +4332,174 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   // versteckt.
   function _fmtPP(v){ return (v==null?'–':(v>0?'+':'')+Number(v).toFixed(2)); }
   function _esc(s){ return esc(s); }
+  function _niceTicks(lo, hi, n){
+    var span=hi-lo; if(span<=0) return [lo];
+    var raw=span/(n||5), mag=Math.pow(10, Math.floor(Math.log(raw)/Math.LN10)), norm=raw/mag;
+    var step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;
+    var t=[], v=Math.ceil(lo/step)*step;
+    while(v<=hi+1e-9){ t.push(Math.round(v*1e6)/1e6); v+=step; }
+    return t;
+  }
 
   function forestPlot(rows, opts){
-    // rows: [{label, eff, lo, hi, n, sig, sub}]
     opts = opts || {};
-    var W = 720, LBL = 210, PAD = 14, RH = 26;
+    var W = 760, LBL = 224, PADL = 12, PADR = 74, RH = 30, TOP = 30;
     var valid = rows.filter(function(r){ return r.eff!=null && r.lo!=null && r.hi!=null; });
     if(!valid.length) return '<div class="text-sm text-gray-400 py-3">Keine schätzbaren Effekte in diesem Block.</div>';
     var lo = Math.min.apply(null, valid.map(function(r){return r.lo;}));
     var hi = Math.max.apply(null, valid.map(function(r){return r.hi;}));
-    var span = Math.max(hi-lo, 0.001), m = span*0.08;
+    var span = Math.max(hi-lo, 0.001), m = span*0.10;
     lo -= m; hi += m;
-    if(lo>0) lo=-span*0.05; if(hi<0) hi=span*0.05;
-    var PW = W-LBL-PAD*2;
-    var x = function(v){ return LBL+PAD+((v-lo)/(hi-lo))*PW; };
-    var H = valid.length*RH+46;
+    if(lo>0) lo=-span*0.06; if(hi<0) hi=span*0.06;
+    var PW = W-LBL-PADL-PADR;
+    var x = function(v){ return LBL+PADL+((v-lo)/(hi-lo))*PW; };
+    var H = TOP+valid.length*RH+34;
     var s = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;font-family:inherit" role="img">';
-    // Nulllinie
-    s += '<line x1="'+x(0).toFixed(1)+'" y1="6" x2="'+x(0).toFixed(1)+'" y2="'+(H-30)+'" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>';
+    // Hintergrund-Gitter
+    var ticks=_niceTicks(lo,hi,5);
+    ticks.forEach(function(t){
+      s+='<line x1="'+x(t).toFixed(1)+'" y1="'+(TOP-12)+'" x2="'+x(t).toFixed(1)+'" y2="'+(TOP+valid.length*RH-10)+'" stroke="#f1f5f9" stroke-width="1"/>';
+      s+='<text x="'+x(t).toFixed(1)+'" y="'+(TOP-18)+'" text-anchor="middle" font-size="10" fill="#94a3b8">'+(t>0?'+':'')+t+'</text>';
+    });
+    // Zeilen-Zebra
     valid.forEach(function(r,i){
-      var y = 20+i*RH;
-      var col = r.sig ? '#DC0028' : '#64748b';
-      s += '<text x="'+(LBL-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="12" fill="#282D37">'+_esc(r.label)+'</text>';
-      s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+y+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+y+'" stroke="'+col+'" stroke-width="2" opacity="0.55"/>';
-      s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+(y-4)+'" x2="'+x(r.lo).toFixed(1)+'" y2="'+(y+4)+'" stroke="'+col+'" stroke-width="2" opacity="0.55"/>';
-      s += '<line x1="'+x(r.hi).toFixed(1)+'" y1="'+(y-4)+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+(y+4)+'" stroke="'+col+'" stroke-width="2" opacity="0.55"/>';
-      s += '<circle cx="'+x(r.eff).toFixed(1)+'" cy="'+y+'" r="4.5" fill="'+col+'"/>';
+      if(i%2) s+='<rect x="0" y="'+(TOP+i*RH-RH/2+3)+'" width="'+W+'" height="'+(RH-2)+'" fill="#fafafa"/>';
+    });
+    // Nulllinie
+    s += '<line x1="'+x(0).toFixed(1)+'" y1="'+(TOP-12)+'" x2="'+x(0).toFixed(1)+'" y2="'+(TOP+valid.length*RH-10)+'" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 3"/>';
+    valid.forEach(function(r,i){
+      var y = TOP+i*RH;
+      var col = r.sig ? '#DC0028' : (r.eff>0 ? '#0f766e' : '#7c3aed');
+      s += '<text x="'+(LBL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="12.5" fill="#282D37">'+_esc(r.label)+'</text>';
+      s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+y+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+y+'" stroke="'+col+'" stroke-width="2.5" opacity="0.4" stroke-linecap="round"/>';
+      [r.lo,r.hi].forEach(function(v){
+        s+='<line x1="'+x(v).toFixed(1)+'" y1="'+(y-5)+'" x2="'+x(v).toFixed(1)+'" y2="'+(y+5)+'" stroke="'+col+'" stroke-width="2" opacity="0.65"/>';
+      });
+      s += '<circle cx="'+x(r.eff).toFixed(1)+'" cy="'+y+'" r="5" fill="'+col+'" stroke="#fff" stroke-width="1.5"/>';
+      s += '<text x="'+(W-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#475569">'+_fmtPP(r.eff)+'</text>';
       s += '<title>'+_esc(r.label)+': '+_fmtPP(r.eff)+' pp, 95-%-KI ['+_fmtPP(r.lo)+'; '+_fmtPP(r.hi)+']'
          +(r.n!=null?(', '+r.n+' Intervalle mit Ereignis'):'')+'</title>';
     });
-    var yA = H-22;
-    s += '<line x1="'+(LBL+PAD)+'" y1="'+yA+'" x2="'+(LBL+PAD+PW)+'" y2="'+yA+'" stroke="#cbd5e1"/>';
-    [lo, (lo+hi)/2, hi].forEach(function(v){
-      s += '<text x="'+x(v).toFixed(1)+'" y="'+(yA+14)+'" text-anchor="middle" font-size="10" fill="#64748b">'+v.toFixed(1)+'</text>';
-    });
-    s += '<text x="'+(LBL+PAD+PW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="10" fill="#94a3b8">Effekt auf Share of Voice (Prozentpunkte je Intervall)</text>';
+    s += '<text x="'+(LBL+PADL+PW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="#94a3b8">'
+       + _esc(opts.xlabel || 'Effekt auf Share of Voice (Prozentpunkte je Intervall) — Balken = 95-%-Konfidenzintervall') + '</text>';
     s += '</svg>';
     return s;
   }
 
   function lineChartSVG(pts, opts){
     opts=opts||{};
-    var W=720,H=180,L=44,R=10,T=12,B=26;
+    var W=760,H=210,L=52,R=14,T=18,B=34;
     if(!pts.length) return '';
     var ys=pts.map(function(p){return p.y;});
-    var ymin=Math.min.apply(null,ys), ymax=Math.max.apply(null,ys);
-    if(ymax===ymin){ ymax=ymin+1; }
-    var pad=(ymax-ymin)*0.1; ymin=Math.max(0,ymin-pad); ymax+=pad;
+    var ymin=0, ymax=Math.max.apply(null,ys)*1.12;
     var px=function(i){ return L+(i/(pts.length-1||1))*(W-L-R); };
-    var py=function(v){ return T+(1-(v-ymin)/(ymax-ymin))*(H-T-B); };
+    var py=function(v){ return T+(1-(v-ymin)/((ymax-ymin)||1))*(H-T-B); };
     var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;font-family:inherit">';
+    // Gitter + y-Achse
+    _niceTicks(ymin,ymax,4).forEach(function(v){
+      s+='<line x1="'+L+'" y1="'+py(v).toFixed(1)+'" x2="'+(W-R)+'" y2="'+py(v).toFixed(1)+'" stroke="#f1f5f9"/>';
+      s+='<text x="'+(L-8)+'" y="'+(py(v)+3).toFixed(1)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+(v*100).toFixed(0)+' %</text>';
+    });
+    // Phasen unter der Schwelle einfaerben
     if(opts.threshold!=null){
-      s+='<line x1="'+L+'" y1="'+py(opts.threshold).toFixed(1)+'" x2="'+(W-R)+'" y2="'+py(opts.threshold).toFixed(1)+'" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>';
-      s+='<text x="'+(W-R)+'" y="'+(py(opts.threshold)-4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#b45309">Schwelle '+(opts.threshold*100).toFixed(0)+' %</text>';
+      var run=null;
+      pts.forEach(function(p,i){
+        var below=p.y<opts.threshold;
+        if(below && run===null) run=i;
+        if((!below||i===pts.length-1) && run!==null){
+          var a=px(run), b=px(below?i:i-1);
+          s+='<rect x="'+a.toFixed(1)+'" y="'+T+'" width="'+Math.max(b-a,2).toFixed(1)+'" height="'+(H-T-B)+'" fill="#fee2e2" opacity="0.65"/>';
+          run=null;
+        }
+      });
+      s+='<line x1="'+L+'" y1="'+py(opts.threshold).toFixed(1)+'" x2="'+(W-R)+'" y2="'+py(opts.threshold).toFixed(1)+'" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5 3"/>';
+      s+='<text x="'+(W-R-2)+'" y="'+(py(opts.threshold)-5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="#b45309">Schwelle '+(opts.threshold*100).toFixed(0)+' %</text>';
     }
+    // Flaeche + Linie
+    var area=pts.map(function(p,i){ return (i?'L':'M')+px(i).toFixed(1)+' '+py(p.y).toFixed(1); }).join(' ')
+      +' L'+px(pts.length-1).toFixed(1)+' '+py(ymin).toFixed(1)+' L'+px(0).toFixed(1)+' '+py(ymin).toFixed(1)+' Z';
+    s+='<path d="'+area+'" fill="#DC0028" opacity="0.08"/>';
     var d=pts.map(function(p,i){ return (i?'L':'M')+px(i).toFixed(1)+' '+py(p.y).toFixed(1); }).join(' ');
-    s+='<path d="'+d+'" fill="none" stroke="#DC0028" stroke-width="2"/>';
+    s+='<path d="'+d+'" fill="none" stroke="#DC0028" stroke-width="2.2" stroke-linejoin="round"/>';
     pts.forEach(function(p,i){
-      s+='<circle cx="'+px(i).toFixed(1)+'" cy="'+py(p.y).toFixed(1)+'" r="2.5" fill="#DC0028"><title>'+_esc(p.x)+': '+(p.y*100).toFixed(1)+' %</title></circle>';
+      s+='<circle cx="'+px(i).toFixed(1)+'" cy="'+py(p.y).toFixed(1)+'" r="2.8" fill="#fff" stroke="#DC0028" stroke-width="1.6"><title>'+_esc(p.x)+': '+(p.y*100).toFixed(1)+' %</title></circle>';
     });
-    [ymin,ymax].forEach(function(v){
-      s+='<text x="'+(L-6)+'" y="'+(py(v)+3).toFixed(1)+'" text-anchor="end" font-size="10" fill="#64748b">'+(v*100).toFixed(0)+' %</text>';
+    // x-Beschriftung: erste, mittlere, letzte
+    [0, Math.floor(pts.length/2), pts.length-1].forEach(function(i){
+      s+='<text x="'+px(i).toFixed(1)+'" y="'+(H-14)+'" text-anchor="'+(i===0?'start':(i===pts.length-1?'end':'middle'))+'" font-size="10" fill="#94a3b8">'+_esc(pts[i].x.slice(5))+'</text>';
     });
-    s+='<text x="'+L+'" y="'+(H-6)+'" font-size="10" fill="#94a3b8">'+_esc(pts[0].x)+'</text>';
-    s+='<text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+_esc(pts[pts.length-1].x)+'</text>';
+    s+='<text x="'+((L+W-R)/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="10" fill="#cbd5e1">Anteil der Antworten mit Web-Suche, je Tag</text>';
     s+='</svg>';
     return s;
+  }
+
+  function _pill(txt, tone){
+    var m={rot:'bg-red-100 text-red-700',gelb:'bg-amber-100 text-amber-700',
+           gruen:'bg-emerald-100 text-emerald-700',grau:'bg-gray-100 text-gray-600'};
+    return '<span class="px-2 py-0.5 rounded-full text-xs whitespace-nowrap '+(m[tone]||m.grau)+'">'+_esc(txt)+'</span>';
+  }
+
+  // ---------- Preis-Sektion ----------
+  // Warum eigener Abschnitt: Der Preis ist der einzige Treiber, der sich in ALLEN
+  // Modellen konsistent verhaelt UND einen mechanistisch stimmigen Unterschied
+  // zeigt — Wirkung nur dort, wo die Engines im Web suchen. Im Forest-Plot der
+  // Ereignis-Analyse geht er unter, weil er dort nur 6 Intervalle hat.
+  function preisSektion(ci){
+    var lm=ci.level_model||{};
+    var j=lm.price_footprint_joint||{};
+    var ev=(ci.impact||{}).price_change||{};
+    var mv=((ci.multivariate||{}).coefficients||{}).price_change||{};
+    function rp(scope, kind){
+      return (((j[scope]||{}).drivers_eff||{}).relprice||{})[kind]||{};
+    }
+    var gW=rp('grounded','within'), gB=rp('grounded','between');
+    var uW=rp('ungrounded','within'), uB=rp('ungrounded','between');
+    if(!gW.coef && !gB.coef) return '';
+    var nCells=(j.grounded||{}).n_cells, nBrands=(j.grounded||{}).n_brands, nTop=(j.grounded||{}).n_topics;
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5 border-l-4 border-amber-500">';
+    h+='<div class="flex items-start justify-between flex-wrap gap-2 mb-1">'
+      +'<h3 class="text-base font-bold text-ergo-dark">Der Preis — das stärkste Signal im Modell</h3>'
+      +_pill('nicht gesichert','gelb')+'</div>';
+    h+='<p class="text-xs text-gray-500 mb-4">Hier zählt nicht das Ereignis „Preis geändert", sondern das <strong>Preisniveau relativ zum Wettbewerb</strong> je Marke und Produkt ('
+      +nfmt(nCells)+' Zellen, '+nfmt(nBrands)+' Marken, '+nfmt(nTop)+' Themen). Negativer Koeffizient heißt: teurer = weniger sichtbar.</p>';
+    // Kernvergleich grounded vs ungrounded
+    h+='<div class="grid md:grid-cols-2 gap-3 mb-4">';
+    [['Engines MIT Web-Suche', gW, gB, 'border-ergo-red'],
+     ['Engines OHNE Web-Suche', uW, uB, 'border-gray-300']].forEach(function(row){
+      var w=row[1], b=row[2];
+      h+='<div class="border-l-4 '+row[3]+' bg-gray-50 rounded-r-lg p-3">'
+        +'<div class="text-sm font-semibold text-ergo-dark mb-2">'+row[0]+'</div>'
+        +'<div class="text-xs text-gray-600 mb-1">Marke mit sich selbst über Produkte verglichen</div>'
+        +'<div class="text-lg font-bold '+((w.coef||0)<-0.5?'text-ergo-red':'text-gray-500')+'">'+_fmtPP(w.coef)+'</div>'
+        +'<div class="text-xs text-gray-500">p = '+(w.wild_cluster_p!=null?w.wild_cluster_p:'–')+(w.wild_cluster_p_fdr!=null?(', q = '+w.wild_cluster_p_fdr):'')+'</div>'
+        +'<div class="text-xs text-gray-600 mt-2 mb-1">Marken untereinander verglichen</div>'
+        +'<div class="text-lg font-bold '+((b.coef||0)<-5?'text-ergo-red':'text-gray-500')+'">'+_fmtPP(b.coef)+'</div>'
+        +'<div class="text-xs text-gray-500">p = '+(b.wild_cluster_p!=null?b.wild_cluster_p:'–')+(b.wild_cluster_p_fdr!=null?(', q = '+b.wild_cluster_p_fdr):'')+'</div>'
+        +'</div>';
+    });
+    h+='</div>';
+    h+='<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed mb-3">'
+      +'<strong>Warum das auffällt:</strong> Der Zusammenhang zeigt sich <em>nur</em> bei Engines, die im Web suchen — bei den übrigen liegt er praktisch bei null ('
+      +_fmtPP(uW.coef)+' bzw. '+_fmtPP(uB.coef)+'). Genau das wäre zu erwarten, wenn der Preis tatsächlich über abgerufene Vergleichsseiten wirkt und nicht über das Modellgedächtnis. '
+      +'Der Vergleich der Marken untereinander unterschreitet mit q = '+(gB.wild_cluster_p_fdr!=null?gB.wild_cluster_p_fdr:'–')+' sogar die Signifikanzschwelle nach Mehrfachtest-Korrektur.'
+      +'</div>';
+    h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed">'
+      +'<strong>Warum es trotzdem nicht als gesichert gilt:</strong> Der Vergleich <em>zwischen</em> Marken kann alles aufsammeln, was teure von günstigen Anbietern unterscheidet — Größe, Bekanntheit, Vertriebsmodell. '
+      +'Die sauberere Rechnung ist der Vergleich einer Marke <em>mit sich selbst</em> über Produkte, weil dort alles Markenkonstante herausfällt. Und die liegt bei p = '
+      +(gW.wild_cluster_p!=null?gW.wild_cluster_p:'–')+' — richtungsstabil, aber nicht signifikant. '
+      +'Als Ereignis betrachtet ('+_fmtPP(ev.avg_sov_effect_pp)+' pp, KI ['+_fmtPP(ev.ci95_low_pp)+'; '+_fmtPP(ev.ci95_high_pp)+']) stützen sich die Schätzungen auf nur '
+      +nfmt(ev.n_with_event)+' Intervalle mit einer Preisänderung. Das ist zu wenig für eine belastbare Aussage.'
+      +'</div>';
+    // Forest: Preis in den verschiedenen Modellen
+    var prows=[];
+    if(gW.coef!=null) prows.push({label:'Niveau, mit Web-Suche (within)', eff:gW.coef, lo:gW.ci95_low!=null?gW.ci95_low:gW.coef-3, hi:gW.ci95_high!=null?gW.ci95_high:gW.coef+3, sig:false});
+    if(uW.coef!=null) prows.push({label:'Niveau, ohne Web-Suche (within)', eff:uW.coef, lo:uW.ci95_low!=null?uW.ci95_low:uW.coef-3, hi:uW.ci95_high!=null?uW.ci95_high:uW.coef+3, sig:false});
+    if(mv.coef_pp_per_event_day!=null) prows.push({label:'Preisänderung, multivariat', eff:mv.coef_pp_per_event_day, lo:mv.ci95_low, hi:mv.ci95_high, n:mv.n_with_event, sig:mv.significant});
+    if(ev.avg_sov_effect_pp!=null) prows.push({label:'Preisänderung, einzeln', eff:ev.avg_sov_effect_pp, lo:ev.ci95_low_pp, hi:ev.ci95_high_pp, n:ev.n_with_event, sig:ev.significant});
+    if(prows.length) h+='<div class="mt-4"><div class="text-xs font-semibold text-gray-600 mb-1">Der Preis über alle Modellvarianten</div>'
+      +forestPlot(prows,{xlabel:'Effekt (Einheiten je Modell nicht direkt vergleichbar) — Balken = 95-%-Intervall'})+'</div>';
+    h+='</div>';
+    return h;
   }
 
   window.buildKorrErgebnis = function(){
@@ -4443,6 +4545,9 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       +'<h3 class="text-base font-bold text-ergo-dark mb-1">Alle Treiber im Überblick</h3>'
       +'<p class="text-xs text-gray-500 mb-3">Punkt = geschätzter Effekt, Balken = 95-%-Konfidenzintervall. Schneidet ein Balken die gestrichelte Nulllinie, ist der Effekt nicht von null unterscheidbar.</p>'
       +forestPlot(rows)+'</div>';
+
+    // ---- 2b. Preis ----
+    try { h += preisSektion(ci); } catch(e){ console.warn('preisSektion:', e.message); }
 
     // ---- 3. Funnel-Schichtung ----
     if(fs.available){

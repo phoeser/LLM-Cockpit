@@ -71,7 +71,7 @@ def _geo_snapshot_health():
     g = _load_json(DATA / "geo_snapshot.json")
     if not g:
         return {"name": "GEO-Snapshot (SoV)", "file": "data/geo_snapshot.json",
-                "last": None, "age_days": None, "max_age": 8, "note": "Datei fehlt/unlesbar"}
+                "last": None, "age_days": None, "max_age": 2, "note": "Datei fehlt/unlesbar"}
     dt = _parse_dt(g.get("finished_at") or g.get("started_at") or g.get("run_id"))
     # LLMs mit lauter 0-Nennungen (= defekter Abruf) erkennen
     broken = set()
@@ -82,7 +82,7 @@ def _geo_snapshot_health():
                 broken.add(llm)
     return {"name": "GEO-Snapshot (SoV)", "file": "data/geo_snapshot.json",
             "last": dt.date().isoformat() if dt else None, "age_days": _age_days(dt),
-            "max_age": 8, "broken_llms": sorted(broken)}  # woechentlicher Crawl seit 18.07.2026
+            "max_age": 2, "broken_llms": sorted(broken)}  # taeglicher Crawl (seit 19.07. wieder)
 
 ELEMENTS = []
 
@@ -92,7 +92,7 @@ def build():
 
     dt = _max_date_in_jsonl(DATA / "sov_history.jsonl")
     ELEMENTS.append({"name": "SoV-Historie", "file": "data/sov_history.jsonl",
-                     "last": dt.date().isoformat() if dt else None, "age_days": _age_days(dt), "max_age": 8})  # folgt dem woechentlichen Crawl
+                     "last": dt.date().isoformat() if dt else None, "age_days": _age_days(dt), "max_age": 2})
 
     ci = _load_json(DATA / "correlation_impact.json") or {}
     dt = _parse_dt(ci.get("generated_at"))

@@ -1053,7 +1053,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
         "multivariate": multivar,
         "validation": validation,
         "sov_source": sov_source,
-        "lag_days": LAG_DAYS,
+        "lag_days": LAG_DAYS,  # Hauptmodell ohne Versatz; siehe Block "lag_analysis"
         "sov_measure_days": len(measure_days),
         "sov_measure_range": [measure_days[0], measure_days[-1]] if measure_days else [],
         "brands_with_sov": sorted(sov.keys()),
@@ -2660,6 +2660,307 @@ def page_change_by_type(events):
     return out
 
 
+
+LAG_CANDIDATES = [0, 3, 7, 14, 28]
+
+
+def _shift_day(day, delta):
+    """Datum als YYYY-MM-DD um delta Tage verschieben."""
+    from datetime import datetime as _dt, timedelta as _td
+    try:
+        return (_dt.strptime(day, "%Y-%m-%d") + _td(days=delta)).strftime("%Y-%m-%d")
+    except (TypeError, ValueError):
+        return day
+
+
+def lag_analysis(events):
+    """Prueft, ob Wirkungen VERZOEGERT auftreten.
+
+    Warum das noetig war: Das Modell unterstellte bisher, dass ein Ereignis im
+    selben Intervall wirkt, in dem es stattfindet. Die Konstante LAG_DAYS stand
+    zwar im Code und wurde in der Ausgabe als "lag_days: 0" berichtet — sie wurde
+    beim Zaehlen aber NIE angewandt. Es war also keine gepruefte Entscheidung,
+    sondern eine ungetestete Annahme, die wie eine Einstellung aussah.
+
+    Plausibel ist eine Verzoegerung: Eine geaenderte Seite muss erst neu gecrawlt,
+    indexiert und von den Engines abgerufen werden. Getestet werden deshalb
+    mehrere Versaetze; je Versatz zaehlen Ereignisse aus dem um `lag` Tage NACH
+    HINTEN verschobenen Fenster gegen die SoV-Aenderung im Originalfenster.
+
+    Ausgewiesen wird der Versatz mit der staerksten Korrelation je Treiber —
+    ausdruecklich als EXPLORATIVE Suche: Wer fuenf Versaetze durchprobiert und den
+    besten meldet, findet auch in Rauschen ein Maximum. Deshalb steht neben dem
+    besten Wert immer der Verlauf ueber alle Versaetze, damit erkennbar ist, ob
+    ein Muster vorliegt oder nur ein Ausreisser.
+    """
+    sov = build_sov_series_from_history()
+    if not sov:
+        return {"available": False, "grund": "Keine SoV-Historie verfuegbar."}
+    ev = dedup_impact_events(events)
+    bydays = {}
+    for e in ev:
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        if not b or not day:
+            continue
+        bydays.setdefault(b, {}).setdefault(day, {})
+        t = e.get("event_type")
+        bydays[b][day][t] = bydays[b][day].get(t, 0) + 1
+
+    per_lag = {}
+    for lag in LAG_CANDIDATES:
+        points = []
+        for brand, ser in sov.items():
+            for i in range(len(ser) - 1):
+                a, ya = ser[i]
+                b2, yb = ser[i + 1]
+                span = max(1, _days_between(a, b2))
+                wa, wb = _shift_day(a, -lag), _shift_day(b2, -lag)
+                cnt = {}
+                for t in IMPACT_TYPES:
+                    c = 0
+                    for day, tc in (bydays.get(brand) or {}).items():
+                        if wa <= day < wb:
+                            c += tc.get(t, 0)
+                    cnt[t] = c / span
+                points.append({"brand": brand, "days": span, "time": a,
+                               "y": (yb - ya) / span, "x": cnt})
+        res = {}
+        for t in IMPACT_TYPES:
+            xs = [pt["x"].get(t, 0.0) for pt in points]
+            ys = [pt["y"] for pt in points]
+            n_with = sum(1 for x in xs if x > 0)
+            if n_with < 8:
+                continue
+            r = pearson(xs, ys)
+            eff, se, lo, hi, sig, pv = _effect_ci(xs, ys)
+            res[t] = {"label": TYPE_LABEL.get(t, t), "pearson_r": r,
+                      "avg_sov_effect_pp": eff, "ci95_low_pp": lo, "ci95_high_pp": hi,
+                      "p_value": pv, "significant": sig, "n_with_event": n_with}
+        per_lag[lag] = {"n_intervalle": len(points), "impact": res}
+
+    # Bester Versatz je Treiber (nach |r|), plus vollstaendiger Verlauf
+    best = {}
+    for t in IMPACT_TYPES:
+        reihe = []
+        for lag in LAG_CANDIDATES:
+            rec = (per_lag.get(lag, {}).get("impact") or {}).get(t)
+            if rec and rec.get("pearson_r") is not None:
+                reihe.append({"lag": lag, "r": round(rec["pearson_r"], 3),
+                              "effekt_pp": rec.get("avg_sov_effect_pp"),
+                              "p": rec.get("p_value"), "gesichert": rec.get("significant")})
+        if not reihe:
+            continue
+        top = max(reihe, key=lambda d: abs(d["r"]))
+        # Musterbewertung: Eine echte Wirkungsverzoegerung sollte einen glatten
+        # Verlauf zeigen (Anstieg, Gipfel, Abfall). Springt das Vorzeichen mehrfach,
+        # ist der "beste" Versatz mit hoher Wahrscheinlichkeit ein Rauschmaximum.
+        vz = [1 if x["r"] > 0 else (-1 if x["r"] < 0 else 0) for x in reihe]
+        wechsel = sum(1 for i in range(1, len(vz)) if vz[i] != 0 and vz[i - 1] != 0 and vz[i] != vz[i - 1])
+        if len(reihe) < 3:
+            muster = "zu wenige Versaetze fuer eine Musterbewertung"
+        elif wechsel >= 2:
+            muster = ("springend — %d Vorzeichenwechsel ueber %d Versaetze. Der beste Versatz "
+                      "ist hier hoechstwahrscheinlich ein Rauschmaximum, kein Wirkungsmuster."
+                      % (wechsel, len(reihe)))
+        elif wechsel == 1:
+            muster = "ein Vorzeichenwechsel — uneindeutig"
+        else:
+            muster = "einheitliches Vorzeichen ueber alle Versaetze"
+        best[t] = {"label": TYPE_LABEL.get(t, t), "bester_lag": top["lag"],
+                   "r_bei_bestem_lag": top["r"], "effekt_pp": top["effekt_pp"],
+                   "gesichert": top["gesichert"], "verlauf": reihe,
+                   "vorzeichenwechsel": wechsel, "musterbewertung": muster,
+                   "r_bei_lag0": (round(reihe[0]["r"], 3)
+                                  if reihe and reihe[0]["lag"] == 0 else None)}
+
+    n_sig = sum(1 for lag in per_lag for t, r in (per_lag[lag]["impact"] or {}).items()
+                if r.get("significant"))
+    return {
+        "available": True,
+        "getestete_lags": LAG_CANDIDATES,
+        "je_lag": {str(k): {"n_intervalle": v["n_intervalle"],
+                            "n_treiber": len(v["impact"])} for k, v in per_lag.items()},
+        "bester_lag_je_treiber": best,
+        "n_gesichert_ueber_alle_lags": n_sig,
+        "fazit": (("Kein Treiber zeigt ueber die Versaetze ein glattes Muster "
+                   "(%d von %d mit mehrfachem Vorzeichenwechsel) und keiner ist bei "
+                   "irgendeinem Versatz gesichert. Es gibt damit AKTUELL keinen Hinweis "
+                   "auf eine messbare Wirkungsverzoegerung — was nicht heisst, dass es "
+                   "keine gibt: bei dieser Datenlage waere sie schlicht nicht sichtbar.")
+                  % (sum(1 for b in best.values() if (b.get("vorzeichenwechsel") or 0) >= 2),
+                     len(best))) if not n_sig else
+                 ("%d Treiber-Versatz-Kombinationen sind gesichert — vor der Interpretation "
+                  "die Musterbewertung im Verlauf pruefen." % n_sig),
+        "methode": ("Je Versatz werden Ereignisse aus dem um `lag` Tage nach hinten "
+                    "verschobenen Fenster gegen die SoV-Aenderung im Originalfenster "
+                    "gezaehlt. Getestet: " + ", ".join(str(l) for l in LAG_CANDIDATES) + " Tage."),
+        "grenzen": ("EXPLORATIVE Suche ueber mehrere Versaetze: Wer fuenf Varianten testet "
+                    "und die staerkste meldet, findet auch in reinem Rauschen ein Maximum. "
+                    "Der ausgewiesene beste Versatz ist deshalb ein HINWEIS, keine Schaetzung "
+                    "der wahren Wirkungsverzoegerung. Aussagekraeftig wird er erst, wenn der "
+                    "Verlauf ueber die Versaetze ein Muster zeigt (Anstieg, Gipfel, Abfall) "
+                    "statt zu springen. Die p-Werte sind NICHT fuer die Mehrfachsuche "
+                    "korrigiert."),
+    }
+
+
+
+PEEC_FANOUT_FILE = Path("data/peec_fanout_rate.csv")
+# Ab welcher Web-Such-Rate ein Tag als "web-gestuetzt" gilt. 10 % trennt die
+# gemessenen Regime sauber (Normalbetrieb 20-27 %, Einbruchphase 1-5 %).
+FANOUT_HIGH = 0.10
+
+
+def load_fanout_rate():
+    """Taegliche Web-Such-Rate der Peec-Engines (Anteil Antworten mit Web-Suche)."""
+    out = {}
+    if not PEEC_FANOUT_FILE.exists():
+        return out
+    try:
+        import csv
+        with open(PEEC_FANOUT_FILE, encoding="utf-8-sig", newline="") as fh:
+            for r in csv.DictReader(fh, delimiter=";"):
+                d = (r.get("datum") or "").strip()[:10]
+                try:
+                    v = float(str(r.get("fanout_rate") or "").replace(",", "."))
+                except (TypeError, ValueError):
+                    continue
+                if d:
+                    out[d] = v
+    except Exception:  # noqa: BLE001
+        return {}
+    return out
+
+
+def fanout_regime_analysis(events):
+    """Web-Such-Rate der Engines als Stoergroesse — und was passiert, wenn man
+    auf die Tage einschraenkt, an denen die Engines ueberhaupt im Web suchen.
+
+    Hintergrund (gemessen 18.06.-18.07.2026): Der Anteil der Antworten mit
+    Web-Suche schwankt massiv — rund 27 % Ende Juni, Einbruch auf 1-3 % vom
+    03. bis 09.07., danach Erholung auf ~24 %. Das ist eine Verhaltensaenderung
+    der Engines, kein Messfehler.
+
+    Warum das fuer das Treibermodell zentral ist: Antwortet eine Engine ohne
+    Web-Suche, stammt die Markennennung aus dem Modellgedaechtnis. Eine in dieser
+    Zeit geaenderte Webseite kann die Antwort GAR NICHT beeinflusst haben — der
+    Wirkungskanal ist physisch zu. Intervalle aus solchen Phasen verduennen jeden
+    echten Effekt Richtung Null, ohne dass das Modell es merkt.
+
+    WICHTIG zur Reichweite: Die Rate misst das Verhalten der PEEC-Engines. Die
+    Zielgroesse dieses Blocks ist deshalb die Peec-Sichtbarkeit je Funnel-Stufe,
+    NICHT die SoV-Reihe des eigenen Crawls — die stammt aus eigenen API-Abrufen
+    mit eigenem Grounding-Verhalten. Beides zu mischen waere ein Quellenfehler.
+    """
+    rate = load_fanout_rate()
+    base = {
+        "quelle": str(PEEC_FANOUT_FILE),
+        "schwelle": FANOUT_HIGH,
+        "methode": ("Vergleicht die Event-Study je Funnel-Stufe auf ALLEN Tagen gegen die "
+                    "Teilmenge der Tage mit hoher Web-Such-Rate. Ein Treiber, der nur ueber "
+                    "Webinhalte wirken kann, sollte dort staerker sichtbar sein."),
+        "reichweite": ("Gilt fuer die Peec-Sichtbarkeit. Die SoV-Reihe des eigenen Crawls "
+                       "bleibt unberuehrt — dort gilt das Grounding-Verhalten der eigenen "
+                       "API-Abrufe, das hier nicht gemessen wird."),
+    }
+    if not rate:
+        base["available"] = False
+        base["grund"] = ("Keine Fanout-Raten vorhanden. data/peec_fanout_rate.csv entsteht im "
+                         "Montags-Export. KEINE Aussage moeglich — kein gemessener Nulleffekt.")
+        return base
+
+    days = sorted(rate)
+    hi = [d for d in days if rate[d] >= FANOUT_HIGH]
+    lo = [d for d in days if rate[d] < FANOUT_HIGH]
+    base["n_tage"] = len(days)
+    base["n_tage_web"] = len(hi)
+    base["n_tage_ohne_web"] = len(lo)
+    base["rate_min"] = round(min(rate.values()), 4)
+    base["rate_max"] = round(max(rate.values()), 4)
+    base["phasen_ohne_web"] = lo
+    if len(hi) < 8 or len(lo) < 3:
+        base["available"] = False
+        base["grund"] = (f"Zu wenige Tage je Regime (web: {len(hi)}, ohne web: {len(lo)}) "
+                         "fuer einen belastbaren Vergleich.")
+        return base
+
+    # Sensitivitaet: Funnel-Event-Study nur auf web-gestuetzten Tagen
+    hist = PEEC_SEGMENTS_HIST
+    if not hist.exists():
+        base["available"] = False
+        base["grund"] = "peec_segments_history.csv fehlt — Sensitivitaetsrechnung nicht moeglich."
+        return base
+    import csv as _csv
+    series = {}
+    with open(hist, encoding="utf-8-sig", newline="") as fh:
+        for r in _csv.DictReader(fh, delimiter=";"):
+            tag = (r.get("tag") or "").strip()
+            brand = _norm_brand(r.get("marke") or "")
+            day = (r.get("datum") or "").strip()[:10]
+            try:
+                sov = float(str(r.get("share_of_voice") or "").replace(",", ".")) * 100.0
+            except (TypeError, ValueError):
+                continue
+            if tag and brand and day:
+                series.setdefault(tag, {}).setdefault(brand, {})[day] = sov
+
+    ev = dedup_impact_events(events)
+    bydays = {}
+    for e in ev:
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        if not b or not day:
+            continue
+        bydays.setdefault(b, {}).setdefault(day, {})
+        t = e.get("event_type")
+        bydays[b][day][t] = bydays[b][day].get(t, 0) + 1
+
+    def study(tag, only_days=None):
+        pts = []
+        for brand, bs in (series.get(tag) or {}).items():
+            ds = sorted(d for d in bs if (only_days is None or d in only_days))
+            for i in range(len(ds) - 1):
+                a, b2 = ds[i], ds[i + 1]
+                span = max(1, _days_between(a, b2))
+                cnt = {}
+                for t in IMPACT_TYPES:
+                    c = 0
+                    for day, tc in (bydays.get(brand) or {}).items():
+                        if a <= day < b2:
+                            c += tc.get(t, 0)
+                    cnt[t] = c / span
+                pts.append({"x": cnt, "y": (bs[b2] - bs[a]) / span})
+        return pts
+
+    hiset = set(hi)
+    verg = {}
+    for tag in [t for t in FUNNEL_ORDER if t in series]:
+        row = {}
+        for label, sel in (("alle_tage", None), ("nur_web_tage", hiset)):
+            pts = study(tag, sel)
+            xs = [p["x"].get("page_change", 0.0) for p in pts]
+            ys = [p["y"] for p in pts]
+            n_with = sum(1 for x in xs if x > 0)
+            if len(pts) < 10 or n_with < 5:
+                row[label] = {"available": False, "n_punkte": len(pts), "n_mit_event": n_with}
+                continue
+            r = pearson(xs, ys)
+            eff, se, lo_, hi_, sig, pv = _effect_ci(xs, ys)
+            row[label] = {"available": True, "n_punkte": len(pts), "n_mit_event": n_with,
+                          "pearson_r": round(r, 3) if r is not None else None,
+                          "effekt_pp": eff, "ci95": [lo_, hi_], "p_value": pv,
+                          "gesichert": sig}
+        verg[tag] = row
+
+    base["available"] = True
+    base["sensitivitaet_seitenaenderungen"] = verg
+    base["grenzen"] = ("Die Einschraenkung auf web-gestuetzte Tage ist eine Teilmengen-Analyse, "
+                       "kein Experiment: Die Tage unterscheiden sich womoeglich noch in anderem "
+                       "als der Web-Such-Rate. Ausserdem verkleinert sie die Datenbasis, was die "
+                       "Konfidenzintervalle verbreitert — ein ausbleibender Effekt kann auch daran "
+                       "liegen. Sie zeigt eine Richtung, sie beweist nichts.")
+    return base
+
+
 def main():
     events = load_events()
     if not events:
@@ -2692,6 +2993,14 @@ def main():
         res["funnel_stratified"] = funnel_stratified_analysis(events, mv_prior=_prior_fs)
     except Exception as _e:
         print("WARN funnel_stratified:", str(_e)[:120])
+    try:
+        res["fanout_regime"] = fanout_regime_analysis(events)
+    except Exception as _e:
+        print("WARN fanout_regime:", str(_e)[:120])
+    try:
+        res["lag_analysis"] = lag_analysis(events)
+    except Exception as _e:
+        print("WARN lag_analysis:", str(_e)[:120])
     try:
         res["page_change_types"] = page_change_by_type(events)
     except Exception as _e:

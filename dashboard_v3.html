@@ -104,6 +104,7 @@
       <button data-tab="preisvergleich" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Preisvergleich</button>
       <button data-tab="korrelation" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition" style="background:linear-gradient(135deg,#fef3c7,#dbeafe);border-color:#d97706;">🔗 Korrelation</button>
       <button data-tab="peec" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Peec AI</button>
+      <button data-tab="segmente" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Funnel &amp; Suchanfragen</button>
       <button data-tab="quellen" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">Quellen &amp; Zitate</button>
       <button data-tab="qa" class="tab-btn tab-inactive px-4 py-2 text-sm font-semibold rounded border-2 transition">❓ Methodik &amp; Fragen</button>
     </div>
@@ -1008,6 +1009,12 @@ window.renderPeecTab = renderPeecTab;
     <p class="text-sm text-gray-600">Monatspreise je Produkt und Altersprofil im Wettbewerbsvergleich. ERGO hervorgehoben.</p>
   </div>
   <div id="preisvergleichBody"></div>
+</section>
+
+<section data-content="segmente" class="tab-content hidden">
+  <h2 class="text-2xl font-bold text-ergo-dark mb-1">Funnel &amp; Suchanfragen</h2>
+  <p class="text-sm text-gray-600 mb-6">Wo im Entscheidungsprozess ERGO sichtbar ist — und wonach die KI-Engines selbst suchen, bevor sie antworten. Quelle: Peec AI.</p>
+  <div id="segBody"><div class="text-sm text-gray-400">Lade Segment-Daten…</div></div>
 </section>
 
 <section data-content="quellen" class="tab-content hidden">
@@ -3545,6 +3552,7 @@ function buildGeoTab() {
     safeCall('buildBeraterCannibalization');
     safeCall('buildDriverGap');
     safeCall('buildReviewThemes');
+    safeCall('buildSegmentsTab');
     safeCall('buildPeecActions');
     safeCall('buildQuellenTab');
     safeCall('buildQaTab');
@@ -4080,6 +4088,105 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     host.innerHTML=h;
   };
   window.__pactSet=function(g){ window.__pactGrp=g; window.__pactRender(window.__PACT); };
+
+  // ---------- Funnel & Suchanfragen (Peec Tag-Dimension + Fanout-Queries) ----------
+  window.buildSegmentsTab = function(){
+    var host=document.getElementById('segBody'); if(!host) return;
+    fetch('data/peec_segments.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(d){ window.__SEG=d; window.__segRender(d); })
+      .catch(function(){ window.__segRender(null); });
+  };
+  window.__segRender = function(d){
+    var host=document.getElementById('segBody'); if(!host) return;
+    if(!d || !(d.segments||[]).length){
+      host.innerHTML='<div class="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4 text-sm text-amber-800">Noch keine Segment-Daten. <code>scripts/export_peec_segments.py</code> erzeugt <code>data/peec_segments.json</code>.</div>';
+      return;
+    }
+    var seg=d.segments||[], qs=d.queries||[], st=d.query_stats||{};
+    var byTag={}; seg.forEach(function(s){ (byTag[s.tag]=byTag[s.tag]||{})[s.brand]=s; });
+    var tags=Object.keys(byTag);
+    var funnel=(d.funnel_order||[]).filter(function(f){return byTag[f];});
+    var themen=tags.filter(function(t){return (d.funnel_order||[]).indexOf(t)<0;}).sort();
+    // Vergleichsmarke
+    var allBrands={}; seg.forEach(function(s){ allBrands[s.brand]=(allBrands[s.brand]||0)+(s.mentions||0); });
+    var others=Object.keys(allBrands).filter(function(b){return b!=='ERGO';})
+      .sort(function(a,b){return allBrands[b]-allBrands[a];});
+    var cmp=window.__segCmp; if(!cmp||others.indexOf(cmp)<0) cmp=others[0];
+    window.__segCmp=cmp;
+    function pct(v){ return v==null?'–':(v*100).toFixed(2)+' %'; }
+    function bar(v,max,col){ var w=max?Math.max(0,Math.min(100,v/max*100)):0;
+      return '<div class="bg-gray-100 rounded h-3 overflow-hidden"><div style="width:'+w.toFixed(1)+'%;background:'+col+'" class="h-3"></div></div>'; }
+    var h='';
+    h+='<div class="flex items-center gap-3 flex-wrap mb-4"><label class="text-sm font-semibold text-ergo-dark">Vergleich mit:</label>'
+      +'<select onchange="window.__segSetCmp(this.value)" class="border border-gray-300 rounded-lg px-3 py-1 text-sm bg-white">'
+      +others.map(function(b){return '<option value="'+esc(b)+'"'+(b===cmp?' selected':'')+'>'+esc(b)+'</option>';}).join('')
+      +'</select></div>';
+    // Funnel
+    if(funnel.length){
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><div class="text-base font-bold text-ergo-dark mb-1">Sichtbarkeit entlang des Funnels</div>'
+        +'<div class="text-xs text-gray-500 mb-4">Wo im Entscheidungsprozess ERGO genannt wird — von der ersten Orientierung bis zur Abschlussfrage.</div>'
+        +'<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Stufe</th>'
+        +'<th class="text-right">ERGO SoV</th><th class="text-right">'+esc(cmp)+' SoV</th><th class="text-right">ERGO Sichtbarkeit</th><th class="text-left pl-4" style="width:30%">ERGO vs. '+esc(cmp)+'</th></tr></thead><tbody>';
+      var maxS=0; funnel.forEach(function(f){ Object.keys(byTag[f]).forEach(function(b){ maxS=Math.max(maxS, byTag[f][b].sov||0); }); });
+      funnel.forEach(function(f){
+        var e=byTag[f]['ERGO']||{}, c=byTag[f][cmp]||{};
+        var ratio=(c.sov?((e.sov||0)/c.sov):null);
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-2 font-semibold">'+esc(f)+'</td>'
+          +'<td class="text-right">'+pct(e.sov)+'</td><td class="text-right text-gray-500">'+pct(c.sov)+'</td>'
+          +'<td class="text-right text-gray-500">'+pct(e.vis)+'</td>'
+          +'<td class="pl-4">'+bar(e.sov||0,maxS,'#DC0028')+bar(c.sov||0,maxS,'#94a3b8')
+          +'<div class="text-xs text-gray-400 mt-0.5">'+(ratio!=null?(ratio*100).toFixed(0)+' % des Niveaus':'–')+'</div></td></tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+    // Themenfelder
+    if(themen.length){
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><div class="text-base font-bold text-ergo-dark mb-1">Sichtbarkeit nach Themenfeld</div>'
+        +'<div class="text-xs text-gray-500 mb-4">Themen-Tags aus dem Peec-Setup (z. B. Digital Innovation, Nachhaltigkeit).</div>'
+        +'<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Themenfeld</th>'
+        +'<th class="text-right">ERGO SoV</th><th class="text-right">'+esc(cmp)+' SoV</th><th class="text-right">Verhältnis</th></tr></thead><tbody>';
+      themen.map(function(t){
+        var e=byTag[t]['ERGO']||{}, c=byTag[t][cmp]||{};
+        return {t:t,e:e.sov||0,c:c.sov||0,r:(c.sov?((e.sov||0)/c.sov):null)};
+      }).sort(function(a,b){return (a.r==null?9:a.r)-(b.r==null?9:b.r);}).forEach(function(x){
+        var cl=(x.r!=null&&x.r<0.25)?'text-red-600 font-semibold':(x.r!=null&&x.r<0.5?'text-amber-600':'text-gray-600');
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc(x.t)+'</td>'
+          +'<td class="text-right">'+pct(x.e)+'</td><td class="text-right text-gray-500">'+pct(x.c)+'</td>'
+          +'<td class="text-right '+cl+'">'+(x.r!=null?(x.r*100).toFixed(0)+' %':'–')+'</td></tr>';
+      });
+      h+='</tbody></table><div class="text-xs text-gray-500 mt-3">Sortiert nach größtem Rückstand. Ein Prompt kann mehrere Tags tragen — die Zellen überschneiden sich und summieren sich nicht auf 100 %.</div></div>';
+    }
+    // Fanout-Queries
+    var flt=(window.__segQ||'').toLowerCase();
+    var fq=flt?qs.filter(function(q){return q.q.toLowerCase().indexOf(flt)>=0;}):qs;
+    h+='<div class="bg-white rounded-xl p-5 shadow mb-6">'
+      +'<div class="text-base font-bold text-ergo-dark mb-1">Wonach die Engines suchen</div>'
+      +'<div class="text-xs text-gray-500 mb-3">Die Suchanfragen, die ChatGPT, Gemini &amp; Co. selbst absetzen, bevor sie antworten. Wer für diese Formulierungen gute Inhalte hat, wird gefunden.</div>'
+      +'<div class="grid md:grid-cols-3 gap-3 mb-4">'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">Suchanfragen im Zeitraum</div><div class="text-xl font-bold text-ergo-dark">'+nfmt(st.total)+'</div><div class="text-xs text-gray-400">'+nfmt(st.distinct)+' verschiedene</div></div>'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">mit Markennamen</div><div class="text-xl font-bold text-ergo-dark">'+(st.total?((st.with_brand/st.total)*100).toFixed(0):'–')+' %</div><div class="text-xs text-gray-400">die Engines suchen meist generisch</div></div>'
+      +'<div class="border rounded-lg p-3"><div class="text-xs text-gray-500">mit ERGO oder DKV</div><div class="text-xl font-bold text-ergo-dark">'+nfmt(st.with_ergo)+'</div><div class="text-xs text-gray-400">von '+nfmt(st.total)+'</div></div>'
+      +'</div>'
+      +'<input type="text" oninput="window.__segSetQ(this.value)" value="'+esc(window.__segQ||'')+'" placeholder="Suchanfragen filtern, z. B. Zahnzusatz" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" />'
+      +'<div class="text-xs text-gray-500 mb-2">'+nfmt(fq.length)+' von '+nfmt(qs.length)+' angezeigt</div>'
+      +'<div style="max-height:420px;overflow:auto"><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Suchanfrage</th><th class="text-right">Häufigkeit</th></tr></thead><tbody>';
+    fq.forEach(function(q){
+      h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc(q.q)+'</td><td class="text-right text-gray-500">'+nfmt(q.n)+'×</td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+    h+='<div class="bg-gray-50 border rounded-xl p-4 text-xs text-gray-600 leading-relaxed">'
+      +'<div class="font-semibold text-gray-700 mb-1">Methodik &amp; Grenzen</div>'
+      +'<div>'+esc(d.methode||'')+'</div><div class="mt-1">'+esc(d.grenzen||'')+'</div>'
+      +'<div class="mt-1">Quelle: '+esc(d.source||'')+' · Tags: '+esc((d.window||{}).start||'')+' bis '+esc((d.window||{}).end||'')
+      +' · Suchanfragen: '+esc((d.query_window||{}).start||'')+' bis '+esc((d.query_window||{}).end||'')+' · Stand: '+esc(d.as_of||'')+'</div></div>';
+    host.innerHTML=h;
+  };
+  window.__segSetCmp=function(b){ window.__segCmp=b; window.__segRender(window.__SEG); };
+  window.__segSetQ=function(v){
+    window.__segQ=v; window.__segRender(window.__SEG);
+    var el=document.getElementById('segBody'); if(!el) return;
+    var inp=el.querySelector('input[type=text]'); if(inp){ inp.focus(); inp.setSelectionRange(v.length,v.length); }
+  };
 
   // ---------- Quellen & Zitate (Peec Domain-/URL-Report) ----------
   var CLS_COLOR = {'You':'bg-red-100 text-red-700','Competitor':'bg-orange-100 text-orange-700',

@@ -102,7 +102,13 @@ def _spans_break(brand, start_day, end_day):
 LAG_DAYS = 0
 # Event-Typen, deren Wirkung auf SoV untersucht wird (sov_change selbst ist die Zielgroesse).
 IMPACT_TYPES = [
-    "page_change", "page_new", "press_mention", "news_mention",
+    # 20.07.2026: "page_removed" ergaenzt. Die Loeschungs-Erkennung wurde am selben
+    # Tag gebaut (geo-visibility-tool 86b1344) und emittiert page_removed-Events —
+    # als Treibertyp war der Typ aber nie aufgenommen. Folge: Sobald die ersten
+    # Loeschungen auftreten, waeren sie stillschweigend ignoriert worden. Noch gibt
+    # es keine (der erste Lauf mit Orphan-Pruefung ist #166), der Typ wird also
+    # zunaechst mit n_with_event = 0 gefuehrt und gar nicht ausgewiesen.
+    "page_change", "page_new", "page_removed", "press_mention", "news_mention",
     "domain_change", "review_change", "review_volume", "price_change",
     "wikipedia_change", "portal_rank_change", "rating_status_change",
 ]
@@ -118,6 +124,7 @@ _MV_TYPES = [t for t in IMPACT_TYPES if t not in ("press_mention", "news_mention
 TYPE_LABEL = {
     "page_change": "Seitenaenderungen (Wettbewerb)",
     "page_new": "Neue Seiten",
+    "page_removed": "Geloeschte Seiten",
     "press_mention": "Pressemitteilungen",
     "news_mention": "News-Erwaehnungen",
     "domain_change": "Domain-/Subdomain-Aenderungen",
@@ -468,7 +475,7 @@ def dedup_impact_events(events):
         t = e.get("event_type")
         if t not in IMPACT_TYPES:
             continue
-        if e.get("crawler") == "update_domain_footprint" and t in ("page_new", "page_change"):
+        if e.get("crawler") == "update_domain_footprint" and t in ("page_new", "page_change", "page_removed"):
             continue
         if not e.get("brand") or not _day(e.get("timestamp")):
             continue

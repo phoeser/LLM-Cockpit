@@ -58,6 +58,23 @@ PRICE_MANUAL_FILE = Path("data/price_manual.json")  # manuelle Preis-Vollerhebun
 # benannt, datiert und begruendet an EINE Stelle.
 STRUCTURAL_BREAKS = [
     {
+        "brand": "*",
+        "date": "2026-07-21",
+        "grund": ("Domain-Aliase zaehlen nicht mehr als Textnennung (Entscheidung Paul, "
+                  "Code-Review-Befund A1). Der Matcher lief ueber den ganzen Antworttext "
+                  "inklusive Quellenliste — jede zitierte URL zaehlte zusaetzlich als "
+                  "Nennung. Gemessen am Lauf 17.07.: 15,2 % aller Nennungen ueber alle "
+                  "646 Antworten, auf den 148 UNGEKAPPTEN Antworten sogar 29,7 % (die "
+                  "gekappten verlieren ihre Quellenliste, der Wert ist dort untererfasst). "
+                  "Wirkung auf den SoV: ERGO 7,01 % -> 7,26 %, Allianz 22,03 % -> 21,33 %. "
+                  "Zugleich messen 'Nennungen' und 'Zitate' jetzt getrennte Dinge — vorher "
+                  "ueberlappten sie zu rund einem Drittel."),
+        "nachrechenbar": False,
+        "warum_nicht": ("Wie beim DKV-Bruch: Alt-Laeufe speichern nur 1.500 Zeichen je "
+                        "Antwort, 77 % sind gekappt. Eine Neuberechnung saehe nur den "
+                        "Anfang. Ab 20.07. werden 20.000 Zeichen gespeichert."),
+    },
+    {
         "brand": "*",   # betrifft ALLE Marken
         "date": "2026-07-21",
         "grund": ("Markenerweiterung des Crawls von 7 auf 25 Marken (geo-visibility-tool "

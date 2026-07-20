@@ -479,34 +479,21 @@ def dedup_impact_events(events):
             continue
         if not e.get("brand") or not _day(e.get("timestamp")):
             continue
+        # 20.07.2026 Review-Fix: Die SoV-Reihen normalisieren die Marke (_norm_brand),
+        # die Event-Seite tat es nicht. events.jsonl enthaelt beide Schreibweisen —
+        # "CosmosDirekt" 1.017x und "Cosmos Direkt" 405x. Die 405 wurden nie gefunden,
+        # also als "0 Ereignisse" behandelt: 351 Impact-Events fielen still weg und
+        # verduennten die Effekte Richtung Null. Genau das Anti-Muster, das dieses
+        # Projekt sonst ueberall bekaempft. Einmal hier zentral normalisieren wirkt
+        # auf alle nachgelagerten Aggregationen.
+        e = dict(e)
+        e["brand"] = _norm_brand(e["brand"])
         k = _content_key(e)
         ts = e.get("timestamp", "")
         if k not in seen or ts < seen[k].get("timestamp", ""):
             seen[k] = e
     return list(seen.values())
 
-
-def _solve_ridge(Xs, Y, lam):
-    """Ridge per Normalengleichung (X'X + lam I) b = X'Y, Gauss-Jordan."""
-    n = len(Xs); m = len(Xs[0]) if Xs else 0
-    if n == 0 or m == 0:
-        return [0.0] * m
-    A = [[sum(Xs[i][a] * Xs[i][b] for i in range(n)) + (lam if a == b else 0.0)
-          for b in range(m)] for a in range(m)]
-    bv = [sum(Xs[i][a] * Y[i] for i in range(n)) for a in range(m)]
-    M = [A[k][:] + [bv[k]] for k in range(m)]
-    for c in range(m):
-        piv = max(range(c, m), key=lambda r: abs(M[r][c]))
-        M[c], M[piv] = M[piv], M[c]
-        pv = M[c][c]
-        if abs(pv) < 1e-12:
-            continue
-        M[c] = [v / pv for v in M[c]]
-        for r in range(m):
-            if r != c:
-                fct = M[r][c]
-                M[r] = [M[r][k] - fct * M[c][k] for k in range(m + 1)]
-    return [M[i][m] for i in range(m)]
 
 
 import math as _math
@@ -556,10 +543,19 @@ def _design(points_raw, use, feature_key, twoway=True):
         v = sum(c * c for c in col) / max(n - 1, 1)
         sd.append(v ** 0.5 if v > 1e-12 else 1.0)
     Xs = [[X[i][j] / sd[j] for j in range(len(use))] for i in range(n)]
-    return Y, Xs, sd
+    # 20.07.2026 Review-Fix: Der Zwei-Wege-Within-Transform verbraucht Parameter, die
+    # in m (Zahl der Treiber) nicht auftauchen: (Marken-1) + (Zeitpunkte-1). Wurden sie
+    # bei den Freiheitsgraden ignoriert, war sigma zu klein und JEDES Konfidenzintervall
+    # zu schmal — am Hauptmodell gemessen um 12 %. Genau dadurch galt "review_positive"
+    # als einziger gesicherter Treiber. Mit korrekten df schliesst sein Intervall die
+    # Null nicht mehr aus.
+    k_abs = (len({p["brand"] for p in points_raw}) - 1)
+    if twoway:
+        k_abs += (len({p.get("time") for p in points_raw}) - 1)
+    return Y, Xs, sd, max(k_abs, 0)
 
 
-def _ridge_posterior(Xs, Y, lam, center=None):
+def _ridge_posterior(Xs, Y, lam, center=None, k_absorbed=0):
     """Analytisches Bayes-Posterior der ridge-Regression.
     Rueckgabe: beta (Posterior-Mittel, standardisiert), Ainv, sigma2."""
     n = len(Xs); m = len(Xs[0]) if Xs else 0
@@ -573,7 +569,8 @@ def _ridge_posterior(Xs, Y, lam, center=None):
     beta = [sum(Ainv[a][b] * rhs[b] for b in range(m)) for a in range(m)]
     yhat = [sum(Xs[i][a] * beta[a] for a in range(m)) for i in range(n)]
     ss = sum((Y[i] - yhat[i]) ** 2 for i in range(n))
-    sig2 = ss / max(n - m, 1)
+    # df: Treiber (m) PLUS die vom Within-Transform absorbierten Fixed Effects.
+    sig2 = ss / max(n - m - k_absorbed, 1)
     return beta, Ainv, sig2
 
 
@@ -630,7 +627,7 @@ def _apply_fdr(res, key="wild_cluster_p", out="wild_cluster_p_fdr", alpha=0.05):
     return res
 
 
-def _cluster_robust_var(Xs, Y, beta, Ainv, clusters):
+def _cluster_robust_var(Xs, Y, beta, Ainv, clusters, k_absorbed=0):
     """Cluster-robuste Sandwich-Varianz. Rueckgabe: (V, G) oder (None, G).
 
     17.07.2026, Review #3. Vorher: sig2 = ss/(n-m) — iid-Residualvarianz. Die
@@ -662,7 +659,7 @@ def _cluster_robust_var(Xs, Y, beta, Ainv, clusters):
         for a in range(m):
             for b in range(m):
                 meat[a][b] += row[a] * row[b]
-    c = (G / (G - 1.0)) * ((n - 1.0) / max(n - m, 1))
+    c = (G / (G - 1.0)) * ((n - 1.0) / max(n - m - k_absorbed, 1))
     V = [[c * sum(Ainv[a][k] * meat[k][l] * Ainv[l][b]
                   for k in range(m) for l in range(m)) for b in range(m)] for a in range(m)]
     return V, G
@@ -748,13 +745,13 @@ def multivariate_impact(points_raw, min_with=6, candidate_types=None, feature_ke
                 "note": "Zu wenige Datenpunkte/Marken fuer das multivariate Modell.",
                 "n_points": len(points_raw), "n_brands": len(brands),
                 "types_used": use, "coefficients": {}}
-    Y, Xs, sd = _design(points_raw, use, feature_key)
+    Y, Xs, sd, k_abs = _design(points_raw, use, feature_key)
     m = len(use)
     lam = len(Xs) * 0.5
     center = None
     if prior_mean:
         center = [(prior_mean.get(use[j], 0.0)) * sd[j] for j in range(m)]
-    beta, Ainv, sig2 = _ridge_posterior(Xs, Y, lam, center)
+    beta, Ainv, sig2 = _ridge_posterior(Xs, Y, lam, center, k_absorbed=k_abs)
 
     MIN_NWITH, MIN_NPTS, MIN_TIMES = 15, 20, 12
     n_times = len({p.get("time") for p in points_raw})
@@ -806,7 +803,7 @@ def _placebo_fpr(points_raw, use, feature_key, n_perm=200, seed=7, thr=0.975):
     'gesichert' sein. Liefert die Falsch-Positiv-Rate (erwartet ~5 %)."""
     import random as _r
     rnd = _r.Random(seed)
-    Y, Xs, sd = _design(points_raw, use, feature_key)
+    Y, Xs, sd, k_abs = _design(points_raw, use, feature_key)
     n, m = len(Y), len(use)
     if n < 12 or m == 0:
         return None
@@ -814,7 +811,7 @@ def _placebo_fpr(points_raw, use, feature_key, n_perm=200, seed=7, thr=0.975):
     hits = 0; total = 0
     for _ in range(n_perm):
         Yp = Y[:]; rnd.shuffle(Yp)
-        beta, Ainv, sig2 = _ridge_posterior(Xs, Yp, lam)
+        beta, Ainv, sig2 = _ridge_posterior(Xs, Yp, lam, k_absorbed=k_abs)
         for j in range(m):
             sigma = (max(sig2 * Ainv[j][j], 0.0) ** 0.5) / sd[j]
             mu = beta[j] / sd[j]
@@ -846,8 +843,8 @@ def _oos_skill(points_raw, use, feature_key):
         gmean = sum(p["y"] for p in train) / len(train)
         base = {b: bm[b] / bc[b] for b in bm}
         # Treiber-Effekte (brand-demeaned ridge auf Training)
-        Yt, Xt, sdt = _design(train, use, feature_key, twoway=False)
-        beta, _A, _s = _ridge_posterior(Xt, Yt, n=None) if False else _ridge_posterior(Xt, Yt, len(Xt) * 0.5)
+        Yt, Xt, sdt, _kt = _design(train, use, feature_key, twoway=False)
+        beta, _A, _s = _ridge_posterior(Xt, Yt, len(Xt) * 0.5, k_absorbed=_kt)
         def xv(p, t):
             return (p.get(feature_key) or p.get("x") or {}).get(t, 0)
         # mittlere x je Marke (Training) fuer Within-Korrektur der Vorhersage
@@ -871,7 +868,7 @@ def _oos_skill(points_raw, use, feature_key):
 
 _BKEY2NAME = {"ergo": "ERGO", "allianz": "Allianz", "axa": "AXA", "huk": "HUK-Coburg",
              "generali": "Generali", "signal-iduna": "Signal Iduna", "ruv": "R+V",
-             "devk": "DEVK", "hannoversche": "Hannoversche", "cosmosdirekt": "Cosmos Direkt"}
+             "devk": "DEVK", "hannoversche": "Hannoversche", "cosmosdirekt": "CosmosDirekt"}  # 20.07. Review-Fix: war "Cosmos Direkt" -> Schluessel wurde nie nachgeschlagen, 140 Reviews verloren
 
 
 def review_posneg_by_day():
@@ -2330,7 +2327,12 @@ def _effect_ci(xs, ys, min_with_for_sig=8):
     with_v = [y for x, y in zip(xs, ys) if x > 0]
     without_v = [y for x, y in zip(xs, ys) if x <= 0]
     if not with_v or not without_v:
-        return None, None, None, None, None
+        # 20.07.2026 Review-Fix: Hier standen 5 Rueckgabewerte, alle fuenf Aufrufer
+        # entpacken aber 6. Der Pfad greift, sobald JEDES Intervall das Ereignis hat
+        # (oder keines) — bei feinen Schichten jederzeit erreichbar. Weil main() jeden
+        # Blockfehler abfaengt, waere der Block dann stillschweigend aus der Ausgabe
+        # verschwunden statt einen Fehler zu zeigen.
+        return None, None, None, None, None, None
     m1 = sum(with_v) / len(with_v)
     m0 = sum(without_v) / len(without_v)
     eff = m1 - m0
@@ -2624,7 +2626,7 @@ def funnel_stratified_analysis(events, mv_prior=None):
             # des Hauptmodells und ausdruecklich als indikativ zu lesen.
             if mv.get("available") and mv.get("types_used"):
                 _use = mv["types_used"]
-                _Y, _Xs, _sd = _design(points, _use, "x")
+                _Y, _Xs, _sd, _kabs = _design(points, _use, "x")
                 _lam = len(_Xs) * 0.5
                 _beta, _Ai, _s2 = _ridge_posterior(_Xs, _Y, _lam)
                 _cl = [pt["brand"] for pt in points]

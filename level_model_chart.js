@@ -55,8 +55,13 @@
     var r2 = (m.r2_within_topics == null ? "—" : Math.round(m.r2_within_topics * 100) + "%");
     var rr = (m.raw_pearson_r == null ? "—" : (Math.round(m.raw_pearson_r * 100) / 100).toFixed(2));
     box.innerHTML =
-      stat("Within-Effekt", w.coef_pp_sov_per_pp_citeshare, w.significant, "eigener Content im Thema") +
-      stat("Between-Effekt", b.coef_pp_sov_per_pp_citeshare, b.significant, "Autoritäts-Vorsprung (Marken-Mittel)") +
+      // 20.07.2026: Dieser Block liest _mundlak_fit. Dessen "significant" stammte
+      // allein aus der Bayes-Richtungswahrscheinlichkeit — ohne Cluster-SE, ohne
+      // Bootstrap, ohne Mehrfachtest-Korrektur — und wurde vom strengeren Modell
+      // auf denselben Daten widerlegt. Das Feld heisst jetzt prob_direction_only
+      // und wird hier bewusst NICHT mehr als "gesichert" gerendert.
+      stat("Within-Effekt", w.coef_pp_sov_per_pp_citeshare, false, "eigener Content im Thema · Richtung " + (w.prob_direction_only ? "stabil" : "unsicher")) +
+      stat("Between-Effekt", b.coef_pp_sov_per_pp_citeshare, false, "Autoritäts-Vorsprung · Richtung " + (b.prob_direction_only ? "stabil" : "unsicher")) +
       '<div style="flex:1;min-width:150px">' +
         '<div style="font-size:12px;color:#6b7280">Modellgüte</div>' +
         '<div style="font-size:22px;font-weight:700;color:#1a1a2e">R² ' + r2 + '</div>' +

@@ -1395,7 +1395,24 @@ def _mundlak_fit(cells, xkey, ykey, min_cells=10):
         pdir = max(_norm_cdf(mu / sigma), 1.0 - _norm_cdf(mu / sigma)) if sigma > 1e-12 else 1.0
         eff[nm] = {"coef_pp_sov_per_pp_citeshare": round(mu, 3),
                    "ci95_low": round(mu - 1.96 * sigma, 3), "ci95_high": round(mu + 1.96 * sigma, 3),
-                   "prob_direction": round(pdir, 3), "significant": bool(pdir >= 0.975)}
+                   "prob_direction": round(pdir, 3),
+                   # 20.07.2026 (Entscheidung Paul, Code-Review-Befund A5):
+                   # Hier stand "significant": pdir >= 0.975 — allein aus dem
+                   # iid-Posterior, OHNE Cluster-SE, ohne Wild-Cluster-Bootstrap und
+                   # ohne Mehrfachtest-Korrektur. Der strengere Pfad (_mundlak_multi)
+                   # widerlegte fuenf dieser sieben Flags AUF DENSELBEN DATEN
+                   # (z. B. Wild-p = 0,31 gegen "significant: true"). Zwei Felder
+                   # gleichen Namens mit gegenlaeufigem Ergebnis in einer Datei sind
+                   # gegenueber Aktuaren nicht zu verteidigen. Das Feld heisst jetzt
+                   # so, wie es gemeint ist, und das Dashboard rendert es nicht mehr
+                   # als "gesichert".
+                   "prob_direction_only": bool(pdir >= 0.975),
+                   "inferenz_hinweis": ("Nur Bayes-Richtungswahrscheinlichkeit aus dem "
+                                        "iid-Posterior — KEIN Signifikanztest. Fuer "
+                                        "belastbare Aussagen den Block "
+                                        "price_footprint_joint heranziehen, der "
+                                        "cluster-robuste SE und Wild-Cluster-Bootstrap "
+                                        "rechnet.")}
     def _sdraw(v):
         m = sum(v) / len(v)
         return (sum((x - m) ** 2 for x in v) / max(len(v) - 1, 1)) ** 0.5
@@ -2384,6 +2401,74 @@ def _citation_points():
     return pts, sorted(set(stamps))
 
 
+
+def build_intervals(series_by_brand, events_by_brand_day, types, lag_days=0,
+                    respect_breaks=True, only_days=None):
+    """Baut Intervall-Punkte aus einer SoV-Reihe und gezaehlten Ereignissen.
+
+    20.07.2026: Diese Logik lag FUENFMAL nahezu identisch im Modul — im Hauptmodell,
+    in der Funnel-Schichtung, in der Zitat-Zielgroesse, im Lag-Scan und in der
+    Fanout-Sensitivitaet. Genau deshalb lief sie auseinander: Der Strukturbruch-Filter
+    wurde nur an EINER der fuenf Stellen eingebaut, die Markennormalisierung an einer
+    anderen. Der Sprung vom 21.07. (Markenerweiterung 7 -> 25, ERGO-SoV 13,96 % ->
+    7,01 %) waere in den vier Nebenbloecken als Effekt gelesen worden.
+
+    Parameter:
+      series_by_brand      {marke: [(tag, wert), ...]} — aufsteigend sortiert
+      events_by_brand_day  {marke: {tag: {typ: anzahl}}}
+      types                Liste der zu zaehlenden Ereignistypen
+      lag_days             Ereignisfenster um lag_days nach hinten verschieben
+      respect_breaks       Intervalle ueber einem Strukturbruch verwerfen
+      only_days            optional: nur Intervalle, deren SPANNE ausschliesslich
+                           aus diesen Tagen besteht (nicht nur die Endpunkte —
+                           das war der Fehler in der Fanout-Sensitivitaet)
+
+    Liefert (punkte, verworfen_wegen_bruch).
+    """
+    points, skipped = [], []
+    for brand, ser in (series_by_brand or {}).items():
+        for i in range(len(ser) - 1):
+            a, ya = ser[i]
+            b, yb = ser[i + 1]
+            if respect_breaks and _spans_break(brand, a, b):
+                skipped.append({"brand": brand, "von": a, "bis": b})
+                continue
+            if only_days is not None:
+                # Die ganze Spanne muss im erlaubten Tagesbereich liegen. Nur die
+                # Endpunkte zu pruefen liesse Ereignisse aus ausgeschlossenen Tagen
+                # weiterhin einfliessen.
+                if not (a in only_days and b in only_days):
+                    continue
+            span = max(1, _days_between(a, b))
+            wa = _shift_day(a, -lag_days) if lag_days else a
+            wb = _shift_day(b, -lag_days) if lag_days else b
+            cnt = {}
+            for t in types:
+                c = 0
+                for day, tc in (events_by_brand_day.get(brand) or {}).items():
+                    if wa <= day < wb:
+                        c += tc.get(t, 0)
+                cnt[t] = c / span
+            points.append({"brand": brand, "days": span, "time": a,
+                           "y": (yb - ya) / span, "x": cnt})
+    return points, skipped
+
+
+def count_events_by_brand_day(events, type_filter=None, key_fn=None):
+    """{marke: {tag: {typ: anzahl}}} aus deduplizierten Impact-Events."""
+    out = {}
+    for e in dedup_impact_events(events):
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        if not b or not day:
+            continue
+        t = key_fn(e) if key_fn else e.get("event_type")
+        if not t or (type_filter and t not in type_filter):
+            continue
+        out.setdefault(b, {}).setdefault(day, {})
+        out[b][day][t] = out[b][day].get(t, 0) + 1
+    return out
+
+
 def citation_target_analysis(events):
     """Zitate als ZWEITE Zielgroesse neben Share of Voice.
 
@@ -2431,21 +2516,10 @@ def citation_target_analysis(events):
         d = bydays[e["brand"]][_day(e.get("timestamp"))]
         d[t] = d.get(t, 0) + 1
 
-    points = []
-    for brand, ser in series.items():
-        days_sorted = sorted(ser)
-        for i in range(len(days_sorted) - 1):
-            a, b = days_sorted[i], days_sorted[i + 1]
-            span = max(1, _days_between(a, b))
-            cnt = {}
-            for t in IMPACT_TYPES:
-                c = 0
-                for day, tc in (bydays.get(brand) or {}).items():
-                    if a <= day < b:
-                        c += tc.get(t, 0)
-                cnt[t] = c / span
-            points.append({"brand": brand, "days": span, "time": a,
-                           "y": (ser[b] - ser[a]) / span, "x": cnt})
+    ser_map = {b: sorted(m.items()) for b, m in series.items()}
+    points, _skip = build_intervals(ser_map, bydays, IMPACT_TYPES)
+    if _skip:
+        base["intervalle_uebersprungen_bruch"] = len(_skip)
 
     if len(points) < 4:
         base["available"] = False
@@ -2562,22 +2636,11 @@ def funnel_stratified_analysis(events, mv_prior=None):
         bydays[b][day][t] = bydays[b][day].get(t, 0) + 1
 
     per_tag = {}
+    _skipped_total = 0
     for tag in sorted(usable):
-        points = []
-        for brand, bs in series[tag].items():
-            days_sorted = sorted(bs)
-            for i in range(len(days_sorted) - 1):
-                a, b2 = days_sorted[i], days_sorted[i + 1]
-                span = max(1, _days_between(a, b2))
-                cnt = {}
-                for t in IMPACT_TYPES:
-                    c = 0
-                    for day, tc in (bydays.get(brand) or {}).items():
-                        if a <= day < b2:
-                            c += tc.get(t, 0)
-                    cnt[t] = c / span
-                points.append({"brand": brand, "days": span, "time": a,
-                               "y": (bs[b2] - bs[a]) / span, "x": cnt})
+        _sm = {b: sorted(m.items()) for b, m in series[tag].items()}
+        points, _skip = build_intervals(_sm, bydays, IMPACT_TYPES)
+        _skipped_total += len(_skip)
         if len(points) < 10:
             per_tag[tag] = {"available": False,
                             "grund": f"nur {len(points)} Intervall-Punkte",
@@ -2716,6 +2779,7 @@ def funnel_stratified_analysis(events, mv_prior=None):
             # "gesichert" nach Korrektur nur, wenn ZUSAETZLICH die Mindest-Datenbasis
             # steht — gleiche Konvention wie im Hauptmodell.
             d["significant_fdr"] = bool(d["p_fdr"] < 0.05 and (d.get("n_with_event") or 0) >= 8)
+    base["intervalle_uebersprungen_bruch"] = _skipped_total
     base["fdr"] = {
         "n_gesichert_multivariat": _mv_sig,
         "n_tests": n_tests, "alpha": 0.05, "verfahren": "Benjamini-Hochberg",
@@ -2817,21 +2881,7 @@ def page_change_by_type(events):
         bydays[b][day][art] = bydays[b][day].get(art, 0) + 1
 
     arten = sorted(by_type, key=lambda k: -by_type[k]["n"])
-    points = []
-    for brand, ser in sov.items():
-        for i in range(len(ser) - 1):
-            a, ya = ser[i]
-            b2, yb = ser[i + 1]
-            span = max(1, _days_between(a, b2))
-            cnt = {}
-            for art in arten:
-                c = 0
-                for day, tc in (bydays.get(brand) or {}).items():
-                    if a <= day < b2:
-                        c += tc.get(art, 0)
-                cnt[art] = c / span
-            points.append({"brand": brand, "days": span, "time": a,
-                           "y": (yb - ya) / span, "x": cnt})
+    points, _skip = build_intervals(sov, bydays, arten)
     res = {}
     for art in arten:
         xs = [pt["x"].get(art, 0.0) for pt in points]
@@ -2923,22 +2973,7 @@ def lag_analysis(events):
 
     per_lag = {}
     for lag in LAG_CANDIDATES:
-        points = []
-        for brand, ser in sov.items():
-            for i in range(len(ser) - 1):
-                a, ya = ser[i]
-                b2, yb = ser[i + 1]
-                span = max(1, _days_between(a, b2))
-                wa, wb = _shift_day(a, -lag), _shift_day(b2, -lag)
-                cnt = {}
-                for t in IMPACT_TYPES:
-                    c = 0
-                    for day, tc in (bydays.get(brand) or {}).items():
-                        if wa <= day < wb:
-                            c += tc.get(t, 0)
-                    cnt[t] = c / span
-                points.append({"brand": brand, "days": span, "time": a,
-                               "y": (yb - ya) / span, "x": cnt})
+        points, _skip = build_intervals(sov, bydays, IMPACT_TYPES, lag_days=lag)
         res = {}
         for t in IMPACT_TYPES:
             xs = [pt["x"].get(t, 0.0) for pt in points]
@@ -3130,20 +3165,13 @@ def fanout_regime_analysis(events):
         bydays[b][day][t] = bydays[b][day].get(t, 0) + 1
 
     def study(tag, only_days=None):
-        pts = []
-        for brand, bs in (series.get(tag) or {}).items():
-            ds = sorted(d for d in bs if (only_days is None or d in only_days))
-            for i in range(len(ds) - 1):
-                a, b2 = ds[i], ds[i + 1]
-                span = max(1, _days_between(a, b2))
-                cnt = {}
-                for t in IMPACT_TYPES:
-                    c = 0
-                    for day, tc in (bydays.get(brand) or {}).items():
-                        if a <= day < b2:
-                            c += tc.get(t, 0)
-                    cnt[t] = c / span
-                pts.append({"x": cnt, "y": (bs[b2] - bs[a]) / span})
+        # 20.07.2026 Review-Fix (B7): Vorher wurden nur die INTERVALL-ENDEN gefiltert.
+        # Ueberspannte ein Intervall die Einbruchphase, flossen deren Ereignisse
+        # weiterhin ein — die Sensitivitaetsrechnung war schwaecher als beschrieben.
+        # build_intervals verwirft jetzt Intervalle, deren ganze Spanne nicht im
+        # erlaubten Tagesbereich liegt.
+        _sm = {b: sorted(m.items()) for b, m in (series.get(tag) or {}).items()}
+        pts, _sk = build_intervals(_sm, bydays, IMPACT_TYPES, only_days=only_days)
         return pts
 
     hiset = set(hi)

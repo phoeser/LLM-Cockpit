@@ -24,7 +24,7 @@
   function pct(v){ return (v==null||isNaN(v))?"—":(Math.round(v*10)/10).toFixed(1).replace(".",",")+" %"; }
 
   var COL = { base:"#9aa0a8", size:"#6b7280", foot:"#b8860b", price:"#0e7490", rest:"#d9dce1", leader:"#dc0028" };
-  var LBL = { authority:"Autorität (Größe + Footprint)", size:"Größe/Marktmacht", cite_share:"Footprint (Quellpräsenz)", relprice:"Preisniveau" };
+  var LBL = { authority:"Bekanntheit & Quellpräsenz", size:"Größe/Marktmacht", cite_share:"Quellpräsenz (in wie vielen zitierten Quellen)", relprice:"Preisniveau" };
   var AMP = { authority:"🟡", size:"⚪", cite_share:"🟡", relprice:"🟢" };
   var mode = "g", curBrand = "ERGO";
   function seg(o){ return o?(mode==="g"?o.grounded:(mode==="u"?o.ungrounded:o.combined)):null; }
@@ -184,10 +184,26 @@
 
     // Balken
     var order=["authority","size","cite_share","relprice"];
-    var segs=[{label:brand+" Basis (Ø SoV)",val:baseSov,col:COL.base,isBase:true}];
+    var segs=[{label:brand+": eigene Sichtbarkeit heute",val:baseSov,col:COL.base,isBase:true}];
     order.forEach(function(k){ if(contrib[k]!=null) segs.push({label:(AMP[k]||"")+" "+(LBL[k]||k),val:contrib[k],col:d.cols[k]||COL.rest,k:k}); });
     if(rest>0.05) segs.push({label:"Rest / unerklärt",val:rest,col:COL.rest});
     var total=leadSov>0?leadSov:segs.reduce(function(a,s){return a+s.val;},0);
+    var _fpB=null,_fpL=null; (function(){ var _ar=(m&&m.authority_ranking)||[];
+      _ar.forEach(function(x){ if(x.brand===brand)_fpB=x.mean_cite_share_pct; if(x.brand===leader)_fpL=x.mean_cite_share_pct; }); })();
+    var compareHead='<div style="display:flex;align-items:stretch;gap:10px;margin:6px 0 4px">'+
+      '<div style="flex:1;background:#f6f7f9;border-radius:8px;padding:10px 12px">'+
+        '<div style="font-size:11px;color:#6b7280">'+brand+' · Ø Sichtbarkeit</div>'+
+        '<div style="font-size:26px;font-weight:800;color:#282d37;line-height:1.1">'+pct(baseSov)+'</div>'+
+        (_fpB!=null?'<div style="font-size:10.5px;color:#9ca3af">in '+pct(_fpB)+' der zitierten Quellen</div>':'')+'</div>'+
+      '<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:78px">'+
+        '<div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px">Abstand</div>'+
+        '<div style="font-size:20px;font-weight:800;color:#dc0028;line-height:1.1">'+pp(gap)+'</div></div>'+
+      '<div style="flex:1;background:#fbeef0;border-radius:8px;padding:10px 12px;text-align:right">'+
+        '<div style="font-size:11px;color:#b91c1c">'+leader+' · Marktführer</div>'+
+        '<div style="font-size:26px;font-weight:800;color:#dc0028;line-height:1.1">'+pct(leadSov)+'</div>'+
+        (_fpL!=null?'<div style="font-size:10.5px;color:#d19aa2">in '+pct(_fpL)+' der zitierten Quellen</div>':'')+'</div>'+
+      '</div>'+
+      '<div style="font-size:11.5px;color:#6b7280;margin:8px 0 2px">So füllt sich der Abstand von '+pp(gap)+' auf — von <b>'+brand+'s eigener Sichtbarkeit</b> (grau) bis zum <b style="color:#dc0028">'+leader+'-Niveau</b> (rot). Je länger ein Abschnitt, desto mehr trägt er zum Rückstand bei:</div>';
     var bar='<div style="display:flex;height:34px;border-radius:6px;overflow:hidden;margin:14px 0 6px;border:1px solid #eee">';
     segs.forEach(function(s){ var w=total>0?(s.val/total*100):0; if(w<=0)return;
       bar+='<div title="'+s.label+': '+(s.isBase?pct(s.val):pp(s.val))+'" style="width:'+w+'%;background:'+s.col+'"></div>'; });
@@ -195,7 +211,7 @@
 
     // Legende mit Anteilen am Gap
     var legend='<div style="display:grid;grid-template-columns:1fr auto auto;gap:2px 14px;font-size:12.5px;margin-top:6px">';
-    legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.base+';border-radius:2px;margin-right:6px"></span>'+brand+' Basis (Ø SoV)</div><div style="text-align:right;font-weight:600">'+pct(baseSov)+'</div><div></div>';
+    legend+='<div><span style="display:inline-block;width:10px;height:10px;background:'+COL.base+';border-radius:2px;margin-right:6px"></span>'+brand+': eigene Sichtbarkeit heute</div><div style="text-align:right;font-weight:600">'+pct(baseSov)+'</div><div></div>';
     order.forEach(function(k){
       if(contrib[k]==null) return;
       var sh=gap>0?Math.round(100*contrib[k]/gap):null;
@@ -240,8 +256,8 @@
     box.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
         '<div><h3 style="font-size:16px;font-weight:700;margin:0">4 · Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
-        '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">SoV-Abstand zerlegt in Treiber-Beiträge <span style="color:#9ca3af">('+modeLbl()+')</span></p></div>'+
-        sel+'</div>'+ bar + legend + notes + hsHtml;
+        '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">Woraus sich ERGOs Rückstand zum Marktführer zusammensetzt <span style="color:#9ca3af">('+modeLbl()+')</span></p></div>'+
+        sel+'</div>'+ compareHead + bar + legend + notes + hsHtml;
 
     box.querySelectorAll(".gwb").forEach(function(btn){
       btn.addEventListener("click", function(){ render(host, lm, btn.getAttribute("data-b")); });

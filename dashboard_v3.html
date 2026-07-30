@@ -4502,6 +4502,57 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     return h;
   }
 
+  // ---------- Preis-Sektion: gepoolt über mehrere Tage (stabilisiert) ----------
+  // Antwort auf Pauls Frage: Wirkung eines höheren/tieferen Preisniveaus auf SoV UND
+  // Zitationen, mit über saubere Tage gemittelten Zellwerten (Rauschreduktion).
+  function preisPooledSektion(ci){
+    var p=ci.price_level_pooled; if(!p) return '';
+    if(!p.available){
+      return '<div class="bg-white rounded-xl p-4 shadow mb-5 border-l-4 border-slate-300">'
+        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Preisniveau über mehrere Tage (in Aufbau)</h3>'
+        +'<p class="text-xs text-gray-500">'+esc(p.grund||'Noch nicht genug Messtage.')+'</p></div>';
+    }
+    function seg(block,scope,kind){ return (((block[scope]||{}).drivers_eff||{}).relprice||{})[kind]||{}; }
+    var sov=p.price_to_sov||{}, cit=p.price_to_citations||{};
+    var sUb=seg(sov,'ungrounded','between');
+    var st=p.stability||{};
+    function block(lbl, w, b){
+      return '<div class="border rounded-lg p-3 bg-gray-50">'
+        +'<div class="text-sm font-semibold text-ergo-dark mb-2">'+lbl+'</div>'
+        +'<div class="text-xs text-gray-600">Marke mit sich selbst (within, kausal sauber)</div>'
+        +'<div class="text-base font-bold '+(Math.abs(w.coef||0)<0.3?'text-gray-400':'text-ergo-dark')+'">'+_fmtPP(w.coef)+'</div>'
+        +'<div class="text-xs text-gray-500 mb-2">p = '+(w.wild_cluster_p!=null?w.wild_cluster_p:'–')+(w.wild_cluster_p_fdr!=null?(', q = '+w.wild_cluster_p_fdr):'')+'</div>'
+        +'<div class="text-xs text-gray-600">Marken untereinander (between)</div>'
+        +'<div class="text-base font-bold '+((b.coef||0)<-1?'text-ergo-red':'text-gray-400')+'">'+_fmtPP(b.coef)+'</div>'
+        +'<div class="text-xs text-gray-500">p = '+(b.wild_cluster_p!=null?b.wild_cluster_p:'–')+(b.wild_cluster_p_fdr!=null?(', q = '+b.wild_cluster_p_fdr):'')+', Richtung '+(b.prob_direction!=null?Math.round(b.prob_direction*100)+' %':'–')+'</div>'
+        +'</div>';
+    }
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5 border-l-4 border-emerald-500">';
+    h+='<div class="flex items-start justify-between flex-wrap gap-2 mb-1">'
+      +'<h3 class="text-base font-bold text-ergo-dark">Preisniveau, über '+nfmt(p.n_days)+' saubere Tage stabilisiert</h3>'
+      +_pill(nfmt(p.n_days)+' Tage · '+((p.days_range||[]).join('–')),'grau')+'</div>';
+    h+='<p class="text-xs text-gray-500 mb-4">Statt eines einzelnen Snapshots wird der Wert je Marke×Thema über mehrere Tage gemittelt — das nimmt das tägliche LLM-Rauschen heraus. So trennt sich die Wirkung eines höheren/tieferen <strong>Relativpreises</strong> auf zwei Zielgrößen sauber: Sichtbarkeit und Zitationen. Negativer Wert heißt teurer = weniger.</p>';
+    h+='<div class="grid md:grid-cols-2 gap-3 mb-4">';
+    h+=block('Wirkung auf Sichtbarkeit (SoV) · Web-Suche', seg(sov,'grounded','within'), seg(sov,'grounded','between'));
+    h+=block('Wirkung auf Zitationen · Web-Suche', seg(cit,'grounded','within'), seg(cit,'grounded','between'));
+    h+='</div>';
+    h+='<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed mb-3">'
+      +'<strong>Befund nach Rausch-Mittelung:</strong> Der <em>Within</em>-Effekt (Marke mit sich selbst über Produkte — die saubere kausale Rechnung) fällt bei beiden Zielgrößen nahe null. Der grenzwertige Ein-Tages-Within war also größtenteils Tagesrauschen. Der <em>Between</em>-Effekt (günstigere Marken sind sichtbarer und werden häufiger zitiert) ist stabil und richtungssicher, erlaubt aber keine Kausalaussage — günstige Anbieter unterscheiden sich auch in Größe, Vertrieb und Bekanntheit.'
+      +'</div>';
+    if(sUb.coef!=null){
+      h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed mb-3">'
+        +'<strong>Validitätscheck:</strong> Bei Engines <em>ohne</em> Web-Suche liegt der Preis-Effekt praktisch bei null ('+_fmtPP(sUb.coef)+'). Genau das ist zu erwarten, wenn der Preis über abgerufene Vergleichsseiten wirkt und nicht über das Modellgedächtnis.'
+        +'</div>';
+    }
+    if(st.mean!=null){
+      h+='<div class="text-xs text-gray-600 leading-relaxed"><strong>Stabilität:</strong> Der markenübergreifende Preis-Effekt auf die Sichtbarkeit liegt an jedem der '+nfmt(p.n_days)+' Tage zwischen '+_fmtPP(st.max)+' und '+_fmtPP(st.min)+' (Mittel '+_fmtPP(st.mean)+', Streuung '+st.sd+') — '+(st.sign_stable?'durchgehend im selben Vorzeichen.':'mit Vorzeichenwechsel.')+'</div>';
+    }
+    h+='<p class="text-xs text-gray-400 mt-2">Reift mit jedem Nightly weiter. Mittelung senkt das Messrauschen, erzeugt aber keine zusätzlichen unabhängigen Beobachtungen (Cluster bleibt die Marke). Quelle: level_cells_history.jsonl.</p>';
+    h+='</div>';
+    return h;
+  }
+
+
   window.buildKorrErgebnis = function(){
     var host=document.getElementById('korrErgebnis'); if(!host) return;
     Promise.all([
@@ -4548,6 +4599,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
 
     // ---- 2b. Preis ----
     try { h += preisSektion(ci); } catch(e){ console.warn('preisSektion:', e.message); }
+    try { h += preisPooledSektion(ci); } catch(e){ console.warn('preisPooledSektion:', e.message); }
 
     // ---- 3. Funnel-Schichtung ----
     if(fs.available){

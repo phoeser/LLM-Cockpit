@@ -46,6 +46,10 @@ jobs:
           GEO_REPO: phoeser/geo-visibility-tool
         run: python scripts/update_snapshot.py
 
+      - name: Level-Zellen archivieren (Marke x Thema, fuer gepooltes Preis-Levelmodell)
+        run: python scripts/archive_level_cells.py
+        continue-on-error: true
+
       - name: Aktualisiere Sentiment-Daten (4 Quellen)
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
@@ -117,6 +121,7 @@ jobs:
           git add data/price_comparison.json 2>/dev/null || true
           git add data/press_history.json 2>/dev/null || true
           git add data/sov_history.jsonl 2>/dev/null || true
+          git add data/level_cells_history.jsonl 2>/dev/null || true
           git add data/correlation_impact.json 2>/dev/null || true
           git add data/driver_state.json 2>/dev/null || true
           git add data/pipeline_health.json 2>/dev/null || true

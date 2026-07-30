@@ -3354,6 +3354,66 @@ def price_level_pooled(max_days=45):
 
 
 
+
+def _augment_structure_with_pooled_price(res):
+    """Speist den ueber mehrere Tage STABILISIERTEN Preis-Beitrag in die
+    Ursachenanalyse-Zerlegung (level_model.structure_summary) ein.
+
+    Vorher stammte der Preis-Beitrag aus EINEM verrauschten Snapshot und wurde als
+    Rest NACH der Autoritaet gekappt — die Autoritaet ass den ganzen Gap, der Preis
+    blieb fast immer 0. Jetzt kommen Autoritaet (Groesse+Footprint) UND Preis
+    konsistent aus DEMSELBEN gemeinsamen Pooling-Modell (price_level_pooled), in dem
+    sich beide Treiber gegenseitig kontrollieren, gemittelt ueber saubere Tage.
+    Additiv: faellt das Pooling-Modell aus, bleibt die bisherige Zerlegung stehen."""
+    p = res.get("price_level_pooled") or {}
+    lm = res.get("level_model") or {}
+    ss = lm.get("structure_summary")
+    if not (isinstance(ss, dict) and p.get("available")):
+        return
+    pts = p.get("price_to_sov") or {}
+    for segkey in ("grounded", "ungrounded", "combined"):
+        blk = pts.get(segkey) or {}
+        if not blk.get("available"):
+            continue
+        gd = (blk.get("gap_decomposition") or {}).get("ERGO")
+        if not gd:
+            continue
+        gap = gd.get("actual_gap_pp")
+        contrib = gd.get("contrib_pp") or {}
+        foot_raw = contrib.get("cite_share")
+        price_raw = contrib.get("relprice")
+        if gap is None or foot_raw is None or price_raw is None:
+            continue
+        # KEINE sequentielle Kappung (die drueckte den Preis auf den Rest nach der
+        # Autoritaet, fast immer ~0). Stattdessen die ROHEN gemeinsamen Beitraege
+        # (nur negative auf 0 gefloort) uebergeben — das Frontend (gap_waterfall.js)
+        # skaliert sie proportional auf 100 % des Gaps, wenn sie sich ueberlappen.
+        # So bleibt der EHRLICHE relative Preis-Anteil sichtbar statt weggekappt.
+        foot = max(foot_raw, 0.0)
+        price = max(price_raw, 0.0)
+        _sum = foot + price
+        price_capped = bool(_sum > gap and gap > 0)  # Frontend skaliert dann proportional
+        rest = max(gap - _sum, 0.0)
+        ss[segkey] = {
+            "available": True,
+            "leader": gd.get("vs") or blk.get("leader") or "Allianz",
+            "gap_pp": round(gap, 2),
+            "authority_pp": round(foot, 2),
+            "authority_capped": bool(abs(foot - foot_raw) > 1e-9),
+            "price_pp": round(price, 2),
+            "price_capped": price_capped,
+            "rest_pp": round(rest, 2),
+            "price_source": "pooled_joint",
+            "n_days": p.get("n_days"),
+            "days_range": p.get("days_range"),
+            "note": ("Autoritaet (Groesse+Footprint) UND Preis aus DEMSELBEN gemeinsamen "
+                     "Modell (Treiber kontrollieren einander), stabilisiert ueber %s saubere "
+                     "Tage. Der Preis wird nicht mehr als blosser Rest nach der Autoritaet "
+                     "gekappt. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis." % p.get("n_days")),
+        }
+
+
+
 def main():
     events = load_events()
     if not events:
@@ -3376,6 +3436,10 @@ def main():
         res["price_level_pooled"] = price_level_pooled()
     except Exception as _e:
         print("WARN price_level_pooled:", str(_e)[:120])
+    try:
+        _augment_structure_with_pooled_price(res)
+    except Exception as _e:
+        print("WARN augment_structure_price:", str(_e)[:120])
     # 19.07.2026: neue Peec-Datenquellen. Alle drei melden bei fehlender
     # Datenbasis available=False MIT Grund — nie eine 0.0.
     # Gesamteffekte als Prior fuer die Stufenmodelle (Partial Pooling: duenne

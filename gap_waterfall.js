@@ -24,9 +24,9 @@
   function pct(v){ return (v==null||isNaN(v))?"—":(Math.round(v*10)/10).toFixed(1).replace(".",",")+" %"; }
 
   var COL = { base:"#9aa0a8", size:"#6b7280", foot:"#b8860b", price:"#0e7490", rest:"#d9dce1", leader:"#dc0028" };
-  var LBL = { authority:"Bekanntheit & Quellpräsenz", size:"Größe/Marktmacht", cite_share:"Quellpräsenz (in wie vielen zitierten Quellen)", relprice:"Preisniveau" };
+  var LBL = { authority:"Bekanntheit & Quellpräsenz", size:"Bekanntheit & Größe", cite_share:"Quellpräsenz (in wie vielen zitierten Quellen)", relprice:"Preisniveau" };
   var AMP = { authority:"🟡", size:"⚪", cite_share:"🟡", relprice:"🟢" };
-  var mode = "g", curBrand = "ERGO";
+  var mode = "g", curBrand = "ERGO", curRef = null;
   function seg(o){ return o?(mode==="g"?o.grounded:(mode==="u"?o.ungrounded:o.combined)):null; }
   function modeLbl(){ return mode==="g"?"grounded (Web-Suche)":(mode==="u"?"ungrounded (ChatGPT)":"kombiniert"); }
 
@@ -86,6 +86,41 @@
                brands:Object.keys(m.gap_decomposition), joint:false, n:m.n_cells, nb:m.n_brands, nt:m.n_topics };
     }
     return null;
+  }
+
+  /* ---- Gap-Explorer: BELIEBIGES Marken-Paar in Bekanntheit/Quellpräsenz/Preis ----
+     Quelle: price_level_pooled.gap_explorer (gepooltes 3-Treiber-Modell). Beitrag je
+     Treiber = Between-Koeffizient x Differenz der Markenmittel. Erlaubt ERGO vs HUK
+     usw. — nicht nur gegen den Leader. */
+  function decompExplorer(focus, ref){
+    var plp = window.__GW_PLP;
+    var ge = (plp && plp.gap_explorer) ? seg(plp.gap_explorer) : null;
+    if(!ge || !ge.available || !ge.brand_means) return null;
+    var brands = ge.brands || Object.keys(ge.brand_means);
+    if(brands.indexOf(focus) < 0) return null;
+    if(!ref || brands.indexOf(ref) < 0)
+      ref = (ge.leader && brands.indexOf(ge.leader) >= 0) ? ge.leader
+            : brands.filter(function(b){return b!==focus;})[0];
+    var mf = ge.brand_means[focus], mr = ge.brand_means[ref];
+    if(!mf || !mr) return null;
+    var bc = ge.between_coef || {};
+    var gap = (mr.sov||0) - (mf.sov||0);
+    var contrib = {}, favors = {};
+    ["size","cite_share","relprice"].forEach(function(k){
+      if(bc[k]==null) return;
+      var v = bc[k] * ((mr[k]||0) - (mf[k]||0));
+      contrib[k] = v;
+      if(v < -0.05) favors[k] = v;   // Treiber, der fuer die Fokus-Marke spricht
+    });
+    var ahead = brands.filter(function(b){ return b!==focus && ge.brand_means[b] && (ge.brand_means[b].sov||0) > (mf.sov||0); })
+                       .sort(function(a,b){ return (ge.brand_means[b].sov||0)-(ge.brand_means[a].sov||0); }).slice(0,8);
+    if(ahead.indexOf(ref)<0) ahead.unshift(ref);
+    return { g:{actual_gap_pp:gap, contrib_pp:contrib}, leader:ref, focus:focus,
+             baseSov:(mf.sov||0), leadSov:(mr.sov||0), refCandidates:ahead,
+             brands:brands, cols:{size:COL.size, cite_share:COL.foot, relprice:COL.price},
+             label:"Bekanntheit + Quellpräsenz + Preis · gemeinsames Modell, über "+(plp.n_days||"?")+" saubere Tage",
+             n:ge.n_cells, nb:brands.length, nt:null, reliability:ge.driver_reliability,
+             favors:favors, explorer:true, n_days:plp.n_days };
   }
 
   /* ---- Themen-Hotspots aus GEO_SNAPSHOT (client-seitig) ---- */
@@ -155,7 +190,7 @@
       box.innerHTML = deadBox();
       return;
     }
-    var d = decompFor(lm, brand);
+    var d = decompExplorer(brand, curRef) || decompFor(lm, brand);
     if(!d){
       box.innerHTML='<h3 style="font-size:16px;font-weight:700;margin:0">Ursachenanalyse: Warum liegt der Marktführer vorn?</h3>'+
         '<p style="font-size:12px;color:#9ca3af;margin-top:8px">Für diese Auswahl noch keine Zerlegungs-Daten.</p>';
@@ -165,7 +200,7 @@
     curBrand=brand;
     var leader=d.leader, g=d.g;
     var m=seg(lm)||{};
-    var baseSov=sovOf(m,brand), leadSov=sovOf(m,leader);
+    var baseSov=(d.explorer&&d.baseSov!=null)?d.baseSov:sovOf(m,brand), leadSov=(d.explorer&&d.leadSov!=null)?d.leadSov:sovOf(m,leader);
     var gap=g.actual_gap_pp||0;
     // Beitraege: negative auf 0, Summe proportional auf max. Gap kappen
     var contrib={}; var sum=0;
@@ -183,7 +218,12 @@
       var lbl=k==="g"?"grounded":(k==="u"?"ungrounded":"kombiniert"); var on=mode===k;
       return '<button data-m="'+k+'" class="gwm" style="font-size:10.5px;padding:2px 8px;border-radius:7px;border:1px solid '+(on?"#1a1a2e":"#ccc")+';background:'+(on?"#1a1a2e":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+lbl+'</button>';
     }).join("")+'</div>';
-    var sel='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+modeSel+brandSel+'</div>';
+    var refSel = (d.explorer && d.refCandidates && d.refCandidates.length)
+      ? ('<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span style="font-size:10.5px;color:#9ca3af">vs</span>'+
+         d.refCandidates.map(function(o){ var on=o===leader;
+           return '<button data-r="'+o+'" class="gwr" style="font-size:10.5px;padding:2px 8px;border-radius:7px;border:1px solid '+(on?"#dc0028":"#ccc")+';background:'+(on?"#dc0028":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+o+'</button>'; }).join("")+'</div>')
+      : '';
+    var sel='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+modeSel+refSel+brandSel+'</div>';
 
     // Balken
     var order=["authority","size","cite_share","relprice"];
@@ -228,7 +268,11 @@
 
     var notes='<div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5">'+
       'Zerlegung: <b>'+d.label+'</b> · '+(d.n||"?")+' Zellen, '+(d.nb||"?")+' Marken, '+(d.nt||"?")+' Themen ('+modeLbl()+')'+(capped?' · Beiträge proportional auf 100 % des Gaps gekappt':'')+'. '+
-      ((contrib.size!=null||contrib.authority!=null)?'<b>Achtung:</b> Größe und Footprint sind bei so wenigen Marken statistisch nicht trennbar — sie werden bewusst als <b>eine</b> Autoritäts-Stufe geführt (keine 3-Wege-Aufteilung mehr). ':'')+
+      (d.explorer?'<b>Hinweis zur Aufteilung:</b> „Bekanntheit & Größe" ist ein fester Näherungswert (Marktanteil + Markenbekanntheit), keine geschätzte Größe — dadurch weniger mit der Quellpräsenz vermengt als zwei geschätzte Treiber. Die Trennung ist im gepoolten Modell richtungsstabil, bleibt aber eine <b>Tendenz</b>, kein Kausalnachweis. '+
+        (function(){ var f=d.favors||{}; var ks=Object.keys(f); if(!ks.length) return '';
+          var L={size:"Bekanntheit & Größe",cite_share:"Quellpräsenz",relprice:"Preisniveau"};
+          return '<b>Spricht für '+brand+':</b> '+ks.map(function(k){return L[k]+" ("+pp(f[k])+")";}).join(", ")+' — dieser Faktor wirkt zugunsten von '+brand+' und ist im Wasserfall nicht als Rückstand dargestellt. '; })()
+        :((contrib.size!=null||contrib.authority!=null)?'<b>Achtung:</b> Größe und Footprint sind bei so wenigen Marken statistisch nicht trennbar — sie werden bewusst als <b>eine</b> Autoritäts-Stufe geführt. ':''))+
       '⚪ nicht beeinflussbar · 🟡 mittelbar (Portale/Quellen) · 🟢 direkt beeinflussbar. Zerlegung, kein Kausalnachweis.</div>';
 
     // Themen-Hotspots
@@ -268,6 +312,9 @@
     box.querySelectorAll(".gwm").forEach(function(btn){
       btn.addEventListener("click", function(){ mode=btn.getAttribute("data-m"); render(host, lm, curBrand); });
     });
+    box.querySelectorAll(".gwr").forEach(function(btn){
+      btn.addEventListener("click", function(){ curRef=btn.getAttribute("data-r"); render(host, lm, curBrand); });
+    });
 
     // 18.07.2026 Fix: GEO_SNAPSHOT laedt asynchron — fehlen die Hotspots noch,
     // spaeter erneut rendern (vorher fehlten sie dauerhaft, wenn der Snapshot
@@ -283,7 +330,7 @@
   }
   ready(function(){
     getData().then(function(d){
-      window.__GW_LM=(d && d.level_model)?d.level_model:{};
+      window.__GW_LM=(d && d.level_model)?d.level_model:{}; window.__GW_PLP=(d && d.price_level_pooled)?d.price_level_pooled:null;
       window.__gwSetMode=function(m){ mode=m; build(); };
       var tries=0; (function wait(){ tries++; if(build())return; if(tries<40) setTimeout(wait,300); })();
       var tab=document.querySelector('[data-tab="korrelation"]');

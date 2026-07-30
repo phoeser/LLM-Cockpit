@@ -70,9 +70,12 @@
     if(brand==="ERGO" && ss && ss.available && ss.gap_pp!=null){
       var contrib={}; if(ss.authority_pp!=null) contrib.authority=ss.authority_pp; if(ss.price_pp) contrib.relprice=ss.price_pp;
       return { g:{actual_gap_pp:ss.gap_pp, contrib_pp:contrib, rest_pp:ss.rest_pp},
-               leader:ss.leader, label:"Autorität (Größe+Footprint) + Preis + Rest (Audit-Struktur)",
+               leader:ss.leader,
+               label:(ss.price_source==="pooled_joint"
+                        ? ("Autorität + Preis · gemeinsames Modell, über "+(ss.n_days||"?")+" saubere Tage stabilisiert")
+                        : "Autorität (Größe+Footprint) + Preis + Rest (Audit-Struktur)"),
                cols:{authority:COL.foot, relprice:COL.price}, brands:["ERGO"], joint:true,
-               n:null, nb:null, nt:null, structure:true };
+               n:(ss.n_days||null), nb:null, nt:null, structure:true };
     }
     // 2) Footprint-only aus dem Basiskanal (Between/Mundlak)
     var m=seg(lm)||{};

@@ -3297,6 +3297,8 @@ def price_level_pooled(max_days=45):
             pr = rp.get(t, {}).get(b)
             if pr is not None:
                 c["relprice"] = pr
+            if b in BRAND_SIZE:
+                c["size"] = BRAND_SIZE[b]
             cells.append(c)
         return cells
 
@@ -3336,9 +3338,57 @@ def price_level_pooled(max_days=45):
                               "Bivariat (ohne Footprint-Kontrolle), daher betragsmaessig groesser "
                               "als der bereinigte Wert in price_to_sov.")}
 
+    # ── Gap-Explorer: 3-Treiber-Zerlegung (Bekanntheit/Groesse + Quellpraesenz + Preis) ──
+    # Liefert Between-Koeffizienten + Markenmittel je Segment, damit sich der Abstand
+    # ZWISCHEN BELIEBIGEN ZWEI MARKEN zerlegen laesst (nicht nur gegen den Leader) —
+    # z.B. ERGO vs HUK. Groesse ist ein fester Naeherungswert (BRAND_SIZE), kein
+    # geschaetzter; dadurch weniger kollinear mit der Quellpraesenz als zwei geschaetzte
+    # Groessen. Trotzdem: die Trennung Groesse/Quellpraesenz bleibt eine Tendenz.
+    gap_explorer = {}
+    for seg, lab in (("g", "grounded"), ("u", "ungrounded"), ("c", "combined")):
+        fcells = [c for c in _denoise(seg, dayset) if ("relprice" in c and "size" in c)]
+        if len(fcells) < 12:
+            gap_explorer[lab] = {"available": False, "n_cells": len(fcells),
+                                 "note": "Zu wenige Zellen mit Preis UND Groesse (min. 12)."}
+            continue
+        fit = _mundlak_multi(fcells, ["size", "cite_share", "relprice"], "sov")
+        if not fit.get("available"):
+            gap_explorer[lab] = {"available": False, "note": fit.get("note")}
+            continue
+        de = fit.get("drivers_eff") or {}
+        bc = {k: ((de.get(k) or {}).get("between") or {}).get("coef") for k in ("size", "cite_share", "relprice")}
+        rel = {}
+        for k in ("size", "cite_share", "relprice"):
+            b = (de.get(k) or {}).get("between") or {}
+            rel[k] = {"prob_direction": b.get("prob_direction"),
+                      "wild_cluster_p": b.get("wild_cluster_p"),
+                      "loo_sign_stable": (b.get("between_loo") or {}).get("sign_stable")}
+        # Markenmittel (roh, ueber die gepoolten Zellen)
+        _sum = {}; _cnt = {}
+        for c in fcells:
+            b = c["brand"]
+            d = _sum.setdefault(b, {"sov": 0.0, "size": 0.0, "cite_share": 0.0, "relprice": 0.0})
+            d["sov"] += c["sov"]; d["size"] += c["size"]
+            d["cite_share"] += c["cite_share"]; d["relprice"] += c["relprice"]
+            _cnt[b] = _cnt.get(b, 0) + 1
+        means = {b: {k: round(_sum[b][k] / _cnt[b], 3) for k in _sum[b]} for b in _sum}
+        gap_explorer[lab] = {
+            "available": True, "n_cells": len(fcells),
+            "brands": sorted(means.keys()), "leader": fit.get("leader"),
+            "between_coef": {k: (round(bc[k], 4) if bc[k] is not None else None) for k in bc},
+            "driver_reliability": rel, "brand_means": means,
+            "drivers": ["size", "cite_share", "relprice"],
+            "labels": {"size": "Bekanntheit/Groesse", "cite_share": "Quellpraesenz", "relprice": "Preisniveau"},
+            "note": ("Zerlegung des Abstands zwischen zwei Marken in Bekanntheit/Groesse, "
+                     "Quellpraesenz und Preis. Beitrag je Treiber = Between-Koeffizient x "
+                     "Differenz der Markenmittel. Groesse ist eine feste Naeherung (BRAND_SIZE); "
+                     "die Trennung Groesse/Quellpraesenz ist eine Tendenz, kein Kausalnachweis."),
+        }
+
     return {"available": True, "n_days": len(days), "days_range": [days[0], days[-1]],
             "since_break": _last_break, "max_days_window": max_days,
             "price_to_sov": price_to_sov, "price_to_citations": price_to_citations,
+            "gap_explorer": gap_explorer,
             "stability": stability,
             "interpretation": (
                 "Gepoolt ueber %d saubere Tage. BEFUND: Der Within-Preis-Effekt (Marke mit "

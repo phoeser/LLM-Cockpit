@@ -400,22 +400,29 @@
       if(!cells){ box.innerHTML='<div style="font-size:12px;color:#9ca3af">Peec-Zellen (data/peec_cells.csv) nicht erreichbar — der Quellen-Vergleich wird beim naechsten Reload gezeigt. <b>Keine Ersatz-Nullen.</b></div>'; return; }
       var peec=cells[b3Mode]||{};
       if(!Object.keys(peec).length){ box.innerHTML=b3Btns()+'<div style="font-size:12px;color:#9ca3af">Peec: fuer den Kanal <b>'+b3ModeLbl()+'</b> keine Zellen im aktuellen Export. <b>Keine Ersatz-Nullen.</b></div>'; b3Wire(box); return; }
+      // 31.07.2026 (Entscheidung Paul): Der Vergleich zeigt nur noch die vier
+      // Kernmarken ERGO, Allianz, HUK-Coburg, AXA — je Marke "Peec / eigener
+      // Crawl" nebeneinander. Rang-ρ laeuft ueber genau diese vier Marken
+      // (n=4, grob — dafuer direkt lesbar). Fehlt eine Marke in einer Quelle,
+      // steht dort "—", nie 0.
+      var B3FOCUS=["ERGO","Allianz","HUK-Coburg","AXA"];
       var rowsHtml="", allOwn=[], allPeec=[];
       var pids=Object.keys(own).filter(function(p){ return peec[p]; });
       pids.forEach(function(pid){
         var o=own[pid], p=peec[pid];
-        var brands=Object.keys(o).filter(function(k){ return k!=="_name" && p[k]!=null; });
-        if(brands.length<3) return;
-        var xo=brands.map(function(b){return o[b];}), xp=brands.map(function(b){return p[b];});
+        var avail=B3FOCUS.filter(function(b){ return o[b]!=null && p[b]!=null; });
+        if(avail.length<3) return; // zu wenig Kernmarken in beiden Quellen -> keine Zeile statt Nullen
+        var xo=avail.map(function(b){return o[b];}), xp=avail.map(function(b){return p[b];});
         xo.forEach(function(v){allOwn.push(v);}); xp.forEach(function(v){allPeec.push(v);});
         var rho=pearson(ranks(xo),ranks(xp));
-        var eO=o["ERGO"], eP=p["ERGO"]; var diff=(eO!=null&&eP!=null)?(eO-eP):null;
         var rc=(rho==null)?"#9ca3af":(rho>=0.8?"#067d3a":(rho>=0.5?"#b45309":"#b91c1c"));
+        var cells4=B3FOCUS.map(function(b){
+          var vP=p[b], vO=o[b];
+          var txt=(vP==null&&vO==null)?"—":((vP==null?"—":num(vP,1))+" / "+(vO==null?"—":num(vO,1)));
+          return '<td style="padding:5px 8px;text-align:right;white-space:nowrap'+(b==="ERGO"?';font-weight:700;color:#dc0028':';color:#334155')+'">'+txt+'</td>';
+        }).join("");
         rowsHtml+='<tr style="border-bottom:1px solid #f1f5f9">'+
-          '<td style="padding:5px 8px;font-weight:600;color:#1e293b">'+(o._name||pid)+'</td>'+
-          '<td style="padding:5px 8px;text-align:right">'+num(eP,1)+' %</td>'+
-          '<td style="padding:5px 8px;text-align:right">'+num(eO,1)+' %</td>'+
-          '<td style="padding:5px 8px;text-align:right;color:'+(diff!=null&&Math.abs(diff)>10?"#b45309":"#64748b")+'">'+(diff==null?"—":signed(diff,1)+" pp")+'</td>'+
+          '<td style="padding:5px 8px;font-weight:600;color:#1e293b">'+(o._name||pid)+'</td>'+cells4+
           '<td style="padding:5px 8px;text-align:right;font-weight:700;color:'+rc+'">'+(rho==null?"—":num(rho,2))+'</td></tr>';
       });
       var rAll=pearson(allOwn,allPeec);
@@ -423,15 +430,16 @@
                  : (b3Mode==="u" ? "<b>Peec</b> (ChatGPT-UI) vs. <b>eigener Crawl</b> (ChatGPT-API, ungrounded)"
                                  : "<b>Peec</b> (alle 5 Engines) vs. <b>eigener Crawl</b> (Mittel aus Gemini + ChatGPT)");
       box.innerHTML=b3Btns()+'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:8px">'+
-        '<div style="font-size:12px;color:#4b5563;max-width:640px">ERGO-SoV je Thema: '+srcTxt+'. Rechte Spalte: Rang-Konvergenz der Markenreihenfolge (Spearman-ρ).</div>'+
+        '<div style="font-size:12px;color:#4b5563;max-width:640px">SoV je Thema fuer die vier Kernmarken, Zellenformat <b>Peec / eigener Crawl</b> (jeweils %): '+srcTxt+'. Rechte Spalte: Rang-Konvergenz ueber genau diese vier Marken (Spearman-ρ).</div>'+
         '<span style="font-size:11px;font-weight:700;color:#067d3a;background:#e6f5ec;border-radius:6px;padding:4px 10px;white-space:nowrap">Gesamt-Korrelation r = '+(rAll==null?"—":num(rAll,2))+'</span></div>'+
         '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'+
         '<thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'+
-        '<th style="padding:5px 8px">Thema</th><th style="padding:5px 8px;text-align:right">ERGO — Peec</th>'+
-        '<th style="padding:5px 8px;text-align:right">ERGO — eigener Crawl</th><th style="padding:5px 8px;text-align:right">Differenz</th>'+
-        '<th style="padding:5px 8px;text-align:right" title="Spearman-Rangkorrelation der Markenreihenfolge (1,0 = identisch)">Rang-ρ</th></tr></thead>'+
+        '<th style="padding:5px 8px">Thema</th><th style="padding:5px 8px;text-align:right;color:#dc0028">ERGO</th>'+
+        '<th style="padding:5px 8px;text-align:right">Allianz</th><th style="padding:5px 8px;text-align:right">HUK-Coburg</th>'+
+        '<th style="padding:5px 8px;text-align:right">AXA</th>'+
+        '<th style="padding:5px 8px;text-align:right" title="Spearman-Rangkorrelation der Reihenfolge von ERGO, Allianz, HUK-Coburg, AXA (1,0 = identisch)">Rang-ρ</th></tr></thead>'+
         '<tbody>'+rowsHtml+'</tbody></table></div>'+
-        '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Rang-ρ ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Markenreihenfolge → Messung validiert. Grosse ERGO-Differenzen (&gt;10 pp) sind Pruef-Kandidaten (Prompt-Sets vergleichen). Niveau-Unterschiede folgen aus 26 vs. 7 Marken. Kanal: '+b3ModeLbl()+' · Peec-Export siehe data/peec_cells.csv (zeitraum-Spalte).</div>';
+        '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Beschraenkt auf die vier Kernmarken ERGO, Allianz, HUK-Coburg, AXA (Entscheidung Paul, 31.07.2026). Zellenformat: Peec / eigener Crawl in %. Rang-ρ ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Reihenfolge der vier Marken — bei n=4 grob, aber direkt lesbar. Niveau-Unterschiede folgen aus 26 vs. 7 Marken im Nenner. Kanal: '+b3ModeLbl()+' · Peec-Export siehe data/peec_cells.csv (zeitraum-Spalte).</div>';
       b3Wire(box);
     });
   }

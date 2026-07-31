@@ -10,6 +10,13 @@
       Marktfuehrer? Je Thema: SoV-Gap + eigener Zitatanteil -> Prio-Label
       (Content-Luecke / Verwertung / fast gleichauf). Quelle: GEO_SNAPSHOT
       client-seitig (kein Pipeline-Feld noetig).
+   3. NEU (31.07.2026): Branchen-Benchmark — externer 16-Branchen-Vergleich
+      (Cowork-Analyse 26.07.2026): Wie gross "duerfte" der Allianz-Vorsprung
+      rein aus der Groesse sein? Quelle: data/benchmark_branchen.json
+      (Runtime-Fetch). Alle Zahlen kommen aus der Datei, nichts hartkodiert;
+      fehlt sie, erscheint ein Hinweis — NIE Ersatz-Nullen. Nur sichtbar in
+      der Standard-Ansicht ERGO vs. Allianz (fuer andere Paare gibt es keine
+      Benchmark-Daten).
    Fix grounded (der grounded/ungrounded-Umschalter ist im Neuaufbau v5 entfallen).
    =========================================================================== */
 (function () {
@@ -175,6 +182,38 @@
     return '<span style="font-size:10px;font-weight:700;color:#8a6d00;background:#fdf3d7;border-radius:4px;padding:1px 6px">Quellpräsenz ausbauen</span>';
   }
 
+  /* ---- Branchen-Benchmark (Ursachenanalyse, Zusatz 31.07.2026) ----
+     Externer Vergleich ueber 16 Branchen: LLM-Sichtbarkeit folgt der realen
+     Marktgroesse nur unterproportional (SoV ~ a * Realanteil^b, b ~ 0,5).
+     Daraus ergibt sich ein "erwartbarer" Allianz-Vorsprung — dem der
+     gemessene gegenuebergestellt wird. Andere Messmethode als Peec/eigener
+     Crawl -> Niveaus NICHT direkt vergleichbar, nur die Verhaeltnisse. */
+  function fx(v,d){ if(v==null||isNaN(v)) return "—"; d=(d==null?1:d); return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toFixed(d).replace(".",","); }
+  function benchSection(brand, leader){
+    if(brand!=="ERGO" || leader!=="Allianz") return "";
+    var head='<div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:12px">'+
+      '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Branchen-Benchmark: Wie groß „dürfte" der Allianz-Vorsprung sein?</div>';
+    var B=window.__GW_BENCH;
+    if(B===undefined) return head+'<div style="font-size:11.5px;color:#9ca3af">Benchmark (data/benchmark_branchen.json) wird geladen …</div></div>';
+    if(!B || !B.spotlight || !B.regression) return head+'<div style="font-size:11.5px;color:#9ca3af">Benchmark-Datei (data/benchmark_branchen.json) nicht erreichbar — die Sektion erscheint nach Reload. <b>Keine Ersatz-Nullen.</b></div></div>';
+    var s=B.spotlight, r=B.regression;
+    function tile(v,l,accent){ return '<div style="flex:1;min-width:150px;background:#f6f7f9;border-radius:8px;padding:9px 12px">'+
+      '<div style="font-size:19px;font-weight:800;color:'+(accent||"#282d37")+';line-height:1.1">'+v+'</div>'+
+      '<div style="font-size:10.5px;color:#6b7280;margin-top:2px;line-height:1.4">'+l+'</div></div>'; }
+    var tiles='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 8px">'+
+      tile(fx(s.real_ratio,1)+"×","Realer Größenvorsprung — Beitragsanteil "+fx(s.real_A,1)+" % vs. "+fx(s.real_E,1)+" % (7-Versicherer-Set)")+
+      tile(fx(s.exp_pow_ratio,1)+"–"+fx(s.exp_lin_ratio,1)+"×",'„Erwartbar" laut Branchen-Regel — LLMs stauchen Größenvorsprünge',"#0e7490")+
+      tile(fx(s.measured_ratio,1)+"×","Gemessen im Benchmark — "+fx(s.measured_A,1)+" % vs. "+fx(s.measured_E,1)+" % SoV","#dc0028")+
+    '</div>';
+    var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">Quer über <b>'+(B.n_branchen||"?")+' Branchen</b> ('+(B.n_marken||"?")+' Marken) folgt LLM-Sichtbarkeit der Marktgröße nur unterproportional '+
+      '(SoV ≈ '+fx(r.pow_a,1)+' · Realanteil<sup>'+fx(r.pow_b,2)+'</sup>; Pearson r '+fx(r.pearson,2)+'). Danach „stünde" der Allianz nur das <b>'+fx(s.exp_pow_ratio,1)+'- bis '+fx(s.exp_lin_ratio,1)+'-Fache</b> von ERGOs Sichtbarkeit zu — '+
+      'gemessen ist es das <b>'+fx(s.measured_ratio,1)+'-Fache</b>. ERGO erreicht damit nur rund die Hälfte der größen-erwartbaren Sichtbarkeit (erwartet ≈ '+fx(s.exp_pow_E,1)+'–'+fx(s.exp_lin_E,1)+' % SoV, gemessen '+fx(s.measured_E,1)+' %), '+
+      'während Allianz ihre Erwartung übertrifft. <b>Das stützt die Zerlegung oben unabhängig:</b> Der Rückstand ist kein reiner Größeneffekt — er entsteht aus Autorität/Quellpräsenz (vgl. Kernbefund K1/K3). '+
+      'Chancen-Seite derselben Regel: Weil LLMs Größe stauchen, ist Sichtbarkeit für Herausforderer „billiger" zu holen als Marktanteil.</div>';
+    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' — <b>andere Messmethode als Peec/eigener Crawl</b>, Niveaus nicht direkt vergleichbar (nur Verhältnisse); ein Modell, Momentaufnahme, explorativ. Details: data/benchmark_branchen.json.</div>';
+    return head+tiles+txt+disc+'</div>';
+  }
+
   function render(host, lm, brand){
     var box = document.getElementById("gapWaterfallBox");
     if(!box){
@@ -304,7 +343,7 @@
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
         '<div><h3 style="font-size:16px;font-weight:700;margin:0">4 · Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
         '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">Woraus sich ERGOs Rückstand zum Marktführer zusammensetzt <span style="color:#9ca3af">('+modeLbl()+')</span></p></div>'+
-        sel+'</div>'+ compareHead + bar + legend + notes + hsHtml;
+        sel+'</div>'+ compareHead + bar + legend + notes + hsHtml + benchSection(brand, leader);
 
     box.querySelectorAll(".gwb").forEach(function(btn){
       btn.addEventListener("click", function(){ render(host, lm, btn.getAttribute("data-b")); });
@@ -329,6 +368,12 @@
     return true;
   }
   ready(function(){
+    // Branchen-Benchmark (31.07.2026): parallel laden; __GW_BENCH bleibt bis
+    // dahin undefined ("wird geladen"), danach Objekt oder null ("nicht
+    // erreichbar") — danach einmal neu rendern.
+    fetch("data/benchmark_branchen.json?t="+Date.now(),{cache:"no-store"})
+      .then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
+      .then(function(b){ window.__GW_BENCH=b; try{ build(); }catch(e){} });
     getData().then(function(d){
       window.__GW_LM=(d && d.level_model)?d.level_model:{}; window.__GW_PLP=(d && d.price_level_pooled)?d.price_level_pooled:null;
       window.__gwSetMode=function(m){ mode=m; build(); };

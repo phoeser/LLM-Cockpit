@@ -255,12 +255,19 @@
     '</div>';
   }
 
+  /* Warnhinweis: Peec-SoV ist durch den ERGO-zentrierten Prompt-Satz verzerrt (Pruefung 31.07.2026). */
+  function peecBiasWarn(){
+    return '<div style="background:#fff4f4;border:1px solid #f3c6c6;border-left:4px solid #dc0028;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11.5px;color:#7a1420;line-height:1.5">'+
+      '<b>\u26a0 Peec-SoV ist hier kein neutrales Marktranking.</b> Das Peec-Projekt \u201eERGO Germany\u201c ist ERGOs eigenes Monitoring: <b>132 von 614 Prompts (21\u202f%) nennen ERGO ausdr\u00fccklich</b> (\u201eIst ERGO vertrauensw\u00fcrdig f\u00fcr \u2026?\u201c), <b>kein einziger nennt einen Wettbewerber</b>. Dadurch liegt ERGOs Peec-SoV (~23\u202f%, Platz\u202f1) rund <b>3,2\u00d7</b> \u00fcber dem neutralen eigenen Crawl (~7\u202f%), w\u00e4hrend alle anderen Marken bei ~0,9\u00d7 liegen. Als echtes Marktranking gilt der <b>eigene Crawl</b> (Allianz und HUK vor ERGO). Peec hier = \u201eSichtbarkeit, wenn gezielt \u00fcber ERGO gefragt wird\u201c.'+
+    '</div>';
+  }
   /* ---------- Ueber-/Unterperformer-Scatter (Peec-26-Markenmittel, 26 Punkte) ---------- */
   var scatterChart=null;
   function scatterBlock(){
     return '<div style="border:1px solid #eee;border-radius:11px;padding:14px 16px;margin-bottom:14px">'+
       '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Ueber-/Unterperformer — Quellpraesenz vs. Sichtbarkeit (Peec-26)</div>'+
       '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Jeder Punkt = eine der 26 Peec-Marken (Markenmittel ueber die Themen). Linie = erwartete Sichtbarkeit bei gegebenem Footprint (OLS). Ueber der Linie = macht aus dem Footprint ueberdurchschnittlich viel Sichtbarkeit.</div>'+
+      peecBiasWarn()+
       '<div style="position:relative;height:270px"><canvas id="korrScatterCv"></canvas></div>'+
       '<div style="font-size:11px;color:#6b7280;margin-top:6px" id="korrScatterNote"></div>'+
     '</div>';
@@ -381,6 +388,7 @@
   function block3Skeleton(){
     return '<div style="margin:16px 0 6px"><div style="font-size:14px;font-weight:700;color:#1a1a2e">3 · Quellen-Vergleich: Peec (fuehrend) vs. eigener Crawl</div>'+
       '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Zwei unabhaengige Messungen derselben Sache. Niveau-Unterschiede sind methodisch normal (Peec verteilt ueber 26 Marken, der eigene Crawl ueber 7) — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
+      peecBiasWarn()+
       '<div id="korrDiffBox" style="border:1px solid #eee;border-radius:11px;padding:14px 16px"><div style="font-size:12px;color:#9ca3af">Quellen-Vergleich wird geladen (data/peec_cells.csv) …</div></div></div>';
   }
   var fb3Wait=0;

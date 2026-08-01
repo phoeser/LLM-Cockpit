@@ -119,6 +119,19 @@
   /* ============================================================
      BLOCK 1 — Kernbefunde
      ============================================================ */
+  // Gepooltes Preis-Levelmodell + 3-Treiber-Gap-Explorer (dynamisch, Stand Nightly)
+  function poolGet(C){
+    var plp=(C||{}).price_level_pooled||{};
+    var ge=((plp.gap_explorer||{}).grounded)||{};
+    var rp=((((plp.price_to_sov||{}).grounded||{}).drivers_eff||{}).relprice)||{};
+    var ok=plp.available && ge.available;
+    var nb=ge.n_brands||(ge.brand_means?Object.keys(ge.brand_means).length:null);
+    return { dyn:!!ok, n_days:plp.n_days, n_brands:nb,
+             size:((ge.driver_reliability||{}).size)||null,
+             price_between_coef:(rp.between||{}).coef, price_between_p:(rp.between||{}).wild_cluster_p,
+             price_between_dir:(rp.between||{}).prob_direction, price_within_coef:(rp.within||{}).coef };
+  }
+
   function block1(C){
     var P=p26Get(C), X=xsrcGet(C);
     var cards=[];
@@ -152,21 +165,29 @@
       plain:"Rund <b>"+num(P.foot,1)+" pp</b> davon gehen mit dem geringeren Footprint einher (Peec-26-Zerlegung); der Rest ist allgemeine Markenstaerke. Zerlegung, kein Kausalnachweis.",
       source: P.dyn?("Quelle: peec26_model.gap_decomposition · Stand "+(dateOf(C)||"aktueller Nightly")):("Quelle: Peec-26 · "+STAND)
     }));
-    // K4 Groesse
+    // K4 Groesse — dynamisch: breites Peec-26 (null) vs. gepooltes 14-Preis-Marken-Modell
+    var PL=poolGet(C);
+    var _sizeRobust=(PL.dyn && PL.size && PL.size.wild_cluster_p!=null && PL.size.wild_cluster_p<0.05 && PL.size.loo_sign_stable);
     cards.push(card({
       title:"Unternehmensgroesse",
-      value:"kein eigener Effekt", accent:"#6b7280",
-      badge:badge("Nullbefund","muted"),
-      plain:"Die Groesse erklaert die Sichtbarkeit nicht eigenstaendig (Peec-26, Wild-p "+num(P.size_wild_p,2)+"). Nach Kontrolle der Groesse bleibt der Footprint der Treiber.",
-      source: P.dyn?("Quelle: peec26_model.wild_p.size · Stand "+(dateOf(C)||"aktueller Nightly")):("Quelle: Peec-26 · "+STAND)
+      value:_sizeRobust?"schwaches, uneinheitliches Signal":"kein robuster Effekt", accent:"#6b7280",
+      badge:badge(_sizeRobust?"uneinheitlich":"Nullbefund","muted"),
+      plain:"Im breiten Peec-26-Modell <b>kein</b> eigenstaendiger Effekt (Wild-p "+num(P.size_wild_p,2)+")."+
+            (PL.dyn&&PL.size?(" Im ueber "+(PL.n_days||"?")+" Tage gepoolten Modell der "+(PL.n_brands||"?")+" Preis-Marken ein "+(_sizeRobust?"schwaches, richtungsstabiles":"nicht signifikantes")+" Signal (Wild-p "+num(PL.size.wild_cluster_p,3)+", LOO "+(PL.size.loo_sign_stable?"stabil":"instabil")+")."):"")+
+            " Ueber die Modelle hinweg <b>nicht konsistent</b> \u2192 kein gesicherter Groessen-Effekt.",
+      source: "Quelle: peec26_model.wild_p.size + price_level_pooled.gap_explorer \u00b7 Stand "+(dateOf(C)||"aktueller Nightly")
     }));
-    // K5 Preis — ehrlich, keine Zahl
+    // K5 Preis — dynamisch aus dem gepoolten Preis-Levelmodell (Between identifizierbar, nicht kausal)
+    var _priceOk=(PL.dyn && PL.price_between_coef!=null);
     cards.push(card({
       title:"Preisniveau",
-      value:"nicht identifizierbar", accent:"#6b7280",
-      badge:badge("nicht trennbar","muted"),
-      plain:"Bei nur 7 Marken mit Preisdaten sind Preis, Groesse und Footprint statistisch nicht trennbar. Der fruehere Preis-Hebel ist <b>verworfen</b> — es gibt keine gesicherte Preis-Aussage mehr.",
-      source:"Quelle: Uebergabe 17.07., Abschnitt 2"
+      value:_priceOk?"identifizierbar (Between)":"nicht identifizierbar",
+      accent:_priceOk?"#0e7490":"#6b7280",
+      badge:badge(_priceOk?"nicht kausal":"nicht trennbar","muted"),
+      plain:_priceOk
+        ?("Aktualisiert: mit jetzt <b>"+(PL.n_brands||"?")+" Preis-Marken</b> und ueber "+(PL.n_days||"?")+" Tage gemittelt IST der Preis identifizierbar \u2014 guenstiger Relativpreis geht mit mehr Sichtbarkeit einher (Between "+num(PL.price_between_coef,2)+", Richtung "+Math.round((PL.price_between_dir||0)*100)+"\u202f%, Wild-p "+num(PL.price_between_p,3)+"). <b>Aber nur als Marken-Vergleich</b>; die kausal saubere Within-Schaetzung liegt bei ~0 ("+num(PL.price_within_coef,2)+"). Der fruehere '7 Marken / verworfen'-Stand ist ueberholt.")
+        :"Preis-Levelmodell baut sich noch ueber die Nightly-Tage auf (mind. 3 saubere Tage noetig).",
+      source:"Quelle: price_level_pooled \u00b7 Stand "+(dateOf(C)||"aktueller Nightly")
     }));
     // K6 Kurzfrist-Events
     var val=C.validation||{}; var oos=(val.out_of_sample||{}).r2_oos_vs_baseline; var fp=val.placebo_false_positive_rate;
@@ -320,7 +341,7 @@
 
   function block2(C){
     return '<div style="margin:16px 0 6px"><div style="font-size:14px;font-weight:700;color:#1a1a2e">2 · Treiber im Detail</div>'+
-      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Peec-26 fuehrt, der eigene Crawl steht zur Kontrolle daneben. Keine Preis-Zeile (nicht identifizierbar), keine 3-Wege-Zerlegung.</div>'+
+      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Peec-26 und der eigene Crawl stehen nebeneinander. Preis-Zeile und 3-Wege-Zerlegung (Groesse / Quellpraesenz / Preis) stehen in der Ursachenanalyse (Block 4) aus dem gepoolten Modell.</div>'+
       '<div id="korrForest">'+forestPlot(C)+'</div>'+ scatterBlock() +'</div>';
   }
 
@@ -487,7 +508,7 @@
         '<b>Zwei Zirkularitaets-Ebenen:</b> Peec-26 misst intern konsistent (Footprint und SoV aus denselben Peec-Antworten, engine-uebergreifend); der externe Gegentest (Cross-Source) kreuzt zwei getrennte Messsysteme.'+
         '<ul style="margin:8px 0 6px;padding-left:18px">'+circItems+'</ul>'+
         '<b>Limitationen (ehrlich):</b><ul style="margin:6px 0 0;padding-left:18px">'+
-          '<li><b>Preis-Identifikation:</b> Bei 7 Marken sind Preis, Groesse und Footprint nicht trennbar — keine gesicherte Preis-Aussage.</li>'+
+          '<li><b>Preis-Identifikation:</b> Ueber 14 Preis-Marken und mehrere Tage gepoolt ist der Preis als Between-Effekt richtungsstabil identifizierbar (guenstiger → sichtbarer), aber nicht kausal (Within ≈ 0). Siehe Ursachenanalyse.</li>'+
           '<li><b>Boden des Wild-p:</b> bei nur 7 Clustern (eigener Crawl) ist der kleinstmoegliche p-Wert 0,0078 (2⁷ Vorzeichen-Vektoren) — "sicherer" geht rechnerisch nicht.</li>'+
           '<li><b>Peec-Historie kurz:</b> derzeit ein Vier-Wochen-Fenster; Trend-/Lag-Aussagen brauchen mehr Wochen.</li>'+
           '<li><b>Cross-Source fragil:</b> ohne Allianz faellt r von 0,82 auf 0,60 (p 0,21). Der plausibelste Befund des Projekts — aber kein Fels.</li>'+

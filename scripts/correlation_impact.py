@@ -3605,6 +3605,55 @@ def event_impact_denoised(events):
     _cq_sig = sum(1 for sec in (content_quality["taeglich"], content_quality["woechentlich"])
                   for t in sec if isinstance(sec[t], dict) and sec[t].get("significant"))
 
+    # Hebel 4: ZITATIONEN als Zwischen-Zielgroesse (kausal naeher als SoV).
+    # Kette: Seitenaenderung -> Seite wird zitiert -> Marke genannt -> SoV. Das erste
+    # Glied (Event -> Zitat) ist direkter. Zitat-Anteil je Marke je Tag (grounded) aus
+    # data/level_cells_history.jsonl. Kurzes Fenster (waechst taeglich), daher weite KIs.
+    citation_outcome = {"available": False,
+                        "grund": "Keine Level-Zellen-Historie fuer die Zitat-Zielgroesse."}
+    try:
+        _lc = _load_level_cells()
+        if _lc:
+            _cbyday = {}
+            for r in _lc:
+                d = r.get("date"); b = r.get("brand")
+                if not d or not b:
+                    continue
+                _cbyday.setdefault(d, {})[b] = _cbyday.setdefault(d, {}).get(b, 0.0) + (r.get("cite_g") or 0)
+            _cser = {}
+            for d in sorted(_cbyday):
+                tot = sum(_cbyday[d].values()) or 1.0
+                for b, c in _cbyday[d].items():
+                    _cser.setdefault(b, []).append((d, 100.0 * c / tot))
+            _cser = {b: sorted(v) for b, v in _cser.items()}
+            _cdays = len(_cbyday)
+            if _cdays >= 5:
+                _cpts, _ = build_intervals(_cser, bydays, IMPACT_TYPES)
+                _cres = {}
+                for t in IMPACT_TYPES:
+                    xs = [p["x"].get(t, 0.0) for p in _cpts]
+                    ys = [p["y"] for p in _cpts]
+                    n_with = sum(1 for x in xs if x > 0)
+                    if n_with < 3:
+                        continue
+                    eff, se, lo, hi, sig, pval = _effect_ci(xs, ys)
+                    _cres[t] = {"label": TYPE_LABEL.get(t, t), "n_with_event": n_with,
+                                "effect_cite_share_pp": eff, "ci95_low_pp": lo, "ci95_high_pp": hi,
+                                "significant": bool(sig), "p_value": pval}
+                citation_outcome = {
+                    "available": True, "n_messtage": _cdays, "n_intervalle": len(_cpts),
+                    "zielgroesse": "grounded Zitat-Anteil je Marke (level_cells_history)",
+                    "impact": _cres,
+                    "n_gesichert": sum(1 for t in _cres if _cres[t].get("significant")),
+                    "note": ("Hebel 4: Event -> Zitat (kausal naeher als Event -> SoV). Fenster noch "
+                             "kurz (%d Messtage), KIs entsprechend weit; verengt sich mit jedem "
+                             "Crawl-Tag. Weiterhin Korrelation." % _cdays)}
+            else:
+                citation_outcome = {"available": False,
+                                    "grund": "Zu wenige Messtage in der Zitat-Historie (%d, min. 5)." % _cdays}
+    except Exception as _e:
+        citation_outcome = {"available": False, "grund": "Zitat-Zielgroesse nicht berechenbar: %s" % str(_e)[:80]}
+
     n_sig_week = sum(1 for t in weekly_res if weekly_res[t].get("significant"))
     n_sig_day = sum(1 for t in daily_res if daily_res[t].get("significant"))
     # KI-Verengung je Typ (taeglich -> woechentlich)
@@ -3626,6 +3675,7 @@ def event_impact_denoised(events):
         "impact_grounded_woechentlich": weekly_res,
         "content_quality": content_quality,
         "content_quality_n_gesichert": _cq_sig,
+        "citation_outcome": citation_outcome,
         "ci_verengung_tag_zu_woche": verengung,
         "n_gesichert_taeglich": n_sig_day,
         "n_gesichert_woechentlich": n_sig_week,

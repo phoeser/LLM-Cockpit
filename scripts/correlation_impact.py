@@ -3549,6 +3549,62 @@ def event_impact_denoised(events):
     weekly = _weekly_grounded_series(raw)
     weekly_res, n_weekly = _study(weekly)
 
+    # Hebel 3: page_change nach INHALTLICHER SUBSTANZ und MAGNITUDE aufschluesseln,
+    # auf derselben entrauschten grounded-Zielgroesse. Klassifikation aus dem
+    # Diff-Klassifikator (detail.classification.type: preis/leistung/faq/copy/struktur/
+    # sonstiges); Magnitude aus dem Event (0..1, aus added/removed lines).
+    _SUBST = {"preis", "leistung", "faq"}   # fuegt zitierbaren Inhalt hinzu
+    _KOSM = {"copy", "struktur", "sonstiges"}
+    _cq_bydays = {}
+    for e in ev:
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        if not b or not day or e.get("event_type") != "page_change":
+            continue
+        slot = _cq_bydays.setdefault(b, {}).setdefault(day, {})
+        c = (e.get("detail") or {}).get("classification")
+        cls = str(c.get("type")).lower() if isinstance(c, dict) and c.get("type") else None
+        if cls in _SUBST:
+            slot["page_subst"] = slot.get("page_subst", 0) + 1
+        elif cls in _KOSM:
+            slot["page_kosm"] = slot.get("page_kosm", 0) + 1
+        mag = e.get("magnitude") or 0
+        if mag >= 0.5:
+            slot["page_hi_mag"] = slot.get("page_hi_mag", 0) + 1
+        else:
+            slot["page_lo_mag"] = slot.get("page_lo_mag", 0) + 1
+    _CQ_TYPES = ["page_subst", "page_kosm", "page_hi_mag", "page_lo_mag"]
+    _CQ_LABEL = {"page_subst": "Inhaltlich substanziell (Preis/Leistung/FAQ)",
+                 "page_kosm": "Kosmetisch (Copy/Struktur/Sonstiges)",
+                 "page_hi_mag": "Grosse Aenderung (Magnitude >= 0,5)",
+                 "page_lo_mag": "Kleine Aenderung (Magnitude < 0,5)"}
+
+    def _cq_study(series):
+        pts, _sk = build_intervals(series, _cq_bydays, _CQ_TYPES)
+        res = {}
+        for t in _CQ_TYPES:
+            xs = [p["x"].get(t, 0.0) for p in pts]
+            ys = [p["y"] for p in pts]
+            n_with = sum(1 for x in xs if x > 0)
+            if n_with < 3:
+                res[t] = {"label": _CQ_LABEL[t], "n_with_event": n_with, "available": False,
+                          "grund": "Zu wenige Intervalle (<3)."}
+                continue
+            eff, se, lo, hi, sig, pval = _effect_ci(xs, ys)
+            res[t] = {"label": _CQ_LABEL[t], "n_with_event": n_with,
+                      "avg_sov_effect_pp": eff, "se_pp": se, "ci95_low_pp": lo,
+                      "ci95_high_pp": hi, "significant": bool(sig), "p_value": pval}
+        return res
+
+    content_quality = {
+        "taeglich": _cq_study(raw),
+        "woechentlich": _cq_study(weekly),
+        "note": ("Hebel 3: page_change nach Substanz (Preis/Leistung/FAQ = zitierbarer Inhalt) "
+                 "vs. Kosmetik und nach Magnitude. Zweck: ausschliessen, dass der Nullbefund nur "
+                 "vom Zusammenwerfen substanzieller und kosmetischer Aenderungen kommt."),
+    }
+    _cq_sig = sum(1 for sec in (content_quality["taeglich"], content_quality["woechentlich"])
+                  for t in sec if isinstance(sec[t], dict) and sec[t].get("significant"))
+
     n_sig_week = sum(1 for t in weekly_res if weekly_res[t].get("significant"))
     n_sig_day = sum(1 for t in daily_res if daily_res[t].get("significant"))
     # KI-Verengung je Typ (taeglich -> woechentlich)
@@ -3568,6 +3624,8 @@ def event_impact_denoised(events):
         "n_intervalle_woechentlich": n_weekly,
         "impact_grounded_taeglich": daily_res,
         "impact_grounded_woechentlich": weekly_res,
+        "content_quality": content_quality,
+        "content_quality_n_gesichert": _cq_sig,
         "ci_verengung_tag_zu_woche": verengung,
         "n_gesichert_taeglich": n_sig_day,
         "n_gesichert_woechentlich": n_sig_week,

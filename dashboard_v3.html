@@ -821,7 +821,7 @@
       <span class="text-xs text-gray-500">Datenstand Peec: <span id="peecAsOf">–</span> · aktualisiert sich mit dem wöchentlichen Peec-Export</span>
     </div>
     <p class="text-sm text-gray-600 mb-4">Unabhängige Validierung des Treibermodells: Peec misst dieselben Marken &times; Themen über ChatGPT, Gemini, AI Overview, AI Mode und Perplexity (366 Prompts, echte UI-Antworten). Footprint = zitatgewichteter Anteil der Quellen mit Markenerwähnung je Thema.</p>
-    <div style="background:#fff4f4;border:1px solid #f3c6c6;border-left:4px solid #dc0028;border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#7a1420;line-height:1.55"><b>⚠ Wichtig zur Lesart — Peec-SoV ist kein neutrales Marktranking.</b> Der Prompt-Satz des Projekts „ERGO Germany“ ist ERGO-zentriert: <b>132 von 614 Prompts (21 %) nennen ERGO ausdrücklich</b> („Ist ERGO vertrauenswürdig für …?“), <b>kein einziger nennt einen Wettbewerber</b>. Dadurch erscheint ERGO auf Platz 1 (~23 %), obwohl der neutrale eigene Crawl (Reiter „LLM-Sichtbarkeit (GEO)“) das marktplausible Bild zeigt: <b>Allianz und HUK vor ERGO</b> (ERGO ~7 %). Das Verhältnis Peec/eigener-Crawl ist nur bei ERGO auffällig (3,2×), alle anderen Marken ~0,9×. Peec misst hier zuverlässig, <b>wie ERGO in ERGO-bezogenen Fragen dasteht</b> — nicht die absolute Marktführerschaft. <span style="color:#9a5560">(Prüfung 31.07.2026 · Details im Reiter „Methodik & Fragen“.)</span></div>
+    <div style="background:#f6f7f9;border:1px solid #e3e6ea;border-left:4px solid #6b7280;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12.5px;color:#374151;line-height:1.55"><b>Ansicht umschaltbar (Standard: branding-neutral).</b> Peecs Prompt-Satz ist ERGO-zentriert — 21 % der Prompts nennen ERGO ausdrücklich, kein Wettbewerber. In der <b>neutralen</b> Ansicht (nur markenfreie Prompts) liegt ERGO marktplausibel hinter Allianz und HUK; die <b>ERGO-fokussierte</b> Ansicht (inkl. Branding-Prompts) ist eine Monitoring-Kennzahl, kein Marktranking. Umschalter unten. <span style="color:#9ca3af">(Prüfung 31.07.2026 · Details: 18b_PEEC_BRANDING_FILTER.md.)</span></div>
     <div id="peecHealth"></div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="peecCards"></div>
     <div class="bg-white rounded-xl shadow p-5 mb-6">
@@ -849,14 +849,27 @@ function renderPeecTab(){
   document.getElementById('peecAsOf').textContent = P.as_of || '–';
   const wp = (window.CORRELATION_IMPACT && CORRELATION_IMPACT.level_model && CORRELATION_IMPACT.level_model.with_peec) || null;
   const val = wp && wp.validation || {};
-  document.getElementById('peecHealth').innerHTML = (val.data_health)
-    ? '<div class="bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg p-3 mb-4"><b>Datenqualität:</b> '+val.data_health+'</div>' : '';
+  document.getElementById('peecHealth').innerHTML =
+    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span class="text-xs text-gray-400">Prompts:</span>'+
+      _peecTb(1,'Neutral (ohne Branding)')+_peecTb(0,'inkl. Branding (ERGO-fokussiert)')+
+      (_neuAvail?'':'<span class="text-xs" style="color:#b45309">— neutrale Ansicht ab dem nächsten Peec-Export</span>')+'</div>'+
+    (_neu
+      ? '<div class="text-xs rounded-lg p-3 mb-3" style="background:#e6f5ec;border:1px solid #bfe3cd;color:#14532d"><b>Branding-neutrale Ansicht.</b> Nur Prompts ohne Markennamen (System-Tag non-branded) — das faire Marktbild: Allianz und HUK vor ERGO.</div>'
+      : '<div class="text-xs rounded-lg p-3 mb-3" style="background:#fff4f4;border:1px solid #f3c6c6;color:#7a1420"><b>ERGO-fokussierte Ansicht (inkl. Branding-Prompts).</b> Kein neutrales Marktranking — ERGO erscheint hier künstlich vorne.</div>')+
+    ((val.data_health)?'<div class="bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg p-3 mb-4"><b>Datenqualität:</b> '+val.data_health+'</div>':'');
+  var _neuAvail = !!(P.footprint_pct_neutral && P.peec_sov_pct_neutral);
+  if(window.__peecNeutral===undefined) window.__peecNeutral = true;
+  var _neu = window.__peecNeutral && _neuAvail;
+  var FP  = _neu ? P.footprint_pct_neutral : P.footprint_pct;
+  var VIS = _neu ? (P.peec_visibility_pct_neutral||P.peec_visibility_pct) : P.peec_visibility_pct;
+  var SOV = _neu ? P.peec_sov_pct_neutral : P.peec_sov_pct;
+  function _peecTb(n,label){ var on=(!!window.__peecNeutral===!!n); return '<button onclick="window.__peecToggle('+n+')" style="font-size:10.5px;padding:2px 9px;border-radius:7px;border:1px solid '+(on?"#067d3a":"#ccc")+';background:'+(on?"#067d3a":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+label+'</button>'; }
   function avgObj(o){ const v=Object.values(o||{}); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; }
   function fmt(v){ return v!=null ? v.toFixed(1)+' %' : '–'; }
   function heatColor(v){ if(v==null) return 'transparent'; const x=Math.min(v,50)/50; return 'rgba(220,0,40,'+(0.06+0.5*x).toFixed(2)+')'; }
   const r = (val.combined && val.combined.pearson_r != null) ? val.combined.pearson_r : (val.pearson_r != null ? val.pearson_r : null);
   const de = wp && wp.combined && wp.combined.drivers_eff && wp.combined.drivers_eff.cite_share || null;
-  const fpE = avgObj(P.footprint_pct && P.footprint_pct['ERGO']), fpA = avgObj(P.footprint_pct && P.footprint_pct['Allianz']);
+  const fpE = avgObj(FP && FP['ERGO']), fpA = avgObj(FP && FP['Allianz']);
   const cards = [
     ['Konvergenz eigener Crawl ↔ Peec', r!=null ? ('r = '+r.toFixed(2)) : '–', ((val.combined&&val.combined.n)||val.n_common_cells||0)+' gemeinsame Zellen'],
     ['Peec-Zellen im Modell', wp ? (wp.n_cells_added||0) : '–', 'zusätzlich zu den eigenen Zellen'],
@@ -873,14 +886,14 @@ function renderPeecTab(){
     const own = b==='ERGO';
     html += '<tr class="'+(own?'bg-red-50 font-semibold':'')+'"><td class="p-1 whitespace-nowrap">'+b+(own?' ★':'')+'</td>';
     tps.forEach(t => {
-      const v = (P.footprint_pct[b]||{})[t];
+      const v = (FP[b]||{})[t];
       html += '<td class="p-1 text-right" style="background:'+heatColor(v)+'">'+(v!=null? v.toFixed(0)+' %':'–')+'</td>';
     });
     html += '</tr>';
   });
   document.getElementById('peecHeat').innerHTML = html + '</tbody>';
-  let rows = tps.map(t => ({t:t, fp:(P.footprint_pct['ERGO']||{})[t], fa:(P.footprint_pct['Allianz']||{})[t],
-                            vis:((P.peec_visibility_pct||{})['ERGO']||{})[t], sov:((P.peec_sov_pct||{})['ERGO']||{})[t]}))
+  let rows = tps.map(t => ({t:t, fp:(FP['ERGO']||{})[t], fa:(FP['Allianz']||{})[t],
+                            vis:((VIS||{})['ERGO']||{})[t], sov:((SOV||{})['ERGO']||{})[t]}))
                 .sort((a,b)=>(a.vis||0)-(b.vis||0));
   document.getElementById('peecErgoTbl').innerHTML =
     '<thead><tr><th class="text-left p-1">Thema</th><th class="p-1 text-right">Footprint ERGO</th><th class="p-1 text-right">Footprint Allianz</th><th class="p-1 text-right">Visibility</th><th class="p-1 text-right">SoV</th></tr></thead><tbody>'+
@@ -901,6 +914,7 @@ function renderPeecTab(){
       '</ul><p class="text-xs text-gray-500 mt-3">'+(wp.note||'')+'</p>';
   }
 }
+window.__peecToggle = function(n){ window.__peecNeutral = !!n; try{ renderPeecTab(); }catch(e){} };
 window.renderPeecTab = renderPeecTab;
 </script>
 

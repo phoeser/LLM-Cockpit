@@ -197,7 +197,7 @@
       title:"Kurzfrist-Events",
       value:nRel+" / "+(nTot||"?"), sub:"Event-Typen mit verlaesslicher Wirkung", accent:"#6b7280",
       badge:badge("Nullbefund","muted"),
-      plain:"Kein einzelnes Marktereignis bewegt die Sichtbarkeit gesichert. Out-of-Sample-R² "+num(oos,2)+" (&lt;0 → keine Vorhersagekraft), Placebo-Falsch-Positiv-Rate "+(fp!=null?num(fp*100,1)+"&nbsp;%":"—")+".",
+      plain:"Kein einzelnes Marktereignis bewegt die Sichtbarkeit gesichert. Out-of-Sample-R² "+num(oos,2)+" (&lt;0 → keine Vorhersagekraft), Placebo-Falsch-Positiv-Rate "+(fp!=null?num(fp*100,1)+"&nbsp;%":"—")+"."+((function(){var ed=C.event_impact_denoised; if(ed&&ed.available){return " <b>Auch nach Entrauschung</b> (nur grounded-Engines + Wochen-Mittel, "+(ed.n_intervalle_woechentlich||"?")+" Wochen-Intervalle) bleibt es bei "+(ed.n_gesichert_woechentlich||0)+" gesicherten Effekten — ein <b>belastbarer</b> Nullbefund, nicht bloß Rauschen.";} return "";})()),
       source:"Quelle: eigener Crawl · Event-Study, "+(mv.n_points||"?")+" Intervalle"
     }));
     return '<div style="margin-bottom:6px"><div style="font-size:14px;font-weight:700;color:#1a1a2e">1 · Kernbefunde</div>'+

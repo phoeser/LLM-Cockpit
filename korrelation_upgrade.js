@@ -284,19 +284,34 @@
   }
   /* ---------- Ueber-/Unterperformer-Scatter (Peec-26-Markenmittel, 26 Punkte) ---------- */
   var scatterChart=null;
+  var scatterNeutral = true;  // Default: branding-neutrale Ansicht (nur Prompts ohne Marke)
+  function peecNeutralAvail(){ var P=window.PEEC_DATA; return !!(P && P.footprint_pct_neutral && P.peec_sov_pct_neutral); }
+  window.__scatterToggle = function(n){ scatterNeutral = !!n; var el=document.getElementById("korrScatterBlock"); if(el){ el.outerHTML = scatterBlock(); renderScatter(); } };
   function scatterBlock(){
-    return '<div style="border:1px solid #eee;border-radius:11px;padding:14px 16px;margin-bottom:14px">'+
+    var avail=peecNeutralAvail(); var neu=scatterNeutral && avail;
+    function tb(n,label){ var on=(scatterNeutral===!!n); return '<button onclick="window.__scatterToggle('+n+')" style="font-size:10.5px;padding:2px 9px;border-radius:7px;border:1px solid '+(on?"#067d3a":"#ccc")+';background:'+(on?"#067d3a":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+label+'</button>'; }
+    var toggle='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+
+      '<span style="font-size:10.5px;color:#9ca3af">Prompts:</span>'+tb(1,"Neutral (ohne Branding)")+tb(0,"inkl. Branding (ERGO-fokussiert)")+
+      (avail?'':'<span style="font-size:10px;color:#b45309">— neutrale Ansicht ab dem naechsten Peec-Export verfuegbar</span>')+'</div>';
+    var note = neu
+      ? '<div style="background:#e6f5ec;border:1px solid #bfe3cd;border-left:4px solid #067d3a;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:11.5px;color:#14532d;line-height:1.5"><b>Branding-neutrale Ansicht.</b> Nur Prompts <b>ohne</b> Markennamen (Peec-System-Tag <code>non-branded</code>) — das faire Marktbild. ERGO ist hier nicht kuenstlich vorne; neutral liegen Allianz und HUK vor ERGO.</div>'
+      : peecBiasWarn();
+    return '<div id="korrScatterBlock" style="border:1px solid #eee;border-radius:11px;padding:14px 16px;margin-bottom:14px">'+
       '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Ueber-/Unterperformer — Quellpraesenz vs. Sichtbarkeit (Peec-26)</div>'+
       '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Jeder Punkt = eine der 26 Peec-Marken (Markenmittel ueber die Themen). Linie = erwartete Sichtbarkeit bei gegebenem Footprint (OLS). Ueber der Linie = macht aus dem Footprint ueberdurchschnittlich viel Sichtbarkeit.</div>'+
-      peecBiasWarn()+
+      toggle + note +
       '<div style="position:relative;height:270px"><canvas id="korrScatterCv"></canvas></div>'+
       '<div style="font-size:11px;color:#6b7280;margin-top:6px" id="korrScatterNote"></div>'+
     '</div>';
   }
   function peecBrandMeans(){
     var P=window.PEEC_DATA;
-    if(!P || !P.footprint_pct || !P.peec_sov_pct) return null;
-    var fp=P.footprint_pct, sv=P.peec_sov_pct; var out=[];
+    if(!P) return null;
+    var useNeu = scatterNeutral && peecNeutralAvail();
+    var fp = useNeu ? P.footprint_pct_neutral : P.footprint_pct;
+    var sv = useNeu ? P.peec_sov_pct_neutral : P.peec_sov_pct;
+    if(!fp || !sv) return null;
+    var out=[];
     Object.keys(fp).forEach(function(b){
       if(!sv[b]) return;
       var ft=fp[b], st=sv[b]; var fv=[], svv=[];

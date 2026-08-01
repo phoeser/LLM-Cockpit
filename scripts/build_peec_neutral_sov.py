@@ -45,9 +45,14 @@ def _num(x):
         return 0.0
 
 
+_BRAND_RE = re.compile(r"\\b(" + "|".join(re.escape(t) for t in BRAND_TOKENS) + r")\\b")
+
+
 def _is_branded(text):
-    t = (text or "").lower()
-    return any(tok in t for tok in BRAND_TOKENS)
+    # Wortgrenzen statt Substring: sonst trifft "ergo" auch "ergonomisch" und das
+    # gewoehnliche Fuellwort "ergo" (= also/folglich) und wuerde neutrale Prompts
+    # faelschlich als markiert aussortieren (Review-Befund 01.08.2026).
+    return bool(_BRAND_RE.search((text or "").lower()))
 
 
 def main():

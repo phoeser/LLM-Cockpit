@@ -3464,6 +3464,128 @@ def _augment_structure_with_pooled_price(res):
 
 
 
+
+
+def _weekly_grounded_series(series_by_brand):
+    """Aggregiert die (grounded-)SoV je Marke auf nicht-ueberlappende ISO-Wochen-Mittel.
+    Bewusst NICHT ueberlappend: ein gleitendes Fenster wuerde Autokorrelation zwischen
+    benachbarten Intervallen erzeugen und _effect_ci (das Intervalle als unabhaengig
+    behandelt) kuenstlich zu kleine Standardfehler geben -> Scheinsignifikanz. Die
+    Wochen-Mittelung senkt das LLM-Tagesrauschen der Zielgroesse OHNE diese Falle."""
+    import datetime as _dt
+    out = {}
+    for b, pts in series_by_brand.items():
+        wk = {}
+        for day, val in pts:
+            try:
+                y, w, _ = _dt.date.fromisoformat(day).isocalendar()
+            except Exception:
+                continue
+            wk.setdefault("%04d-W%02d" % (y, w), []).append((day, val))
+        ser = []
+        for key in sorted(wk):
+            days = wk[key]
+            ser.append((max(d for d, _ in days), sum(v for _, v in days) / len(days)))
+        if ser:
+            out[b] = ser
+    return out
+
+
+def event_impact_denoised(events):
+    """Kurzfrist-Event-Study auf ENTRAUSCHTER, GROUNDED-SoV (Hebel 1+2, 01.08.2026).
+
+    Motivation: Das tageweise Gesamtmodell (impact) findet keinen belastbaren
+    Kurzfrist-Effekt — aber vermutlich, weil das Event-Signal im LLM-Tagesrauschen
+    der SoV ertrinkt (dasselbe Problem, das den Preis-Effekt lange verdeckte).
+
+    Zwei Hebel, additiv zum Hauptmodell:
+      - Hebel 2 (Wirkkanal): nur GROUNDED-Engines (Gemini+Perplexity). Das ist der
+        Web-Such-Kanal des eigenen Crawls; ungrounded (ChatGPT) kann auf eine
+        Seitenaenderung physisch nicht reagieren und ist reines Rauschen fuer diesen
+        Test. (Fuer den eigenen Crawl ersetzt das die tagesweise Web-Such-Bedingung,
+        die fanout_regime_analysis fuer die PEEC-Reihe macht — Quellen sauber getrennt.)
+      - Hebel 1 (Entrauschung): die grounded-SoV wird auf nicht-ueberlappende
+        Wochen-Mittel aggregiert, bevor Intervall-Deltas gebildet werden. Weniger
+        Rauschen je Punkt, keine kuenstliche Autokorrelation.
+
+    Ausgabe vergleicht grounded-taeglich (Baseline) mit grounded-woechentlich
+    (entrauscht). Weiterhin Korrelation, kein Kausalnachweis; Cluster ist die Marke.
+    """
+    raw = build_sov_series_for_llms(set(GROUNDED_LLMS))
+    if not raw or sum(len(v) for v in raw.values()) < 20:
+        return {"available": False,
+                "grund": ("Zu wenig grounded-SoV-Historie (per-LLM) fuer die entrauschte "
+                          "Event-Study — waechst mit jedem Crawl.")}
+    ev = dedup_impact_events(events)
+    bydays = {}
+    for e in ev:
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        if not b or not day:
+            continue
+        bydays.setdefault(b, {}).setdefault(day, {})
+        t = e.get("event_type")
+        bydays[b][day][t] = bydays[b][day].get(t, 0) + 1
+
+    def _study(series):
+        pts, _sk = build_intervals(series, bydays, IMPACT_TYPES)
+        res = {}
+        for t in IMPACT_TYPES:
+            xs = [p["x"].get(t, 0.0) for p in pts]
+            ys = [p["y"] for p in pts]
+            n_with = sum(1 for x in xs if x > 0)
+            if n_with < 3:
+                res[t] = {"label": TYPE_LABEL.get(t, t), "n_with_event": n_with,
+                          "available": False,
+                          "grund": "Zu wenige Intervalle mit diesem Ereignis (<3)."}
+                continue
+            eff, se, lo, hi, sig, pval = _effect_ci(xs, ys)
+            res[t] = {"label": TYPE_LABEL.get(t, t), "n_with_event": n_with,
+                      "avg_sov_effect_pp": eff, "se_pp": se,
+                      "ci95_low_pp": lo, "ci95_high_pp": hi,
+                      "significant": bool(sig), "p_value": pval}
+        return res, len(pts)
+
+    daily_res, n_daily = _study(raw)
+    weekly = _weekly_grounded_series(raw)
+    weekly_res, n_weekly = _study(weekly)
+
+    n_sig_week = sum(1 for t in weekly_res if weekly_res[t].get("significant"))
+    n_sig_day = sum(1 for t in daily_res if daily_res[t].get("significant"))
+    # KI-Verengung je Typ (taeglich -> woechentlich)
+    verengung = {}
+    for t in IMPACT_TYPES:
+        d = daily_res.get(t, {}); w = weekly_res.get(t, {})
+        def _wid(x):
+            a, b = x.get("ci95_low_pp"), x.get("ci95_high_pp")
+            return (b - a) if (a is not None and b is not None) else None
+        wd, ww = _wid(d), _wid(w)
+        verengung[t] = round(wd / ww, 2) if (wd and ww and ww > 0) else None
+
+    return {
+        "available": True,
+        "kanal": "grounded (Gemini+Perplexity) — Web-Such-Kanal des eigenen Crawls",
+        "n_intervalle_taeglich": n_daily,
+        "n_intervalle_woechentlich": n_weekly,
+        "impact_grounded_taeglich": daily_res,
+        "impact_grounded_woechentlich": weekly_res,
+        "ci_verengung_tag_zu_woche": verengung,
+        "n_gesichert_taeglich": n_sig_day,
+        "n_gesichert_woechentlich": n_sig_week,
+        "kernaussage": (
+            "Auch nach Entrauschung (grounded-only + Wochen-Mittel) ist KEIN Kurzfrist-Event "
+            "gesichert." if n_sig_week == 0 else
+            "%d Kurzfrist-Effekt(e) ueberstehen die Entrauschung — vor Interpretation KI und "
+            "Mehrfachtests pruefen." % n_sig_week),
+        "note": (
+            "Hebel 1+2 fuer die Kurzfrist-Events. WICHTIG: Es wird bewusst WOECHENTLICH und "
+            "NICHT-UEBERLAPPEND gemittelt, kein gleitendes Fenster — ein ueberlappendes "
+            "Fenster erzeugt Autokorrelation und damit kuenstlich zu enge Konfidenzintervalle "
+            "(getestet, verworfen). Die Wochen-Aggregation reduziert das Rauschen ehrlich, "
+            "kostet aber Intervalle (%d statt %d). Weiterhin Korrelation, kein Kausalnachweis; "
+            "der eigentliche Wirkungsnachweis kaeme aus bewussten Interventionen." % (n_weekly, n_daily)),
+    }
+
+
 def main():
     events = load_events()
     if not events:
@@ -3508,6 +3630,10 @@ def main():
         res["fanout_regime"] = fanout_regime_analysis(events)
     except Exception as _e:
         print("WARN fanout_regime:", str(_e)[:120])
+    try:
+        res["event_impact_denoised"] = event_impact_denoised(events)
+    except Exception as _e:
+        print("WARN event_impact_denoised:", str(_e)[:120])
     try:
         res["lag_analysis"] = lag_analysis(events)
     except Exception as _e:

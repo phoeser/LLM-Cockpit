@@ -3694,6 +3694,81 @@ def event_impact_denoised(events):
     }
 
 
+
+
+def external_source_authority(events):
+    """Koppelt externe Events an die ZITIER-AUTORITAET ihrer Quelle (01.08.2026).
+
+    Frage: Welche Domains zitieren die LLMs wirklich (Autoritaetstabelle aus dem juengsten
+    Peec-Quellen-Snapshot), und wie gut decken unsere getrackten Presse-/News-Events diese
+    Quellen ab? Befund: der Grossteil unserer externen Events liegt auf Quellen, die LLMs
+    NICHT zitieren (Fachpresse/PR) -> deshalb wirken sie nicht. Der wirksame externe Kanal
+    sind die zitierten Autoritaetsquellen (finanztip/test.de/check24/youtube), erfassbar
+    ueber die Zitat-Snapshots, nicht ueber den Presse-Feed. Diagnose + Empfehlung, kein
+    Treibermodell.
+    """
+    import re as _re
+    files = sorted(PEEC_SNAP_DIR.glob("*_sources.json")) if PEEC_SNAP_DIR.is_dir() else []
+    if not files:
+        return {"available": False,
+                "grund": "Kein Peec-Quellen-Snapshot (data/peec_snapshots/*_sources.json) vorhanden."}
+    try:
+        snap = json.loads(files[-1].read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"available": False, "grund": "Snapshot nicht lesbar: %s" % str(e)[:80]}
+    doms = snap.get("domains") or []
+    if not doms:
+        return {"available": False, "grund": "Snapshot ohne Domains."}
+    auth = {d.get("domain"): (d.get("cit") or 0) for d in doms if d.get("domain")}
+    top = sorted(doms, key=lambda d: -(d.get("cit") or 0))[:15]
+    authority_table = [{"domain": d.get("domain"), "citations": d.get("cit") or 0,
+                        "klasse": d.get("cls"), "zitiert_marken": len(d.get("brands") or [])}
+                       for d in top]
+    authdoms = set(auth)
+
+    def _norm(s):
+        s = (s or "").lower().strip()
+        m = _re.search(r"([a-z0-9-]+\.[a-z]{2,})", s)
+        return m.group(1) if m else s
+
+    n_on = n_off = 0
+    tracked = set()
+    for e in events:
+        if e.get("event_type") not in ("press_mention", "news_mention"):
+            continue
+        key = _norm((e.get("detail") or {}).get("media_source"))
+        tracked.add(key)
+        if key in authdoms:
+            n_on += 1
+        else:
+            n_off += 1
+    tot = n_on + n_off
+    luecke = [t["domain"] for t in authority_table if t["domain"] not in tracked][:8]
+    return {
+        "available": True,
+        "quelle": files[-1].name,
+        "autoritaetstabelle": authority_table,
+        "event_deckung": {
+            "n_presse_news_events": tot,
+            "auf_zitierten_quellen": n_on,
+            "anteil_auf_zitierten_quellen": round(n_on / tot, 4) if tot else None,
+            "nicht_zitiert": n_off,
+        },
+        "top_autoritaetsquellen_ohne_event": luecke,
+        "kernbefund": (
+            "Rund %d %% der getrackten Presse-/News-Events liegen auf Quellen, die LLMs NICHT "
+            "zitieren (Fachpresse/PR) — das erklaert, warum externe Events keine Sichtbarkeits-"
+            "Wirkung zeigen. Der wirksame Kanal sind die tatsaechlich zitierten Autoritaetsquellen "
+            "(%s), die nur ueber die Zitat-Snapshots erfasst werden, nicht ueber den Presse-Feed."
+            % (round(100 * n_off / tot) if tot else 0, ", ".join(luecke[:4]))),
+        "empfehlung": (
+            "Externe Events aus den Zitat-Snapshots ableiten: Veraenderung der Marken-Zitationen "
+            "auf autoritativen Domains, gewichtet nach Domain-Autoritaet (cit) — statt Presse-"
+            "Erwaehnungen gleich zu zaehlen. So wird der externe Kanal an dem ausgerichtet, was "
+            "LLMs zitieren."),
+    }
+
+
 def main():
     events = load_events()
     if not events:
@@ -3742,6 +3817,10 @@ def main():
         res["event_impact_denoised"] = event_impact_denoised(events)
     except Exception as _e:
         print("WARN event_impact_denoised:", str(_e)[:120])
+    try:
+        res["external_source_authority"] = external_source_authority(events)
+    except Exception as _e:
+        print("WARN external_source_authority:", str(_e)[:120])
     try:
         res["lag_analysis"] = lag_analysis(events)
     except Exception as _e:

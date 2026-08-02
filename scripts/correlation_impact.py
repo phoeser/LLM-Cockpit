@@ -3227,6 +3227,7 @@ def fanout_regime_analysis(events):
 
 
 LEVEL_CELLS_FILE = Path("data/level_cells_history.jsonl")  # Marke x Thema x Tag (scripts/archive_level_cells.py)
+PAGE_DATES_FILE = Path("data/page_dates.json")  # url -> published/modified (merge_geo_page_events.fetch_page_dates)
 
 
 def _load_level_cells():
@@ -3845,6 +3846,180 @@ def citation_authority_signal():
     }
 
 
+
+def new_page_impact_did(events=None):
+    """Retrospektive Wirkungs-Auswertung ECHT neuer/aktualisierter Seiten (02.08.2026).
+
+    Problem: Unser Crawler-'first_seen' ist NUR unser Erstsichtungs-Datum, nicht der
+    echte Publikationstag — die 7.431 page_new-Events sagen also 'wir haben die URL
+    erstmals gesehen', nicht 'die Seite ist neu'. Mit dem aus dem Roh-HTML gezogenen
+    Veroeffentlichungs-/Aenderungsdatum (data/page_dates.json: schema.org/OpenGraph,
+    vom GEO-Crawl geschrieben) lassen sich Seiten finden, die IM Beobachtungsfenster
+    wirklich neu veroeffentlicht wurden, und ihre Wirkung auf die grounded-Sichtbarkeit
+    im betroffenen Thema messen.
+
+    Design (Difference-in-Differences, Eigenkontrolle):
+      - Treatment: (Marke, Thema) der neuen Seite, ab dem ECHTEN Publikationstag.
+      - Kontrolle: die ANDEREN Themen derselben Marke — differenziert Marken-Zeittrends
+        (Markt-/Saisoneffekte) heraus.
+      - Zielgroesse: grounded sov_g (nur Web-Such-Engines koennen auf eine Seite
+        reagieren), Vor-Mittel vs. Nach-Mittel je Zelle, +/-28 Tage, auf den
+        beobachteten Bereich geklammert.
+      - DiD_i = (nach_treat - vor_treat) - Mittel_ueber_Kontrollen(nach_c - vor_c).
+    Aggregiert ueber Seiten: Mittel, SE, 95%-KI (t, konservativ). 'gesichert' nur wenn
+    das KI die Null ausschliesst UND >=8 unabhaengige Treatments vorliegen — gleiche
+    Konvention wie _effect_ci. Cluster ist die Marke; Strukturbruch-geschuetzt.
+
+    Meldet available=False MIT Grund bei zu kurzem Fenster / fehlenden Daten — nie 0,0.
+    """
+    import datetime as _dt
+
+    if not PAGE_DATES_FILE.exists():
+        return {"available": False,
+                "grund": ("Noch keine data/page_dates.json — der GEO-Crawl schreibt sie ab "
+                          "dem ersten Lauf mit Datums-Extraktion (02.08.2026).")}
+    try:
+        pdates = json.loads(PAGE_DATES_FILE.read_text(encoding="utf-8"))
+    except Exception as ex:
+        return {"available": False, "grund": "page_dates.json nicht lesbar: " + str(ex)[:80]}
+    if not isinstance(pdates, dict) or not pdates:
+        return {"available": False, "grund": "page_dates.json leer."}
+
+    cells = _load_level_cells()
+    if not cells:
+        return {"available": False, "grund": "Keine Level-Zellen-Historie (level_cells_history.jsonl)."}
+    ser = {}          # (brand, topic) -> {day: sov_g}
+    days_all = set()
+    for r in cells:
+        b, t, d, g = r.get("brand"), r.get("topic"), r.get("date"), r.get("sov_g")
+        if not (b and t and d) or g is None:
+            continue
+        ser.setdefault((b, t), {})[d] = float(g)
+        days_all.add(d)
+    if len(days_all) < 8:
+        return {"available": False, "n_messtage": len(days_all),
+                "grund": ("Themen-Reihe (level_cells_history) noch zu kurz fuer Vor/Nach-"
+                          "Vergleich — waechst mit jedem Crawl-Tag.")}
+    dmin, dmax = min(days_all), max(days_all)
+    known_topics = {t for (_b, t) in ser}
+    known_brands = {b for (b, _t) in ser}
+    WIN = 3          # min. Beobachtungstage vor UND nach
+    HALF = 28        # max. Fensterbreite je Seite (Tage), auf [dmin, dmax] geklammert
+
+    def _d(s):
+        return _dt.date.fromisoformat(s)
+
+    def _shift(s, n):
+        return (_d(s) + _dt.timedelta(days=n)).isoformat()
+
+    def _win_mean(cell, lo, hi):   # lo <= tag < hi
+        vals = [v for dd, v in ser.get(cell, {}).items() if lo <= dd < hi]
+        return (sum(vals) / len(vals)) if vals else None
+
+    def _win_n(cell, lo, hi):
+        return sum(1 for dd in ser.get(cell, {}) if lo <= dd < hi)
+
+    # Kandidaten aus page_dates -> (brand, topic) -> fruehestes Ereignisdatum
+    treated, refresh = {}, {}
+    for _url, meta in pdates.items():
+        if not isinstance(meta, dict):
+            continue
+        b = meta.get("brand")
+        if b not in known_brands:
+            continue
+        pids = [p for p in (meta.get("product_ids") or []) if p in known_topics]
+        if not pids:
+            continue
+        pub, mod = meta.get("published"), meta.get("modified")
+        ev, tgt = (pub, treated) if pub else ((mod, refresh) if mod else (None, None))
+        if not ev or not (dmin <= ev <= dmax):
+            continue
+        for t in pids:
+            key = (b, t)
+            if key not in tgt or ev < tgt[key]:
+                tgt[key] = ev
+
+    def _did(cands):
+        rows, skip = [], {"kein_vor_nach": 0, "kein_kontroll": 0, "strukturbruch": 0}
+        for (b, t), ev in cands.items():
+            pre_lo = max(dmin, _shift(ev, -HALF))
+            post_hi = min(_shift(dmax, 1), _shift(ev, HALF + 1))
+            if _spans_break(b, pre_lo, min(dmax, _shift(ev, HALF))):
+                skip["strukturbruch"] += 1
+                continue
+            pre_t, post_t = _win_mean((b, t), pre_lo, ev), _win_mean((b, t), ev, post_hi)
+            if (pre_t is None or post_t is None
+                    or _win_n((b, t), pre_lo, ev) < WIN or _win_n((b, t), ev, post_hi) < WIN):
+                skip["kein_vor_nach"] += 1
+                continue
+            ctrl = []
+            for (cb, ct) in ser:
+                if cb != b or ct == t:
+                    continue
+                pre_c, post_c = _win_mean((cb, ct), pre_lo, ev), _win_mean((cb, ct), ev, post_hi)
+                if (pre_c is None or post_c is None
+                        or _win_n((cb, ct), pre_lo, ev) < WIN or _win_n((cb, ct), ev, post_hi) < WIN):
+                    continue
+                ctrl.append(post_c - pre_c)
+            if not ctrl:
+                skip["kein_kontroll"] += 1
+                continue
+            did = (post_t - pre_t) - (sum(ctrl) / len(ctrl))
+            rows.append({"brand": b, "topic": t, "event_day": ev,
+                         "delta_treated_pp": round(post_t - pre_t, 3),
+                         "delta_control_pp": round(sum(ctrl) / len(ctrl), 3),
+                         "did_pp": round(did, 3), "n_kontroll_themen": len(ctrl)})
+        return rows, skip
+
+    def _summ(rows):
+        dids = [r["did_pp"] for r in rows]
+        n = len(dids)
+        if n == 0:
+            return {"available": False, "n_seiten": 0}
+        mean = sum(dids) / n
+        se = lo = hi = sig = None
+        if n > 1:
+            var = sum((x - mean) ** 2 for x in dids) / (n - 1)
+            se = math.sqrt(var / n)
+            tc = t_critical(n - 1)
+            if tc and se > 0:
+                lo, hi = round(mean - tc * se, 3), round(mean + tc * se, 3)
+                sig = bool(((lo > 0) or (hi < 0)) and n >= 8)
+        return {"available": True, "n_seiten": n,
+                "n_marken": len(set(r["brand"] for r in rows)),
+                "did_mittel_pp": round(mean, 3),
+                "se_pp": round(se, 3) if se is not None else None,
+                "ci95_low_pp": lo, "ci95_high_pp": hi,
+                "significant": bool(sig),
+                "cases": sorted(rows, key=lambda r: r["event_day"])}
+
+    pub_rows, sk_pub = _did(treated)
+    ref_rows, sk_ref = _did(refresh)
+    pub_sum, ref_sum = _summ(pub_rows), _summ(ref_rows)
+
+    n_pages = len(pdates)
+    n_with_pub = sum(1 for m in pdates.values() if isinstance(m, dict) and m.get("published"))
+    n_with_any = sum(1 for m in pdates.values()
+                     if isinstance(m, dict) and (m.get("published") or m.get("modified")))
+    avail = bool(pub_sum.get("available") or ref_sum.get("available"))
+    return {
+        "available": avail,
+        "grund": (None if avail else
+                  "Noch keine neu veroeffentlichte Seite mit genug Vor/Nach-Beobachtung im "
+                  "Fenster — waechst mit der Level-Zellen-Historie."),
+        "zielgroesse": "grounded SoV im Thema (sov_g), Vor-/Nach-Mittel; DiD gegen andere Themen derselben Marke",
+        "fenster": {"von": dmin, "bis": dmax, "halbfenster_tage": HALF, "min_tage_vor_nach": WIN},
+        "datums_abdeckung": {"seiten_gesamt": n_pages, "mit_publikationsdatum": n_with_pub,
+                             "mit_irgendeinem_datum": n_with_any},
+        "neu_veroeffentlicht": pub_sum,
+        "aktualisiert_refresh": ref_sum,
+        "skipped_neu": sk_pub, "skipped_refresh": sk_ref,
+        "hinweis": ("Eigenkontroll-DiD: grounded-Sichtbarkeit im Thema der neuen Seite vor/nach "
+                    "dem ECHTEN Publikationstag, relativ zu den anderen Themen derselben Marke. "
+                    "Korrelation, kein Kausalnachweis; Cluster ist die Marke."),
+    }
+
+
 def main():
     events = load_events()
     if not events:
@@ -3901,6 +4076,10 @@ def main():
         res["citation_authority_signal"] = citation_authority_signal()
     except Exception as _e:
         print("WARN citation_authority_signal:", str(_e)[:120])
+    try:
+        res["new_page_did"] = new_page_impact_did(events)
+    except Exception as _e:
+        print("WARN new_page_did:", str(_e)[:120])
     try:
         res["lag_analysis"] = lag_analysis(events)
     except Exception as _e:

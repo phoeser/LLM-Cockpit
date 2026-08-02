@@ -81,10 +81,10 @@ jobs:
 
       - name: Preisvergleich crawlen (Check24, 3 Produkte x 3 Altersprofile)
         run: python scripts/update_prices.py
-        continue-on-error: true
 
       - name: Preis-Zeitreihe archivieren (Relativpreis je Marke x Produkt)
         run: python scripts/archive_price_cells.py
+        continue-on-error: true
         continue-on-error: true
 
       - name: Treiber-Tracker (Wikipedia, Check24-Rang, Testsieger-Status)
@@ -120,6 +120,7 @@ jobs:
           git add domain_footprint_data.json 2>/dev/null || true
           git add domain_footprint_data.previous.json 2>/dev/null || true
           git add shared/events.jsonl 2>/dev/null || true
+          git add data/page_dates.json 2>/dev/null || true
           git add data/geo_page_changes.json 2>/dev/null || true
           git add data/ratings_external.json 2>/dev/null || true
           git add data/price_comparison.json 2>/dev/null || true

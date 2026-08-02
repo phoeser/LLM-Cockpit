@@ -200,18 +200,9 @@
     function tile(v,l,accent){ return '<div style="flex:1;min-width:150px;background:#f6f7f9;border-radius:8px;padding:9px 12px">'+
       '<div style="font-size:19px;font-weight:800;color:'+(accent||"#282d37")+';line-height:1.1">'+v+'</div>'+
       '<div style="font-size:10.5px;color:#6b7280;margin-top:2px;line-height:1.4">'+l+'</div></div>'; }
-    var tiles='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 8px">'+
-      tile(fx(s.real_ratio,1)+"×","Realer Größenvorsprung — Beitragsanteil "+fx(s.real_A,1)+" % vs. "+fx(s.real_E,1)+" % (7-Versicherer-Set)")+
-      tile(fx(s.exp_pow_ratio,1)+"–"+fx(s.exp_lin_ratio,1)+"×",'„Erwartbar" laut Branchen-Regel — LLMs stauchen Größenvorsprünge',"#0e7490")+
-      tile(fx(s.measured_ratio,1)+"×","Gemessen im Benchmark — "+fx(s.measured_A,1)+" % vs. "+fx(s.measured_E,1)+" % SoV (nur 7 Versicherer, ohne Web)","#dc0028")+
-    '</div>';
-    var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">Quer über <b>'+(B.n_branchen||"?")+' Branchen</b> ('+(B.n_marken||"?")+' Marken) folgt LLM-Sichtbarkeit der Marktgröße nur unterproportional '+
-      '(SoV ≈ '+fx(r.pow_a,1)+' · Realanteil<sup>'+fx(r.pow_b,2)+'</sup>; Pearson r '+fx(r.pearson,2)+'). Danach „stünde" der Allianz nur das <b>'+fx(s.exp_pow_ratio,1)+'- bis '+fx(s.exp_lin_ratio,1)+'-Fache</b> von ERGOs Sichtbarkeit zu — '+
-      'gemessen ist es das <b>'+fx(s.measured_ratio,1)+'-Fache</b>. ERGO erreicht damit nur rund die Hälfte der größen-erwartbaren Sichtbarkeit (erwartet ≈ '+fx(s.exp_pow_E,1)+'–'+fx(s.exp_lin_E,1)+' % SoV, gemessen '+fx(s.measured_E,1)+' %), '+
-      'während Allianz ihre Erwartung übertrifft. <b>Das stützt die Zerlegung oben unabhängig:</b> Der Rückstand ist kein reiner Größeneffekt — er entsteht aus Autorität/Quellpräsenz (vgl. Kernbefund K1/K3). '+
-      'Chancen-Seite derselben Regel: Weil LLMs Größe stauchen, ist Sichtbarkeit für Herausforderer „billiger" zu holen als Marktanteil.</div>';
-    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' — <b>anderer Messweg: ein Modell OHNE Websuche, positionsgewichtet, normiert über nur 7 Versicherer.</b> Weder die Niveaus (38,6 % ≠ der 25-Marken-SoV der Übersicht) NOCH das Verhältnis sind mit dem Dashboard vergleichbar — auf demselben 7er-Set liefert der eigene Crawl ~2,7×, der Benchmark 5,8×; der Benchmark <b>überzeichnet</b> den Allianz-Vorsprung (kein Web + Positionsgewicht). Nur als grobe Richtung über 16 Branchen lesen. Details: data/benchmark_branchen.json.</div>';
-    return head+tiles+txt+disc+'</div>';
+    var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">Ein externer 16-Branchen-Benchmark zeigt qualitativ: <b>LLM-Sichtbarkeit folgt der Marktgr\u00f6\u00dfe nur unterproportional</b> \u2014 gro\u00dfe Anbieter werden gestaucht, Testsieger-/Ratgeber-Marken verst\u00e4rkt (Pearson r '+fx(r.pearson,2)+' \u00fcber '+(B.n_marken||"?")+' Marken in '+(B.n_branchen||"?")+' Branchen). \u00dcbertragen auf ERGO: der R\u00fcckstand zu Allianz ist <b>kein reiner Gr\u00f6\u00dfeneffekt</b> \u2014 er entsteht aus Autorit\u00e4t/Quellpr\u00e4senz (vgl. Kernbefund K1/K3). Chancen-Seite derselben Regel: weil LLMs Gr\u00f6\u00dfe stauchen, ist Sichtbarkeit f\u00fcr Herausforderer \u201ebilliger\u201c zu holen als Marktanteil.</div>';
+    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' \u2014 <b>anderer Messweg (ein Modell OHNE Websuche, positionsgewichtet, normiert \u00fcber nur 7 Versicherer).</b> Nur <b>qualitativ</b> als Quercheck \u00fcber 16 Branchen lesbar; absolute Niveaus und Verh\u00e4ltnisse sind <b>nicht</b> mit dem Dashboard-SoV vergleichbar (der Benchmark \u00fcberzeichnet gro\u00dfe Marken). Details: data/benchmark_branchen.json.</div>';
+    return head+txt+disc+'</div>';
   }
 
   function render(host, lm, brand){

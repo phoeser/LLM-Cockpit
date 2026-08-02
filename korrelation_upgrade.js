@@ -538,7 +538,44 @@
     var X=xsrcGet(C);
     return '<span title="Peec AI = fuehrende Messquelle (26 Marken, 5 Engines). Cross-Source-Gegentest r='+num(X.r_brands,2)+'" style="font-size:10px;font-weight:700;color:#067d3a;background:#e6f5ec;border-radius:4px;padding:2px 7px;vertical-align:middle">Peec fuehrend · Gegentest r='+num(X.r_brands,2)+'</span>';
   }
+  /* ---------- Externe Sichtbarkeit: Zitier-Autoritaet (NEU 02.08.2026) ---------- */
+  function externalAuthorityBlock(C){
+    var esa=C.external_source_authority, cas=C.citation_authority_signal;
+    if((!esa||!esa.available) && (!cas||!cas.available)) return '';
+    var h='<div style="margin-top:18px;padding-top:14px;border-top:1px solid #eee">'+
+      '<div style="font-size:14px;font-weight:700;color:#1a1a2e">Externe Sichtbarkeit: Zitier-Autoritaet</div>'+
+      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Was LLMs wirklich zitieren — und ob unsere externen Events darauf einzahlen.</div>';
+    if(esa && esa.available){
+      var ed=esa.event_deckung||{}; var anteil=ed.anteil_auf_zitierten_quellen;
+      h+='<div style="background:#fff4f4;border:1px solid #f3c6c6;border-left:4px solid #dc0028;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#7a1420;line-height:1.5">'+
+        '<b>'+(anteil!=null?Math.round((1-anteil)*100):'?')+' % unserer Presse-/News-Events liegen auf Quellen, die LLMs NICHT zitieren.</b> '+
+        'Nur '+nfmt(ed.auf_zitierten_quellen||0)+' von '+nfmt(ed.n_presse_news_events||0)+' auf tatsaechlich zitierten Domains — deshalb wirken sie nicht. '+
+        'Die wirksamen Quellen ('+(esa.top_autoritaetsquellen_ohne_event||[]).slice(0,4).join(', ')+') tracken wir gar nicht als Event.'+
+        '</div>';
+      var at=esa.autoritaetstabelle||[];
+      if(at.length){
+        h+='<div style="font-size:12px;font-weight:600;margin:6px 0 4px">Was LLMs zitieren <span style="font-weight:400;color:#9ca3af">(Top-Quellen nach Zitaten)</span></div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'+
+          at.slice(0,10).map(function(x){ return '<span style="font-size:11px;background:#f3f4f6;border-radius:6px;padding:3px 8px">'+x.domain+' <b>'+nfmt(x.citations)+'</b> <span style="color:#9ca3af">'+(x.klasse||'')+'</span></span>'; }).join('')+
+          '</div>';
+      }
+    }
+    if(cas && cas.available){
+      var rk=cas.ranking_aktuell||[];
+      h+='<div style="font-size:12px;font-weight:600;margin:6px 0 4px">Autoritaetsgewichteter Zitier-Anteil je Marke</div>'+
+        '<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">Zitationen gewichtet nach Seitentyp (Comparison/Category = empfehlungstreibend hoeher). '+(cas.n_snapshots||'?')+' Snapshots — die Kopplung Zitier-Anteil → SoV reift mit weiteren Snapshots.</div>'+
+        '<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="color:#64748b;text-align:left"><th style="padding:3px 6px">Marke</th><th style="padding:3px 6px;text-align:right">Anteil</th><th style="padding:3px 6px;text-align:right">Δ seit erstem Snapshot</th></tr></thead><tbody>'+
+        rk.slice(0,8).map(function(x){ var own=(x.brand==="ERGO"); var d=x.delta_pp;
+          return '<tr style="'+(own?"background:#fff5f5;font-weight:600;":"")+'border-top:1px solid #f1f5f9"><td style="padding:3px 6px">'+x.brand+(own?" ★":"")+'</td>'+
+            '<td style="padding:3px 6px;text-align:right">'+num(x.anteil_pct,1)+' %</td>'+
+            '<td style="padding:3px 6px;text-align:right;color:'+(d>0?"#067d3a":(d<0?"#b91c1c":"#9ca3af"))+'">'+(d>0?"+":"")+num(d,2)+' pp</td></tr>'; }).join('')+
+        '</tbody></table>';
+    }
+    return h+'</div>';
+  }
+
   function renderPanel(host, C){
+
     var card0=document.getElementById("korrSynth");
     if(!card0){ card0=document.createElement("div"); card0.id="korrSynth"; card0.className="bg-white rounded-xl shadow p-6 mb-6"; host.insertBefore(card0, host.firstChild); }
     card0.innerHTML=
@@ -546,7 +583,7 @@
         '<h3 style="font-size:17px;font-weight:700;margin:0">Korrelationsanalyse — was treibt die LLM-Sichtbarkeit? '+peecBadgeTop(C)+'</h3>'+
         '<p style="font-size:12px;color:#6b7280;margin:3px 0 0">Nur validierte Befunde. <b>Peec AI</b> ist die fuehrende Quelle (26 Marken), der <b>eigene Crawl</b> steht getrennt daneben, dazwischen eine Differenzanalyse. Die Kernbefunde (Block 1/2) sind engine-uebergreifend; im Quellen-Vergleich (Block 3) und in der Ursachenanalyse (Block 4) laesst sich der Kanal <b>grounded / UI</b> umschalten.</p>'+
       '</div>'+
-      footInfoBox()+ block1(C)+ block2(C)+ block3Skeleton();
+      footInfoBox()+ block1(C)+ block2(C)+ externalAuthorityBlock(C)+ block3Skeleton();
     // Block 5 als eigene Karte direkt nach korrSynth -> gap_waterfall (Block 4) schiebt sich dazwischen
     var meth=document.getElementById("korrMethodik");
     if(!meth){ meth=document.createElement("div"); meth.id="korrMethodik"; meth.className="bg-white rounded-xl shadow p-6 mb-6"; }

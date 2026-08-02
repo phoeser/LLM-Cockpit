@@ -32,6 +32,7 @@ GEO_REPO = os.environ.get("GEO_REPO", "phoeser/geo-visibility-tool")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 EVENTS_FILE = Path(os.environ.get("EVENTS_FILE", "shared/events.jsonl"))
 PAGE_CHANGES_FILE = Path("data/geo_page_changes.json")
+PAGE_DATES_FILE = Path("data/page_dates.json")
 TEMPLATE_FILE = Path("dashboard_template.html")
 
 # Nur Events der letzten N Tage importieren
@@ -253,6 +254,8 @@ def convert_to_cockpit_format(geo_events: list) -> list:
                 "removed_lines": ev.get("removed_lines_count") or len(ev.get("removed_lines") or []),
                 "classification": ev.get("classification"),
                 "summary": ev.get("summary"),
+                "page_published": ev.get("page_published"),
+                "page_modified": ev.get("page_modified"),
             },
         }
         if url:
@@ -298,6 +301,8 @@ def build_detailed_changes(geo_events: list) -> list:
             "s": ev.get("summary"),
             "cl": ev.get("classification"),
             "p": ev.get("product_ids"),
+            "pub": ev.get("page_published"),
+            "mod": ev.get("page_modified"),
         })
 
     changes.sort(key=lambda e: e.get("ts", ""), reverse=True)
@@ -332,6 +337,33 @@ def inject_into_dashboard(changes: list):
     TEMPLATE_FILE.write_text(content, encoding="utf-8")
     print(f"[merge_geo] {len(changes)} Detail-Events in dashboard_template.html injiziert")
     return True
+
+
+def fetch_page_dates() -> int:
+    """Zieht die konsolidierte data/page_dates.json (url -> published/modified/
+    first_seen) aus dem GEO-Repo und legt sie lokal ab. Grundlage der
+    retrospektiven Neue-Seiten-Auswertung im Cockpit. Schutz gegen Ueberschreiben
+    mit Leerdatei: eine leere Antwort ersetzt eine vorhandene gute Datei NICHT
+    ('keine Daten ist kein Befund')."""
+    url = f"https://api.github.com/repos/{GEO_REPO}/contents/data/page_dates.json?ref=main"
+    try:
+        raw = _api_raw(url)  # Contents-API liefert base64 im 'content'
+        data = json.loads(raw.decode("utf-8"))
+    except Exception as e:
+        print(f"[merge_geo] page_dates.json noch nicht im GEO-Repo ({e}) — behalte lokalen Stand")
+        return -1
+    if not isinstance(data, dict) or not data:
+        if PAGE_DATES_FILE.exists():
+            print("[merge_geo] page_dates.json leer/ungueltig — behalte vorhandene Datei")
+            return -1
+        data = {}
+    PAGE_DATES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PAGE_DATES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1,
+                                          sort_keys=True), encoding="utf-8")
+    npub = sum(1 for v in data.values()
+               if isinstance(v, dict) and (v.get("published") or v.get("modified")))
+    print(f"[merge_geo] page_dates.json: {len(data)} Seiten ({npub} mit Datum) -> {PAGE_DATES_FILE}")
+    return npub
 
 
 def main():
@@ -384,6 +416,9 @@ def main():
 
     # 6. In Dashboard injizieren
     inject_into_dashboard(detailed)
+
+    # 7. Konsolidierte Publikationsdaten aus dem GEO-Repo ziehen
+    fetch_page_dates()
 
     # Stats
     brands = {}

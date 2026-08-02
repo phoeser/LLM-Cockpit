@@ -3769,6 +3769,78 @@ def external_source_authority(events):
     }
 
 
+
+
+_CIT_PAGE_WEIGHTS = {"Comparison": 1.0, "Category Page": 0.9, "Listicle": 0.8,
+                     "Product Page": 0.6, "Article": 0.5, "Profile": 0.3, "Homepage": 0.2}
+
+
+def citation_authority_signal():
+    """Autoritaetsgewichtete Zitat-Reihe je Marke aus den Peec-Quellen-Snapshots
+    (Idee Paul, 01.08.2026: externe Sichtbarkeit an die Zitier-Autoritaet koppeln).
+
+    Statt Presse-Erwaehnungen (die zu ~98 % auf von LLMs NICHT zitierten Quellen
+    liegen, siehe external_source_authority) misst dieser Kanal die tatsaechlichen
+    Zitationen je Marke, gewichtet nach Seitentyp der zitierenden Quelle
+    (Comparison/Category-Seiten treiben LLM-Empfehlungen -> hoeher gewichtet als
+    Homepage/Profile). Datenquelle: brand_class_mix der versionierten Snapshots.
+
+    ANTEIL statt Absolutzahl, weil die Snapshot-Abdeckung schwankt und die Peec-
+    30-Tage-Fenster stark ueberlappen. Die Veraenderung des Anteils = das
+    autoritaetsgewichtete externe 'Event'. Die Kopplung Zitat-Anteil -> SoV wird
+    erst ausgewiesen, wenn genug NICHT-ueberlappende Snapshots vorliegen (Reifung)."""
+    if not PEEC_SNAP_DIR.is_dir():
+        return {"available": False, "grund": "Kein Snapshot-Verzeichnis (data/peec_snapshots)."}
+    files = sorted(PEEC_SNAP_DIR.glob("*_sources.json"))
+    stamps = []
+    mixes = []
+    for f in files:
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if d.get("brand_class_mix"):
+            stamps.append(f.name[:10])
+            mixes.append(d["brand_class_mix"])
+    if len(mixes) < 2:
+        return {"available": False, "n_snapshots": len(mixes),
+                "grund": ("Weniger als 2 Snapshots mit brand_class_mix — die Reihe entsteht "
+                          "mit den woechentlichen Montags-Exporten.")}
+
+    def _w(mix):
+        return sum((mix.get(k, 0)) * _CIT_PAGE_WEIGHTS.get(k, 0.4) for k in mix)
+
+    series = {}
+    for st, mix in zip(stamps, mixes):
+        tot = sum(_w(m) for m in mix.values()) or 1.0
+        for b, mm in mix.items():
+            series.setdefault(b, {})[st] = round(100 * _w(mm) / tot, 3)
+    allst = set(stamps)
+    full = {b: m for b, m in series.items() if set(m) >= allst}  # nur durchgaengige Marken
+    ranking = sorted(full.items(), key=lambda x: -x[1][stamps[-1]])
+    latest = [{"brand": b, "anteil_pct": m[stamps[-1]],
+               "delta_pp": round(m[stamps[-1]] - m[stamps[0]], 2)} for b, m in ranking]
+    movers = sorted(latest, key=lambda x: -abs(x["delta_pp"]))
+    return {
+        "available": True,
+        "n_snapshots": len(mixes), "snapshots": stamps,
+        "zielgroesse": ("autoritaetsgewichteter Zitations-Anteil je Marke "
+                        "(Seitentyp-gewichtet: Comparison/Category hoch, Homepage/Profile niedrig)"),
+        "ranking_aktuell": latest[:15],
+        "groesste_bewegungen": movers[:8],
+        "sov_kopplung": {
+            "available": False,
+            "grund": ("Nur %d Snapshots, und die Peec-30-Tage-Fenster ueberlappen stark -> die "
+                      "Reihe ist traege. Fuer die Kopplung Zitat-Anteil -> SoV braucht es mehrere "
+                      "NICHT-ueberlappende Snapshots (ab ca. 5-6 Wochen)." % len(mixes))},
+        "note": ("Externe Sichtbarkeit als autoritaetsgewichtete Zitat-Reihe. Anteile statt "
+                 "Absolutzahlen (Snapshot-Abdeckung schwankt); Marken, die nicht in allen "
+                 "Snapshots vorkommen, sind ausgeblendet (Eintritts-Artefakt). Waechst und "
+                 "schaerft sich mit jedem Montags-Snapshot; wird dann zum autoritaetsgewichteten "
+                 "externen Event-Kanal statt der wirkungslosen Presse-Erwaehnungen."),
+    }
+
+
 def main():
     events = load_events()
     if not events:
@@ -3821,6 +3893,10 @@ def main():
         res["external_source_authority"] = external_source_authority(events)
     except Exception as _e:
         print("WARN external_source_authority:", str(_e)[:120])
+    try:
+        res["citation_authority_signal"] = citation_authority_signal()
+    except Exception as _e:
+        print("WARN citation_authority_signal:", str(_e)[:120])
     try:
         res["lag_analysis"] = lag_analysis(events)
     except Exception as _e:

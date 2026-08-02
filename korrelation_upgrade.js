@@ -129,7 +129,7 @@
     return { dyn:!!ok, n_days:plp.n_days, n_brands:nb,
              size:((ge.driver_reliability||{}).size)||null,
              price_between_coef:(rp.between||{}).coef, price_between_p:(rp.between||{}).wild_cluster_p,
-             price_between_dir:(rp.between||{}).prob_direction, price_within_coef:(rp.within||{}).coef };
+             price_between_dir:(rp.between||{}).prob_direction, price_within_coef:(rp.within||{}).coef, price_within_p:(rp.within||{}).wild_cluster_p };
   }
 
   function block1(C){
@@ -177,16 +177,20 @@
             " Ueber die Modelle hinweg <b>nicht konsistent</b> \u2192 kein gesicherter Groessen-Effekt.",
       source: "Quelle: peec26_model.wild_p.size + price_level_pooled.gap_explorer \u00b7 Stand "+(dateOf(C)||"aktueller Nightly")
     }));
-    // K5 Preis — dynamisch aus dem gepoolten Preis-Levelmodell (Between identifizierbar, nicht kausal)
-    var _priceOk=(PL.dyn && PL.price_between_coef!=null);
+    // K5 Preis — dynamisch, signifikanz- UND stabilitaetsbewusst. Bei kurzer Historie
+    // (wenige Tage) schwankt die Schaetzung zwischen den Naechten stark -> KEIN fester
+    // "identifizierbar"-Claim mehr, sondern die aktuellen Zahlen + Instabilitaets-Warnung.
+    var _pAny=(PL.dyn && PL.price_between_coef!=null);
+    var _bSig=(PL.price_between_p!=null && PL.price_between_p<0.05);
+    var _wSig=(PL.price_within_p!=null && PL.price_within_p<0.05);
     cards.push(card({
       title:"Preisniveau",
-      value:_priceOk?"identifizierbar (Between)":"nicht identifizierbar",
-      accent:_priceOk?"#0e7490":"#6b7280",
-      badge:badge(_priceOk?"nicht kausal":"nicht trennbar","muted"),
-      plain:_priceOk
-        ?("Aktualisiert: mit jetzt <b>"+(PL.n_brands||"?")+" Preis-Marken</b> und ueber "+(PL.n_days||"?")+" Tage gemittelt IST der Preis identifizierbar \u2014 guenstiger Relativpreis geht mit mehr Sichtbarkeit einher (Between "+num(PL.price_between_coef,2)+", Richtung "+Math.round((PL.price_between_dir||0)*100)+"\u202f%, Wild-p "+num(PL.price_between_p,3)+"). <b>Aber nur als Marken-Vergleich</b>; die kausal saubere Within-Schaetzung liegt bei ~0 ("+num(PL.price_within_coef,2)+"). Der fruehere '7 Marken / verworfen'-Stand ist ueberholt.")
-        :"Preis-Levelmodell baut sich noch ueber die Nightly-Tage auf (mind. 3 saubere Tage noetig).",
+      value:_pAny?((_bSig||_wSig)?"Signal — noch instabil":"richtungsweisend, nicht gesichert"):"baut sich auf",
+      accent:_pAny?"#0e7490":"#6b7280",
+      badge:badge(_pAny?"kurze Historie":"wenige Tage","muted"),
+      plain:_pAny
+        ?("Guenstiger Relativpreis geht tendenziell mit mehr Sichtbarkeit einher. Stand <b>"+(PL.n_days||"?")+" Tage</b> / "+(PL.n_brands||"?")+" Preis-Marken: <b>Between</b> "+num(PL.price_between_coef,2)+" (Wild-p "+num(PL.price_between_p,3)+", "+(_bSig?"signifikant":"n.s.")+"), <b>Within</b> "+num(PL.price_within_coef,2)+" (Wild-p "+num(PL.price_within_p,3)+", "+(_wSig?"signifikant":"n.s.")+"). <b>\u26a0 Bei nur "+(PL.n_days||"?")+" Tagen schwankt die Schaetzung zwischen den Nightly-Laeufen noch stark</b> \u2014 noch <b>kein belastbarer</b> Befund; verdichtet sich mit der Zeitreihe. Zudem nur Marken-Vergleich, kein Kausalnachweis.")
+        :"Preis-Levelmodell baut sich ueber die Nightly-Tage auf (mind. 3 saubere Tage noetig).",
       source:"Quelle: price_level_pooled \u00b7 Stand "+(dateOf(C)||"aktueller Nightly")
     }));
     // K6 Kurzfrist-Events

@@ -1947,6 +1947,39 @@ def peec26_model():
     _bx = [_fmean[b] for b in _brs]; _by = [_bmean[b] for b in _brs]
     _pr = pearson(_bx, _by); _sr = spearman(_bx, _by)
     gap = (fit.get("gap_decomposition") or {}).get("ERGO")
+    # NEUTRALE Gap-Zerlegung (02.08.2026, Entscheidung Paul): Die branded Peec-Prompts
+    # heben ERGO kuenstlich auf Platz 1 (ERGO wird Leader -> gap["ERGO"] = None -> die
+    # Dashboard-Karte "ERGO-Rueckstand zu Allianz" war leer/verkehrt). Fuer die GAP-
+    # Zerlegung stattdessen die markenfreien (neutralen) Peec-Antworten nutzen; dort
+    # fuehrt Allianz und ERGO liegt real zurueck. Nur fuer den Gap; der Footprint-
+    # Treiber (K1) bleibt am Gesamtmodell.
+    gap_neutral = None
+    leader_neutral = None
+    _foot_n = fp.get("footprint_pct_neutral") or {}
+    _sov_n = fp.get("peec_sov_pct_neutral") or {}
+    if _foot_n and _sov_n:
+        _ncells = []
+        for _b, _ths in _sov_n.items():
+            if _b not in BRAND_SIZE:
+                continue
+            for _th, _sv in _ths.items():
+                if _th == "Corporate" or not isinstance(_sv, (int, float)):
+                    continue
+                _f = (_foot_n.get(_b) or {}).get(_th)
+                if _f is None:
+                    continue
+                _ncells.append({"brand": _b, "topic": _th, "sov": float(_sv),
+                                "peec_foot": float(_f), "size": float(BRAND_SIZE[_b])})
+        if len(_ncells) >= 10:
+            _nbm = {}
+            for _c in _ncells:
+                _nbm.setdefault(_c["brand"], []).append(_c["sov"])
+            _nmean = {_b: sum(_v) / len(_v) for _b, _v in _nbm.items()}
+            leader_neutral = max(_nmean, key=lambda _b: _nmean[_b])
+            _nfit = _mundlak_multi(_ncells, ["peec_foot", "size"], "sov",
+                                   leader_override=leader_neutral)
+            if _nfit.get("available"):
+                gap_neutral = (_nfit.get("gap_decomposition") or {}).get("ERGO")
     return {
         "available": True,
         "n_cells": fit.get("n_cells"),
@@ -1961,6 +1994,8 @@ def peec26_model():
                         "spearman_r": round(_sr, 3) if _sr is not None else None,
                         "n": len(_brs)},
         "gap_decomposition": gap,
+        "gap_neutral": gap_neutral,
+        "leader_neutral": leader_neutral,
         "circularity": {"level": "high",
                         "note": ("Footprint und SoV stammen aus denselben Peec-Antworten "
                                  "(interne Konsistenz); der zirkularitaetsarme Gegentest "

@@ -574,6 +574,42 @@
     return h+'</div>';
   }
 
+  function newPageDidBlock(C){
+    var d=C.new_page_did;
+    if(!d) return '';
+    var h='<div style="margin-top:18px;padding-top:14px;border-top:1px solid #eee">'+
+      '<div style="font-size:14px;font-weight:700;color:#1a1a2e">Eigener Content: wirken echt neue Seiten?</div>'+
+      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Difference-in-Differences auf dem <b>echten</b> Publikationsdatum (schema.org/OpenGraph) — nicht unserem Erstsichtungs-Tag. Grounded-Sichtbarkeit im Thema vor/nach, gegen die anderen Themen derselben Marke (Eigenkontrolle).</div>';
+    var cov=d.datums_abdeckung;
+    if(cov){
+      h+='<div style="font-size:11.5px;color:#64748b;margin-bottom:8px">Datums-Abdeckung: <b>'+num(cov.mit_publikationsdatum||0,0)+'</b> von '+num(cov.seiten_gesamt||0,0)+' getrackten Seiten mit Publikationsdatum ('+num(cov.mit_irgendeinem_datum||0,0)+' mit irgendeinem Datum).</div>';
+    }
+    if(!d.available){
+      h+='<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:12px;color:#475569;line-height:1.5">'+(d.grund||'Noch keine belastbare Auswertung.')+' <b>Keine Ersatz-Nullen.</b></div>';
+      return h+'</div>';
+    }
+    function summ(s,label){
+      if(!s||!s.available) return '<div style="font-size:12px;color:#9ca3af;margin:4px 0">'+label+': noch keine Seite mit genug Vor/Nach-Beobachtung im Fenster.</div>';
+      var ci=(s.ci95_low_pp!=null)?('95%-KI ['+num(s.ci95_low_pp,2)+'; '+num(s.ci95_high_pp,2)+']'):'KI erst ab 2 Seiten';
+      var col=s.significant?'#067d3a':'#334155';
+      return '<div style="margin:6px 0"><span style="font-size:12px;font-weight:600">'+label+':</span> '+
+        '<span style="font-size:13px;font-weight:700;color:'+col+'">'+(s.did_mittel_pp>0?'+':'')+num(s.did_mittel_pp,2)+' pp</span> '+
+        '<span style="font-size:11.5px;color:#64748b">('+num(s.n_seiten,0)+' Seite(n), '+num(s.n_marken,0)+' Marke(n), '+ci+(s.significant?', <b>gesichert</b>':', nicht gesichert')+')</span></div>';
+    }
+    h+=summ(d.neu_veroeffentlicht,'Neu veroeffentlicht');
+    h+=summ(d.aktualisiert_refresh,'Aktualisiert (Refresh)');
+    var cs=((d.neu_veroeffentlicht||{}).cases)||[];
+    if(cs.length){
+      h+='<div style="font-size:11px;color:#9ca3af;margin:8px 0 3px">Einzelfaelle (neu veroeffentlicht)</div>'+
+        '<table style="width:100%;font-size:11.5px;border-collapse:collapse"><thead><tr style="color:#64748b;text-align:left"><th style="padding:2px 6px">Marke</th><th style="padding:2px 6px">Thema</th><th style="padding:2px 6px">Publiziert</th><th style="padding:2px 6px;text-align:right">DiD (pp)</th></tr></thead><tbody>'+
+        cs.slice(0,12).map(function(x){ var c=(x.did_pp>0?"#067d3a":(x.did_pp<0?"#b91c1c":"#334155"));
+          return '<tr style="border-top:1px solid #f1f5f9"><td style="padding:2px 6px">'+(x.brand||'')+'</td><td style="padding:2px 6px">'+(x.topic||'')+'</td><td style="padding:2px 6px">'+(x.event_day||'')+'</td><td style="padding:2px 6px;text-align:right;color:'+c+'">'+(x.did_pp>0?"+":"")+num(x.did_pp,2)+'</td></tr>'; }).join('')+
+        '</tbody></table>';
+    }
+    h+='<div style="font-size:10.5px;color:#9ca3af;margin-top:8px">'+(d.hinweis||'')+'</div>';
+    return h+'</div>';
+  }
+
   function renderPanel(host, C){
 
     var card0=document.getElementById("korrSynth");
@@ -583,7 +619,7 @@
         '<h3 style="font-size:17px;font-weight:700;margin:0">Korrelationsanalyse — was treibt die LLM-Sichtbarkeit? '+peecBadgeTop(C)+'</h3>'+
         '<p style="font-size:12px;color:#6b7280;margin:3px 0 0">Nur validierte Befunde. <b>Peec AI</b> ist die fuehrende Quelle (26 Marken), der <b>eigene Crawl</b> steht getrennt daneben, dazwischen eine Differenzanalyse. Die Kernbefunde (Block 1/2) sind engine-uebergreifend; im Quellen-Vergleich (Block 3) und in der Ursachenanalyse (Block 4) laesst sich der Kanal <b>grounded / UI</b> umschalten.</p>'+
       '</div>'+
-      footInfoBox()+ block1(C)+ block2(C)+ externalAuthorityBlock(C)+ block3Skeleton();
+      footInfoBox()+ block1(C)+ block2(C)+ externalAuthorityBlock(C)+ newPageDidBlock(C)+ block3Skeleton();
     // Block 5 als eigene Karte direkt nach korrSynth -> gap_waterfall (Block 4) schiebt sich dazwischen
     var meth=document.getElementById("korrMethodik");
     if(!meth){ meth=document.createElement("div"); meth.id="korrMethodik"; meth.className="bg-white rounded-xl shadow p-6 mb-6"; }

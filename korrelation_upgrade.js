@@ -39,12 +39,12 @@
 
   /* ---- Footprint-Definition (Punkt 2, 18.07.2026): einmal als Info-Box,
          zusaetzlich als Tooltip ueberall dort, wo Footprint-Zahlen stehen. ---- */
-  var FOOTDEF="Zitations-Footprint = Anteil der markeneigenen Domain an allen zitierten URLs je Thema. Peec: footprint_pct, 26 Marken, 5 Engines. Eigener Crawl: cite_share, 7 Marken, Gemini grounded.";
+  var FOOTDEF="Zitations-Footprint = Anteil der markeneigenen Domain an allen zitierten URLs je Thema. Peec: footprint_pct, 26 Marken, 5 Engines. Eigener Crawl: cite_share, 25 Marken, Gemini grounded.";
   function footInfoBox(){
     return '<div style="border:1px solid #dbe4fb;background:#f4f7fe;border-radius:11px;padding:12px 15px;margin:0 0 14px">'+
       '<div style="font-size:12.5px;font-weight:700;color:#1d4ed8;margin-bottom:3px">ℹ Was ist der Zitations-Footprint?</div>'+
       '<div style="font-size:12px;color:#374151;line-height:1.55">Der <b>Zitations-Footprint</b> ist der <b>Anteil der markeneigenen Domain an allen zitierten URLs</b> je Thema — also: wie oft verweisen die LLM-Antworten auf Quellen der Marke selbst (z.&nbsp;B. ergo.de), gemessen an allen Quellenangaben. '+
-      '<b>Peec</b> misst ihn als <code>footprint_pct</code> ueber <b>26 Marken</b> und 5 Engines; der <b>eigene Crawl</b> als <code>cite_share</code> ueber <b>7 Marken</b> (Gemini, grounded). '+
+      '<b>Peec</b> misst ihn als <code>footprint_pct</code> ueber <b>26 Marken</b> und 5 Engines; der <b>eigene Crawl</b> als <code>cite_share</code> ueber <b>25 Marken</b> (Gemini, grounded). '+
       'Wichtig fuers Handeln: Die Antwortformulierung der LLMs laesst sich nicht steuern — die <b>Zitierfaehigkeit der eigenen Inhalte</b> schon. Alle Footprint-Zahlen in diesem Reiter (Forest, Scatter, Zerlegung) sind in dieser Definition gemessen.</div></div>';
   }
 
@@ -224,7 +224,7 @@
     if(O){
       rows.push({
         label:'<span title="'+FOOTDEF+'">Zitations-Footprint — eigener Crawl</span>',
-        sub:"Between (7 Marken, grounded/Gemini) · zur Konsistenzpruefung · Anteil eigener Domain an zitierten URLs (cite_share)",
+        sub:"Between (25 Marken, grounded/Gemini) · zur Konsistenzpruefung · Anteil eigener Domain an zitierten URLs (cite_share)",
         est:O.eff, wild_p:O.wild_p, pdir:O.pdir, stable:(O.loo&&O.loo.sign_stable),
         chip: (O.wild_p!=null?("Wild-p "+num(O.wild_p,4)):((O.pdir!=null&&O.pdir>=1)?"P=1,0":("P="+num(O.pdir,2)))),
         kind: (O.stable? "ok":"warn"),
@@ -272,7 +272,7 @@
       '<div style="font-size:11px;color:#9ca3af;margin-bottom:6px">Quadrat = Schaetzwert (pp Sichtbarkeit je +1&nbsp;SD des Treibers) · dicke Mittellinie = kein Effekt. Belastbarkeit ueber <b>Wild-Cluster-p</b> (nicht Posterior-P). Kein erfundenes Konfidenzband.</div>'+
       '<div style="display:grid;grid-template-columns:230px 1fr 84px;gap:10px;font-size:10px;color:#c0c4cb"><div></div><div style="display:flex;justify-content:space-between;padding:0 2px"><span>−'+num(mx,0)+' pp</span><span>0</span><span>+'+num(mx,0)+' pp</span></div><div style="text-align:right">Effekt</div></div>'+
       body+
-      '<div style="font-size:10.5px;color:#9ca3af;margin-top:8px">Peec-26 = Mundlak/CRE-Between ueber 26 Marken (fuehrend). Der eigene Crawl (7 Marken, grounded) dient der Konsistenzpruefung. Zusammenhaenge, kein Kausalnachweis (dafuer DiD).</div>'+
+      '<div style="font-size:10.5px;color:#9ca3af;margin-top:8px">Peec-26 = Mundlak/CRE-Between ueber 26 Marken (fuehrend). Der eigene Crawl (25 Marken, grounded) dient der Konsistenzpruefung. Zusammenhaenge, kein Kausalnachweis (dafuer DiD).</div>'+
     '</div>';
   }
 
@@ -423,7 +423,7 @@
   }
   function block3Skeleton(){
     return '<div style="margin:16px 0 6px"><div style="font-size:14px;font-weight:700;color:#1a1a2e">3 · Quellen-Vergleich: Peec (fuehrend) vs. eigener Crawl</div>'+
-      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Zwei unabhaengige Messungen derselben Sache. Niveau-Unterschiede sind methodisch normal (Peec verteilt ueber 26 Marken, der eigene Crawl ueber 7) — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
+      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Zwei unabhaengige Messungen derselben Sache. Niveau-Unterschiede kommen von unterschiedlichen Engines/Methoden (Peec 5 Engines inkl. Web, eigener Crawl 3), NICHT von der Markenzahl (26 vs. 25 — nahezu gleich) — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
       peecBiasWarn()+
       '<div id="korrDiffBox" style="border:1px solid #eee;border-radius:11px;padding:14px 16px"><div style="font-size:12px;color:#9ca3af">Quellen-Vergleich wird geladen (data/peec_cells.csv) …</div></div></div>';
   }
@@ -483,7 +483,7 @@
         '<th style="padding:5px 8px;text-align:right">AXA</th>'+
         '<th style="padding:5px 8px;text-align:right" title="Spearman-Rangkorrelation der Reihenfolge von ERGO, Allianz, HUK-Coburg, AXA (1,0 = identisch)">Rang-ρ</th></tr></thead>'+
         '<tbody>'+rowsHtml+'</tbody></table></div>'+
-        '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Beschraenkt auf die vier Kernmarken ERGO, Allianz, HUK-Coburg, AXA (Entscheidung Paul, 31.07.2026). Zellenformat: Peec / eigener Crawl in %. Rang-ρ ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Reihenfolge der vier Marken — bei n=4 grob, aber direkt lesbar. Niveau-Unterschiede folgen aus 26 vs. 7 Marken im Nenner. Kanal: '+b3ModeLbl()+' · Peec-Export siehe data/peec_cells.csv (zeitraum-Spalte).</div>';
+        '<div style="font-size:11px;color:#9ca3af;margin-top:8px">Beschraenkt auf die vier Kernmarken ERGO, Allianz, HUK-Coburg, AXA (Entscheidung Paul, 31.07.2026). Zellenformat: Peec / eigener Crawl in %. Rang-ρ ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Reihenfolge der vier Marken — bei n=4 grob, aber direkt lesbar. Niveau-Unterschiede folgen aus unterschiedlichen Engines/Methoden (Peec 5 inkl. Web, Crawl 3), nicht aus der Markenzahl (26 vs. 25). Kanal: '+b3ModeLbl()+' · Peec-Export siehe data/peec_cells.csv (zeitraum-Spalte).</div>';
       b3Wire(box);
     });
   }

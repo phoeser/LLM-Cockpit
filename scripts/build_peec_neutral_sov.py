@@ -45,7 +45,7 @@ def _num(x):
         return 0.0
 
 
-_BRAND_RE = re.compile(r"\\b(" + "|".join(re.escape(t) for t in BRAND_TOKENS) + r")\\b")
+_BRAND_RE = re.compile(r"\b(" + "|".join(re.escape(t) for t in BRAND_TOKENS) + r")\b")
 
 
 def _is_branded(text):

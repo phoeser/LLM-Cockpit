@@ -203,14 +203,14 @@
     var tiles='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 8px">'+
       tile(fx(s.real_ratio,1)+"×","Realer Größenvorsprung — Beitragsanteil "+fx(s.real_A,1)+" % vs. "+fx(s.real_E,1)+" % (7-Versicherer-Set)")+
       tile(fx(s.exp_pow_ratio,1)+"–"+fx(s.exp_lin_ratio,1)+"×",'„Erwartbar" laut Branchen-Regel — LLMs stauchen Größenvorsprünge',"#0e7490")+
-      tile(fx(s.measured_ratio,1)+"×","Gemessen im Benchmark — "+fx(s.measured_A,1)+" % vs. "+fx(s.measured_E,1)+" % SoV","#dc0028")+
+      tile(fx(s.measured_ratio,1)+"×","Gemessen im Benchmark — "+fx(s.measured_A,1)+" % vs. "+fx(s.measured_E,1)+" % SoV (nur 7 Versicherer, ohne Web)","#dc0028")+
     '</div>';
     var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">Quer über <b>'+(B.n_branchen||"?")+' Branchen</b> ('+(B.n_marken||"?")+' Marken) folgt LLM-Sichtbarkeit der Marktgröße nur unterproportional '+
       '(SoV ≈ '+fx(r.pow_a,1)+' · Realanteil<sup>'+fx(r.pow_b,2)+'</sup>; Pearson r '+fx(r.pearson,2)+'). Danach „stünde" der Allianz nur das <b>'+fx(s.exp_pow_ratio,1)+'- bis '+fx(s.exp_lin_ratio,1)+'-Fache</b> von ERGOs Sichtbarkeit zu — '+
       'gemessen ist es das <b>'+fx(s.measured_ratio,1)+'-Fache</b>. ERGO erreicht damit nur rund die Hälfte der größen-erwartbaren Sichtbarkeit (erwartet ≈ '+fx(s.exp_pow_E,1)+'–'+fx(s.exp_lin_E,1)+' % SoV, gemessen '+fx(s.measured_E,1)+' %), '+
       'während Allianz ihre Erwartung übertrifft. <b>Das stützt die Zerlegung oben unabhängig:</b> Der Rückstand ist kein reiner Größeneffekt — er entsteht aus Autorität/Quellpräsenz (vgl. Kernbefund K1/K3). '+
       'Chancen-Seite derselben Regel: Weil LLMs Größe stauchen, ist Sichtbarkeit für Herausforderer „billiger" zu holen als Marktanteil.</div>';
-    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' — <b>andere Messmethode als Peec/eigener Crawl</b>, Niveaus nicht direkt vergleichbar (nur Verhältnisse); ein Modell, Momentaufnahme, explorativ. Details: data/benchmark_branchen.json.</div>';
+    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' — <b>anderer Messweg: ein Modell OHNE Websuche, positionsgewichtet, normiert über nur 7 Versicherer.</b> Weder die Niveaus (38,6 % ≠ der 25-Marken-SoV der Übersicht) NOCH das Verhältnis sind mit dem Dashboard vergleichbar — auf demselben 7er-Set liefert der eigene Crawl ~2,7×, der Benchmark 5,8×; der Benchmark <b>überzeichnet</b> den Allianz-Vorsprung (kein Web + Positionsgewicht). Nur als grobe Richtung über 16 Branchen lesen. Details: data/benchmark_branchen.json.</div>';
     return head+tiles+txt+disc+'</div>';
   }
 

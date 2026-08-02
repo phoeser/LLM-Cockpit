@@ -31,6 +31,7 @@ Ausgabe: data/correlation_impact.json  (vom Dashboard gelesen).
 Aufruf im Nightly NACH der Event-Sammlung (events.jsonl).
 """
 import json
+from statistics import median
 import math
 import re
 import sys
@@ -1534,59 +1535,62 @@ def _relprice_map():
                 return br
         return None
 
-    def _extract(path):
+    def _resolve(k, v):
+        if k.startswith("_other_"):
+            return _brand_from_name(v.get("c24_name") or k.replace("_other_", ""))
+        return keymap.get(k) or _brand_from_name(k)
+
+    def _extract_cases(path):
+        """Je Quelle EINE Liste von Faellen: jeder (Produkt x Profil) ist ein Fall
+        {brand: guenstigster Preis}. So werden ALLE Altersprofile genutzt (age_30/50/65),
+        nicht nur age_50 (Umbau 02.08.2026, Entscheidung Paul: nicht nur 1 Fall pro Produkt)."""
         try:
             d = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             return {}
-        res = {}
+        cases = {}
         for pid, pr in (d.get("products") or {}).items():
-            prof = (pr.get("profiles") or {}).get("age_50") or {}
-            prices = {}
-            for k, v in (prof.get("brands") or {}).items():
-                p = v.get("price")
-                if not isinstance(p, (int, float)) or p <= 0:
-                    continue
-                if k.startswith("_other_"):
-                    # Sammeleintrag: ueber den Klarnamen aufloesen statt verwerfen.
-                    nm = _brand_from_name(v.get("c24_name") or k.replace("_other_", ""))
-                else:
-                    nm = keymap.get(k) or _brand_from_name(k)
-                if not nm:
-                    continue
-                # Mehrere Tarife derselben Marke je Produkt: guenstigsten nehmen
-                # (entspricht der Logik "was ein Interessent als Marktpreis sieht").
-                if nm not in prices or p < prices[nm]:
-                    prices[nm] = p
-            if len(prices) >= 2:
-                res[pid] = prices
-        return res
+            for _pk, prof in (pr.get("profiles") or {}).items():
+                prices = {}
+                for k, v in (prof.get("brands") or {}).items():
+                    p = v.get("price")
+                    if not isinstance(p, (int, float)) or p <= 0:
+                        continue
+                    nm = _resolve(k, v)
+                    if not nm:
+                        continue
+                    if nm not in prices or p < prices[nm]:
+                        prices[nm] = p
+                if len(prices) >= 2:
+                    cases.setdefault(pid, []).append(prices)
+        return cases
 
-    crawler = _extract(PRICE_FILE)
-    manual = _extract(PRICE_MANUAL_FILE)
-    merged = dict(crawler)
-    for pid, prices in manual.items():
-        # 20.07.2026: >= statt > — bei GLEICHSTAND gewinnt die manuelle Vollerhebung.
-        # Grund: Sie ist unter dokumentierten, einheitlichen Bedingungen erhoben
-        # (gleiches Profil, gleiches Datum, Parameter im Feld "params" festgehalten),
-        # waehrend der Crawler nimmt, was Check24 gerade ausspielt. Ohne diese Regel
-        # kippte Rechtsschutz nach der Alias-Erweiterung vom manuellen Satz auf den
-        # Crawler-Satz — gleiche Markenzahl, aber duennere Kernmarken-Abdeckung.
-        if pid not in merged or len(prices) >= len(merged[pid]):
-            merged[pid] = prices
-    # DKV-Ausschluss (15.07.2026, seit 20.07. nur noch Sicherheitsnetz): Krankenhaus-
-    # zusatz laeuft im ERGO-Konzern unter der Marke DKV. Seit DKV aus den ERGO-Aliasen
-    # entfernt wurde, kommt hier ohnehin kein ERGO-Preis mehr an — die Zeile greift also
-    # normalerweise ins Leere. Sie bleibt stehen, falls eine Quelle den DKV-Preis doch
-    # einmal unter dem Schluessel "ergo" liefert.
-    if "krankenhauszusatz" in merged:
-        merged["krankenhauszusatz"] = {b: p for b, p in merged["krankenhauszusatz"].items() if b != "ERGO"}
-        if len(merged["krankenhauszusatz"]) < 2:
-            merged.pop("krankenhauszusatz")
+    # Beide Quellen als Faelle sammeln (Crawler: 3 Altersprofile; manuell: age_50).
+    # Jeder Fall ist ein in sich konsistenter Markt-Snapshot -> je Fall gegen den
+    # eigenen guenstigsten Anbieter normiert, dann je Marke der MEDIAN ueber alle Faelle.
+    all_cases = {}
+    for path in (PRICE_FILE, PRICE_MANUAL_FILE):
+        for pid, cases in _extract_cases(path).items():
+            all_cases.setdefault(pid, []).extend(cases)
+
     out = {}
-    for pid, prices in merged.items():
-        mn = min(prices.values())
-        out[pid] = {nm: prices[nm] / mn for nm in prices}
+    n_cases = {}
+    for pid, cases in all_cases.items():
+        rel_by_brand = {}
+        for prices in cases:
+            mn = min(prices.values())
+            if mn <= 0:
+                continue
+            for nm, p in prices.items():
+                rel_by_brand.setdefault(nm, []).append(p / mn)
+        # DKV/Krankenhauszusatz-Ausschluss (ERGO-Konzern via DKV, s. 15.07.2026)
+        if pid == "krankenhauszusatz":
+            rel_by_brand.pop("ERGO", None)
+        if len(rel_by_brand) < 2:
+            continue
+        out[pid] = {nm: median(vals) for nm, vals in rel_by_brand.items()}
+        n_cases[pid] = {nm: len(vals) for nm, vals in rel_by_brand.items()}
+    _relprice_map._n_cases = n_cases  # Diagnose: wie viele Faelle je Marke-Zelle
     return out
 
 

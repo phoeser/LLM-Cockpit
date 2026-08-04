@@ -36,8 +36,8 @@ from pathlib import Path
 MCP_URL = "https://api.peec.ai/mcp"
 PROJECT_ID = os.environ.get("PEEC_PROJECT_ID", "or_9e1c1c57-28de-4714-bfc0-363bfa6a0757")  # ERGO Germany
 OUT_FILE = Path("data/peec_sources.json")
-TOP_DOMAINS = 40
-TOP_URLS = 150
+TOP_DOMAINS = int(os.environ.get("PEEC_TOP_DOMAINS", "100"))
+TOP_URLS = int(os.environ.get("PEEC_TOP_URLS", "500"))
 
 _session = {}
 _seq = [0]
@@ -101,9 +101,53 @@ def _tab(d):
     return [dict(zip(cols, row)) for row in d.get("rows", [])]
 
 
+def _fetch_ranked(tool, base_args, want, label):
+    """Holt bis zu `want` Zeilen, sortiert nach citation_count.
+
+    Peec deckelt `limit` serverseitig moeglicherweise. Kommen weniger Zeilen
+    zurueck als angefordert, wird einmal mit `offset` nachgefasst; versteht der
+    Server das Argument nicht, bleibt es beim ersten Ergebnis. Der Rueckgabewert
+    enthaelt immer auch, was tatsaechlich ankam — die Kappung wird dadurch in
+    peec_sources.json sichtbar statt stillschweigend.
+    """
+    order = [{"field": "citation_count", "direction": "desc"}]
+    rows, seen, offset, paginiert = [], set(), 0, False
+    schluessel = "domain" if tool == "get_domain_report" else "url"
+    while len(rows) < want:
+        args = dict(base_args)
+        args["limit"] = want - len(rows)
+        args["order_by"] = order
+        if offset:
+            args["offset"] = offset
+        try:
+            batch = _tab(_call(tool, args))
+        except Exception as ex:
+            if offset:
+                print(f"[peec_sources] {label}: Paginierung ab offset={offset} nicht "
+                      f"unterstuetzt ({str(ex)[:80]}) — bleibe bei {len(rows)} Zeilen.")
+                break
+            raise
+        neu = [r for r in batch if r.get(schluessel) not in seen]
+        for r in neu:
+            seen.add(r.get(schluessel))
+        rows.extend(neu)
+        if not neu or len(batch) < args["limit"]:
+            break
+        offset = len(rows)
+        paginiert = True
+    if len(rows) < want:
+        print(f"[peec_sources] {label}: {len(rows)} von {want} angeforderten Zeilen "
+              f"geliefert — serverseitige Obergrenze erreicht.")
+    return rows, {"angefordert": want, "erhalten": len(rows), "paginiert": paginiert}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=30, help="Fensterlaenge in Tagen (Default 30)")
+    ap.add_argument("--top-urls", type=int, default=TOP_URLS,
+                    help="Zahl der URLs nach Zitaten (Default %(default)s, env PEEC_TOP_URLS)")
+    ap.add_argument("--top-domains", type=int, default=TOP_DOMAINS,
+                    help="Zahl der Domains nach Zitaten (Default %(default)s, env PEEC_TOP_DOMAINS)")
     args = ap.parse_args()
 
     end = datetime.now(timezone.utc).date() - timedelta(days=1)
@@ -118,14 +162,11 @@ def main():
     own = [b["name"] for b in brands if b.get("is_own")]
     print(f"[peec_sources] {len(brands)} Marken, eigene: {own}")
 
-    domains = _tab(_call("get_domain_report", {
-        "project_id": PROJECT_ID, "start_date": S, "end_date": E, "limit": TOP_DOMAINS,
-        "order_by": [{"field": "citation_count", "direction": "desc"}]}))
+    basis = {"project_id": PROJECT_ID, "start_date": S, "end_date": E}
+    domains, dom_abruf = _fetch_ranked("get_domain_report", basis, args.top_domains, "Domains")
     print(f"[peec_sources] {len(domains)} Domains")
 
-    urls = _tab(_call("get_url_report", {
-        "project_id": PROJECT_ID, "start_date": S, "end_date": E, "limit": TOP_URLS,
-        "order_by": [{"field": "citation_count", "direction": "desc"}]}))
+    urls, url_abruf = _fetch_ranked("get_url_report", basis, args.top_urls, "URLs")
     print(f"[peec_sources] {len(urls)} URLs")
 
     def slim_domain(d):
@@ -171,12 +212,17 @@ def main():
             "Der Seitentyp-Mix je Marke zaehlt Zitate auf URLs, in deren Antworten die Marke "
             "genannt wurde — ein Ko-Vorkommen, KEIN Kausalnachweis."
         ),
+        "abruf": {"domains": dom_abruf, "urls": url_abruf},
         "grenzen": (
             "Die Klassifikation der Domains und Seitentypen stammt aus einer Peec-Heuristik, "
             "nicht aus einer geprueften Taxonomie; Einzelfaelle koennen falsch einsortiert sein. "
-            "Ausgewertet werden die Top-Domains/-URLs nach Zitaten, nicht die Grundgesamtheit — "
-            "der Long Tail fehlt. Fenster: rollierende "
-            + str(args.days) + " Tage."
+            "Ausgewertet werden die Top-" + str(len(url_rows)) + "-URLs und Top-"
+            + str(len(dom_rows)) + "-Domains nach Zitaten (angefordert: "
+            + str(url_abruf["angefordert"]) + " bzw. " + str(dom_abruf["angefordert"]) + "), "
+            "nicht die Grundgesamtheit — der Long Tail fehlt"
+            + (", die serverseitige Obergrenze war niedriger als angefordert"
+               if url_abruf["erhalten"] < url_abruf["angefordert"] else "")
+            + ". Fenster: rollierende " + str(args.days) + " Tage."
         ),
         "domains": dom_rows,
         "urls": url_rows,

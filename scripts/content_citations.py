@@ -54,6 +54,7 @@ PEEC_SOURCES = ROOT / "data" / "peec_sources.json"
 PEEC_SNAP_DIR = ROOT / "data" / "peec_snapshots"
 EVENTS_FILE = Path(os.environ.get("EVENTS_FILE", ROOT / "shared" / "events.jsonl"))
 PRESS_FILE = ROOT / "data" / "press_data.json"
+PRESS_HISTORY = ROOT / "data" / "press_history.json"
 PAGE_DATES_FILE = ROOT / "data" / "page_dates.json"   # von merge_geo_page_events gepflegt
 OUT_FILE = ROOT / "data" / "content_citations.json"
 
@@ -533,7 +534,7 @@ def build():
 
     kennzahlen = build_kennzahlen(rows, peec, peec_urls, pd_idx, brand_getrackt,
                                   snaps, own_per_engine, own_meta, domain_brand)
-    presse = build_presse(peec, peec_domains)
+    presse = build_presse(peec, peec_domains, peec_urls, snaps)
 
     meta = {
         "erzeugt_am": erzeugt,
@@ -768,10 +769,52 @@ MEDIUM_DOMAIN = {
 }
 
 
-def build_presse(peec, peec_domains):
-    """Zitierte redaktionelle Domains (Peec cls='Editorial') gegen die eigene
-    Presseaktivitaet. Die Presseartikel liegen nur als Google-News-Redirect vor —
-    artikelgenau ist der Abgleich damit NICHT moeglich, nur auf Domain-Ebene."""
+_MULTI_TLD = {"co.uk", "com.au", "co.nz", "com.br", "co.jp", "org.uk", "gov.uk", "ac.uk"}
+
+
+def etld1(host):
+    """Registrierbare Domain. wissenswert.hannoversche.de -> hannoversche.de."""
+    if not host:
+        return None
+    parts = str(host).lower().strip(".").split(".")
+    if len(parts) <= 2:
+        return ".".join(parts)
+    if ".".join(parts[-2:]) in _MULTI_TLD:
+        return ".".join(parts[-3:])
+    return ".".join(parts[-2:])
+
+
+def load_press_history():
+    """Presseartikel mit aufgeloesten echten URLs (scripts/backfill_press_urls.py).
+    Liefert (artikel, meta). Ohne aufgeloeste URLs -> meta['aufgeloest'] = 0."""
+    if not PRESS_HISTORY.exists():
+        return None, {"available": False, "grund": "data/press_history.json fehlt."}
+    try:
+        arts = json.loads(PRESS_HISTORY.read_text(encoding="utf-8"))
+    except Exception as ex:
+        return None, {"available": False,
+                      "grund": "press_history.json nicht lesbar: %s" % str(ex)[:120]}
+    if not isinstance(arts, list):
+        return None, {"available": False, "grund": "press_history.json hat unerwartete Struktur."}
+    aufgeloest = sum(1 for a in arts if a.get("url_real"))
+    daten = sorted(a.get("date") for a in arts if a.get("date"))
+    meta = {
+        "available": True,
+        "artikel_gesamt": len(arts),
+        "artikel_mit_echter_url": aufgeloest,
+        "aufloesungsquote_pct": round(100.0 * aufgeloest / len(arts), 1) if arts else None,
+        "zeitraum": {"von": daten[0] if daten else None, "bis": daten[-1] if daten else None},
+        "marken": sorted({(a.get("brand_name") or a.get("brand")) for a in arts if a.get("brand")}),
+        "quelle": ("Google-News-RSS; die Redirect-URLs sind zu echten Artikel-URLs "
+                   "aufgeloest (Feld url_real), dadurch ist der Abgleich artikelgenau "
+                   "moeglich."),
+    }
+    return arts, meta
+
+
+def build_presse(peec, peec_domains, peec_urls=None, snaps=None):
+    """Zitierte Quellen gegen die eigene Presseaktivitaet — auf Domain-Ebene UND,
+    seit der Aufloesung der Google-News-Redirects, artikelgenau."""
     if not peec_domains:
         return {"available": False, "grund": "Keine Peec-Domaindaten.",
                 "vorbehalt": VORBEHALT_PEEC}
@@ -779,80 +822,122 @@ def build_presse(peec, peec_domains):
     fenster = (peec or {}).get("window") or {}
     f_start, f_end = fenster.get("start"), fenster.get("end")
 
-    editorial = [d for d in peec_domains.values() if d.get("cls") == "Editorial"]
-    editorial.sort(key=lambda d: -(d.get("cit") or 0))
+    arts, presse_meta = load_press_history()
 
-    presse_fenster = Counter()
-    presse_gesamt = Counter()
-    presse_medien_unzugeordnet = Counter()
-    presse_meta = {"available": False, "grund": "data/press_data.json fehlt."}
-    if PRESS_FILE.exists():
-        try:
-            pdata = json.loads(PRESS_FILE.read_text(encoding="utf-8"))
-            arts = (pdata.get("articles") or {}).get("ergo") or []
-            daten = sorted(a.get("date") for a in arts if a.get("date"))
-            for a in arts:
+    # Zaehler je registrierbarer Domain
+    ergo_gesamt, ergo_fenster = Counter(), Counter()
+    alle_gesamt = Counter()
+    marken_je_domain = {}
+    ohne_domain = Counter()
+    treffer = []
+
+    # Peec-URL-Menge (Top-150 + alle Snapshot-Staende)
+    peec_url_idx = dict(peec_urls or {})
+    for eintrag in (snaps or []):
+        idx = eintrag[1] if isinstance(eintrag, (tuple, list)) and len(eintrag) > 1 else None
+        if not isinstance(idx, dict):
+            continue
+        for k, u in idx.items():
+            if k and k not in peec_url_idx:
+                peec_url_idx[k] = u
+
+    if arts:
+        for a in arts:
+            dom = a.get("domain") or ""
+            if not dom and a.get("url_real"):
+                k = norm_url(a.get("url_real"))
+                dom = (k or "").split("/")[0]
+            dom = etld1(dom)
+            if not dom:
                 medium = (a.get("source") or "").strip().lower()
                 dom = MEDIUM_DOMAIN.get(medium)
-                if not dom and "." in medium:
-                    dom = medium
                 if not dom:
                     if medium:
-                        presse_medien_unzugeordnet[medium] += 1
+                        ohne_domain[medium] += 1
                     continue
-                presse_gesamt[dom] += 1
+            ist_ergo = (a.get("brand") or "").lower() in ("ergo", "dkv")
+            alle_gesamt[dom] += 1
+            marken_je_domain.setdefault(dom, set()).add(a.get("brand_name") or a.get("brand"))
+            if ist_ergo:
+                ergo_gesamt[dom] += 1
                 dt = a.get("date")
                 if dt and f_start and f_end and f_start <= dt <= f_end:
-                    presse_fenster[dom] += 1
-            presse_meta = {
-                "available": True, "as_of": pdata.get("as_of"),
-                "artikel_ergo": len(arts),
-                "zeitraum": {"von": daten[0] if daten else None,
-                             "bis": daten[-1] if daten else None},
-                "medien_ohne_domain_zuordnung": len(presse_medien_unzugeordnet),
-                "kappung": ("Google-News-Export, je Marke auf die letzten 80 Artikel "
-                            "gekappt — eine 0 bedeutet 'nicht in dieser Liste', nicht "
-                            "'keine Presseaktivitaet'."),
-            }
-        except Exception as ex:
-            presse_meta = {"available": False, "grund": "press_data.json nicht lesbar: %s" % str(ex)[:100]}
+                    ergo_fenster[dom] += 1
+            # artikelgenauer Abgleich
+            k = join_key(norm_url(a.get("url_real")))
+            if k and k in peec_url_idx:
+                pu = peec_url_idx[k] or {}
+                treffer.append({
+                    "url": k, "titel": a.get("title"), "datum": a.get("date"),
+                    "marke": a.get("brand_name") or a.get("brand"),
+                    "typ": a.get("type"), "domain": dom,
+                    "peec_cit": pu.get("cit"), "peec_cls": pu.get("cls"),
+                    "peec_titel": pu.get("title"),
+                })
+        treffer.sort(key=lambda t: -(t.get("peec_cit") or 0))
+
+    # Domainliste: alle zitierten Domains, bei denen es Presseaktivitaet gibt,
+    # plus die redaktionellen Top-Domains (auch ohne eigene Artikel).
+    kandidaten = {}
+    for d in peec_domains.values():
+        dom = etld1(d.get("domain"))
+        if not dom:
+            continue
+        if d.get("cls") == "Editorial" or alle_gesamt.get(dom):
+            vor = kandidaten.get(dom)
+            if not vor or (d.get("cit") or 0) > (vor.get("cit") or 0):
+                kandidaten[dom] = d
 
     domains = []
-    for d in editorial:
-        dom = d["domain"]
-        im_fenster = presse_fenster.get(dom)
-        gesamt = presse_gesamt.get(dom)
+    for dom, d in kandidaten.items():
         eintrag = {
-            "domain": dom, "zitate": d.get("cit"), "abrufe": d.get("ret"),
+            "domain": dom, "cls": d.get("cls"),
+            "zitate": d.get("cit"), "abrufe": d.get("ret"),
             "marken_in_antworten": d.get("brands") or [],
             "ergo_genannt": "ERGO" in (d.get("brands") or []),
-            "ergo_presseartikel_im_peec_fenster": im_fenster,
-            "ergo_presseartikel_gesamt": gesamt,
+            "ergo_presseartikel_im_peec_fenster": ergo_fenster.get(dom),
+            "ergo_presseartikel_gesamt": ergo_gesamt.get(dom),
+            "presseartikel_alle_marken": alle_gesamt.get(dom),
+            "marken_mit_presse": sorted(marken_je_domain.get(dom, ())) or None,
         }
         if not presse_meta.get("available"):
             eintrag["presse_hinweis"] = "Presseliste nicht verfuegbar — kein Abgleich moeglich."
-        elif gesamt is None:
-            eintrag["presse_hinweis"] = ("Kein ERGO-Artikel dieses Mediums in der auf 80 "
-                                         "Artikel gekappten Presseliste — nicht als "
-                                         "'keine Presseaktivitaet' lesen.")
-        elif im_fenster is None:
-            eintrag["presse_hinweis"] = ("ERGO-Artikel vorhanden, aber keiner im Peec-Fenster "
-                                         "%s..%s." % (f_start, f_end))
+        elif not ergo_gesamt.get(dom):
+            eintrag["presse_hinweis"] = ("Kein ERGO-Artikel dieses Mediums in der "
+                                         "Presse-Historie — nicht als 'keine "
+                                         "Presseaktivitaet' lesen, der Feed erfasst "
+                                         "nicht alles.")
+        elif not ergo_fenster.get(dom):
+            eintrag["presse_hinweis"] = ("ERGO-Artikel vorhanden, aber keiner im "
+                                         "Peec-Fenster %s..%s." % (f_start, f_end))
         domains.append(eintrag)
+    domains.sort(key=lambda e: -(e.get("zitate") or 0))
 
     return {
         "available": True,
-        "ebene": "Domain",
+        "ebene": "Domain und Artikel-URL",
         "peec_fenster": fenster,
         "domains": domains,
+        "artikel_treffer": treffer,
+        "n_artikel_treffer": len(treffer),
+        "artikel_treffer_hinweis": (
+            "Presseartikel, deren echte URL in Peecs zitierten Quellen auftaucht. "
+            "Eine leere oder sehr kurze Liste heisst: die einzelne Meldung schafft es "
+            "nicht in die Zitate — Wirkung entsteht ueber die Domain, nicht ueber den "
+            "einzelnen Artikel." if not treffer else
+            "Presseartikel, deren echte URL in Peecs zitierten Quellen auftaucht. "
+            "Evergreen-Vergleichsseiten, die Google News als Artikel ausspielt, sind "
+            "hier mit enthalten — sie werden unabhaengig von der Pressearbeit zitiert."),
         "presse_quelle": presse_meta,
-        "unzugeordnete_medien": presse_medien_unzugeordnet.most_common(15),
-        "vorbehalt": ("Domain-Ebene, artikelgenau noch nicht moeglich: die Presseartikel "
-                      "liegen nur als Google-News-Redirect-URL vor, die zitierte Peec-Quelle "
-                      "dagegen als echte Artikel-URL — ein Abgleich Artikel gegen Artikel "
-                      "scheitert daran. 'ERGO genannt' heisst nur, dass ERGO in Antworten "
-                      "vorkam, in denen diese Domain zitiert wurde (Ko-Vorkommen). "
-                      + VORBEHALT_PEEC),
+        "unzugeordnete_medien": ohne_domain.most_common(15),
+        "vorbehalt": ("Domainzuordnung auf der registrierbaren Domain (Content-"
+                      "Subdomains wie wissenswert.hannoversche.de zaehlen auf "
+                      "hannoversche.de). Der artikelgenaue Abgleich ist durch die "
+                      "Peec-Top-150-Kappung nach unten begrenzt: ein Artikel ohne "
+                      "Treffer kann trotzdem zitiert worden sein, nur nicht haeufig "
+                      "genug fuer die Top-150. 'ERGO genannt' heisst nur, dass ERGO in "
+                      "Antworten vorkam, in denen diese Domain zitiert wurde "
+                      "(Ko-Vorkommen, kein Kausalnachweis). " + VORBEHALT_PEEC),
     }
 
 

@@ -287,16 +287,21 @@
     var p = d.presse || {};
     var html = h3("Presse: zitierte redaktionelle Domains und eigene Presseaktivität");
     if (!p.available) return html + missing(p.grund) + note(p.vorbehalt);
-    html += '<div style="font-size:11.5px;color:#8a6d00;background:#fdf6e6;border:1px solid #f3d7a5;' +
-      'border-radius:8px;padding:8px 10px;margin-bottom:8px"><b>Domain-Ebene — artikelgenau noch nicht möglich.</b> ' +
-      "Die Presseartikel liegen nur als Google-News-Redirect vor, die zitierte Quelle als echte Artikel-URL.</div>";
+    var pqTop = p.presse_quelle || {};
+    html += '<div style="font-size:11.5px;color:#374151;background:#f6f8fa;border:1px solid #e3e6ea;' +
+      'border-radius:8px;padding:8px 10px;margin-bottom:8px"><b>Domain- und Artikel-Ebene.</b> ' +
+      "Die Google-News-Redirects sind zu echten Artikel-URLs aufgelöst (" +
+      num(pqTop.artikel_mit_echter_url) + " von " + num(pqTop.artikel_gesamt) + " Artikeln, " +
+      (pqTop.aufloesungsquote_pct != null ? pqTop.aufloesungsquote_pct + "&nbsp;%" : "–") +
+      "), der Abgleich läuft damit auch artikelgenau.</div>";
     html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
       '<thead><tr style="text-align:left;color:#6b7280">' +
       '<th style="padding:5px 6px">Redaktionelle Domain</th>' +
       '<th style="padding:5px 6px;text-align:right">Zitate</th>' +
       '<th style="padding:5px 6px">ERGO in denselben Antworten</th>' +
       '<th style="padding:5px 6px;text-align:right">ERGO-Artikel im Peec-Fenster</th>' +
-      '<th style="padding:5px 6px;text-align:right">ERGO-Artikel gesamt</th></tr></thead><tbody>';
+      '<th style="padding:5px 6px;text-align:right">ERGO-Artikel gesamt</th>' +
+      '<th style="padding:5px 6px;text-align:right">Artikel aller Marken</th></tr></thead><tbody>';
     (p.domains || []).forEach(function (r) {
       var wert = function (v, hint) {
         if (v != null) return num(v);
@@ -308,14 +313,42 @@
         '<td style="padding:6px;text-align:right;font-weight:700">' + num(r.zitate) + "</td>" +
         '<td style="padding:6px">' + (r.ergo_genannt ? '<span style="color:' + COL.gruen + '">ja (Ko-Vorkommen)</span>' : '<span style="color:#9ca3af">nein</span>') + "</td>" +
         '<td style="padding:6px;text-align:right">' + wert(r.ergo_presseartikel_im_peec_fenster, r.presse_hinweis) + "</td>" +
-        '<td style="padding:6px;text-align:right">' + wert(r.ergo_presseartikel_gesamt, r.presse_hinweis) + "</td></tr>";
+        '<td style="padding:6px;text-align:right">' + wert(r.ergo_presseartikel_gesamt, r.presse_hinweis) + "</td>" +
+        '<td style="padding:6px;text-align:right;color:#6b7280">' + wert(r.presseartikel_alle_marken, "In der Presse-Historie kein Artikel dieses Mediums.") + "</td></tr>";
     });
     html += "</tbody></table></div>";
+    html += h3("Schafft es die einzelne Meldung in die Zitate?");
+    var tr = p.artikel_treffer || [];
+    if (!tr.length) {
+      html += '<div style="font-size:11.5px;color:#374151;background:#f6f8fa;border:1px solid #e3e6ea;' +
+        'border-radius:8px;padding:8px 10px">Kein einziger Presseartikel taucht in den zitierten ' +
+        "Quellen auf. Wirkung entsteht über die Domain, nicht über die einzelne Meldung.</div>";
+    } else {
+      html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+        '<thead><tr style="text-align:left;color:#6b7280">' +
+        '<th style="padding:5px 6px">Artikel</th>' +
+        '<th style="padding:5px 6px">Domain</th>' +
+        '<th style="padding:5px 6px">Marke</th>' +
+        '<th style="padding:5px 6px">Datum</th>' +
+        '<th style="padding:5px 6px;text-align:right">Zitate</th></tr></thead><tbody>';
+      tr.slice(0, 25).forEach(function (t) {
+        html += '<tr style="border-top:1px solid #f0f0f0">' +
+          '<td style="padding:6px">' + esc(t.titel || t.url) +
+          (t.peec_cls ? '<div style="color:#9ca3af;font-size:10px">' + esc(t.peec_cls) + "</div>" : "") + "</td>" +
+          '<td style="padding:6px">' + esc(t.domain) + "</td>" +
+          '<td style="padding:6px">' + esc(t.marke || "–") + "</td>" +
+          '<td style="padding:6px">' + datum(t.datum) + "</td>" +
+          '<td style="padding:6px;text-align:right;font-weight:700">' + num(t.peec_cit) + "</td></tr>";
+      });
+      html += "</tbody></table></div>";
+    }
+    html += note(p.artikel_treffer_hinweis);
     var pq = p.presse_quelle || {};
     if (pq.available) {
-      html += '<div style="font-size:10.5px;color:#8a8f98;margin-top:6px">Presseliste: ' + num(pq.artikel_ergo) +
-        " ERGO-Artikel " + datum((pq.zeitraum || {}).von) + " bis " + datum((pq.zeitraum || {}).bis) +
-        ", " + num(pq.medien_ohne_domain_zuordnung) + " Medien ohne belegte Domain-Zuordnung (bleiben unberücksichtigt).</div>";
+      html += '<div style="font-size:10.5px;color:#8a8f98;margin-top:6px">Presse-Historie: ' + num(pq.artikel_gesamt) +
+        " Artikel " + datum((pq.zeitraum || {}).von) + " bis " + datum((pq.zeitraum || {}).bis) +
+        " über " + num((pq.marken || []).length) + " Marken; " +
+        num((p.unzugeordnete_medien || []).length) + " Medien ohne belegte Domain-Zuordnung.</div>";
     } else {
       html += missing(pq.grund);
     }

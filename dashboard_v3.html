@@ -739,7 +739,7 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="mb-5">
     <h2 class="text-2xl font-bold text-ergo-dark mb-1">Wirkt unsere Arbeit auf die LLM-Sichtbarkeit?</h2>
-    <p class="text-sm text-gray-600">Statistische Prüfung auf zwei Ebenen: <b>was die LLM-Sichtbarkeit strukturell treibt</b> (Quellpräsenz/Footprint, Größe, Preis — Block&nbsp;1/2/4) und <b>ob einzelne Ereignisse</b> (Seitenänderungen, Presse, Preise, Bewertungen) sie <b>kurzfristig bewegen</b> (Event-Study). Ergebnis zuerst, Details darunter.</p>
+    <p class="text-sm text-gray-600">Vier Fragen, in dieser Reihenfolge: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was schafft es überhaupt in die Zitate? <b>4.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p>
   </div>
   <div id="korrErgebnis"><div class="text-sm text-gray-400">Lade Auswertung…</div></div>
 
@@ -747,7 +747,7 @@
     <button onclick="window.__korrDetails()" class="w-full text-left px-5 py-3 flex items-center gap-2 hover:bg-gray-50">
       <span id="korrDetArrow" class="text-gray-400 text-sm">▶</span>
       <span class="font-semibold text-ergo-dark text-sm">Detailauswertungen und Rohdaten</span>
-      <span class="text-xs text-gray-400">— Event-Überblick, Maßnahmen-Wirkung, Tagesübersicht, SoV-Verlauf, Mentions, Event-Stream</span>
+      <span class="text-xs text-gray-400">— Event-Überblick, Drill-down je Anbieter/LLM, Maßnahmen-Wirkung (DiD), Tagesübersicht, SoV-Verlauf, Mentions, Event-Stream</span>
     </button>
   </div>
   <div id="korrDetails" class="hidden">
@@ -762,7 +762,7 @@
       <h3 class="text-lg font-bold text-ergo-dark mb-2">🧪 Validierte Impact-Analyse <span class="text-xs font-normal text-gray-500">(Event-Study)</span></h3>
       <span class="flex items-center gap-2"><select id="impactBrandSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle Anbieter</option></select><select id="impactLlmSel" onchange="renderImpactStudy()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle LLMs (gesamt)</option></select><span id="impactStudyBadge" class="text-xs font-semibold px-2 py-1 rounded">–</span></span>
     </div>
-    <p class="text-xs text-gray-500 mb-3">Geschätzter durchschnittlicher Effekt eines Ereignis-Typs auf den Share of Voice (in Prozentpunkten), pro Messintervall. Wird mit jeder Nacht statistisch belastbarer.</p>
+    <p class="text-xs text-gray-500 mb-3">Drill-down zum Forest in Block&nbsp;2 — dieselbe cluster-robuste Rechnung, hier aber <b>je Anbieter und je LLM filterbar</b>. Ohne Auswahl entspricht die Tabelle dem Gesamtmodell oben.</p>
     <div id="corrImpactStudy"></div>
   </div>
 
@@ -3061,15 +3061,20 @@ function buildGeoTab() {
         var tc = r.type_confidence ? (tcMap[r.type_confidence]||['#f1f5f9','#64748b']) : null;
         var chip = tc ? ' <span style="font-size:10px;padding:1px 6px;border-radius:8px;background:'+tc[0]+';color:'+tc[1]+'">'+r.type_confidence+'</span>' : '';
         var rho = (r.spearman_r!=null) ? r.spearman_r : (r.pearson_r!=null ? r.pearson_r : '–');
-        var ciTxt = (r.ci95_low_pp!=null && r.ci95_high_pp!=null)
-          ? ((r.ci95_low_pp>0?'+':'')+r.ci95_low_pp.toFixed(1)+' … '+(r.ci95_high_pp>0?'+':'')+r.ci95_high_pp.toFixed(1))
-          : '<span style="color:#cbd5e1">—</span>';
-        var sig = r.significant;
+        // 04.08.2026: Chip und Intervall stammen aus DERSELBEN Basis. Ist die
+        // cluster-robuste Rechnung nicht moeglich, steht hier kein Intervall
+        // und kein Urteil — sondern der Grund aus dem JSON.
+        var _cl = (r.significance_basis === 'cluster');
+        var _lo = _cl ? r.ci95_low_cluster_pp : null, _hi = _cl ? r.ci95_high_cluster_pp : null;
+        var ciTxt = (_lo!=null && _hi!=null)
+          ? ((_lo>0?'+':'')+_lo.toFixed(1)+' … '+(_hi>0?'+':'')+_hi.toFixed(1))
+          : '<span style="color:#b45309" title="'+esc(r.grund||r.type_confidence_grund||'Cluster-robuste Schaetzung nicht moeglich')+'">kein KI verfügbar</span>';
+        var sig = _cl ? r.significant : null;
         var sigChip = (sig===true)
-          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>'
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600" title="cluster-robust auf Markenebene">✓ gesichert</span>'
           : (sig===false)
             ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ Zufall mögl.</span>'
-            : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#94a3b8">zu wenig</span>';
+            : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#94a3b8" title="'+esc(r.grund||r.type_confidence_grund||'')+'">nicht schätzbar</span>';
         html += '<tr style="border-bottom:1px solid #f1f5f9">' +
           '<td style="padding:6px 8px;color:#1e293b">' + (r.label||'') + chip + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-weight:600;color:' + (pos?'#15803d':'#b91c1c') + '">' + bar + (pos?'+':'') + (eff!=null?eff.toFixed(2):'–') + '</td>' +
@@ -3082,10 +3087,11 @@ function buildGeoTab() {
       html += '</tbody></table>';
       html += '<div style="margin-top:8px;font-size:11px;color:#64748b;line-height:1.5">'
         + '<b>Lesehilfe:</b> Der <b>Ø Effekt</b> ist die geschätzte SoV-Veränderung an Tagen mit diesem Ereignis (in Prozentpunkten pro Tag). '
-        + 'Das <b>95%-Konfidenzintervall</b> gibt die Spanne an, in der der wahre Effekt mit 95% Wahrscheinlichkeit liegt. '
-        + '<b>Aussagekraft „✓ gesichert“</b> = das Intervall schließt die Null aus (Effekt statistisch belegt); '
-        + '<b>„~ Zufall mögl.“</b> = Spanne umfasst die Null, der Effekt kann noch Zufall sein. '
-        + '<b>ρ</b> = Rang-Korrelation Eventzahl ↔ SoV (−1…+1). Alle Werte werden mit jedem Mess-Tag präziser.</div>';
+        + 'Intervall <b>und</b> Chip stammen aus derselben <b>cluster-robusten</b> Rechnung (Einheit = Marke, Basis <code>' + esc(ciRoot && ciRoot.significance_basis_global || 'cluster') + '</code>): '
+        + '<b>„✓ gesichert“</b> = das cluster-robuste Intervall schließt die Null aus; <b>„~ Zufall mögl.“</b> = es umfasst die Null; '
+        + '<b>„nicht schätzbar“</b> = zu wenige Marken mit Ereignis, deshalb steht dort weder Intervall noch Urteil (Grund im Tooltip). '
+        + 'Die optimistischere iid-Rechnung (<code>significant_iid</code>) wird hier bewusst nicht als Urteil geführt. '
+        + '<b>ρ</b> = Rang-Korrelation Eventzahl ↔ SoV (−1…+1). Diese Tabelle ist der Drill-down zum Forest oben — je Anbieter und je LLM filterbar.</div>';
       if (ci.confidence === 'unzureichend' || ci.confidence === 'vorlaeufig') {
         html += '<div style="margin-top:10px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px">⚠️ Diese Werte sind noch nicht statistisch belastbar. Die Schätzungen werden mit jedem weiteren Mess-Tag genauer.</div>';
       }
@@ -3101,7 +3107,11 @@ function buildGeoTab() {
           var r = mv.coefficients[k]; var b = r.coef_pp_per_event_day; var pos = (b||0) >= 0;
           var ciT = (r.ci95_low!=null && r.ci95_high!=null) ? ((r.ci95_low>0?'+':'')+r.ci95_low.toFixed(2)+' … '+(r.ci95_high>0?'+':'')+r.ci95_high.toFixed(2)) : '—';
           var pp = (r.prob_positive!=null) ? Math.round(r.prob_positive*100)+'%' : '—';
-          var sg = (r.significant ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>' : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ unsicher</span>');
+          var sg = (r.significant && r.reliable!==false)
+            ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">✓ gesichert</span>'
+            : (r.significant
+                ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309;font-weight:600" title="'+esc(r.note||'reliable=false')+'">Signifikanz-Flag, aber nicht belastbar</span>'
+                : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">~ unsicher</span>');
           html += '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#1e293b">'+(r.label||k)+'</td>'
             + '<td style="padding:6px 8px;text-align:right;font-weight:600;color:'+(pos?'#15803d':'#b91c1c')+'">'+(pos?'+':'')+(b!=null?b.toFixed(3):'–')+'</td>'
             + '<td style="padding:6px 8px;text-align:right;color:#64748b;white-space:nowrap">'+ciT+'</td>'
@@ -4357,49 +4367,82 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     return t;
   }
 
+  // Forest-Plot. Erweitert 04.08.2026:
+  //  - Zeilen ohne schaetzbaren Effekt verschwinden NICHT mehr, sondern stehen
+  //    unter der Grafik mit ihrem Grund aus dem JSON.
+  //  - Zeilen mit Effekt, aber ohne Konfidenzintervall bekommen einen Punkt ohne
+  //    Balken und den Hinweis "kein Konfidenzintervall verfuegbar" — nie ein
+  //    erfundenes Band.
+  //  - r.sub = zweite Zeile am Label (z. B. Cluster-Zahl), r.warn = Warnzeichen.
   function forestPlot(rows, opts){
     opts = opts || {};
-    var W = 760, LBL = 224, PADL = 12, PADR = 74, RH = 30, TOP = 30;
-    var valid = rows.filter(function(r){ return r.eff!=null && r.lo!=null && r.hi!=null; });
-    if(!valid.length) return '<div class="text-sm text-gray-400 py-3">Keine schätzbaren Effekte in diesem Block.</div>';
-    var lo = Math.min.apply(null, valid.map(function(r){return r.lo;}));
-    var hi = Math.max.apply(null, valid.map(function(r){return r.hi;}));
+    rows = (rows||[]);
+    var W = 760, LBL = 236, PADL = 12, PADR = 74, RH = 34, TOP = 32;
+    var plot = rows.filter(function(r){ return r.eff!=null; });
+    var dead = rows.filter(function(r){ return r.eff==null; });
+    var deadHtml = dead.length ? ('<div class="mt-2 border-t pt-2">'
+        + '<div class="text-xs font-semibold text-gray-600 mb-1">Nicht schätzbar — bleibt sichtbar, statt zu verschwinden</div>'
+        + dead.map(function(r){
+            return '<div class="text-xs text-gray-600 leading-relaxed mb-1">'
+              + '<span class="font-semibold text-gray-700">'+_esc(r.label)+'</span>'
+              + (r.sub?(' <span class="text-gray-400">'+_esc(r.sub)+'</span>'):'')
+              + ' — <span class="text-amber-700">kein Effekt schätzbar</span>'
+              + (r.note?(': '+_esc(r.note)):'')+'</div>';
+          }).join('')
+        + '</div>') : '';
+    if(!plot.length) return (deadHtml || '<div class="text-sm text-gray-400 py-3">Keine schätzbaren Effekte in diesem Block.</div>');
+    var withCI = plot.filter(function(r){ return r.lo!=null && r.hi!=null; });
+    var lo, hi;
+    if(withCI.length){
+      lo = Math.min.apply(null, withCI.map(function(r){return r.lo;}));
+      hi = Math.max.apply(null, withCI.map(function(r){return r.hi;}));
+    } else {
+      lo = Math.min.apply(null, plot.map(function(r){return r.eff;}));
+      hi = Math.max.apply(null, plot.map(function(r){return r.eff;}));
+    }
+    lo = Math.min(lo, Math.min.apply(null, plot.map(function(r){return r.eff;})));
+    hi = Math.max(hi, Math.max.apply(null, plot.map(function(r){return r.eff;})));
     var span = Math.max(hi-lo, 0.001), m = span*0.10;
     lo -= m; hi += m;
     if(lo>0) lo=-span*0.06; if(hi<0) hi=span*0.06;
     var PW = W-LBL-PADL-PADR;
     var x = function(v){ return LBL+PADL+((v-lo)/(hi-lo))*PW; };
-    var H = TOP+valid.length*RH+34;
+    var H = TOP+plot.length*RH+34;
     var s = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;font-family:inherit" role="img">';
-    // Hintergrund-Gitter
     var ticks=_niceTicks(lo,hi,5);
     ticks.forEach(function(t){
-      s+='<line x1="'+x(t).toFixed(1)+'" y1="'+(TOP-12)+'" x2="'+x(t).toFixed(1)+'" y2="'+(TOP+valid.length*RH-10)+'" stroke="#f1f5f9" stroke-width="1"/>';
-      s+='<text x="'+x(t).toFixed(1)+'" y="'+(TOP-18)+'" text-anchor="middle" font-size="10" fill="#94a3b8">'+(t>0?'+':'')+t+'</text>';
+      s+='<line x1="'+x(t).toFixed(1)+'" y1="'+(TOP-14)+'" x2="'+x(t).toFixed(1)+'" y2="'+(TOP+plot.length*RH-12)+'" stroke="#f1f5f9" stroke-width="1"/>';
+      s+='<text x="'+x(t).toFixed(1)+'" y="'+(TOP-20)+'" text-anchor="middle" font-size="10" fill="#94a3b8">'+(t>0?'+':'')+t+'</text>';
     });
-    // Zeilen-Zebra
-    valid.forEach(function(r,i){
+    plot.forEach(function(r,i){
       if(i%2) s+='<rect x="0" y="'+(TOP+i*RH-RH/2+3)+'" width="'+W+'" height="'+(RH-2)+'" fill="#fafafa"/>';
     });
-    // Nulllinie
-    s += '<line x1="'+x(0).toFixed(1)+'" y1="'+(TOP-12)+'" x2="'+x(0).toFixed(1)+'" y2="'+(TOP+valid.length*RH-10)+'" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 3"/>';
-    valid.forEach(function(r,i){
+    s += '<line x1="'+x(0).toFixed(1)+'" y1="'+(TOP-14)+'" x2="'+x(0).toFixed(1)+'" y2="'+(TOP+plot.length*RH-12)+'" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 3"/>';
+    plot.forEach(function(r,i){
       var y = TOP+i*RH;
       var col = r.sig ? '#DC0028' : (r.eff>0 ? '#0f766e' : '#7c3aed');
-      s += '<text x="'+(LBL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="12.5" fill="#282D37">'+_esc(r.label)+'</text>';
-      s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+y+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+y+'" stroke="'+col+'" stroke-width="2.5" opacity="0.4" stroke-linecap="round"/>';
-      [r.lo,r.hi].forEach(function(v){
-        s+='<line x1="'+x(v).toFixed(1)+'" y1="'+(y-5)+'" x2="'+x(v).toFixed(1)+'" y2="'+(y+5)+'" stroke="'+col+'" stroke-width="2" opacity="0.65"/>';
-      });
+      var lab = (r.warn?'⚠ ':'')+r.label;
+      s += '<text x="'+(LBL-8)+'" y="'+(y+1)+'" text-anchor="end" font-size="12.5" fill="'+(r.warn?'#b45309':'#282D37')+'">'+_esc(lab)+'</text>';
+      if(r.sub) s += '<text x="'+(LBL-8)+'" y="'+(y+12)+'" text-anchor="end" font-size="9.5" fill="#94a3b8">'+_esc(r.sub)+'</text>';
+      if(r.lo!=null && r.hi!=null){
+        s += '<line x1="'+x(r.lo).toFixed(1)+'" y1="'+y+'" x2="'+x(r.hi).toFixed(1)+'" y2="'+y+'" stroke="'+col+'" stroke-width="2.5" opacity="0.4" stroke-linecap="round"/>';
+        [r.lo,r.hi].forEach(function(v){
+          s+='<line x1="'+x(v).toFixed(1)+'" y1="'+(y-5)+'" x2="'+x(v).toFixed(1)+'" y2="'+(y+5)+'" stroke="'+col+'" stroke-width="2" opacity="0.65"/>';
+        });
+      } else {
+        s += '<text x="'+(x(r.eff)+9).toFixed(1)+'" y="'+(y+4)+'" font-size="9.5" fill="#b45309">kein Konfidenzintervall verfügbar</text>';
+      }
       s += '<circle cx="'+x(r.eff).toFixed(1)+'" cy="'+y+'" r="5" fill="'+col+'" stroke="#fff" stroke-width="1.5"/>';
       s += '<text x="'+(W-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#475569">'+_fmtPP(r.eff)+'</text>';
-      s += '<title>'+_esc(r.label)+': '+_fmtPP(r.eff)+' pp, 95-%-KI ['+_fmtPP(r.lo)+'; '+_fmtPP(r.hi)+']'
-         +(r.n!=null?(', '+r.n+' Intervalle mit Ereignis'):'')+'</title>';
+      s += '<title>'+_esc(r.label)+': '+_fmtPP(r.eff)+' pp'
+         +((r.lo!=null&&r.hi!=null)?(', 95-%-Intervall ['+_fmtPP(r.lo)+'; '+_fmtPP(r.hi)+']'):', kein Konfidenzintervall verfügbar')
+         +(r.n!=null?(', '+r.n+' Intervalle mit Ereignis'):'')
+         +(r.warnText?(' — '+_esc(r.warnText)):'')+'</title>';
     });
     s += '<text x="'+(LBL+PADL+PW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="#94a3b8">'
-       + _esc(opts.xlabel || 'Effekt auf Share of Voice (Prozentpunkte je Intervall) — Balken = 95-%-Konfidenzintervall') + '</text>';
+       + _esc(opts.xlabel || 'Effekt auf Share of Voice (Prozentpunkte je Intervall) — Balken = 95-%-Intervall, cluster-robust je Marke') + '</text>';
     s += '</svg>';
-    return s;
+    return s + deadHtml;
   }
 
   function lineChartSVG(pts, opts){
@@ -4455,188 +4498,353 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     return '<span class="px-2 py-0.5 rounded-full text-xs whitespace-nowrap '+(m[tone]||m.grau)+'">'+_esc(txt)+'</span>';
   }
 
-  // ---------- Preis-Sektion ----------
-  // Warum eigener Abschnitt: Der Preis ist der einzige Treiber, der sich in ALLEN
-  // Modellen konsistent verhaelt UND einen mechanistisch stimmigen Unterschied
-  // zeigt — Wirkung nur dort, wo die Engines im Web suchen. Im Forest-Plot der
-  // Ereignis-Analyse geht er unter, weil er dort nur 6 Intervalle hat.
-  function preisSektion(ci){
-    var lm=ci.level_model||{};
-    var j=lm.price_footprint_joint||{};
-    var ev=(ci.impact||{}).price_change||{};
-    var mv=((ci.multivariate||{}).coefficients||{}).price_change||{};
-    function rp(scope, kind){
-      return (((j[scope]||{}).drivers_eff||{}).relprice||{})[kind]||{};
+  /* ==========================================================================
+     EIN Ergebnis-Panel — Neuaufbau 04.08.2026
+     Gegliedert nach Fragen statt nach Methoden:
+       1 Was treibt die Sichtbarkeit strukturell?
+       2 Bewegen einzelne Ereignisse sie kurzfristig?
+       3 Was schafft es in die Zitate?
+       4 Wie gut ist die Messung? (inkl. Nachweisgrenze / MDE)
+     Regeln: jede Zahl kommt zur Laufzeit aus einer JSON. Fehlt ein Feld ->
+     "keine Angabe" plus Grund, nie eine Zahl aus dem Code. Signifikanz und
+     Konfidenzintervall haben dieselbe Basis (cluster); iid nur als Nebenangabe.
+     ========================================================================== */
+  function _kn(v,d){ if(v==null||isNaN(v)) return null; d=(d==null?2:d); return Number(v).toFixed(d).replace('.',','); }
+  function _kv(v,d){ var t=_kn(v,d); return t==null?'<span class="text-gray-400">keine Angabe</span>':t; }
+  function _kpp(v,d){ var t=_kn(v,d); return t==null?'<span class="text-gray-400">keine Angabe</span>':((v>0?'+':'')+t+' pp'); }
+  function _kp(v, note){ if(v==null||isNaN(v)) return '<span class="text-gray-400">keine Angabe</span>';
+    if(v===0) return '0<span style="border-bottom:1px dotted #94a3b8;cursor:help" title="'+_esc(note||'Der Bootstrap kann nicht unter seinen kleinstmoeglichen Wert gehen.')+'"> (Boden des Bootstraps)</span>';
+    if(v>0 && v<0.0001) return '&lt; 0,0001'; return Number(v).toFixed(4).replace('.',','); }
+  function _kmiss(grund){ return '<span class="text-gray-400">keine Angabe</span>'+(grund?('<span class="text-gray-400"> — '+_esc(grund)+'</span>'):''); }
+  function _kverdict(p,q){
+    if(q!=null) return q<0.05?{t:'gesichert (nach FDR)',tone:'gruen'}:(p!=null&&p<0.05?{t:'nur unkorrigiert signifikant',tone:'gelb'}:{t:'nicht gesichert',tone:'grau'});
+    if(p!=null) return p<0.05?{t:'signifikant (unkorrigiert)',tone:'gelb'}:{t:'nicht gesichert',tone:'grau'};
+    return {t:'nicht prüfbar',tone:'grau'};
+  }
+  function _kcard(title, value, sub, foot, tone){
+    var col={rot:'#DC0028',gruen:'#047857',grau:'#475569',blau:'#1d4ed8'}[tone||'grau'];
+    return '<div class="bg-white rounded-lg border p-3">'
+      +'<div class="text-xs text-gray-500 font-semibold">'+title+'</div>'
+      +'<div class="text-xl font-bold mt-0.5" style="color:'+col+'">'+value+'</div>'
+      +(sub?('<div class="text-xs text-gray-600 mt-1 leading-relaxed">'+sub+'</div>'):'')
+      +(foot?('<div class="text-xs text-gray-400 mt-1">'+foot+'</div>'):'')
+      +'</div>';
+  }
+  // Cluster-Kennzahlen eines Treibers aus impact — Signifikanz UND Intervall aus derselben Basis
+  function _kimp(r){
+    var basis=r.significance_basis||null;
+    var cl=(basis==='cluster');
+    return {
+      eff:r.avg_sov_effect_pp,
+      lo:cl?r.ci95_low_cluster_pp:null, hi:cl?r.ci95_high_cluster_pp:null,
+      se:r.effect_se_cluster_pp, p:r.p_cluster, sig:(r.significant===true),
+      basis:basis, nc:r.n_clusters, ncg:r.n_clusters_gesamt, ne:r.n_with_event,
+      iid:r.significant_iid,
+      grund:r.grund||r.type_confidence_grund||null,
+      label:r.label||''
+    };
+  }
+
+  /* ---------- Block 1: Was treibt die Sichtbarkeit strukturell? ---------- */
+  function _kStrukturZeile(name, sub, eff, seg){
+    var v=_kverdict(seg.wild_cluster_p, seg.wild_cluster_p_fdr);
+    var loo=seg.between_loo||null;
+    return '<tr style="border-bottom:1px solid #f1f5f9">'
+      +'<td style="padding:6px 8px"><div class="font-semibold text-gray-800">'+name+'</div><div class="text-xs text-gray-400">'+sub+'</div></td>'
+      +'<td style="padding:6px 8px;text-align:right;font-weight:600">'+(eff!=null?_kpp(eff,2):_kmiss())+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;color:#475569">'+(seg.se_cluster!=null?('± '+_kv(seg.se_cluster,4)):_kmiss('cluster-robuster SE fehlt'))+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;color:#475569">'+(seg.wild_cluster_p!=null?_kp(seg.wild_cluster_p, seg.wild_cluster_note):_kmiss('für diesen Schnitt wurde kein Wild-Cluster-Bootstrap gerechnet'))+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;color:#475569">'+(seg.wild_cluster_p_fdr!=null?_kp(seg.wild_cluster_p_fdr, seg.wild_cluster_note):_kmiss('nicht Teil einer FDR-Familie'))+'</td>'
+      +'<td style="padding:6px 8px;text-align:center">'+_pill(v.t,v.tone)+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;color:#64748b;font-size:11px">'+(seg.n_clusters!=null?(seg.n_clusters+' Cluster'):_kmiss())
+        +(loo?('<br>LOO '+_kv(loo.min,2)+'…'+_kv(loo.max,2)+(loo.sign_stable?' · vorzeichenstabil':' · <span class="text-amber-600">instabil</span>')):'')+'</td>'
+      +'</tr>';
+  }
+  function kBlock1(ci){
+    var lm=ci.level_model||{}, P=lm.peec26_model||{};
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">1 · Was treibt die Sichtbarkeit strukturell?</h3>';
+    if(!P.available){
+      h+='<p class="text-sm text-gray-600">Das Struktur-Modell liegt im aktuellen Nightly nicht vor. '+_kmiss(P.grund||'Feld level_model.peec26_model fehlt oder ist nicht verfügbar.')+'</p></div>';
+      return h;
     }
-    var gW=rp('grounded','within'), gB=rp('grounded','between');
-    var uW=rp('ungrounded','within'), uB=rp('ungrounded','between');
-    if(!gW.coef && !gB.coef) return '';
-    var nCells=(j.grounded||{}).n_cells, nBrands=(j.grounded||{}).n_brands, nTop=(j.grounded||{}).n_topics;
-    var h='<div class="bg-white rounded-xl p-5 shadow mb-5 border-l-4 border-amber-500">';
-    h+='<div class="flex items-start justify-between flex-wrap gap-2 mb-1">'
-      +'<h3 class="text-base font-bold text-ergo-dark">Der Preis — das stärkste Signal im Modell</h3>'
-      +_pill('nicht gesichert','gelb')+'</div>';
-    h+='<p class="text-xs text-gray-500 mb-4">Hier zählt nicht das Ereignis „Preis geändert", sondern das <strong>Preisniveau relativ zum Wettbewerb</strong> je Marke und Produkt ('
-      +nfmt(nCells)+' Zellen, '+nfmt(nBrands)+' Marken, '+nfmt(nTop)+' Themen). Negativer Koeffizient heißt: teurer = weniger sichtbar.</p>';
-    // Kernvergleich grounded vs ungrounded
-    h+='<div class="grid md:grid-cols-2 gap-3 mb-4">';
-    [['Engines MIT Web-Suche', gW, gB, 'border-ergo-red'],
-     ['Engines OHNE Web-Suche', uW, uB, 'border-gray-300']].forEach(function(row){
-      var w=row[1], b=row[2];
-      h+='<div class="border-l-4 '+row[3]+' bg-gray-50 rounded-r-lg p-3">'
-        +'<div class="text-sm font-semibold text-ergo-dark mb-2">'+row[0]+'</div>'
-        +'<div class="text-xs text-gray-600 mb-1">Marke mit sich selbst über Produkte verglichen</div>'
-        +'<div class="text-lg font-bold '+((w.coef||0)<-0.5?'text-ergo-red':'text-gray-500')+'">'+_fmtPP(w.coef)+'</div>'
-        +'<div class="text-xs text-gray-500">p = '+(w.wild_cluster_p!=null?w.wild_cluster_p:'–')+(w.wild_cluster_p_fdr!=null?(', q = '+w.wild_cluster_p_fdr):'')+'</div>'
-        +'<div class="text-xs text-gray-600 mt-2 mb-1">Marken untereinander verglichen</div>'
-        +'<div class="text-lg font-bold '+((b.coef||0)<-5?'text-ergo-red':'text-gray-500')+'">'+_fmtPP(b.coef)+'</div>'
-        +'<div class="text-xs text-gray-500">p = '+(b.wild_cluster_p!=null?b.wild_cluster_p:'–')+(b.wild_cluster_p_fdr!=null?(', q = '+b.wild_cluster_p_fdr):'')+'</div>'
-        +'</div>';
+    var de=P.drivers_eff||{};
+    h+='<p class="text-xs text-gray-500 mb-3">Niveau-Modell (Mundlak/CRE) über '+nfmt(P.n_cells)+' Zellen, '+nfmt(P.n_brands)+' Marken, '+nfmt(P.n_topics)+' Themen. '
+      +'<b>Within</b> = eine Marke mit sich selbst über Themen (kausal sauberer), <b>Between</b> = Marken untereinander (deskriptiv). '
+      +'Signifikanz aus dem <b>Wild-Cluster-Bootstrap auf Markenebene</b>, q = FDR-korrigiert — dieselbe Basis wie die ausgewiesene Unsicherheit.</p>';
+    h+='<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+      +'<th style="padding:6px 8px">Aussage</th><th style="padding:6px 8px;text-align:right">Effekt</th>'
+      +'<th style="padding:6px 8px;text-align:right" title="Cluster-robuster Standardfehler des Koeffizienten">Unsicherheit (SE, cluster)</th>'
+      +'<th style="padding:6px 8px;text-align:right">Wild-p</th><th style="padding:6px 8px;text-align:right">q (FDR)</th>'
+      +'<th style="padding:6px 8px;text-align:center">gesichert?</th><th style="padding:6px 8px;text-align:right">Basis</th></tr></thead><tbody>';
+    var LBL={peec_foot:'Quellpräsenz (Zitations-Footprint)', size:'Unternehmensgröße', cite_share:'Quellpräsenz (cite_share)', relprice:'Relativpreis'};
+    ['peec_foot','size'].forEach(function(k){
+      var d=de[k]; if(!d) return;
+      ['within','between'].forEach(function(sc){
+        var seg=d[sc]; if(!seg) return;
+        h+=_kStrukturZeile((LBL[k]||k)+' — '+(sc==='within'?'Within':'Between'),
+             sc==='within'?'eine Marke mit sich selbst über Themen':'Marken untereinander, größenbereinigt',
+             seg.effect_std_pp, seg);
+      });
     });
+    h+='</tbody></table></div>';
+    h+='<div class="text-xs text-gray-500 mt-2">Effekt = Prozentpunkte Sichtbarkeit je +1 Standardabweichung des Treibers. '
+      +(P.circularity?('Zirkularität: '+_esc(P.circularity.level||'')+(P.circularity.note?(' — '+_esc(P.circularity.note)):'')):'')+'</div>';
+
+    // Abstand zum Marktführer — aus gap_neutral (branding-neutrale Zerlegung)
+    var gn=P.gap_neutral||null, gd=P.gap_decomposition||null, leader=P.leader_neutral||P.leader||null;
+    var g=gn||gd;
+    h+='<div class="grid md:grid-cols-3 gap-3 mt-4">';
+    if(g && g.actual_gap_pp!=null){
+      var contrib=g.contrib_pp||{};
+      var parts=Object.keys(contrib).map(function(k){ return (LBL[k]||k)+' '+_kn(contrib[k],2)+' pp'; }).join(' · ');
+      h+=_kcard('Abstand ERGO zu '+_esc(g.vs||leader||'Marktführer'),
+        _kn(g.actual_gap_pp,2)+' pp',
+        'Davon durch die Modelltreiber erklärt: <b>'+_kv(g.explained_pp,2)+' pp</b>'+(parts?(' ('+parts+')'):'')+'. Zerlegung, kein Kausalnachweis.',
+        (gn?'Quelle: peec26_model.gap_neutral (branding-neutral)':'Quelle: peec26_model.gap_decomposition'),'rot');
+    } else {
+      h+=_kcard('Abstand ERGO zum Marktführer','<span class="text-gray-400 text-base">keine Angabe</span>',
+        'Weder <code>gap_neutral</code> noch <code>gap_decomposition</code> sind im aktuellen Nightly gefüllt — deshalb steht hier kein Wert und keine Null.','Quelle: level_model.peec26_model','grau');
+    }
+    var X=lm.cross_source_validation||{};
+    if(X.available){
+      h+=_kcard('Unabhängiger Gegentest','r = '+_kv(X.pearson_r_brands,3),
+        'Peec-Footprint (UI-Scraping) gegen den eigenen Gemini-SoV über '+nfmt(X.n_brands)+' Marken; Zellebene r = '+_kv(X.pearson_r_cells,3)+' (n = '+nfmt(X.n_cells)+'). '
+        +((X.circularity&&X.circularity.level==='none')?'Getrennte Messsysteme, Zirkularität konstruktiv ausgeschlossen.':''),
+        'Quelle: level_model.cross_source_validation','blau');
+    } else {
+      h+=_kcard('Unabhängiger Gegentest','<span class="text-gray-400 text-base">keine Angabe</span>','Feld <code>cross_source_validation</code> im aktuellen Nightly nicht verfügbar.','','grau');
+    }
+    var bl=P.brand_level||{};
+    h+=_kcard('Auf Markenebene', (bl.pearson_r!=null?('r = '+_kv(bl.pearson_r,2)):'<span class="text-gray-400 text-base">keine Angabe</span>'),
+      (bl.spearman_r!=null?('Rangkorrelation ρ = '+_kv(bl.spearman_r,2)+' über '+nfmt(bl.n)+' Marken — die Rangfolge trägt schwächer als das Niveau.'):''),
+      'Quelle: peec26_model.brand_level','grau');
     h+='</div>';
-    h+='<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed mb-3">'
-      +'<strong>Warum das auffällt:</strong> Der Zusammenhang zeigt sich <em>nur</em> bei Engines, die im Web suchen — bei den übrigen liegt er praktisch bei null ('
-      +_fmtPP(uW.coef)+' bzw. '+_fmtPP(uB.coef)+'). Genau das wäre zu erwarten, wenn der Preis tatsächlich über abgerufene Vergleichsseiten wirkt und nicht über das Modellgedächtnis. '
-      +'Der Vergleich der Marken untereinander unterschreitet mit q = '+(gB.wild_cluster_p_fdr!=null?gB.wild_cluster_p_fdr:'–')+' sogar die Signifikanzschwelle nach Mehrfachtest-Korrektur.'
-      +'</div>';
-    h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed">'
-      +'<strong>Warum es trotzdem nicht als gesichert gilt:</strong> Der Vergleich <em>zwischen</em> Marken kann alles aufsammeln, was teure von günstigen Anbietern unterscheidet — Größe, Bekanntheit, Vertriebsmodell. '
-      +'Die sauberere Rechnung ist der Vergleich einer Marke <em>mit sich selbst</em> über Produkte, weil dort alles Markenkonstante herausfällt. Und die liegt bei p = '
-      +(gW.wild_cluster_p!=null?gW.wild_cluster_p:'–')+' — richtungsstabil, aber nicht signifikant. '
-      +'Als Ereignis betrachtet ('+_fmtPP(ev.avg_sov_effect_pp)+' pp, KI ['+_fmtPP(ev.ci95_low_pp)+'; '+_fmtPP(ev.ci95_high_pp)+']) stützen sich die Schätzungen auf nur '
-      +nfmt(ev.n_with_event)+' Intervalle mit einer Preisänderung. Das ist zu wenig für eine belastbare Aussage.'
-      +'</div>';
-    // Forest: Preis in den verschiedenen Modellen
-    var prows=[];
-    if(gW.coef!=null) prows.push({label:'Niveau, mit Web-Suche (within)', eff:gW.coef, lo:gW.ci95_low!=null?gW.ci95_low:gW.coef-3, hi:gW.ci95_high!=null?gW.ci95_high:gW.coef+3, sig:false});
-    if(uW.coef!=null) prows.push({label:'Niveau, ohne Web-Suche (within)', eff:uW.coef, lo:uW.ci95_low!=null?uW.ci95_low:uW.coef-3, hi:uW.ci95_high!=null?uW.ci95_high:uW.coef+3, sig:false});
-    if(mv.coef_pp_per_event_day!=null) prows.push({label:'Preisänderung, multivariat', eff:mv.coef_pp_per_event_day, lo:mv.ci95_low, hi:mv.ci95_high, n:mv.n_with_event, sig:mv.significant});
-    if(ev.avg_sov_effect_pp!=null) prows.push({label:'Preisänderung, einzeln', eff:ev.avg_sov_effect_pp, lo:ev.ci95_low_pp, hi:ev.ci95_high_pp, n:ev.n_with_event, sig:ev.significant});
-    if(prows.length) h+='<div class="mt-4"><div class="text-xs font-semibold text-gray-600 mb-1">Der Preis über alle Modellvarianten</div>'
-      +forestPlot(prows,{xlabel:'Effekt (Einheiten je Modell nicht direkt vergleichbar) — Balken = 95-%-Intervall'})+'</div>';
-    h+='</div>';
-    return h;
+
+    // Preis: EINE Sektion mit beiden Schnitten
+    h+=kPreis(ci);
+    // Interaktive Bausteine aus korrelation_upgrade.js
+    h+='<div id="korrMountScatter" class="mt-4"></div>';
+    h+='<div id="korrMountSourceCompare" class="mt-4"></div>';
+    return h+'</div>';
   }
 
-  // ---------- Preis-Sektion: gepoolt über mehrere Tage (stabilisiert) ----------
-  // Antwort auf Pauls Frage: Wirkung eines höheren/tieferen Preisniveaus auf SoV UND
-  // Zitationen, mit über saubere Tage gemittelten Zellwerten (Rauschreduktion).
-  function preisPooledSektion(ci){
-    var p=ci.price_level_pooled; if(!p) return '';
+  /* ---------- Preis: eine Tabelle statt drei Prosablöcken ---------- */
+  function kPreisZeilen(block, ziel){
+    var out='';
+    ['grounded','ungrounded','combined'].forEach(function(ch){
+      var mdl=(block||{})[ch];
+      if(!mdl) return;
+      if(!mdl.available){ out+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px" colspan="7">'
+        +'<span class="font-semibold text-gray-700">'+ziel+' · '+ch+'</span> — '+_kmiss(mdl.grund||'Modell im aktuellen Nightly nicht verfügbar')+'</td></tr>'; return; }
+      var rp=((mdl.drivers_eff||{}).relprice)||{};
+      ['within','between'].forEach(function(sc){
+        var seg=rp[sc]; if(!seg) return;
+        var v=_kverdict(seg.wild_cluster_p, seg.wild_cluster_p_fdr);
+        out+='<tr style="border-bottom:1px solid #f1f5f9">'
+          +'<td style="padding:6px 8px" class="text-gray-800">'+ziel+'</td>'
+          +'<td style="padding:6px 8px" class="text-gray-600">'+(ch==='grounded'?'mit Web-Suche':(ch==='ungrounded'?'ohne Web-Suche':'alle Engines'))+'</td>'
+          +'<td style="padding:6px 8px" class="text-gray-600">'+(sc==='within'?'Within (Marke mit sich selbst)':'Between (Marken untereinander)')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;font-weight:600">'+_kv(seg.coef,3)+(seg.effect_std_pp!=null?('<div class="text-xs text-gray-400 font-normal">'+_kpp(seg.effect_std_pp,2)+' je 1 SD</div>'):'')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;color:#475569">'+(seg.se_cluster!=null?('± '+_kv(seg.se_cluster,4)):_kmiss())+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;color:#475569">'+(seg.wild_cluster_p!=null?_kp(seg.wild_cluster_p, seg.wild_cluster_note):_kmiss('kein Wild-Cluster-Bootstrap'))+(seg.wild_cluster_p_fdr!=null?('<div class="text-xs text-gray-400">q '+_kp(seg.wild_cluster_p_fdr, seg.wild_cluster_note)+'</div>'):'')+'</td>'
+          +'<td style="padding:6px 8px;text-align:center">'+_pill(v.t,v.tone)+'</td></tr>';
+      });
+    });
+    return out;
+  }
+  function kPreis(ci){
+    var p=ci.price_level_pooled||{};
+    var ev=(ci.impact||{}).price_change||null;
+    var h='<div class="mt-5 border-t pt-4">'
+      +'<div class="text-sm font-bold text-ergo-dark mb-1">Preisniveau — beide Schnitte in einer Tabelle</div>';
     if(!p.available){
-      return '<div class="bg-white rounded-xl p-4 shadow mb-5 border-l-4 border-slate-300">'
-        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Preisniveau über mehrere Tage (in Aufbau)</h3>'
-        +'<p class="text-xs text-gray-500">'+esc(p.grund||'Noch nicht genug Messtage.')+'</p></div>';
+      h+='<p class="text-xs text-gray-500">'+_kmiss(p.grund||'Das gepoolte Preis-Modell ist im aktuellen Nightly nicht verfügbar.')+'</p>';
+    } else {
+      var ge=((p.gap_explorer||{}).grounded)||{};
+      h+='<p class="text-xs text-gray-500 mb-3">Nicht das Ereignis „Preis geändert“, sondern das <b>Preisniveau relativ zum Wettbewerb</b>. Gepoolt über '
+        +nfmt(p.n_days)+' saubere Tage ('+_esc((p.days_range||[]).join(' bis '))+', seit Strukturbruch '+_esc(p.since_break||'—')+')'
+        +(ge.brands?(' · '+ge.brands.length+' Preis-Marken'):'')+'. Negativer Koeffizient heißt: teurer = weniger. '
+        +'Mittelung senkt das Tagesrauschen, erzeugt aber keine zusätzlichen unabhängigen Beobachtungen — Cluster bleibt die Marke.</p>';
+      h+='<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'
+        +'<thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+        +'<th style="padding:6px 8px">Zielgröße</th><th style="padding:6px 8px">Kanal</th><th style="padding:6px 8px">Schnitt</th>'
+        +'<th style="padding:6px 8px;text-align:right">Koeffizient</th><th style="padding:6px 8px;text-align:right">SE (cluster)</th>'
+        +'<th style="padding:6px 8px;text-align:right">Wild-p / q</th><th style="padding:6px 8px;text-align:center">gesichert?</th></tr></thead><tbody>'
+        + kPreisZeilen(p.price_to_sov,'Sichtbarkeit (SoV)')
+        + kPreisZeilen(p.price_to_citations,'Zitationen')
+        +'</tbody></table></div>';
+      // Verdikt rein aus den Zahlen abgeleitet
+      var gW=((((p.price_to_sov||{}).grounded||{}).drivers_eff||{}).relprice||{}).within||{};
+      var gB=((((p.price_to_sov||{}).grounded||{}).drivers_eff||{}).relprice||{}).between||{};
+      var qW=gW.wild_cluster_p_fdr, qB=gB.wild_cluster_p_fdr;
+      var txt;
+      if(qW!=null||qB!=null){
+        var wOk=(qW!=null&&qW<0.05), bOk=(qB!=null&&qB<0.05);
+        txt = wOk&&bOk ? 'Beide Schnitte überstehen die FDR-Korrektur.'
+            : (wOk ? 'Nach FDR-Korrektur trägt der <b>Within</b>-Schnitt (Marke mit sich selbst) — der Vergleich <i>zwischen</i> Marken nicht.'
+            : (bOk ? 'Nach FDR-Korrektur trägt nur der <b>Between</b>-Schnitt; der kann aber alles aufsammeln, was teure von günstigen Anbietern unterscheidet.'
+            : 'Nach FDR-Korrektur übersteht <b>kein</b> Schnitt die Schwelle — der Within-Wert (q = '+_kp(qW)+') liegt näher daran als der Between-Wert (q = '+_kp(qB)+'). Richtung ja, Nachweis nein.'));
+      } else { txt='Für den Preis liegen keine FDR-korrigierten Werte vor.'; }
+      h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed mt-3"><b>Lesart:</b> '+txt+'</div>';
+      var st=p.stability||{};
+      if(st.mean!=null){
+        h+='<div class="text-xs text-gray-500 mt-2"><b>Stabilität:</b> Der markenübergreifende Preis-Effekt liegt an jedem der '+nfmt(p.n_days)+' Tage zwischen '
+          +_kv(st.min,2)+' und '+_kv(st.max,2)+' (Mittel '+_kv(st.mean,2)+', Streuung '+_kv(st.sd,2)+')'
+          +(st.sign_stable!=null?(st.sign_stable?' — durchgehend im selben Vorzeichen.':' — mit Vorzeichenwechsel.'):'.')+'</div>';
+      }
     }
-    function seg(block,scope,kind){ return (((block[scope]||{}).drivers_eff||{}).relprice||{})[kind]||{}; }
-    var sov=p.price_to_sov||{}, cit=p.price_to_citations||{};
-    var sUb=seg(sov,'ungrounded','between');
-    var st=p.stability||{};
-    function block(lbl, w, b){
-      return '<div class="border rounded-lg p-3 bg-gray-50">'
-        +'<div class="text-sm font-semibold text-ergo-dark mb-2">'+lbl+'</div>'
-        +'<div class="text-xs text-gray-600">Marke mit sich selbst (within, kausal sauber)</div>'
-        +'<div class="text-base font-bold '+(Math.abs(w.coef||0)<0.3?'text-gray-400':'text-ergo-dark')+'">'+_fmtPP(w.coef)+'</div>'
-        +'<div class="text-xs text-gray-500 mb-2">p = '+(w.wild_cluster_p!=null?w.wild_cluster_p:'–')+(w.wild_cluster_p_fdr!=null?(', q = '+w.wild_cluster_p_fdr):'')+'</div>'
-        +'<div class="text-xs text-gray-600">Marken untereinander (between)</div>'
-        +'<div class="text-base font-bold '+((b.coef||0)<-1?'text-ergo-red':'text-gray-400')+'">'+_fmtPP(b.coef)+'</div>'
-        +'<div class="text-xs text-gray-500">p = '+(b.wild_cluster_p!=null?b.wild_cluster_p:'–')+(b.wild_cluster_p_fdr!=null?(', q = '+b.wild_cluster_p_fdr):'')+', Richtung '+(b.prob_direction!=null?Math.round(b.prob_direction*100)+' %':'–')+'</div>'
-        +'</div>';
+    if(ev){
+      h+='<div class="text-xs text-gray-600 mt-2 leading-relaxed"><b>Als Ereignis betrachtet:</b> ';
+      if(ev.available===false || ev.avg_sov_effect_pp==null){
+        h+='nicht schätzbar — '+_esc(ev.grund||'kein Grund im JSON hinterlegt')+'.'
+          +(ev.type_confidence_grund?(' '+_esc(ev.type_confidence_grund)):'')
+          +' Es steht deshalb <b>kein</b> Effektwert und keine Null an dieser Stelle.';
+      } else {
+        var e=_kimp(ev);
+        h+=_kpp(e.eff,2)+((e.lo!=null)?(', 95-%-Intervall ['+_kv(e.lo,2)+'; '+_kv(e.hi,2)+'], cluster-robust über '+nfmt(e.nc)+' Marken'):', kein Konfidenzintervall verfügbar')+'.';
+      }
+      h+='</div>';
     }
-    var h='<div class="bg-white rounded-xl p-5 shadow mb-5 border-l-4 border-emerald-500">';
-    h+='<div class="flex items-start justify-between flex-wrap gap-2 mb-1">'
-      +'<h3 class="text-base font-bold text-ergo-dark">Preisniveau, über '+nfmt(p.n_days)+' saubere Tage stabilisiert</h3>'
-      +_pill(nfmt(p.n_days)+' Tage · '+((p.days_range||[]).join('–')),'grau')+'</div>';
-    h+='<p class="text-xs text-gray-500 mb-4">Statt eines einzelnen Snapshots wird der Wert je Marke×Thema über mehrere Tage gemittelt — das nimmt das tägliche LLM-Rauschen heraus. So trennt sich die Wirkung eines höheren/tieferen <strong>Relativpreises</strong> auf zwei Zielgrößen sauber: Sichtbarkeit und Zitationen. Negativer Wert heißt teurer = weniger.</p>';
-    h+='<div class="grid md:grid-cols-2 gap-3 mb-4">';
-    h+=block('Wirkung auf Sichtbarkeit (SoV) · Web-Suche', seg(sov,'grounded','within'), seg(sov,'grounded','between'));
-    h+=block('Wirkung auf Zitationen · Web-Suche', seg(cit,'grounded','within'), seg(cit,'grounded','between'));
-    h+='</div>';
-    h+='<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed mb-3">'
-      +'<strong>Befund nach Rausch-Mittelung:</strong> Der <em>Within</em>-Effekt (Marke mit sich selbst über Produkte — die saubere kausale Rechnung) fällt bei beiden Zielgrößen nahe null. Der grenzwertige Ein-Tages-Within war also größtenteils Tagesrauschen. Der <em>Between</em>-Effekt (günstigere Marken sind sichtbarer und werden häufiger zitiert) ist stabil und richtungssicher, erlaubt aber keine Kausalaussage — günstige Anbieter unterscheiden sich auch in Größe, Vertrieb und Bekanntheit.'
-      +'</div>';
-    if(sUb.coef!=null){
-      h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed mb-3">'
-        +'<strong>Validitätscheck:</strong> Bei Engines <em>ohne</em> Web-Suche liegt der Preis-Effekt praktisch bei null ('+_fmtPP(sUb.coef)+'). Genau das ist zu erwarten, wenn der Preis über abgerufene Vergleichsseiten wirkt und nicht über das Modellgedächtnis.'
-        +'</div>';
-    }
-    if(st.mean!=null){
-      h+='<div class="text-xs text-gray-600 leading-relaxed"><strong>Stabilität:</strong> Der markenübergreifende Preis-Effekt auf die Sichtbarkeit liegt an jedem der '+nfmt(p.n_days)+' Tage zwischen '+_fmtPP(st.max)+' und '+_fmtPP(st.min)+' (Mittel '+_fmtPP(st.mean)+', Streuung '+st.sd+') — '+(st.sign_stable?'durchgehend im selben Vorzeichen.':'mit Vorzeichenwechsel.')+'</div>';
-    }
-    h+='<p class="text-xs text-gray-400 mt-2">Reift mit jedem Nightly weiter. Mittelung senkt das Messrauschen, erzeugt aber keine zusätzlichen unabhängigen Beobachtungen (Cluster bleibt die Marke). Quelle: level_cells_history.jsonl.</p>';
-    h+='</div>';
-    return h;
+    return h+'</div>';
   }
 
-
-  window.buildKorrErgebnis = function(){
-    var host=document.getElementById('korrErgebnis'); if(!host) return;
-    Promise.all([
-      fetch('data/correlation_impact.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
-      fetch('data/peec_fanout_rate.csv',{cache:'no-store'}).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;})
-    ]).then(function(res){ window.__KORR=res; window.__korrRender(res[0],res[1]); });
-  };
-
-  window.__korrRender = function(ci, fanCsv){
-    var host=document.getElementById('korrErgebnis'); if(!host) return;
-    if(!ci){ host.innerHTML='<div class="text-sm text-gray-400">Korrelationsdaten nicht geladen.</div>'; return; }
-    var h='';
-    // ---- 1. Kernaussage ----
+  /* ---------- Block 2: Bewegen einzelne Ereignisse sie kurzfristig? ---------- */
+  function kBlock2(ci, fanCsv){
     var imp=ci.impact||{};
-    var sigMain=Object.keys(imp).filter(function(k){return imp[k].significant;});
-    var fs=ci.funnel_stratified||{}, fdr=fs.fdr||{};
-    var pct=ci.page_change_types||{};
-    var wja=(pct.wirkung_je_art)||{};
-    var sigAll=sigMain.length+(fdr.n_signifikant_nach_korrektur||0)+(fdr.n_gesichert_multivariat||0)+(wja.n_gesichert||0);
-    h+='<div class="rounded-xl p-5 mb-5 '+(sigAll?'bg-amber-50 border-l-4 border-amber-500':'bg-slate-50 border-l-4 border-slate-400')+'">'
-      +'<div class="text-lg font-bold text-ergo-dark mb-1">'+(sigAll?('⚠️ '+sigAll+' gesicherte Zusammenhänge'):'Kein Treiber ist statistisch gesichert')+'</div>'
-      +'<div class="text-sm text-gray-700 leading-relaxed">'
-      +(sigAll?'Vor der Interpretation die Konfidenzintervalle und die Mehrfachtest-Korrektur prüfen.'
-             :'In keinem der geprüften Modelle schließt ein Konfidenzintervall die Null aus — weder im Gesamtmodell, noch nach Funnel-Stufen, nach Änderungsart oder mit Zeitversatz. Das Modell zeigt derzeit <strong>Größenordnungen und Richtungen, keine belegten Wirkungen</strong>.')
-      +'</div>'
-      +'<div class="grid md:grid-cols-4 gap-3 mt-4">'
-      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Messtage</div><div class="text-xl font-bold text-ergo-dark">'+(ci.sov_measure_days||'–')+'</div><div class="text-xs text-gray-400">'+esc((ci.sov_measure_range||[]).join(' bis '))+'</div></div>'
-      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Intervall-Punkte</div><div class="text-xl font-bold text-ergo-dark">'+nfmt(ci.n_intervals_total)+'</div><div class="text-xs text-gray-400">'+((ci.brands_with_sov||[]).length)+' Marken</div></div>'
-      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Vorhersagegüte</div><div class="text-xl font-bold '+((((ci.validation||{}).out_of_sample||{}).r2_oos_vs_baseline||0)<0?'text-red-600':'text-ergo-dark')+'">'+(((ci.validation||{}).out_of_sample||{}).r2_oos_vs_baseline)+'</div><div class="text-xs text-gray-400">R² gegen Marken-Basislinie</div></div>'
-      +'<div class="bg-white rounded-lg p-3"><div class="text-xs text-gray-500">Placebo-Rate</div><div class="text-xl font-bold text-ergo-dark">'+((ci.validation||{}).placebo_false_positive_rate)+'</div><div class="text-xs text-gray-400">erwartet 0,05</div></div>'
-      +'</div></div>';
-
-    // ---- 2. Forest-Plot Gesamtmodell ----
+    var la=ci.lag_analysis||{};
+    var leadOf=function(k){ var b=(la.bester_lag_je_treiber||{})[k]; return (b&&b.lead_warnung)?(b.lead_begruendung||'Lead-Warnung: stärkster Zusammenhang liegt vor dem Ereignis.'):null; };
     var rows=Object.keys(imp).map(function(k){
-      var r=imp[k];
-      return {label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), eff:r.avg_sov_effect_pp,
-              lo:r.ci95_low_pp, hi:r.ci95_high_pp, n:r.n_with_event, sig:r.significant};
-    }).filter(function(r){return r.eff!=null;})
-      .sort(function(a,b){return Math.abs(b.eff)-Math.abs(a.eff);});
-    h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-      +'<h3 class="text-base font-bold text-ergo-dark mb-1">Alle Treiber im Überblick</h3>'
-      +'<p class="text-xs text-gray-500 mb-3">Punkt = geschätzter Effekt, Balken = 95-%-Konfidenzintervall. Schneidet ein Balken die gestrichelte Nulllinie, ist der Effekt nicht von null unterscheidbar.</p>'
-      +forestPlot(rows)+'</div>';
+      var r0=imp[k];
+      var e=_kimp(r0);
+      var lead=leadOf(k);
+      return { key:k, label:(e.label||k).replace(/\(Wettbewerb\)/,'').trim(),
+        sub:(e.nc!=null?(e.nc+(e.ncg!=null?(' von '+e.ncg):'')+' Marke(n) mit Ereignis'):'Cluster-Zahl: keine Angabe')
+            +(e.ne!=null?(' · '+e.ne+' Intervalle'):'')
+            +(e.p!=null?(' · p '+Number(e.p).toFixed(3).replace('.',',')):'')
+            +(r0.cluster_df!=null?(' · df '+r0.cluster_df):''),
+        eff:e.eff, lo:e.lo, hi:e.hi, sig:e.sig, n:e.ne, warn:!!lead, warnText:lead,
+        note:(e.eff==null||e.basis!=='cluster')?((e.grund||'cluster-robuste Schätzung nicht möglich')+(lead?(' · '+lead):'')):null,
+        _dead:(e.basis!=='cluster') };
+    });
+    // Nicht cluster-schaetzbare Treiber bleiben sichtbar: Effekt raus, Grund rein
+    rows.forEach(function(r){ if(r._dead){ r.eff=null; r.lo=null; r.hi=null; } });
+    rows.sort(function(a,b){ return Math.abs(b.eff||0)-Math.abs(a.eff||0); });
+    var nSig=rows.filter(function(r){ return r.sig; }).length;
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">2 · Bewegen einzelne Ereignisse die Sichtbarkeit kurzfristig?</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Ein Forest, cluster-robust auf Markenebene: Punkt = geschätzter Effekt, Balken = 95-%-Intervall aus <b>demselben</b> Cluster-Modell wie der Signifikanz-Chip ('
+      +_esc(ci.significance_basis_global||'Basis nicht im JSON benannt')+'). Nicht schätzbare Treiber verschwinden nicht — sie stehen mit ihrem Grund unter der Grafik. ⚠ markiert eine Lead-Warnung aus der Versatz-Analyse.</p>'
+      +forestPlot(rows,{xlabel:'Effekt auf Share of Voice (pp je Intervall) — Balken = 95-%-Intervall, cluster-robust je Marke'});
+    // Nebenangabe: iid-Signifikanz
+    var iidOnly=Object.keys(imp).filter(function(k){ var r=imp[k]; return r.significant_iid===true && r.significant!==true; });
+    h+='<div class="text-xs text-gray-500 mt-3 leading-relaxed">Gezeigt wird durchgängig die <b>cluster-robuste</b> Rechnung (Einheit = Marke). '
+      +(iidOnly.length
+        ? ('Nebenangabe: '+iidOnly.length+' Treiber wären unter der <i>iid</i>-Annahme signifikant ('+iidOnly.map(function(k){return _esc((imp[k].label||k));}).join(', ')+'). Diese Annahme unterstellt, dass jedes Intervall unabhängig ist — bei mehreren Intervallen je Marke ist sie zu optimistisch und wird hier nicht als Befund geführt.')
+        : 'Nebenangabe: kein Treiber ist unter der optimistischeren <i>iid</i>-Annahme signifikant, ohne es auch cluster-robust zu sein.')
+      +' Gesichert nach dieser Basis: <b>'+nSig+' von '+rows.length+'</b> Treibern.</div>';
 
-    // ---- 2b. Preis ----
-    try { h += preisSektion(ci); } catch(e){ console.warn('preisSektion:', e.message); }
-    try { h += preisPooledSektion(ci); } catch(e){ console.warn('preisPooledSektion:', e.message); }
+    // Multivariat: alle Treiber gleichzeitig
+    var mv=ci.multivariate||{};
+    if(mv.available && mv.coefficients){
+      var co=mv.coefficients;
+      var hits=Object.keys(co).filter(function(k){ return co[k].significant; });
+      var solid=hits.filter(function(k){ return co[k].reliable!==false; });
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Alle Treiber gleichzeitig ('+_esc(mv.method||'multivariates Modell')+')</div>'
+        +'<div class="text-xs text-gray-600 leading-relaxed">'+nfmt(mv.n_points)+' Intervalle, '+nfmt(mv.n_brands)+' Marken, '+((mv.types_used||[]).length)+' Ereignistypen. ';
+      if(hits.length===0){ h+='Kein Typ erreicht die Signifikanzschwelle.'; }
+      else {
+        h+='<b>'+hits.length+' Typ(en) mit Signifikanz-Flag:</b> '+hits.map(function(k){
+          var r=co[k];
+          return _esc(r.label||k)+' ('+_kpp(r.coef_pp_per_event_day,4)+' je Ereignis, Intervall ['+_kv(r.ci95_low,4)+'; '+_kv(r.ci95_high,4)+'])'
+            +(r.reliable===false?(' <span class="text-amber-700">— nicht belastbar: '+_esc(r.note||'reliable=false')+'</span>'):'');
+        }).join('; ')+'. ';
+        h+= solid.length? ('Davon belastbar: '+solid.length+'.') : 'Keiner davon ist belastbar — sie gehen deshalb nicht als Befund in die Kernaussage ein, werden aber auch nicht verschwiegen.';
+      }
+      var ex=(mv.types_excluded_too_few||[]);
+      if(ex.length) h+=' Ausgelassen (zu wenige Ereignisse): '+ex.map(_esc).join(', ')+'.';
+      h+='</div></div>';
+    }
 
-    // ---- 3. Funnel-Schichtung ----
+    // Gegenprobe nach Entrauschung (grounded + Wochen-Mittel)
+    var ed=ci.event_impact_denoised||{};
+    if(ed.available){
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Gegenprobe nach Entrauschung</div>'
+        +'<div class="text-xs text-gray-600 leading-relaxed">Kanal '+_esc(ed.kanal||'')+': '+nfmt(ed.n_intervalle_taeglich)+' tägliche gegen '+nfmt(ed.n_intervalle_woechentlich)+' nicht überlappende Wochen-Intervalle. '
+        +'Gesichert: '+nfmt(ed.n_gesichert_taeglich)+' täglich, <b>'+nfmt(ed.n_gesichert_woechentlich)+'</b> wöchentlich. '+_esc(ed.kernaussage||'')+'</div></div>';
+    }
+
+    // Funnel-Schichtung
+    var fs=ci.funnel_stratified||{}, fdr=fs.fdr||{};
     if(fs.available){
       var stufen=['Awareness','Consideration','Decision'].filter(function(t){return (fs.je_tag||{})[t];});
-      h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Nach Funnel-Stufe getrennt</h3>'
-        +'<p class="text-xs text-gray-500 mb-3">Dieselbe Rechnung innerhalb jeder Stufe. '+nfmt((fs.je_tag[stufen[0]]||{}).n_intervalle)+' Intervalle je Stufe statt '+nfmt(ci.n_intervals_total)+' im Gesamtmodell — dadurch deutlich schmalere Intervalle, aber weiterhin kein gesicherter Effekt.</p>';
       var frows=[];
       stufen.forEach(function(st){
         var im=((fs.je_tag[st]||{}).impact||{}).page_change;
-        if(im && im.available) frows.push({label:st, eff:im.avg_sov_effect_pp, lo:im.ci95_low_pp,
-                                           hi:im.ci95_high_pp, n:im.n_with_event, sig:im.significant_fdr});
+        if(im && im.available) frows.push({label:st, sub:nfmt(im.n_with_event)+' Intervalle mit Ereignis', eff:im.avg_sov_effect_pp, lo:im.ci95_low_pp, hi:im.ci95_high_pp, n:im.n_with_event, sig:im.significant_fdr});
       });
-      var gm=imp.page_change;
-      if(gm) frows.push({label:'(Gesamtmodell)', eff:gm.avg_sov_effect_pp, lo:gm.ci95_low_pp, hi:gm.ci95_high_pp, n:gm.n_with_event, sig:gm.significant});
-      h+='<div class="text-xs font-semibold text-gray-600 mb-1">Seitenänderungen je Stufe</div>'+forestPlot(frows);
-      h+='<div class="text-xs text-gray-500 mt-2">'+nfmt(fdr.n_tests)+' Einzeltests, Benjamini-Hochberg-korrigiert: '
-        +nfmt(fdr.n_signifikant_vor_korrektur)+' vor, '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Korrektur signifikant.</div></div>';
+      if(frows.length){
+        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Seitenänderungen je Funnel-Stufe</div>'
+          +'<div class="text-xs text-gray-500 mb-2">Dieselbe Rechnung innerhalb jeder Stufe ('+nfmt((fs.je_tag[stufen[0]]||{}).n_intervalle)+' Intervalle je Stufe gegen '+nfmt(ci.n_intervals_total)+' im Gesamtmodell). Intervalle hier auf iid-Basis — die Stufen liefern keine Cluster-Fehler, deshalb als Zusatzschnitt gelesen, nicht als Beleg.</div>'
+          +forestPlot(frows,{xlabel:'Effekt je Stufe (pp je Intervall) — Balken = 95-%-Intervall (iid)'})
+          +'<div class="text-xs text-gray-500 mt-2">'+nfmt(fdr.n_tests)+' Einzeltests, '+_esc(fdr.verfahren||'FDR')+': '+nfmt(fdr.n_signifikant_vor_korrektur)+' vor, <b>'+nfmt(fdr.n_signifikant_nach_korrektur)+'</b> nach der Korrektur signifikant. '+_esc(fdr.hinweis||'')+'</div></div>';
+      }
     }
 
-    // ---- 4. Web-Such-Rate ----
+    // Aenderungsart
+    var pct=ci.page_change_types||{}, wja=pct.wirkung_je_art||{};
+    if(wja.available){
+      var ART={preis:'Preis',leistung:'Leistung',faq:'FAQ',copy:'Text/Copy',struktur:'Struktur',sonstiges:'Sonstiges',change:'unspezifisch'};
+      var arows=Object.keys(wja.je_art||{}).map(function(k){
+        var v=wja.je_art[k];
+        return v.available?{label:(ART[k]||k), sub:nfmt(v.n_events)+' Änderungen · '+nfmt(v.n_with_event)+' Intervalle', eff:v.avg_sov_effect_pp,
+                            lo:v.ci95_low_pp, hi:v.ci95_high_pp, n:v.n_with_event, sig:v.significant_fdr}
+                          :{label:(ART[k]||k), eff:null, note:(v.grund||'zu wenige klassifizierte Änderungen')};
+      });
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Kommt es darauf an, <em>was</em> geändert wird?</div>'
+        +'<div class="text-xs text-gray-500 mb-2">'+((pct.n_page_change!=null&&pct.n_klassifiziert!=null)?(nfmt(pct.n_klassifiziert)+' von '+nfmt(pct.n_page_change)+' Änderungen klassifiziert'):_kmiss('Klassifikations-Abdeckung fehlt'))
+        +' · '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert (FDR-korrigiert).</div>'
+        +forestPlot(arows,{xlabel:'Effekt je Änderungsart (pp je Intervall) — Balken = 95-%-Intervall (iid)'})+'</div>';
+    }
+
+    // Zeitversatz
+    if(la.available){
+      var lagHits=[];
+      Object.keys(la.bester_lag_je_treiber||{}).forEach(function(k){
+        var b=la.bester_lag_je_treiber[k];
+        (b.verlauf||[]).forEach(function(v){ if(v.gesichert && !v.lead) lagHits.push({k:k,label:b.label||k,lag:v.lag,p:v.p,eff:v.effekt_pp,muster:b.musterbewertung,lead:b.lead_warnung}); });
+      });
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Wirkt es vielleicht später?</div>'
+        +'<div class="text-xs text-gray-500 mb-2">Korrelation je Zeitversatz ('+((la.getestete_lags||[]).join(', '))+' Tage). Negative Versätze zählen Ereignisse <b>nach</b> der gemessenen Änderung und dienen nur der Falsifikation. '
+        +nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen eine Lead-Warnung.</div>'
+        +'<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr class="text-xs text-gray-400 border-b"><th class="text-left py-1 px-2">Treiber</th>'
+        +(la.getestete_lags||[]).map(function(l){return '<th class="text-right px-1">'+l+' T</th>';}).join('')
+        +'<th class="text-left pl-3">Bewertung</th></tr></thead><tbody>';
+      // Legende: "–" ist kein Nullwert, sondern ein nicht ausgewerteter Versatz.
+      Object.keys(la.bester_lag_je_treiber||{}).forEach(function(k){
+        var b=la.bester_lag_je_treiber[k];
+        var byLag={}; (b.verlauf||[]).forEach(function(v){byLag[v.lag]=v;});
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5 px-2">'+(b.lead_warnung?'<span class="text-amber-600" title="Lead-Warnung">⚠ </span>':'')+_esc((b.label||k).replace(/\(Wettbewerb\)/,'').trim())+'</td>'
+          +(la.getestete_lags||[]).map(function(l){
+            var v=byLag[l]; var r=v?v.r:null;
+            if(r==null) return '<td class="text-right px-1 text-gray-300" title="Dieser Versatz wurde für den Treiber nicht ausgewertet — im Fenster liegen zu wenige Ereignisse dafür.">–</td>';
+            return '<td class="text-right px-1 '+(v.gesichert?'font-bold text-ergo-red':(Math.abs(r)>0.12?'font-semibold':''))+'">'+(r>0?'+':'')+r.toFixed(2)+'</td>';
+          }).join('')
+          +'<td class="pl-3 text-xs text-gray-500">'+_esc(String(b.musterbewertung||'').split('—')[0])+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+      h+='<div class="text-xs text-gray-400 mt-1">Werte = Korrelation je Versatz; <b>fett rot</b> = für sich genommen gesichert. Ein <b>–</b> heißt „für diesen Treiber nicht ausgewertet“ (zu wenige Ereignisse im Fenster) — <b>nicht</b> „Effekt null“.</div>';
+      h+='<div class="text-xs text-gray-500 mt-2">'+_esc(la.fazit||'')+' ';
+      if(lagHits.length){
+        h+='<b>Die Treffer im Klartext:</b> '+lagHits.map(function(x){
+          return _esc(x.label)+' bei Versatz '+x.lag+' Tagen ('+_kpp(x.eff,3)+', p = '+_kp(x.p)+')'+(x.lead?' — derselbe Treiber trägt eine Lead-Warnung':'');
+        }).join('; ')+'. Diese Werte sind <b>nicht</b> für die '+((la.getestete_lags||[]).length*Object.keys(la.bester_lag_je_treiber||{}).length)+' Einzeltests dieses Blocks korrigiert und stützen sich auf denselben Datensatz wie der Forest oben.';
+      }
+      h+='</div></div>';
+    }
+
+    // Web-Such-Rate
     var fr=ci.fanout_regime||{};
     if(fanCsv && fr.available){
       var pts=[];
@@ -4645,68 +4853,284 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         var v=parseFloat(c[3]); if(!isNaN(v)) pts.push({x:c[0].replace(/^﻿/,''), y:v});
       });
       if(pts.length){
-        h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-          +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wie oft die Engines überhaupt im Web suchen</h3>'
-          +'<p class="text-xs text-gray-500 mb-3">Anteil der Antworten mit Web-Suche. In der Einbruchphase antworten die Modelle aus dem Gedächtnis — eine Seitenänderung <strong>kann</strong> dort nicht wirken. Das verdünnt jeden echten Effekt.</p>'
+        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Wie oft die Engines überhaupt im Web suchen</div>'
+          +'<div class="text-xs text-gray-500 mb-2">Anteil der Antworten mit Web-Suche. In der Einbruchphase antworten die Modelle aus dem Gedächtnis — eine Seitenänderung <b>kann</b> dort nicht wirken. Das verdünnt jeden echten Effekt.</div>'
           +lineChartSVG(pts,{threshold:fr.schwelle})
-          +'<div class="text-xs text-gray-500 mt-2">'+nfmt(fr.n_tage_web)+' von '+nfmt(fr.n_tage)+' Tagen web-gestützt · Spanne '
-          +(fr.rate_min*100).toFixed(1)+' % bis '+(fr.rate_max*100).toFixed(1)+' %.</div>';
-        var sens=fr.sensitivitaet_seitenaenderungen||{};
-        var srows=[];
-        Object.keys(sens).forEach(function(st){
-          var a=sens[st].alle_tage||{}, w=sens[st].nur_web_tage||{};
-          if(a.available) srows.push({label:st+' — alle Tage', eff:a.effekt_pp, lo:(a.ci95||[])[0], hi:(a.ci95||[])[1], n:a.n_mit_event, sig:a.gesichert});
-          if(w.available) srows.push({label:st+' — nur Web-Tage', eff:w.effekt_pp, lo:(w.ci95||[])[0], hi:(w.ci95||[])[1], n:w.n_mit_event, sig:w.gesichert});
-        });
-        if(srows.length) h+='<div class="text-xs font-semibold text-gray-600 mt-4 mb-1">Seitenänderungen: alle Tage gegen nur web-gestützte Tage</div>'+forestPlot(srows);
-        h+='</div>';
+          +'<div class="text-xs text-gray-500 mt-1">'+nfmt(fr.n_tage_web)+' von '+nfmt(fr.n_tage)+' Tagen web-gestützt · Spanne '+_kv(fr.rate_min*100,1)+' % bis '+_kv(fr.rate_max*100,1)+' %.</div></div>';
       }
     }
+    return h+'</div>';
+  }
 
-    // ---- 5. Änderungsart ----
-    if(wja.available){
-      var ART={preis:'Preis',leistung:'Leistung',faq:'FAQ',copy:'Text/Copy',struktur:'Struktur',sonstiges:'Sonstiges',change:'unspezifisch'};
-      var arows=Object.keys(wja.je_art||{}).map(function(k){
-        var v=wja.je_art[k];
-        return v.available?{label:(ART[k]||k)+' ('+nfmt(v.n_events)+')', eff:v.avg_sov_effect_pp,
-                            lo:v.ci95_low_pp, hi:v.ci95_high_pp, n:v.n_with_event, sig:v.significant_fdr}:null;
-      }).filter(Boolean);
-      h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wirkt es darauf an, <em>was</em> geändert wird?</h3>'
-        +'<p class="text-xs text-gray-500 mb-3">Seitenänderungen nach Art getrennt ('+((pct.abdeckung||0)*100).toFixed(1)+' % der '+nfmt(pct.n_page_change)+' Änderungen klassifiziert). '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert.</p>'
-        +forestPlot(arows)+'</div>';
+  /* ---------- Block 3: Was schafft es in die Zitate? ---------- */
+  function kBlock3(ci, cc){
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">3 · Was schafft es in die Zitate?</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Kurzer Anriss — die vollständige Auswertung je URL steht im Reiter <b>Content &amp; Zitate</b>.</p>';
+    if(!cc || !cc.kennzahlen){
+      h+='<div class="bg-slate-50 border-l-4 border-slate-400 rounded-lg p-3 text-xs text-gray-700">'
+        +'<code>data/content_citations.json</code> ist nicht geladen — deshalb steht hier <b>kein</b> Wert. Keine Nullen als Ersatz. Der nächste Nightly-Lauf erzeugt die Datei.</div>';
+    } else {
+      var K=cc.kennzahlen||{};
+      var tq=K.trefferquote_je_marke||{};
+      h+='<div class="grid md:grid-cols-3 gap-3">';
+      if(tq.available && (tq.marken||[]).length){
+        var byB={}; tq.marken.forEach(function(m){ byB[m.brand]=m; });
+        var own=tq.marken.filter(function(m){ return m.eigen; })[0]||byB.ERGO;
+        var ref=byB.Allianz;
+        if(own) h+=_kcard('Zitat-Trefferquote '+_esc(own.brand), _kv(own.quote_pct,2)+' %',
+          nfmt(own.zitiert)+' von '+nfmt(own.getrackt)+' getrackten Seiten sind in den Zitaten aufgetaucht.','Quelle: content_citations.kennzahlen','rot');
+        if(ref) h+=_kcard('Zitat-Trefferquote '+_esc(ref.brand), _kv(ref.quote_pct,2)+' %',
+          nfmt(ref.zitiert)+' von '+nfmt(ref.getrackt)+' Seiten'+((own&&own.quote_pct)?(' — Faktor '+_kv(ref.quote_pct/Math.max(own.quote_pct,1e-9),1)+'× gegenüber '+_esc(own.brand)):'')+'.','Quelle: content_citations.kennzahlen','blau');
+      } else {
+        h+=_kcard('Zitat-Trefferquote','<span class="text-gray-400 text-base">keine Angabe</span>','Kennzahl <code>trefferquote_je_marke</code> im aktuellen Export nicht verfügbar.','','grau');
+      }
+      var zt=K.zitatanteil_je_seitentyp||{};
+      if(zt.available && (zt.typen||[]).length){
+        var t0=zt.typen[0];
+        h+=_kcard('Stärkster Seitentyp', _esc(t0.seitentyp)+' · '+_kv(t0.anteil_pct,1)+' %',
+          nfmt(t0.zitate)+' von '+nfmt(zt.gesamt_zitate)+' Zitaten über '+nfmt(t0.urls)+' URLs.','Quelle: content_citations.kennzahlen','grau');
+      }
+      h+='</div>';
+      if(zt.available && (zt.typen||[]).length){
+        h+='<div class="mt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Zitatanteil je Seitentyp</div>';
+        zt.typen.slice(0,6).forEach(function(t){
+          h+='<div class="flex items-center gap-3 mb-1"><div class="w-40 text-xs text-right text-gray-600">'+_esc(t.seitentyp)+'</div>'
+            +'<div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden"><div style="width:'+Math.max(Number(t.anteil_pct||0),0.5).toFixed(1)+'%;background:#DC0028" class="h-3"></div></div>'
+            +'<div class="w-28 text-xs text-gray-500 text-right">'+_kv(t.anteil_pct,1)+' % ('+nfmt(t.zitate)+')</div></div>';
+        });
+        h+='</div>';
+      }
+      if(tq.vorbehalt) h+='<div class="text-xs text-gray-400 mt-2 leading-relaxed">'+_esc(tq.vorbehalt)+'</div>';
+      if(K._hinweis) h+='<div class="text-xs text-gray-400 mt-1 leading-relaxed">'+_esc(K._hinweis)+'</div>';
     }
-
-    // ---- 6. Zeitversatz ----
-    var la=ci.lag_analysis||{};
-    if(la.available){
-      h+='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-        +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wirkt es vielleicht später?</h3>'
-        +'<p class="text-xs text-gray-500 mb-3">Korrelation je Zeitversatz. Eine echte Verzögerung zeigt einen glatten Verlauf; Springen deutet auf Zufall.</p>'
-        +'<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Treiber</th>'
-        +(la.getestete_lags||[]).map(function(l){return '<th class="text-right">'+l+' T</th>';}).join('')
-        +'<th class="text-left pl-3">Bewertung</th></tr></thead><tbody>';
-      Object.keys(la.bester_lag_je_treiber||{}).forEach(function(k){
-        var b=la.bester_lag_je_treiber[k];
-        var byLag={}; (b.verlauf||[]).forEach(function(v){byLag[v.lag]=v.r;});
-        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc((b.label||k).replace(/\(Wettbewerb\)/,'').trim())+'</td>'
-          +(la.getestete_lags||[]).map(function(l){
-            var r=byLag[l];
-            return '<td class="text-right '+(r==null?'text-gray-300':(Math.abs(r)>0.12?'font-semibold':''))+'">'+(r==null?'–':(r>0?'+':'')+r.toFixed(2))+'</td>';
-          }).join('')
-          +'<td class="pl-3 text-xs text-gray-500">'+esc(String(b.musterbewertung||'').split('—')[0])+'</td></tr>';
-      });
-      h+='</tbody></table><div class="text-xs text-gray-500 mt-2">'+esc(la.fazit||'')+'</div></div>';
+    // Externe Zitier-Autoritaet aus correlation_impact
+    var esa=ci.external_source_authority||{};
+    if(esa.available){
+      var ed=esa.event_deckung||{};
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Warum externe Ereignisse kaum wirken</div>'
+        +'<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed">'
+        +((ed.anteil_auf_zitierten_quellen!=null)
+            ? ('<b>'+_kv(100*(1-ed.anteil_auf_zitierten_quellen),1)+' % der getrackten Presse-/News-Ereignisse</b> liegen auf Quellen, die LLMs nicht zitieren — nur '+nfmt(ed.auf_zitierten_quellen)+' von '+nfmt(ed.n_presse_news_events)+' auf tatsächlich zitierten Domains. ')
+            : _kmiss('Feld event_deckung.anteil_auf_zitierten_quellen fehlt')+' ')
+        +((esa.top_autoritaetsquellen_ohne_event||[]).length?('Die wirksamen Quellen ('+esa.top_autoritaetsquellen_ohne_event.slice(0,4).map(_esc).join(', ')+') tracken wir gar nicht als Ereignis.'):'')
+        +'</div>';
+      var at=esa.autoritaetstabelle||[];
+      if(at.length){
+        h+='<div class="flex flex-wrap gap-2 mt-2">'+at.slice(0,10).map(function(x){
+          return '<span class="text-xs bg-gray-100 rounded px-2 py-1">'+_esc(x.domain)+' <b>'+nfmt(x.citations)+'</b> <span class="text-gray-400">'+_esc(x.klasse||'')+'</span></span>';
+        }).join('')+'</div>';
+      }
+      h+='</div>';
     }
-
-    // ---- 7. Wartende Auswertung ----
+    var cas=ci.citation_authority_signal||{};
+    if(cas.available && (cas.ranking_aktuell||[]).length){
+      h+='<div class="mt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Autoritätsgewichteter Zitier-Anteil je Marke</div>'
+        +'<div class="text-xs text-gray-400 mb-1">'+nfmt(cas.n_snapshots)+' Snapshots — die Kopplung Zitier-Anteil → SoV reift mit weiteren Snapshots.</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr class="text-xs text-gray-400 text-left"><th class="px-2 py-1">Marke</th><th class="px-2 text-right">Anteil</th><th class="px-2 text-right">Δ seit erstem Snapshot</th></tr></thead><tbody>'
+        +cas.ranking_aktuell.slice(0,8).map(function(x){
+          var own=(x.brand==='ERGO'), d=x.delta_pp;
+          return '<tr style="border-top:1px solid #f1f5f9"'+(own?' class="bg-red-50 font-semibold"':'')+'><td class="px-2 py-1">'+_esc(x.brand)+'</td>'
+            +'<td class="px-2 text-right">'+_kv(x.anteil_pct,1)+' %</td>'
+            +'<td class="px-2 text-right" style="color:'+(d>0?'#047857':(d<0?'#b91c1c':'#9ca3af'))+'">'+(d!=null?_kpp(d,2):_kmiss())+'</td></tr>';
+        }).join('')+'</tbody></table></div>';
+    }
+    var npd=ci.new_page_did||{};
+    if(npd.available===false){
+      h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mt-3 text-xs text-gray-700 leading-relaxed">'
+        +'<b>In Vorbereitung — wirken echt neue Seiten? (DiD auf dem Publikationsdatum):</b> '+_esc(npd.grund||'noch keine belastbare Auswertung')+'</div>';
+    }
     var ct=ci.citation_target||{};
     if(ct.available===false){
-      h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-4 mb-5">'
-        +'<div class="font-semibold text-sm text-ergo-dark mb-1">In Vorbereitung: Zitate als zweite Zielgröße</div>'
-        +'<div class="text-xs text-gray-700 leading-relaxed">'+esc(ct.grund||'')+'</div></div>';
+      h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mt-3 text-xs text-gray-700 leading-relaxed">'
+        +'<b>In Vorbereitung — Zitate als zweite Zielgröße:</b> '+_esc(ct.grund||(nfmt(ct.n_messpunkte)+' von '+nfmt(ct.min_messpunkte)+' nötigen Messpunkten'))+'</div>';
     }
+    return h+'</div>';
+  }
+
+  /* ---------- Block 4: Wie gut ist die Messung? (inkl. Nachweisgrenze) ---------- */
+  function kBlock4(ci){
+    var v=ci.validation||{}, oos=(v.out_of_sample||{}).r2_oos_vs_baseline, fp=v.placebo_false_positive_rate;
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">4 · Wie gut ist die Messung?</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Was die Zahlen oben tragen können — und wo die Grenze liegt.</p>'
+      +'<div class="grid md:grid-cols-4 gap-3">'
+      +_kcard('Messtage',(ci.sov_measure_days!=null?nfmt(ci.sov_measure_days):'<span class="text-gray-400 text-base">keine Angabe</span>'),_esc((ci.sov_measure_range||[]).join(' bis ')),'','grau')
+      +_kcard('Intervall-Punkte',(ci.n_intervals_total!=null?nfmt(ci.n_intervals_total):'<span class="text-gray-400 text-base">keine Angabe</span>'),((ci.brands_with_sov||[]).length)+' Marken mit SoV-Reihe','','grau')
+      +_kcard('Vorhersagegüte',(oos!=null?('R² '+_kv(oos,3)):'<span class="text-gray-400 text-base">keine Angabe</span>'),(oos!=null?(oos>0?'Die Treiber verbessern die Vorhersage gegenüber der Marken-Basislinie.':'Die Treiber verbessern die Vorhersage <b>nicht</b> — Einzeleffekte sind entsprechend vorsichtig zu lesen.'):''),'Out-of-Sample gegen Marken-Basislinie',(oos!=null&&oos>0)?'gruen':'rot')
+      +_kcard('Placebo-Rate',(fp!=null?(_kv(100*fp,1)+' %'):'<span class="text-gray-400 text-base">keine Angabe</span>'),'Zufallsdaten erzeugen so oft einen „gesicherten“ Effekt. Erwartung: rund 5 %.','','grau')
+      +'</div>';
+
+    // ---- Nachweisgrenze (MDE) ----
+    var imp=ci.impact||{};
+    var K=2.8; // zweiseitig, alpha 5 %, Power 80 % -> ~2,8 x SE
+    var mrows=Object.keys(imp).map(function(k){
+      var r=imp[k], se=r.effect_se_cluster_pp;
+      return { key:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), se:se,
+               mde:(se!=null?K*se:null), eff:r.avg_sov_effect_pp, nc:r.n_clusters, sig:(r.significant===true),
+               grund:(r.grund||r.type_confidence_grund||null) };
+    });
+    var est=mrows.filter(function(r){ return r.mde!=null; }).sort(function(a,b){ return a.mde-b.mde; });
+    h+='<div class="mt-4 border-t pt-3"><div class="text-sm font-bold text-ergo-dark mb-1">Nachweisgrenze: Wie groß müsste eine Wirkung sein, damit wir sie finden?</div>'
+      +'<div class="text-xs text-gray-500 mb-2">Der <b>minimal detektierbare Effekt (MDE)</b> ergibt sich aus dem cluster-robusten Standardfehler: MDE ≈ '+String(K).replace('.',',')+' × SE (zweiseitig, 5 % Irrtum, 80 % Power). Er sagt, ab welcher Größe ein echter Effekt bei der heutigen Datenlage überhaupt sichtbar würde. Damit wird „nicht signifikant“ interpretierbar.</div>';
+    if(!est.length){
+      h+='<div class="text-xs text-gray-600">'+_kmiss('Für keinen Treiber liegt ein cluster-robuster Standardfehler vor — ohne SE keine Nachweisgrenze.')+'</div>';
+    } else {
+      h+='<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'
+        +'<thead><tr class="text-xs text-gray-400 text-left border-b"><th class="px-2 py-1">Treiber</th>'
+        +'<th class="px-2 text-right">gemessener Effekt</th><th class="px-2 text-right">SE (cluster)</th>'
+        +'<th class="px-2 text-right">Nachweisgrenze (MDE)</th><th class="px-2 text-right">Cluster</th><th class="px-2">Lesart</th></tr></thead><tbody>';
+      est.forEach(function(r){
+        var unter=(Math.abs(r.eff||0) < r.mde);
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="px-2 py-1 text-gray-800">'+_esc(r.label)+'</td>'
+          +'<td class="px-2 text-right font-semibold">'+_kpp(r.eff,3)+'</td>'
+          +'<td class="px-2 text-right text-gray-500">± '+_kv(r.se,3)+'</td>'
+          +'<td class="px-2 text-right font-semibold" style="color:#b45309">'+_kv(r.mde,2)+' pp</td>'
+          +'<td class="px-2 text-right text-gray-500">'+(r.nc!=null?r.nc:'–')+'</td>'
+          +'<td class="px-2 text-xs text-gray-600">'+(r.sig?'gesichert':(unter?'gemessener Effekt liegt <b>unter</b> der Nachweisgrenze — ein Effekt dieser Größe wäre hier grundsätzlich nicht auffindbar':'gemessener Effekt über der Grenze, aber Intervall schließt die Null ein'))+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+      var best=est[0], worst=est[est.length-1];
+      h+='<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed mt-2">'
+        +'<b>Praktisch heißt das:</b> Am empfindlichsten misst „'+_esc(best.label)+'“ — dort wäre erst ein Effekt ab <b>'+_kv(best.mde,2)+' pp pro Tag</b> nachweisbar; am unempfindlichsten „'+_esc(worst.label)+'“ mit <b>'+_kv(worst.mde,2)+' pp</b>. '
+        +'Ein Effekt unter '+_kv(best.mde,2)+' pp pro Tag ist mit der heutigen Datenlage <b>grundsätzlich nicht nachweisbar</b> — ein Nullbefund heißt hier „nicht gefunden“, nicht „nicht vorhanden“. Enger wird die Grenze nur über mehr Marken mit Ereignis (Cluster), nicht über mehr Tage derselben Marken.</div>';
+    }
+    var nd=mrows.filter(function(r){ return r.mde==null; });
+    if(nd.length){
+      h+='<div class="text-xs text-gray-600 mt-2"><b>Ohne Nachweisgrenze:</b> '+nd.map(function(r){
+        return _esc(r.label)+' ('+_esc(r.grund||'kein cluster-robuster Standardfehler im JSON')+')';
+      }).join('; ')+'.</div>';
+    }
+    h+='</div>';
+
+    // ---- Strukturbrueche, uebersprungene Intervalle ----
+    var sb=ci.structural_breaks||[], isb=ci.intervals_skipped_breaks||[];
+    if(sb.length){
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Strukturbrüche in der Messreihe</div>'
+        +'<div class="text-xs text-gray-600 leading-relaxed">'+sb.map(function(x){
+          return '<div class="mb-1"><b>'+_esc(x.date||'')+'</b>'+(x.brand&&x.brand!=='*'?(' · '+_esc(x.brand)):' · alle Marken')+': '+_esc(String(x.grund||'').slice(0,320))
+            +(x.nachrechenbar===false?(' <span class="text-amber-700">Nicht rückgerechnet'+(x.warum_nicht?(': '+_esc(String(x.warum_nicht).slice(0,180))):'')+'</span>'):'')+'</div>';
+        }).join('')+'</div>'
+        +'<div class="text-xs text-gray-500 mt-1">'+nfmt(isb.length)+' Intervalle über einen Bruch hinweg wurden aus der Rechnung genommen, statt sie als echte Änderung zu zählen.</div></div>';
+    }
+
+    // ---- Datenherkunft: SoV-Quellen und Ereignis-Aufbereitung ----
+    var sa=(ci.sov_source_audit||{}).gesamt, ea=ci.event_load_audit||{};
+    if(sa || ea){
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Woraus die Reihen gebaut sind</div><ul class="text-xs text-gray-600 leading-relaxed list-disc pl-5">';
+      if(sa){
+        var gl=sa.gelesen||{}, vw=sa.verworfen||{}, vd=sa.verwendet||{};
+        h+='<li><b>SoV-Quellen:</b> gelesen '+Object.keys(gl).map(function(k){return _esc(k)+' '+nfmt(gl[k]);}).join(', ')
+          +' · verwendet '+Object.keys(vd).map(function(k){return _esc(k)+' '+nfmt(vd[k]);}).join(', ')
+          +(Object.keys(vw).length?(' · verworfen '+Object.keys(vw).map(function(k){return _esc(k)+' '+nfmt(vw[k]);}).join(', ')+' (nicht markenweit)'):'')+'.</li>';
+      }
+      if(ea.marken_kanonisierung) h+='<li><b>Markennamen:</b> '+nfmt(ea.marken_kanonisierung.n_events_umbenannt)+' Ereignisse auf die Zielschreibweise vereinheitlicht ('+_esc(ea.marken_kanonisierung.quelle_zielschreibweise||'')+').</li>';
+      if(ea.presse_datierung) h+='<li><b>Presse-Datierung:</b> '+nfmt(ea.presse_datierung.umdatiert)+' Artikel auf den Erscheinungstag umdatiert, '+nfmt(ea.presse_datierung.bereits_gleich)+' waren bereits korrekt, '+nfmt(ea.presse_datierung.fallback_timestamp)+' über den Fallback.</li>';
+      if(ea.preis_artefakte) h+='<li><b>Preis-Artefakte:</b> von '+nfmt(ea.preis_artefakte.n_price_change_gesamt)+' Preisereignissen wurden '+nfmt(ea.preis_artefakte.n_als_artefakt_markiert)+' als oszillierende Rückkehr auf den Vorwert aussortiert; es bleiben '+nfmt(ea.preis_artefakte.n_verbleibend)+'.</li>';
+      h+='</ul></div>';
+    }
+    // ---- Grenzen der Rechnung: Boden des Bootstraps und FDR-Vorbehalt, direkt aus den JSON-Notizen ----
+    var notes=[];
+    (function(){
+      var seen={};
+      function add(t){ t=String(t||'').trim(); if(t && !seen[t]){ seen[t]=1; notes.push(t); } }
+      function scan(de){ if(!de) return; Object.keys(de).forEach(function(k){ ['within','between'].forEach(function(sc){
+        var seg=(de[k]||{})[sc]; if(!seg) return; add(seg.wild_cluster_note); add(seg.fdr_note); }); }); }
+      var lm=ci.level_model||{};
+      scan(((lm.peec26_model)||{}).drivers_eff);
+      var pl=ci.price_level_pooled||{};
+      ['grounded','ungrounded','combined'].forEach(function(ch){ scan((((pl.price_to_sov||{})[ch])||{}).drivers_eff); });
+    })();
+    if(notes.length){
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Grenzen der Rechnung (aus den Modell-Notizen)</div>'
+        +'<ul class="text-xs text-gray-600 leading-relaxed list-disc pl-5">'
+        +notes.slice(0,4).map(function(t){ return '<li>'+_esc(t)+'</li>'; }).join('')
+        +'</ul></div>';
+    }
+    h+='<div class="text-xs text-gray-400 mt-3">'+_esc(ci.method||'')+'</div>';
+    return h+'</div>';
+  }
+
+  /* ---------- Kernaussage: muss zu allen Blöcken passen ---------- */
+  function kKern(ci){
+    var lm=ci.level_model||{}, P=lm.peec26_model||{};
+    var pf=(((P.drivers_eff||{}).peec_foot)||{});
+    var strukturHits=[];
+    ['within','between'].forEach(function(sc){
+      var s=pf[sc]; if(!s) return;
+      var q=s.wild_cluster_p_fdr, p=s.wild_cluster_p;
+      var ok=(q!=null)?(q<0.05):(p!=null&&p<0.05);
+      if(ok) strukturHits.push({sc:sc, eff:s.effect_std_pp, p:p, q:q, loo:s.between_loo||P.between_loo});
+    });
+    var imp=ci.impact||{};
+    var evSig=Object.keys(imp).filter(function(k){ return imp[k].significant===true && imp[k].significance_basis==='cluster'; });
+    var evEst=Object.keys(imp).filter(function(k){ return imp[k].significance_basis==='cluster'; });
+    var fdr=(ci.funnel_stratified||{}).fdr||{};
+    var wja=(ci.page_change_types||{}).wirkung_je_art||{};
+    var la=ci.lag_analysis||{};
+    var mv=ci.multivariate||{}, co=mv.coefficients||{};
+    var mvHits=Object.keys(co).filter(function(k){ return co[k].significant; });
+    var mvSolid=mvHits.filter(function(k){ return co[k].reliable!==false; });
+    var lagHit=(la.n_gesichert_ueber_alle_lags||0);
+
+    var head, tone;
+    if(strukturHits.length && !evSig.length){
+      head='Strukturell belegt, kurzfristig nicht: Quellpräsenz trägt, einzelne Ereignisse nicht';
+      tone='amber';
+    } else if(evSig.length){
+      head=evSig.length+' cluster-robust gesicherte Ereignis-Effekte';
+      tone='amber';
+    } else if(!strukturHits.length && !evSig.length){
+      head='Kein Treiber ist nach der cluster-robusten Rechnung gesichert';
+      tone='slate';
+    }
+    var s='<div class="rounded-xl p-5 mb-5 '+(tone==='amber'?'bg-amber-50 border-l-4 border-amber-500':'bg-slate-50 border-l-4 border-slate-400')+'">'
+      +'<div class="text-lg font-bold text-ergo-dark mb-1">'+head+'</div>'
+      +'<div class="text-sm text-gray-700 leading-relaxed">';
+    if(strukturHits.length){
+      var b=strukturHits.filter(function(x){return x.sc==='between';})[0]||strukturHits[0];
+      s+='<b>Struktur:</b> Marken mit mehr Quellpräsenz sind sichtbarer — '+_kpp(b.eff,2)+' Sichtbarkeit je +1 SD Footprint ('
+        +(b.sc==='within'?'Within':'Between')+', Wild-p '+_kp(b.p)+(b.q!=null?(', q '+_kp(b.q)):'')+', '+nfmt(P.n_brands)+' Marken'
+        +((b.loo&&b.loo.sign_stable!=null)?(', Weglass-Test '+(b.loo.sign_stable?'vorzeichenstabil':'instabil')):'')+'). ';
+    } else {
+      s+='<b>Struktur:</b> Im Niveau-Modell übersteht derzeit kein Treiber die Korrektur. ';
+    }
+    s+='<b>Kurzfristig:</b> '+(evSig.length?(evSig.length+' von '+evEst.length+' cluster-robust schätzbaren Ereignistypen sind gesichert.')
+        :(evEst.length?('kein Ereignistyp von '+evEst.length+' cluster-robust schätzbaren ist gesichert.')
+                      :'derzeit ist kein Ereignistyp cluster-robust schätzbar — die Gründe stehen je Treiber unter dem Forest.'))+' ';
+    // Treffer aus Nebenrechnungen offen benennen
+    var neben=[];
+    if(lagHit) neben.push('die Versatz-Analyse führt '+nfmt(lagHit)+' gesicherte Treiber-Versatz-Kombination'+(lagHit>1?'en':'')+' (unkorrigiert über '+((la.getestete_lags||[]).length)+' Versätze × '+Object.keys(la.bester_lag_je_treiber||{}).length+' Treiber; '+nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen eine Lead-Warnung)');
+    if(mvHits.length) neben.push('das multivariate Modell markiert '+mvHits.length+' Typ'+(mvHits.length>1?'en':'')+(mvSolid.length?(', davon '+mvSolid.length+' belastbar'):', keiner davon belastbar (Out-of-Sample-Güte ≤ 0)'));
+    if(fdr.n_signifikant_vor_korrektur) neben.push('die Funnel-Schichtung zeigt '+nfmt(fdr.n_signifikant_vor_korrektur)+' Treffer vor und '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Mehrfachtest-Korrektur über '+nfmt(fdr.n_tests)+' Tests');
+    if(wja.n_gesichert!=null && wja.n_tests!=null) neben.push('nach Änderungsart sind '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert');
+    if(neben.length) s+='<b>Nicht verschwiegen:</b> '+neben.join('; ')+'. Diese Tests laufen auf demselben Datensatz und sind voneinander abhängig — sie ändern die Kernaussage nicht, gehören aber dazu.';
+    s+='</div></div>';
+    return s;
+  }
+
+  window.buildKorrErgebnis = function(){
+    var host=document.getElementById('korrErgebnis'); if(!host) return;
+    Promise.all([
+      fetch('data/correlation_impact.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+      fetch('data/peec_fanout_rate.csv',{cache:'no-store'}).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;}),
+      fetch('data/content_citations.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    ]).then(function(res){ window.__KORR=res; window.__korrRender(res[0],res[1],res[2]); });
+  };
+
+  window.__korrRender = function(ci, fanCsv, cc){
+    var host=document.getElementById('korrErgebnis'); if(!host) return;
+    if(!ci){ host.innerHTML='<div class="text-sm text-gray-400">Korrelationsdaten (data/correlation_impact.json) nicht geladen — es werden bewusst keine Ersatzwerte gezeigt.</div>'; return; }
+    var h='';
+    try { h+=kKern(ci); } catch(e){ console.warn('kKern:', e.message); }
+    try { h+=kBlock1(ci); } catch(e){ console.warn('kBlock1:', e.message); }
+    try { h+=kBlock2(ci, fanCsv); } catch(e){ console.warn('kBlock2:', e.message); }
+    try { h+=kBlock3(ci, cc); } catch(e){ console.warn('kBlock3:', e.message); }
+    try { h+=kBlock4(ci); } catch(e){ console.warn('kBlock4:', e.message); }
+    h+='<div class="text-xs text-gray-400 mb-4">Stand der Auswertung: '+_esc(String(ci.generated_at||'').slice(0,10))+' · Quelle: data/correlation_impact.json'+(cc&&cc.meta?(' · data/content_citations.json ('+_esc(String(cc.meta.erzeugt_am||'').slice(0,10))+')'):'')+'</div>';
     host.innerHTML=h;
+    // Interaktive Bausteine (Scatter, Quellen-Vergleich) aus korrelation_upgrade.js nachziehen
+    try { if(typeof window.__korrKuMount==='function') window.__korrKuMount(); } catch(e){ console.warn('korrKuMount:', e.message); }
   };
 
   window.__korrDetails=function(){

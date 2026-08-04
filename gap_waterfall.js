@@ -210,7 +210,9 @@
     if(!box){
       box=document.createElement("div"); box.id="gapWaterfallBox";
       box.className="bg-white rounded-xl shadow p-6 mb-6";
-      var anchor=document.getElementById("korrSynth");
+      // 04.08.2026: Ankerpunkt ist jetzt das eine Ergebnis-Panel (#korrErgebnis);
+      // die frueheren Karten #korrSynth/#korrMethodik gibt es nicht mehr.
+      var anchor=document.getElementById("korrErgebnis")||document.getElementById("korrSynth");
       if(anchor && anchor.nextSibling) host.insertBefore(box, anchor.nextSibling);
       else if(anchor) host.appendChild(box);
       else host.insertBefore(box, host.firstChild);

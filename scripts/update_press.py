@@ -187,6 +187,406 @@ def crawl_google_news(query, source_type="media", max_items=100):
     return items
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# URL-Aufloesung: Google-News-Redirects -> echte Artikel-URLs
+# ------------------------------------------------------------------------------
+# Google News RSS liefert ausschliesslich Redirect-Links der Form
+#   https://news.google.com/rss/articles/CBMi...?oc=5
+# Ohne die echte Ziel-URL laesst sich nicht pruefen, ob ein Presseartikel
+# spaeter von den LLMs zitiert wurde (Join gegen data/peec_sources.json).
+#
+# Zusaetzliche Felder je Artikel (bestehende Felder bleiben unveraendert):
+#   url_real            echte Artikel-URL (leer, wenn nicht aufloesbar)
+#   domain              Domain ohne "www." (aus url_real oder Publisher-Tabelle)
+#   url_real_quelle     "redirect" | "rss_source" | "unaufgeloest"
+#   url_real_geprueft_am  ISO-Datum des Aufloesungsversuchs
+#
+# Wege in dieser Reihenfolge:
+#   (a) Google-News-Artikel-ID dekodieren (base64/Protobuf). Bei den seit ca.
+#       2024 ausgelieferten "AU_yqL..."-IDs steht die Ziel-URL NICHT mehr im
+#       Klartext drin — der Weg greift nur noch bei aelteren Eintraegen.
+#   (b) HTTP: GET mit allow_redirects. Landet der Redirect nicht bei Google,
+#       ist das die Ziel-URL. Sonst wird aus der Interstitial-Seite das
+#       Signatur-Paar (data-n-a-ts / data-n-a-sg) gezogen und ueber den
+#       DotsSplashUi-batchexecute-Endpoint die Ziel-URL angefragt.
+#   (c) Fallback: keine URL, Domain aus dem RSS-Feld "source" ueber die
+#       gepflegte Publisher-Tabelle -> url_real_quelle = "rss_source".
+#
+# Grundsatz: Der Presse-Lauf darf NIE am Aufloesen scheitern. Jeder Fehler
+# fuehrt zu "unaufgeloest", nicht zum Abbruch.
+# ══════════════════════════════════════════════════════════════════════════════
+
+URL_CACHE_PATH = Path("data/press_url_cache.json")
+BATCHEXECUTE_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
+
+# Publisher-Klarname (RSS-Feld "source") -> Domain. Nur Fallback, wenn die
+# echte URL nicht aufgeloest werden konnte. Keys werden case-insensitiv
+# verglichen (siehe domain_from_source).
+PUBLISHER_DOMAINS = {
+    # Versicherer / eigene Newsrooms
+    "ergo group ag": "ergo.com", "ergo group": "ergo.com", "ergo": "ergo.com",
+    "allianz": "allianz.de", "allianz.com": "allianz.com",
+    "allianz commercial": "commercial.allianz.com",
+    "axa deutschland": "axa.de", "axa versicherung": "axa.de", "axa": "axa.de",
+    "huk-coburg": "huk.de", "huk coburg": "huk.de",
+    "generali": "generali.de", "generali deutschland": "generali.de",
+    "signal iduna": "signal-iduna.de",
+    "r+v versicherung": "ruv.de", "r+v": "ruv.de",
+    "devk": "devk.de", "devk versicherungen": "devk.de",
+    "hannoversche versicherung": "hannoversche.de", "hannoversche": "hannoversche.de",
+    "cosmos direkt": "cosmosdirekt.de", "cosmosdirekt": "cosmosdirekt.de",
+    # PR-Verteiler
+    "presseportal": "presseportal.de", "mynewsdesk": "mynewsdesk.com",
+    "lifepr": "lifepr.de", "pressebox": "pressebox.de",
+    # Fach- / Finanzpresse
+    "ad hoc news": "ad-hoc-news.de",
+    "versicherungsbote": "versicherungsbote.de",
+    "versicherungsjournal": "versicherungsjournal.de",
+    "versicherungsjournal deutschland": "versicherungsjournal.de",
+    "versicherungsmonitor": "versicherungsmonitor.de",
+    "versicherungsmagazin": "versicherungsmagazin.de",
+    "versicherungswirtschaft-heute": "versicherungswirtschaft-heute.de",
+    "procontra": "procontra-online.de",
+    "asscompact": "asscompact.de", "asscompact österreich": "asscompact.at",
+    "pfefferminzia": "pfefferminzia.de",
+    "das investment": "dasinvestment.com",
+    "fonds professionell": "fondsprofessionell.de",
+    "finanzwelt": "finanzwelt.de",
+    "cash-online": "cash-online.de",
+    "börsen-zeitung": "boersen-zeitung.de",
+    "der platow brief": "platow.de", "platow": "platow.de",
+    "private banking magazin": "private-banking-magazin.de",
+    "portfolio institutionell": "portfolio-institutionell.de",
+    "dpn magazin": "dpn-online.com",
+    "it finanzmagazin": "it-finanzmagazin.de",
+    "it boltwise": "it-boltwise.de",
+    "citywire": "citywire.com",
+    "marketscreener deutschland": "marketscreener.com",
+    "finanzen.net": "finanzen.net", "boerse.de": "boerse.de",
+    "der aktionär": "deraktionaer.de",
+    "capital.com": "capital.com",
+    "stiftung warentest": "test.de",
+    # Tages- / Wirtschaftspresse
+    "faz": "faz.net", "frankfurter allgemeine zeitung": "faz.net",
+    "handelsblatt": "handelsblatt.com",
+    "wirtschaftswoche": "wiwo.de", "wiwo": "wiwo.de",
+    "sz.de": "sueddeutsche.de", "süddeutsche zeitung": "sueddeutsche.de",
+    "die zeit": "zeit.de", "zeit online": "zeit.de",
+    "t-online": "t-online.de", "focus online": "focus.de",
+    "ntv": "n-tv.de", "n-tv": "n-tv.de",
+    "msn": "msn.com", "chip": "chip.de",
+    "zdfheute": "zdf.de", "ndr.de": "ndr.de", "ndr": "ndr.de",
+    "neue zürcher zeitung": "nzz.ch",
+    "rp online": "rp-online.de",
+    "merkur": "merkur.de", "hna": "hna.de",
+    "saarbrücker zeitung": "saarbruecker-zeitung.de",
+    "braunschweiger zeitung": "braunschweiger-zeitung.de",
+    "sächsische zeitung": "saechsische.de",
+    "ruhr nachrichten": "ruhrnachrichten.de",
+    "derwesten": "derwesten.de", "neue gladbecker zeitung": "waz.de",
+    "allgemeine zeitung": "allgemeine-zeitung.de",
+    "goslarsche.de": "goslarsche.de",
+    "fränkischer tag": "infranken.de", "infranken.de": "infranken.de",
+    "nn.de": "nn.de", "neue presse coburg": "np-coburg.de",
+    "kurierverlag": "kurierverlag.de",
+    "blick.de": "blick.de",
+    "schwarzwälder bote": "schwarzwaelder-bote.de",
+    "tageblatt": "tageblatt.lu", "luxemburger wort": "wort.lu",
+    "budapester zeitung": "budapester.hu", "heute": "heute.at",
+    # Branchen- / Sonstige
+    "autohaus.de": "autohaus.de", "automobilwoche": "automobilwoche.de",
+    "autoservicepraxis.de": "autoservicepraxis.de",
+    "vision mobility": "vision-mobility.de",
+    "deutsches handwerksblatt": "handwerksblatt.de",
+    "horizont.net": "horizont.net", "meedia": "meedia.de",
+    "anwalt.de": "anwalt.de", "aponet.de": "aponet.de",
+    "onefootball": "onefootball.com", "joyn": "joyn.de",
+    "reisetopia": "reisetopia.de",
+    "sap news center": "news.sap.com",
+    "tsv 1860 e.v.": "tsv1860.org",
+    "marketingscout.com": "marketingscout.com",
+    "verbraucherschutzforum.berlin": "verbraucherschutzforum.berlin",
+}
+
+_DOMAIN_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$")
+
+
+def normalize_domain(value):
+    """Host aus URL oder Rohstring -> Domain in Kleinschreibung ohne 'www.'."""
+    if not value:
+        return ""
+    v = value.strip().lower()
+    if "://" in v:
+        try:
+            v = urllib.parse.urlsplit(v).netloc
+        except ValueError:
+            return ""
+    v = v.split("/")[0].split("@")[-1].split(":")[0]
+    if v.startswith("www."):
+        v = v[4:]
+    return v if _DOMAIN_RE.match(v) else ""
+
+
+def domain_from_source(source):
+    """Publisher-Klarname aus dem RSS-Feld 'source' -> Domain (Fallback-Weg c)."""
+    if not source:
+        return ""
+    key = source.strip().lower()
+    if key in PUBLISHER_DOMAINS:
+        return PUBLISHER_DOMAINS[key]
+    # Viele Quellen liefern die Domain bereits direkt ("versicherungsbote.de")
+    direct = normalize_domain(key)
+    if direct:
+        return direct
+    # Toleranter Zweitversuch: Zusaetze wie "Deutschland"/"Online" abschneiden
+    stripped = re.sub(r"\s+(deutschland|online|magazin|de)$", "", key).strip()
+    return PUBLISHER_DOMAINS.get(stripped, "")
+
+
+def extract_gnews_id(url):
+    """Google-News-Artikel-ID aus der Redirect-URL ziehen."""
+    m = re.search(r"news\.google\.com/(?:rss/)?(?:articles|read)/([^?/#]+)", url or "")
+    return m.group(1) if m else ""
+
+
+def decode_gnews_id(article_id):
+    """Weg (a): base64-kodiertes Protobuf dekodieren.
+
+    Aeltere IDs enthielten die Ziel-URL im Klartext. Die seit ca. 2024
+    ausgelieferten IDs (Praefix 'AU_yqL...') sind opake Handles — dort
+    liefert diese Funktion nichts und Weg (b) uebernimmt.
+    """
+    if not article_id:
+        return ""
+    try:
+        import base64
+        pad = article_id + "=" * (-len(article_id) % 4)
+        raw = base64.urlsafe_b64decode(pad.encode("ascii", errors="ignore"))
+    except Exception:
+        return ""
+    text = raw.decode("latin-1", errors="replace")
+    m = re.search(r"https?://[^\x00-\x20\"'<>\\]{6,}", text)
+    if not m:
+        return ""
+    candidate = m.group(0)
+    # Protobuf-Laengenpraefixe koennen Muell anhaengen -> am ersten
+    # Steuerzeichen/Trennzeichen abschneiden
+    candidate = re.split(r"[\x00-\x1f]", candidate)[0].strip()
+    if normalize_domain(candidate) and "news.google.com" not in candidate:
+        return candidate
+    return ""
+
+
+def _http_get(session, url, timeout, tries=3, **kwargs):
+    """GET mit Retry bei 429/5xx und exponentiellem Backoff. Nie werfend."""
+    delay = 1.5
+    for attempt in range(tries):
+        try:
+            resp = session.get(url, timeout=timeout, **kwargs)
+        except Exception:
+            if attempt == tries - 1:
+                return None
+            time.sleep(delay)
+            delay *= 2
+            continue
+        if resp.status_code == 429 or resp.status_code >= 500:
+            if attempt == tries - 1:
+                return None
+            time.sleep(delay)
+            delay *= 2
+            continue
+        return resp
+    return None
+
+
+def _http_post(session, url, timeout, tries=3, **kwargs):
+    delay = 1.5
+    for attempt in range(tries):
+        try:
+            resp = session.post(url, timeout=timeout, **kwargs)
+        except Exception:
+            if attempt == tries - 1:
+                return None
+            time.sleep(delay)
+            delay *= 2
+            continue
+        if resp.status_code == 429 or resp.status_code >= 500:
+            if attempt == tries - 1:
+                return None
+            time.sleep(delay)
+            delay *= 2
+            continue
+        return resp
+    return None
+
+
+def _resolve_via_batchexecute(session, article_id, ts, sig, timeout=25):
+    """Ziel-URL ueber den DotsSplashUi-Endpoint anfragen (Teil von Weg b)."""
+    payload = [
+        "garturlreq",
+        [["X", "X", ["X", "X"], None, None, 1, 1, "US:en", None, 1,
+          None, None, None, None, None, 0, 1],
+         "X", "X", 1, [1, 1, 1], 1, 1, None, 0, 0, None, 0],
+        article_id, int(ts), str(sig),
+    ]
+    freq = [[["Fbv4je", json.dumps(payload), None, "generic"]]]
+    resp = _http_post(
+        session, BATCHEXECUTE_URL, timeout,
+        data={"f.req": json.dumps(freq)},
+        headers={"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+    )
+    if resp is None or resp.status_code != 200:
+        return ""
+    m = re.search(r'garturlres\\\\"\s*,\s*\\\\"(https?://[^\\\\"]+)', resp.text)
+    if not m:
+        m = re.search(r'garturlres[^h]{0,20}(https?://[^\\"\s]+)', resp.text)
+    if not m:
+        return ""
+    return m.group(1).replace("\\/", "/")
+
+
+def resolve_google_news_url(url, session=None, timeout=20, sleep=0.4):
+    """Eine Google-News-Redirect-URL aufloesen.
+
+    Rueckgabe: (url_real, quelle) mit quelle in {"redirect", ""}.
+    Wirft nie — im Fehlerfall ("", "").
+    """
+    try:
+        import requests
+    except ImportError:
+        return "", ""
+
+    if session is None:
+        session = requests.Session()
+        session.headers["User-Agent"] = UA
+
+    article_id = extract_gnews_id(url)
+
+    # Weg (a): ID dekodieren
+    decoded = decode_gnews_id(article_id)
+    if decoded:
+        return decoded, "redirect"
+
+    # Weg (b): HTTP-Redirect / Interstitial + batchexecute
+    resp = _http_get(session, url, timeout, allow_redirects=True)
+    if resp is None:
+        return "", ""
+    final = resp.url or ""
+    if normalize_domain(final) and "news.google.com" not in final and "google.com/url" not in final:
+        return final, "redirect"
+
+    html = resp.text or ""
+    ts_m = re.search(r'data-n-a-ts="(\d+)"', html)
+    sg_m = re.search(r'data-n-a-sg="([^"]+)"', html)
+    if not (ts_m and sg_m and article_id):
+        return "", ""
+    if sleep:
+        time.sleep(sleep)
+    real = _resolve_via_batchexecute(session, article_id, ts_m.group(1), sg_m.group(1), timeout)
+    if real and normalize_domain(real) and "news.google.com" not in real:
+        return real, "redirect"
+    return "", ""
+
+
+def load_url_cache(path=URL_CACHE_PATH):
+    """Cache article_id -> {url_real, quelle, geprueft_am}. Nie werfend."""
+    try:
+        if Path(path).exists():
+            data = json.loads(Path(path).read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    return {}
+
+
+def save_url_cache(cache, path=URL_CACHE_PATH):
+    try:
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
+    except Exception as exc:
+        print("    WARN: URL-Cache nicht schreibbar: %s" % str(exc)[:80])
+
+
+def enrich_article_urls(articles, cache=None, session=None, budget_seconds=None,
+                        max_lookups=None, sleep=0.4, verbose=True):
+    """Artikel-Dicts in-place um url_real/domain/url_real_quelle/... ergaenzen.
+
+    Idempotent: Eintraege, die bereits ein url_real_quelle in {"redirect",
+    "rss_source"} tragen, werden uebersprungen. "unaufgeloest" wird erneut
+    versucht (Google liefert manchmal beim zweiten Anlauf).
+    Bestehende Felder (url, source, ...) werden nie ueberschrieben.
+    Rueckgabe: Counter mit den Quellen.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    stats = Counter()
+    if cache is None:
+        cache = load_url_cache()
+
+    try:
+        import requests
+        if session is None:
+            session = requests.Session()
+            session.headers["User-Agent"] = UA
+    except ImportError:
+        session = None  # nur Cache + Fallback moeglich
+
+    started = time.time()
+    lookups = 0
+    for art in articles:
+        try:
+            if art.get("url_real_quelle") in ("redirect", "rss_source"):
+                stats["uebersprungen"] += 1
+                continue
+
+            url = art.get("url", "") or ""
+            article_id = extract_gnews_id(url)
+            real, quelle = "", ""
+
+            cached = cache.get(article_id) if article_id else None
+            if cached and cached.get("url_real"):
+                real, quelle = cached["url_real"], "redirect"
+                stats["cache"] += 1
+            elif not article_id:
+                # Kein Google-News-Link -> URL ist bereits echt
+                if normalize_domain(url):
+                    real, quelle = url, "redirect"
+            elif session is not None:
+                budget_over = budget_seconds is not None and (time.time() - started) > budget_seconds
+                lookup_over = max_lookups is not None and lookups >= max_lookups
+                if not (budget_over or lookup_over):
+                    lookups += 1
+                    real, quelle = resolve_google_news_url(url, session=session, sleep=sleep)
+                    if real:
+                        cache[article_id] = {"url_real": real, "quelle": "redirect",
+                                             "geprueft_am": today}
+                    if sleep:
+                        time.sleep(sleep)
+
+            if real:
+                art["url_real"] = real
+                art["domain"] = normalize_domain(real)
+                art["url_real_quelle"] = "redirect"
+            else:
+                dom = domain_from_source(art.get("source", ""))
+                art["url_real"] = ""
+                art["domain"] = dom
+                art["url_real_quelle"] = "rss_source" if dom else "unaufgeloest"
+            art["url_real_geprueft_am"] = today
+            stats[art["url_real_quelle"]] += 1
+        except Exception as exc:  # Presse-Lauf darf nie am Aufloesen scheitern
+            art.setdefault("url_real", "")
+            art.setdefault("domain", domain_from_source(art.get("source", "")))
+            art["url_real_quelle"] = art.get("url_real_quelle") or "unaufgeloest"
+            art["url_real_geprueft_am"] = today
+            stats["fehler"] += 1
+            if verbose:
+                print("    WARN: URL-Aufloesung fehlgeschlagen: %s" % str(exc)[:80])
+    return stats
+
+
 def deduplicate(articles):
     """Entferne Duplikate basierend auf aehnlichen Titeln."""
     seen_titles = set()
@@ -346,6 +746,7 @@ def main():
     # Event-Emission; vorher wurde gegen die auf 80 Artikel gekappte .previous.json
     # verglichen -> Artikel ab Position 81 jede Nacht erneut als Event emittiert).
     new_by_brand = {}
+    new_history_entries = []
     for brand in BRANDS:
         key = brand["key"]
         name = brand["name"]
@@ -353,7 +754,7 @@ def main():
             norm = re.sub(r'[^a-z0-9]', '', a.get("title", "").lower())[:60]
             dedup_key = (key, norm)
             if dedup_key not in existing_keys:
-                existing_articles.append({
+                entry = {
                     "brand": key,
                     "brand_name": name,
                     "title": a.get("title", ""),
@@ -363,10 +764,28 @@ def main():
                     "type": a.get("type", "media"),
                     "topics": a.get("topics", []),
                     "crawl_date": today,
-                })
+                }
+                existing_articles.append(entry)
+                new_history_entries.append(entry)
                 existing_keys.add(dedup_key)
                 new_by_brand.setdefault(key, []).append(a)
                 new_count += 1
+
+    # ── Echte Artikel-URLs aufloesen (Google-News-Redirects) ─────────────
+    # Nur fuer die neuen Eintraege; Altbestand macht scripts/backfill_press_urls.py.
+    # Fehler hier duerfen den Presse-Lauf nie abbrechen.
+    if new_history_entries:
+        try:
+            budget = float(os.environ.get("PRESS_URL_BUDGET_SECONDS", "600"))
+            url_cache = load_url_cache()
+            res_stats = enrich_article_urls(
+                new_history_entries, cache=url_cache, budget_seconds=budget,
+            )
+            save_url_cache(url_cache)
+            print("URL-Aufloesung: %s" % ", ".join(
+                "%s=%d" % (k, v) for k, v in sorted(res_stats.items())) or "-")
+        except Exception as exc:
+            print("WARN: URL-Aufloesung uebersprungen: %s" % str(exc)[:120])
 
     # Nach Datum sortieren (neueste zuerst)
     existing_articles.sort(key=lambda x: (x.get("date") or ""), reverse=True)  # None-sicher (Review-Fix)
@@ -513,6 +932,8 @@ def main():
                     hist_by_brand[bk].append({
                         "title": art.get("title", "")[:120],
                         "url": art.get("url", ""),
+                        "url_real": art.get("url_real", ""),
+                        "domain": art.get("domain", ""),
                         "date": art.get("date", ""),
                         "source": art.get("source", ""),
                         "type": art.get("type", "media"),

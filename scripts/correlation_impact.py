@@ -131,7 +131,13 @@ IMPACT_TYPES = [
     "wikipedia_change", "portal_rank_change", "rating_status_change",
 ]
 # Treiber mit Valenz: Feature wird vorzeichenbehaftet (positiv/negativ aus Event-Sentiment)
-SIGNED_DRIVER_TYPES = {"wikipedia_change", "portal_rank_change", "rating_status_change"}
+# 04.08.2026: "price_change" ergaenzt. Preis-Events tragen KEIN sentiment, wohl aber
+# eine natuerliche Dosis: detail.change_pct. Statt "Preis geaendert ja/nein" (Binaer)
+# geht deshalb die vorzeichenbehaftete prozentuale Aenderung ins multivariate Feature —
+# analog zu review_change, das seine Richtung ebenfalls aus dem Detail zieht. Eine
+# Senkung um 20 % und eine Erhoehung um 20 % hoben sich vorher als "2 Ereignisse" auf.
+SIGNED_DRIVER_TYPES = {"wikipedia_change", "portal_rank_change", "rating_status_change",
+                       "price_change"}
 # 2026-06-26 Fix: Die signierte Presse-Aufteilung (media_positive/negative) ERSETZT im
 # multivariaten Modell die ungezeichneten press_mention/news_mention; analog ersetzt die
 # review_positive/negative-Aufteilung das ungezeichnete review_volume. Beides zusammen ist
@@ -159,6 +165,31 @@ TYPE_LABEL = {
 }
 
 
+# ---------------------------------------------------------------------------
+# 04.08.2026 (Aenderung 1): SoV-ZIELGROESSE — nur MARKENWEITE Zeilen.
+# data/sov_history.jsonl mischt drei Aufloesungen in einer Datei:
+#   source="snapshot"          -> Markenwert je Tag (26 Marken)          MARKE
+#   source="backfill_event"    -> Markenwert je Tag, rueckwirkend         MARKE
+#   source="snapshot_product"  -> Wert je Marke UND Produkt               PRODUKT
+#   source="snapshot_llm"      -> Markenwert je LLM (hat ein llm-Feld)    je LLM
+# Die Zeile "letzter Wert/Tag gewinnt" nahm bisher, was in der Datei zuletzt stand —
+# und das ist bei ~13 Produktzeilen je Marke und Tag ein ZUFAELLIGES EINZELPRODUKT.
+# Gemessen am Stand 04.08.2026: Die Standardabweichung der Tagesdeltas faellt von
+# 3,21 Pp auf 2,00 Pp (-38 %), ERGO am 04.08. 9,94 % (Einzelprodukt) -> 7,50 % (Marke).
+#
+# Warum backfill_event MARKENWEIT ist (geprueft, nicht geraten):
+#   - die 53 Zeilen tragen KEIN product-Feld (die 5.011 Produktzeilen tragen es alle),
+#   - sie decken 5 Marken x 12 Tage (2026-05-14..2026-06-02) ab, also genau die Zeit
+#     VOR dem ersten snapshot-Tag (2026-06-03) — sie verlaengern die Reihe nach hinten,
+#   - die Niveaus schliessen stetig an: Allianz 41,8 -> 42,54, HUK 28,9 -> 28,28,
+#     Generali 4,1 -> 3,3. Ein Produktwert laege eine Groessenordnung daneben.
+# Deshalb: aufnehmen. snapshot_product wird in jedem Fall verworfen.
+BRAND_LEVEL_SOV_SOURCES = {"snapshot", "backfill_event"}
+PRODUCT_LEVEL_SOV_SOURCES = {"snapshot_product"}
+# Audit-Zaehler je Aufruf-Scope; wird einmal je Scope geloggt und in die Ausgabe gelegt.
+SOV_SOURCE_AUDIT = {}
+
+
 def _day(ts):
     return (ts or "")[:10]
 
@@ -179,7 +210,143 @@ def _norm_brand(name):
     return _BRAND_ALIASES.get(s, s)
 
 
+# ---------------------------------------------------------------------------
+# 04.08.2026 (Aenderung 2): Presse/News auf das ERSCHEINUNGSDATUM datieren.
+# Bisher lief alles ueber _day(e["timestamp"]) — und das ist der CRAWL-Tag, nicht
+# der Tag, an dem der Artikel erschienen ist. Gemessen ueber 2.618 Presse-/News-
+# Events betraegt der Median-Versatz 182 Tage. Ein Artikel vom Februar wurde damit
+# dem August-Intervall zugerechnet: Die Wirkung wurde systematisch dorthin gebucht,
+# wo der Crawler zufaellig hinsah. Korrigiert wird beim EINLESEN, an EINER Stelle
+# (load_events) — damit wirkt es rueckwirkend auf alle vorhandenen Events und auf
+# jeden nachgelagerten Block, ohne die Datei zu migrieren.
+MEDIA_DATED_TYPES = ("press_mention", "news_mention")
+# Preis-Oszillation: Rueckkehr auf den Vorwert innerhalb dieser Toleranz (EUR).
+PRICE_RETURN_TOL_EUR = 0.01
+# Ab wie vielen echten Preis-Ereignissen der Treiber ueberhaupt geschaetzt wird.
+MIN_PRICE_EVENTS = 5
+EVENT_LOAD_AUDIT = {}
+
+
+def _parse_day(v):
+    """'YYYY-MM-DD...' -> 'YYYY-MM-DD' oder None, wenn nicht parsebar."""
+    from datetime import date as _date
+    s = str(v or "")[:10]
+    if len(s) != 10:
+        return None
+    try:
+        _date.fromisoformat(s)
+    except (TypeError, ValueError):
+        return None
+    return s
+
+
+def _redate_media_events(events):
+    """Presse-/News-Events auf detail.date umdatieren; Crawl-Tag bleibt erhalten.
+
+    Uebernommen wird detail.date nur, wenn es (a) parsebar ist, (b) NICHT in der
+    Zukunft liegt und (c) nicht spaeter als der Crawl-Tag ist — ein Artikel kann
+    nicht nach seinem eigenen Fund erschienen sein. Sonst Fallback auf timestamp;
+    die Fallback-Faelle werden gezaehlt, damit ein kaputter Feed auffaellt statt
+    still ein falsches Datum zu setzen.
+    """
+    heute = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    n_ok = n_fallback = n_unveraendert = 0
+    for e in events:
+        if e.get("event_type") not in MEDIA_DATED_TYPES:
+            continue
+        d = e.get("detail")
+        if not isinstance(d, dict):
+            d = {}
+            e["detail"] = d
+        crawl = _day(e.get("timestamp"))
+        if crawl and not d.get("crawl_date"):
+            d["crawl_date"] = crawl
+        pub = _parse_day(d.get("date"))
+        if pub and pub <= heute and (not crawl or pub <= crawl):
+            if pub != crawl:
+                e["timestamp"] = pub + "T00:00:00Z"
+                n_ok += 1
+            else:
+                n_unveraendert += 1
+            e["dated_by"] = "detail.date"
+        else:
+            e["dated_by"] = "timestamp_fallback"
+            n_fallback += 1
+    EVENT_LOAD_AUDIT["presse_datierung"] = {
+        "umdatiert": n_ok, "bereits_gleich": n_unveraendert, "fallback_timestamp": n_fallback,
+        "hinweis": ("Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in "
+                    "detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, "
+                    "zukuenftigem oder nach dem Crawl liegendem Datum."),
+    }
+    print("[Presse-Datierung] %d umdatiert, %d bereits identisch, %d Fallback auf Crawl-Tag"
+          % (n_ok, n_unveraendert, n_fallback))
+    return events
+
+
+def _mark_price_artifacts(events):
+    """Oszillierende Preis-Events als Scraper-Artefakt markieren (price_artifact).
+
+    Befund 04.08.2026: Von 22 price_change-Events sind 18 eine exakte Rueckkehr auf
+    den Vorwert — AXA/hausrat springt 14x zwischen 5,29 EUR und 4,18 EUR hin und her.
+    Das ist kein Preisereignis, sondern ein Scraper, der zwei Tarifvarianten
+    abwechselnd erwischt. Als "Ereignis" gezaehlt erzeugt es Dutzende Pseudo-Dosen.
+
+    Regel: je (Marke, Produkt, Altersprofil) chronologisch; entspricht new_price
+    eines Events innerhalb +-0,01 EUR dem old_price des unmittelbar vorhergehenden
+    Events derselben Kombination, ist es eine RUECKKEHR. Markiert werden beide —
+    die Rueckkehr UND die zugehoerige Hinbewegung, denn eine Bewegung, die sofort
+    zurueckgenommen wird, war nie ein Preisereignis.
+    """
+    gruppen = {}
+    for e in events:
+        if e.get("event_type") != "price_change":
+            continue
+        d = e.get("detail") or {}
+        key = (_norm_brand(e.get("brand")), e.get("product") or d.get("product"), d.get("age"))
+        gruppen.setdefault(key, []).append(e)
+    n_gesamt = sum(len(v) for v in gruppen.values())
+    n_rueckkehr = 0
+    markiert = []
+    for key, evs in gruppen.items():
+        evs.sort(key=lambda x: (x.get("timestamp") or "", str(x.get("id") or "")))
+        for i in range(1, len(evs)):
+            vor, akt = evs[i - 1], evs[i]
+            try:
+                neu = float((akt.get("detail") or {}).get("new_price"))
+                alt_vor = float((vor.get("detail") or {}).get("old_price"))
+            except (TypeError, ValueError):
+                continue
+            if abs(neu - alt_vor) > PRICE_RETURN_TOL_EUR:
+                continue
+            n_rueckkehr += 1
+            for ev, rolle in ((akt, "rueckkehr"), (vor, "hinbewegung")):
+                if not ev.get("price_artifact"):
+                    ev["price_artifact"] = True
+                    (ev.setdefault("detail", {}))["price_artifact_rolle"] = rolle
+                    markiert.append(ev)
+    n_art = len(markiert)
+    n_rest = n_gesamt - n_art
+    EVENT_LOAD_AUDIT["preis_artefakte"] = {
+        "n_price_change_gesamt": n_gesamt,
+        "n_rueckkehr_erkannt": n_rueckkehr,
+        "n_als_artefakt_markiert": n_art,
+        "n_verbleibend": n_rest,
+        "toleranz_eur": PRICE_RETURN_TOL_EUR,
+        "regel": ("Je (Marke, Produkt, Altersprofil): new_price == old_price des "
+                  "Vorgaengers (+-0,01 EUR) -> Rueckkehr; Rueckkehr UND Hinbewegung "
+                  "werden ausgeschlossen. Bei einer durchgehenden Oszillation ist "
+                  "jedes Event zugleich Rueckkehr und Hinbewegung eines Paars — "
+                  "deshalb liegt die Zahl der Markierungen ueber der der Rueckkehren."),
+    }
+    print("[Preis-Artefakte] %d price_change gesamt, %d Rueckkehren erkannt, "
+          "%d als Artefakt ausgeschlossen, %d verbleiben"
+          % (n_gesamt, n_rueckkehr, n_art, n_rest))
+    return events
+
+
 def load_events():
+    """Events einlesen UND normalisieren — die eine Stelle, an der Rohdaten
+    zurechtgerueckt werden (Markennamen, Presse-Datum, Preis-Artefakte)."""
     if not EVENTS_FILE.exists():
         print("FEHLER: %s nicht gefunden" % EVENTS_FILE)
         return []
@@ -192,15 +359,50 @@ def load_events():
             out.append(json.loads(line))
         except Exception:
             pass
+    # (6) Markennamen kanonisieren — zentral beim Einlesen, nicht erst in der
+    # Dedup. events.jsonl enthaelt "CosmosDirekt" (1.240x) und "Cosmos Direkt"
+    # (543x); die Zielschreibweise steht in data/geo_snapshot.json (competitors)
+    # und lautet "CosmosDirekt". Die Zuordnung liegt weiterhin in _BRAND_ALIASES,
+    # es gibt also KEINE zweite Normalisierung daneben — nur einen frueheren
+    # Anwendungspunkt, der auch die Bloecke erreicht, die nicht ueber
+    # dedup_impact_events gehen.
+    n_kanon = 0
+    for e in out:
+        b = e.get("brand")
+        if b is None:
+            continue
+        nb = _norm_brand(b)
+        if nb != b:
+            e["brand"] = nb
+            e["brand_raw"] = b
+            n_kanon += 1
+    EVENT_LOAD_AUDIT["marken_kanonisierung"] = {
+        "n_events_umbenannt": n_kanon,
+        "aliase": dict(sorted(_BRAND_ALIASES.items())),
+        "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors",
+    }
+    print("[Marken-Kanonisierung] %d Events auf die Zielschreibweise gesetzt (%s)"
+          % (n_kanon, ", ".join("%s->%s" % kv for kv in sorted(_BRAND_ALIASES.items()))))
+    _redate_media_events(out)
+    _mark_price_artifacts(out)
     return out
 
 
 def build_sov_series_from_history(llm=None):
     """SoV(brand) -> sortierte (day, pct) aus sov_history.jsonl.
-    llm=None -> Gesamt-Zeilen (ohne llm-Feld); sonst nur Zeilen des LLMs."""
+
+    llm=None -> MARKENWEITE Gesamt-Reihe. Es zaehlen nur Zeilen aus
+    BRAND_LEVEL_SOV_SOURCES; Produktzeilen (source="snapshot_product" bzw. jede
+    Zeile mit product-Feld) werden verworfen. Vorher gewann pro Tag schlicht die
+    letzte Zeile der Datei — meist ein zufaelliges Einzelprodukt. Siehe Kommentar
+    bei BRAND_LEVEL_SOV_SOURCES.
+
+    llm != None -> unveraendert: nur die Zeilen dieses LLMs (source="snapshot_llm").
+    """
     if not HISTORY_FILE.exists():
         return {}
     series = {}
+    gelesen, verworfen = {}, {}
     for line in HISTORY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
         line = line.strip()
         if not line:
@@ -211,11 +413,98 @@ def build_sov_series_from_history(llm=None):
             continue
         if (r.get("llm") or None) != llm:
             continue
+        src = r.get("source") or "(ohne source)"
+        gelesen[src] = gelesen.get(src, 0) + 1
+        if llm is None and not _is_brand_level_row(r):
+            verworfen[src] = verworfen.get(src, 0) + 1
+            continue
         day, brand, pct = r.get("date"), _norm_brand(r.get("brand")), r.get("sov_pct")
         if not day or not brand or pct is None:
+            verworfen[src] = verworfen.get(src, 0) + 1
             continue
         series.setdefault(brand, {})[day] = float(pct)  # letzter Wert/Tag gewinnt
+    _log_sov_sources("gesamt" if llm is None else ("llm:" + str(llm)), gelesen, verworfen)
     return {b: sorted(m.items()) for b, m in series.items()}
+
+
+def _is_brand_level_row(r):
+    """True, wenn die History-Zeile einen MARKENWEITEN Wert traegt.
+
+    Zwei Kriterien, bewusst beide: ein product-Feld ist ein sicheres Ausschluss-
+    Signal (auch wenn morgen eine neue source-Bezeichnung dazukommt), und die
+    Allowlist faengt den umgekehrten Fall ab — eine unbekannte neue Quelle wird
+    NICHT stillschweigend in die Zielgroesse gemischt, sondern verworfen und
+    geloggt. Lieber eine Zeile zu wenig als eine falsche Aufloesung im Nenner.
+    """
+    if r.get("product") is not None or "product" in r:
+        return False
+    src = r.get("source") or ""
+    if src in PRODUCT_LEVEL_SOV_SOURCES:
+        return False
+    return src in BRAND_LEVEL_SOV_SOURCES
+
+
+def _log_sov_sources(scope, gelesen, verworfen):
+    """Einmal je Scope: welche source-Werte gelesen und welche verworfen wurden."""
+    if scope in SOV_SOURCE_AUDIT:
+        return
+    SOV_SOURCE_AUDIT[scope] = {
+        "gelesen": dict(sorted(gelesen.items())),
+        "verworfen": dict(sorted(verworfen.items())),
+        "verwendet": {k: gelesen.get(k, 0) - verworfen.get(k, 0)
+                      for k in sorted(gelesen) if gelesen.get(k, 0) - verworfen.get(k, 0) > 0},
+        "markenweite_quellen": sorted(BRAND_LEVEL_SOV_SOURCES),
+    }
+    teile = []
+    for k in sorted(gelesen):
+        v = verworfen.get(k, 0)
+        teile.append("%s: %d gelesen / %d verworfen" % (k, gelesen[k], v))
+    print("[SoV-Quellen %s] %s" % (scope, "; ".join(teile) if teile else "keine Zeilen"))
+
+
+def build_product_sov_panel():
+    """Produkt-Zeilen der SoV-Historie als Panel: [(marke, produkt, tag, pct), ...].
+
+    Gegenstueck zu build_sov_series_from_history(): dort fliegen die Produktzeilen
+    raus, HIER werden sie eingesammelt — statt sie wegzuwerfen. Damit ist die
+    Datenbasis fuer das geplante Marke-x-Produkt-Panel vorhanden (5.011 Zeilen,
+    26 Marken x bis zu 13 Produkte x 45 Tage).
+
+    BEWUSST NOCH NICHT ins Modell verdrahtet: Ein Panel mit Produkt-Dimension
+    braucht eigene Fixed Effects (Marke x Produkt) und eigene Cluster — es einfach
+    in die bestehende Marken-Zielgroesse zu kippen wuerde die Fallzahl scheinbar
+    verdreizehnfachen, ohne dass eine einzige unabhaengige Beobachtung dazukaeme.
+    Genau diese Art Scheingenauigkeit soll das Modul vermeiden.
+
+    Rueckgabe: nach (marke, produkt, tag) sortierte Liste von 4-Tupeln.
+    """
+    if not HISTORY_FILE.exists():
+        return []
+    out = []
+    for line in HISTORY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        if (r.get("llm") or None) is not None:
+            continue
+        if (r.get("source") or "") not in PRODUCT_LEVEL_SOV_SOURCES and not r.get("product"):
+            continue
+        brand = _norm_brand(r.get("brand"))
+        product = r.get("product")
+        day = r.get("date")
+        pct = r.get("sov_pct")
+        if not brand or not product or not day or pct is None:
+            continue
+        try:
+            out.append((brand, str(product), day, float(pct)))
+        except (TypeError, ValueError):
+            continue
+    out.sort()
+    return out
 
 
 # Web-gestuetzte (grounded) LLMs — verifiziert aus geo-visibility-tool/analyzer/llm_clients.py:
@@ -425,6 +714,165 @@ def t_critical(df):
     return _T95[df]
 
 
+# ---------------------------------------------------------------------------
+# 04.08.2026 (Aenderung 4): p-Werte aus der t-VERTEILUNG statt aus der
+# Normalapproximation. Bei cluster-robuster Inferenz sind die Freiheitsgrade
+# G-1 — bei 3 Marken also 2. Ein Normal-p waere dort um ein Vielfaches zu klein
+# und wuerde genau den Fehler wiederholen, den der Cluster-SE gerade behebt.
+def _betacf(a, b, x):
+    """Kettenbruch fuer die unvollstaendige Beta-Funktion (Lentz-Verfahren)."""
+    MAXIT, EPS, FPMIN = 300, 3.0e-14, 1.0e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    if abs(d) < FPMIN:
+        d = FPMIN
+    d = 1.0 / d
+    h = d
+    for m in range(1, MAXIT + 1):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        if abs(d) < FPMIN:
+            d = FPMIN
+        c = 1.0 + aa / c
+        if abs(c) < FPMIN:
+            c = FPMIN
+        d = 1.0 / d
+        h *= d * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        if abs(d) < FPMIN:
+            d = FPMIN
+        c = 1.0 + aa / c
+        if abs(c) < FPMIN:
+            c = FPMIN
+        d = 1.0 / d
+        de = d * c
+        h *= de
+        if abs(de - 1.0) < EPS:
+            break
+    return h
+
+
+def _betai(a, b, x):
+    """Regularisierte unvollstaendige Beta-Funktion I_x(a, b)."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    lb = math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+    bt = math.exp(lb + a * math.log(x) + b * math.log(1.0 - x))
+    if x < (a + 1.0) / (a + b + 2.0):
+        return bt * _betacf(a, b, x) / a
+    return 1.0 - bt * _betacf(b, a, 1.0 - x) / b
+
+
+def _t_two_sided_p(t, df):
+    """Zweiseitiger p-Wert der t-Verteilung."""
+    if t is None or df is None or df < 1:
+        return None
+    try:
+        return _betai(df / 2.0, 0.5, df / (df + float(t) * float(t)))
+    except (ValueError, OverflowError, ZeroDivisionError):
+        return None
+
+
+def _cluster_effect(points, xs, eff, se_iid):
+    """Cluster-robuste Unsicherheit je Treiber. Cluster = MARKE.
+
+    Warum ueberhaupt: analyze() behandelte die 586 Intervalle als 586 unabhaengige
+    Beobachtungen. Sie sind es nicht — bei review_volume stammen alle Intervalle mit
+    Ereignis aus 6 Marken, bei portal_rank_change aus 2. Die effektive Fallzahl ist
+    die Zahl der MARKEN mit Ereignis, nicht die der Intervalle. Genau das steht
+    jetzt als n_clusters in der Ausgabe.
+
+    Gerechnet wird der Standardweg: Within-Transform je Marke (= Marken-Fixed-
+    Effects) fuer Zielgroesse UND Ereignis-Dummy, dann die CR1-Sandwich-Varianz
+    ueber die Marken-Cluster, mit k = 1 + (G-1) absorbierten Parametern. Die
+    Konfidenzgrenzen nutzen die t-Verteilung mit min(Marken mit, Marken ohne) - 1
+    Freiheitsgraden — dieselbe konservative Konvention wie im uebrigen Modul.
+
+    ZWEI Schutzregeln, ohne die diese Rechnung schaedlich waere:
+
+    1) Der Cluster-SE darf die Unsicherheit nur VERGROESSERN, nie verkleinern
+       (se = max(se_cluster, se_iid)). Die CR1-Sandwich-Varianz ist bei wenigen
+       behandelten Clustern nachweislich nach unten verzerrt (MacKinnon/Webb):
+       die "Meat"-Matrix summiert dann ueber eine Handvoll Score-Terme, die sich
+       teilweise wegheben. An diesen Daten liefert sie fuer review_volume (6
+       Marken) rechnerisch ein DREIMAL engeres Intervall als die iid-Rechnung —
+       was den Treiber faelschlich zu "gesichert" befoerdert haette. Ein Cluster-
+       Intervall, das enger ist als das ohnehin schon zu enge iid-Intervall, ist
+       kein Erkenntnisgewinn, sondern ein Artefakt der Fallzahl. Der rohe Wert
+       wird als effect_se_cr1_roh_pp trotzdem mitgeliefert, damit die Entscheidung
+       nachpruefbar bleibt und nicht in dieser Funktion verschwindet.
+
+    2) Unter 2 Marken mit Ereignis (oder unter 2 ohne) ist gar nichts schaetzbar
+       -> None. Der Aufrufer weist den Treiber dann als nicht schaetzbar aus,
+       statt eine Zahl zu zeigen, die es nicht gibt.
+
+    Rueckgabe: dict oder None.
+    """
+    n = len(xs)
+    if n < 3 or len(points) != n or eff is None:
+        return None
+    brands = [p["brand"] for p in points]
+    d = [1.0 if x > 0 else 0.0 for x in xs]
+    y = [p["y"] for p in points]          # ROH — das Demeaning macht der Within-Transform
+    marken_mit = {brands[i] for i in range(n) if d[i] > 0}
+    marken_ohne = {brands[i] for i in range(n) if d[i] == 0}
+    if len(marken_mit) < 2 or len(marken_ohne) < 2:
+        return None
+    sy, sd_, cnt = {}, {}, {}
+    for i in range(n):
+        g = brands[i]
+        sy[g] = sy.get(g, 0.0) + y[i]
+        sd_[g] = sd_.get(g, 0.0) + d[i]
+        cnt[g] = cnt.get(g, 0) + 1
+    g_all = len(cnt)
+    if g_all < 2:
+        return None
+    yw = [y[i] - sy[brands[i]] / cnt[brands[i]] for i in range(n)]
+    dw = [d[i] - sd_[brands[i]] / cnt[brands[i]] for i in range(n)]
+    sxx = sum(v * v for v in dw)
+    if sxx <= 1e-12:
+        return None
+    beta_fe = sum(dw[i] * yw[i] for i in range(n)) / sxx
+    resid = [yw[i] - beta_fe * dw[i] for i in range(n)]
+    scores = {}
+    for i in range(n):
+        scores[brands[i]] = scores.get(brands[i], 0.0) + dw[i] * resid[i]
+    meat = sum(v * v for v in scores.values())
+    k = g_all                      # 1 Treiber + (G-1) absorbierte Marken-Fixed-Effects
+    corr = (g_all / (g_all - 1.0)) * ((n - 1.0) / max(n - k, 1))
+    var = corr * meat / (sxx * sxx)
+    if not (var >= 0):
+        return None
+    se_cr1 = math.sqrt(var)
+    se_used = se_cr1
+    if se_iid is not None and se_iid > se_cr1:
+        se_used = se_iid           # Schutzregel 1: nur verbreitern, nie verengen
+    if not (se_used > 0):
+        return None
+    df = max(min(len(marken_mit), len(marken_ohne)) - 1, 1)
+    tc = t_critical(df)
+    lo = hi = None
+    if tc is not None:
+        lo, hi = round(eff - tc * se_used, 3), round(eff + tc * se_used, 3)
+    p = _t_two_sided_p(eff / se_used, df)
+    return {
+        "se": se_used,
+        "se_cr1_roh": se_cr1,
+        "effect_within_fe": beta_fe,
+        "ci_low": lo,
+        "ci_high": hi,
+        "p": (round(p, 6) if p is not None else None),
+        "n_clusters": len(marken_mit),
+        "n_clusters_gesamt": g_all,
+        "df": df,
+    }
+
+
 def spearman(xs, ys):
     """Spearman-Rangkorrelation (robust bei nullinflationierten Zaehldaten,
     Review-Fix 2026-06-04: Pearson auf Counts war hebelpunkt-getrieben)."""
@@ -494,6 +942,11 @@ def dedup_impact_events(events):
         if t not in IMPACT_TYPES:
             continue
         if e.get("crawler") == "update_domain_footprint" and t in ("page_new", "page_change", "page_removed"):
+            continue
+        # 04.08.2026: oszillierende Preis-Events (Scraper-Artefakt, s.
+        # _mark_price_artifacts) sind kein Preisereignis und fliegen aus JEDEM
+        # Treiberblock — dedup_impact_events ist der gemeinsame Eingang.
+        if e.get("price_artifact"):
             continue
         if not e.get("brand") or not _day(e.get("timestamp")):
             continue
@@ -949,10 +1402,16 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
     wmag = {}
     mpos = {}
     mneg = {}
+    n_price_kept = 0     # Preis-Events NACH dem Artefaktfilter (Aenderung 3)
+    n_price_raw = sum(1 for e in events
+                      if e.get("event_type") == "price_change"
+                      and (not brand_filter or e.get("brand") == brand_filter))
     for e in dedup_impact_events(events):
         t = e.get("event_type")
         b = e.get("brand")
         day = _day(e.get("timestamp"))
+        if t == "price_change" and (not brand_filter or b == brand_filter):
+            n_price_kept += 1
         counts.setdefault(b, {}).setdefault(day, {})
         counts[b][day][t] = counts[b][day].get(t, 0) + 1
         try:
@@ -961,7 +1420,20 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
             mg = 1.0
         wmag.setdefault(b, {}).setdefault(day, {})
         _sgn = 1.0
-        if t in SIGNED_DRIVER_TYPES:
+        _dose = None
+        if t == "price_change":
+            # 04.08.2026: DOSIS statt Binaerzaehlung. Preis-Events tragen kein
+            # sentiment, aber detail.change_pct — die prozentuale Aenderung MIT
+            # Vorzeichen. Sie geht direkt als Feature ein (in Anteilen, also
+            # -21,0 % -> -0,21); magnitude wird NICHT zusaetzlich multipliziert,
+            # weil change_pct bereits die Staerke ist. Ohne das hoben sich eine
+            # Senkung und eine Erhoehung als "2 Ereignisse" gegenseitig auf.
+            _d = e.get("detail") or {}
+            try:
+                _dose = float(_d.get("change_pct")) / 100.0
+            except (TypeError, ValueError):
+                _dose = None
+        elif t in SIGNED_DRIVER_TYPES:
             _sgn = {"positive": 1.0, "negative": -1.0}.get(e.get("sentiment"), 0.0)
         elif t == "review_change":
             # 2026-06-26: Bewertungs-Aenderung vorzeichenbehaftet -> Richtung der
@@ -979,7 +1451,10 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
             except (TypeError, ValueError):
                 _chg = 0.0
             _sgn = 1.0 if _chg > 0 else (-1.0 if _chg < 0 else 0.0)
-        wmag[b][day][t] = wmag[b][day].get(t, 0.0) + (mg if mg > 0 else 1.0) * _sgn
+        if _dose is not None:
+            wmag[b][day][t] = wmag[b][day].get(t, 0.0) + _dose
+        else:
+            wmag[b][day][t] = wmag[b][day].get(t, 0.0) + (mg if mg > 0 else 1.0) * _sgn
         if t in ("press_mention", "news_mention"):
             sn = e.get("sentiment")
             if sn == "positive":
@@ -1055,6 +1530,39 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
         ys = [p["yc"] for p in points_raw]
         n = len(xs)
         n_with = sum(1 for x in xs if x > 0)
+        if t == "price_change" and n_price_raw > 0 and n_price_kept < MIN_PRICE_EVENTS:
+            # Projektregel: "Keine Daten" ist nie "0,0". Nach dem Artefaktfilter
+            # bleiben zu wenige echte Preisereignisse -> KEIN Effekt ausweisen
+            # (auch keinen Nulleffekt), sondern den Grund. Bewusst VOR der
+            # n_with==0-Abkuerzung: sonst verschwaende der Treiber stillschweigend
+            # aus der Ausgabe, sobald das letzte echte Ereignis in ein Intervall
+            # faellt, das ohnehin verworfen wird (Strukturbruch) — und das
+            # Dashboard zeigte einen leeren Kasten ohne Begruendung.
+            results[t] = {
+                "label": TYPE_LABEL.get(t, t),
+                "available": False,
+                "grund": ("nach Artefaktfilter zu wenige Preisereignisse (n=%d von %d, "
+                          "noetig sind %d)" % (n_price_kept, n_price_raw, MIN_PRICE_EVENTS)),
+                "pearson_r": None, "spearman_r": None,
+                "avg_sov_effect_pp": None, "effect_se_pp": None,
+                "ci95_low_pp": None, "ci95_high_pp": None,
+                "effect_se_cluster_pp": None, "effect_se_cr1_roh_pp": None,
+                "effect_within_fe_pp": None,
+                "ci95_low_cluster_pp": None, "ci95_high_cluster_pp": None,
+                "p_cluster": None, "cluster_df": None,
+                "n_clusters": None, "n_clusters_gesamt": None,
+                "significance_basis": "nicht_schaetzbar",
+                "significant": None, "significant_iid": None,
+                "n_intervals": n, "n_with_event": n_with,
+                "n_price_events_roh": n_price_raw,
+                "n_price_events_nach_filter": n_price_kept,
+                "type_confidence": "unzureichend",
+                "type_confidence_grund": ("%d der %d Preis-Ereignisse waren eine "
+                                          "oszillierende Rueckkehr auf den Vorwert "
+                                          "(Scraper-Artefakt) und wurden ausgeschlossen."
+                                          % (n_price_raw - n_price_kept, n_price_raw)),
+            }
+            continue
         if n_with == 0:
             continue  # Typ kam in keinem Intervall vor -> nicht ausweisen
         r = pearson(xs, ys)
@@ -1069,7 +1577,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
             if len(with_v) > 1 and len(without_v) > 1:
                 se = math.sqrt(_var(with_v, m1) / len(with_v) + _var(without_v, m0) / len(without_v))
         ci_low = ci_high = None
-        significant = None
+        significant_iid = None
         if eff is not None and se is not None and se > 0:
             # Freiheitsgrade konservativ: kleinere der beiden Gruppen - 1
             df = min(len(with_v), len(without_v)) - 1
@@ -1080,19 +1588,61 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
                 # "gesichert" nur, wenn das (t-basierte) KI die Null ausschliesst
                 # UND mindestens 8 Intervalle mit Event vorliegen (Mindest-Datenbasis)
                 excludes_zero = (ci_low > 0) or (ci_high < 0)
-                significant = bool(excludes_zero and n_with >= 8)
+                # 04.08.2026: heisst jetzt significant_iid — das FUEHRENDE
+                # 'significant' kommt aus der cluster-robusten Variante (s. u.).
+                significant_iid = bool(excludes_zero and n_with >= 8)
+        # ---- (4) Cluster-robuste Inferenz, ADDITIV zu den iid-Feldern ----
+        cl = _cluster_effect(points_raw, xs, eff, se)
+        n_clusters = cl["n_clusters"] if cl else len({p["brand"] for p, x in zip(points_raw, xs) if x > 0})
+        tconf = type_confidence(n_with)
+        tconf_grund = None
+        if cl is None:
+            # Nicht cluster-schaetzbar (z. B. Einzelmarken-Auswertung: 1 Cluster).
+            sig_basis = "nicht_schaetzbar"
+            significant = None
+            tconf = "unzureichend"
+            tconf_grund = ("Cluster-robuste Schaetzung nicht moeglich (%d Marke(n) mit "
+                           "Ereignis, %d Cluster insgesamt). Ohne Variation zwischen "
+                           "Marken laesst sich die Unsicherheit nicht ehrlich beziffern; "
+                           "die iid-Felder unterstellen Unabhaengigkeit, die hier nicht "
+                           "gegeben ist." % (n_clusters, len({p["brand"] for p in points_raw})))
+        else:
+            sig_basis = "cluster"
+            _excl0 = (cl["ci_low"] is not None and ((cl["ci_low"] > 0) or (cl["ci_high"] < 0)))
+            significant = bool(_excl0 and n_with >= 8 and cl["n_clusters"] >= 5)
+            if cl["n_clusters"] < 5:
+                tconf = "unzureichend"
+                tconf_grund = ("Nur %d Marke(n) mit Ereignis. Der Effekt stuetzt sich damit "
+                               "auf %d unabhaengige Einheiten, nicht auf %d Intervalle — "
+                               "unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig "
+                               "davon, wie eng das iid-Intervall aussieht."
+                               % (cl["n_clusters"], cl["n_clusters"], n_with))
         results[t] = {
             "label": TYPE_LABEL.get(t, t),
+            "available": True,
             "pearson_r": round(r, 3) if r is not None else None,
             "spearman_r": round(rho, 3) if rho is not None else None,
             "avg_sov_effect_pp": round(eff, 3) if eff is not None else None,
             "effect_se_pp": round(se, 3) if se is not None else None,
             "ci95_low_pp": ci_low,
             "ci95_high_pp": ci_high,
+            # additiv: cluster-robuste Variante (Cluster = Marke)
+            "n_clusters": n_clusters,
+            "n_clusters_gesamt": (cl["n_clusters_gesamt"] if cl else None),
+            "effect_se_cluster_pp": (round(cl["se"], 3) if cl else None),
+            "effect_se_cr1_roh_pp": (round(cl["se_cr1_roh"], 3) if cl else None),
+            "effect_within_fe_pp": (round(cl["effect_within_fe"], 3) if cl else None),
+            "ci95_low_cluster_pp": (cl["ci_low"] if cl else None),
+            "ci95_high_cluster_pp": (cl["ci_high"] if cl else None),
+            "p_cluster": (cl["p"] if cl else None),
+            "cluster_df": (cl["df"] if cl else None),
+            "significance_basis": sig_basis,
             "significant": significant,
+            "significant_iid": significant_iid,
             "n_intervals": n,
             "n_with_event": n_with,
-            "type_confidence": type_confidence(n_with),
+            "type_confidence": tconf,
+            "type_confidence_grund": tconf_grund,
         }
 
     # nach |Effekt| sortiert
@@ -1129,7 +1679,14 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
                     _c["note"] = ((_prev + " ") if _prev else "") + "OOS<=0: Einzeleffekte nicht belastbar"
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat",
+        "method": ("interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) "
+                   "+ Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste "
+                   "Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit "
+                   "min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird "
+                   "aus der cluster-robusten Variante abgeleitet (significance_basis)."),
+        "significance_basis_global": "cluster",
+        "sov_source_audit": SOV_SOURCE_AUDIT,
+        "event_load_audit": EVENT_LOAD_AUDIT,
         "multivariate": multivar,
         "validation": validation,
         "sov_source": sov_source,
@@ -2982,7 +3539,17 @@ def page_change_by_type(events):
 
 
 
-LAG_CANDIDATES = [0, 3, 7, 14, 28]
+# 04.08.2026 (Aenderung 5): NEGATIVE Leads ergaenzt (-14, -7, -3).
+# Ein negativer Lead zaehlt Ereignisse, die NACH der gemessenen SoV-Aenderung
+# stattfanden — die "Wirkung" laege also VOR ihrer Ursache. Das kann nicht
+# kausal sein. Zeigt ein Treiber dort einen ebenso starken Zusammenhang wie bei
+# den echten Versaetzen, misst das Modell einen gemeinsamen Trend (z. B. eine
+# Marke, die gerade generell viel bewegt) und keinen Effekt. Der Lead-Scan ist
+# damit eine FALSIFIKATION, kein weiterer Kandidat: der "beste Lag" wird
+# weiterhin nur unter den Versaetzen ab 0 gesucht.
+LAG_CANDIDATES = [-14, -7, -3, 0, 3, 7, 14, 28]
+LEAD_LAGS = [l for l in LAG_CANDIDATES if l < 0]
+FORWARD_LAGS = [l for l in LAG_CANDIDATES if l >= 0]
 
 
 def _shift_day(day, delta):
@@ -3053,37 +3620,89 @@ def lag_analysis(events):
             if rec and rec.get("pearson_r") is not None:
                 reihe.append({"lag": lag, "r": round(rec["pearson_r"], 3),
                               "effekt_pp": rec.get("avg_sov_effect_pp"),
-                              "p": rec.get("p_value"), "gesichert": rec.get("significant")})
+                              "p": rec.get("p_value"), "gesichert": rec.get("significant"),
+                              "lead": lag < 0})
         if not reihe:
             continue
-        top = max(reihe, key=lambda d: abs(d["r"]))
+        vorwaerts = [x for x in reihe if x["lag"] >= 0]
+        leads = [x for x in reihe if x["lag"] < 0]
+        if not vorwaerts:
+            continue
+        # Der "beste Versatz" wird NUR unter den echten (nicht-negativen) Versaetzen
+        # gesucht — ein negativer Lead ist ein Gegentest, kein Wirkungskandidat.
+        top = max(vorwaerts, key=lambda d: abs(d["r"]))
         # Musterbewertung: Eine echte Wirkungsverzoegerung sollte einen glatten
         # Verlauf zeigen (Anstieg, Gipfel, Abfall). Springt das Vorzeichen mehrfach,
         # ist der "beste" Versatz mit hoher Wahrscheinlichkeit ein Rauschmaximum.
-        vz = [1 if x["r"] > 0 else (-1 if x["r"] < 0 else 0) for x in reihe]
+        vz = [1 if x["r"] > 0 else (-1 if x["r"] < 0 else 0) for x in vorwaerts]
         wechsel = sum(1 for i in range(1, len(vz)) if vz[i] != 0 and vz[i - 1] != 0 and vz[i] != vz[i - 1])
-        if len(reihe) < 3:
+        if len(vorwaerts) < 3:
             muster = "zu wenige Versaetze fuer eine Musterbewertung"
         elif wechsel >= 2:
             muster = ("springend — %d Vorzeichenwechsel ueber %d Versaetze. Der beste Versatz "
                       "ist hier hoechstwahrscheinlich ein Rauschmaximum, kein Wirkungsmuster."
-                      % (wechsel, len(reihe)))
+                      % (wechsel, len(vorwaerts)))
         elif wechsel == 1:
             muster = "ein Vorzeichenwechsel — uneindeutig"
         else:
             muster = "einheitliches Vorzeichen ueber alle Versaetze"
+        # ---- Lead-Auswertung: Scheinbefund-Indikator ----
+        max_fwd = max(abs(x["r"]) for x in vorwaerts)
+        if not leads:
+            lead_warnung = None
+            lead_begruendung = ("Keine Lead-Auswertung moeglich: In den negativen Leads "
+                                "(%s Tage) lagen zu wenige Intervalle mit Ereignis "
+                                "(Mindestens 8)." % ", ".join(str(l) for l in LEAD_LAGS))
+            lead_max = None
+        else:
+            lead_top = max(leads, key=lambda d: abs(d["r"]))
+            lead_max = abs(lead_top["r"])
+            lead_gesichert = [x for x in leads if x.get("gesichert")]
+            if lead_gesichert:
+                lead_warnung = True
+                lead_begruendung = ("SCHEINBEFUND-VERDACHT: Bei Lead %d Tage (Wirkung VOR dem "
+                                    "Ereignis) ist der Effekt gesichert (r=%.3f). Eine Ursache "
+                                    "kann nicht nach ihrer Wirkung liegen — das spricht fuer "
+                                    "einen gemeinsamen Trend, nicht fuer einen Effekt."
+                                    % (lead_gesichert[0]["lag"], lead_gesichert[0]["r"]))
+            elif lead_max >= max_fwd:
+                lead_warnung = True
+                lead_begruendung = ("SCHEINBEFUND-VERDACHT: Der staerkste Zusammenhang liegt im "
+                                    "negativen Lead (|r|=%.3f bei %d Tagen) und damit VOR dem "
+                                    "Ereignis — mindestens so stark wie der beste echte Versatz "
+                                    "(|r|=%.3f). Bei einer echten Wirkung muesste es umgekehrt sein."
+                                    % (lead_max, lead_top["lag"], max_fwd))
+            else:
+                lead_warnung = False
+                lead_begruendung = ("Kein Scheinbefund-Indikator: staerkster negativer Lead "
+                                    "|r|=%.3f (%d Tage) bleibt unter dem besten echten Versatz "
+                                    "|r|=%.3f (%d Tage)."
+                                    % (lead_max, lead_top["lag"], max_fwd, top["lag"]))
+        _r0 = next((x["r"] for x in reihe if x["lag"] == 0), None)
         best[t] = {"label": TYPE_LABEL.get(t, t), "bester_lag": top["lag"],
                    "r_bei_bestem_lag": top["r"], "effekt_pp": top["effekt_pp"],
                    "gesichert": top["gesichert"], "verlauf": reihe,
                    "vorzeichenwechsel": wechsel, "musterbewertung": muster,
-                   "r_bei_lag0": (round(reihe[0]["r"], 3)
-                                  if reihe and reihe[0]["lag"] == 0 else None)}
+                   "lead_warnung": lead_warnung,
+                   "lead_begruendung": lead_begruendung,
+                   "max_abs_r_lead": (round(lead_max, 3) if lead_max is not None else None),
+                   "max_abs_r_ab_lag0": round(max_fwd, 3),
+                   "r_bei_lag0": (round(_r0, 3) if _r0 is not None else None)}
 
     n_sig = sum(1 for lag in per_lag for t, r in (per_lag[lag]["impact"] or {}).items()
-                if r.get("significant"))
+                if r.get("significant") and lag >= 0)
+    n_lead_warn = sum(1 for b in best.values() if b.get("lead_warnung") is True)
     return {
         "available": True,
         "getestete_lags": LAG_CANDIDATES,
+        "getestete_leads": LEAD_LAGS,
+        "n_treiber_mit_lead_warnung": n_lead_warn,
+        "lead_hinweis": ("Negative Versaetze zaehlen Ereignisse NACH der gemessenen "
+                         "SoV-Aenderung. Ein starker Zusammenhang dort ist ein "
+                         "Scheinbefund-Indikator (die Wirkung laege vor der Ursache) "
+                         "und geht NICHT in 'bester_lag' ein — er dient ausschliesslich "
+                         "der Falsifikation. %d von %d Treibern zeigen eine Lead-Warnung."
+                         % (n_lead_warn, len(best))),
         "je_lag": {str(k): {"n_intervalle": v["n_intervalle"],
                             "n_treiber": len(v["impact"])} for k, v in per_lag.items()},
         "bester_lag_je_treiber": best,
@@ -3099,7 +3718,10 @@ def lag_analysis(events):
                   "die Musterbewertung im Verlauf pruefen." % n_sig),
         "methode": ("Je Versatz werden Ereignisse aus dem um `lag` Tage nach hinten "
                     "verschobenen Fenster gegen die SoV-Aenderung im Originalfenster "
-                    "gezaehlt. Getestet: " + ", ".join(str(l) for l in LAG_CANDIDATES) + " Tage."),
+                    "gezaehlt. Getestet: " + ", ".join(str(l) for l in LAG_CANDIDATES) + " Tage. "
+                    "Negative Werte sind LEADS (Ereignis nach der Messung) und dienen "
+                    "als Gegenprobe; der beste Versatz wird nur unter " +
+                    ", ".join(str(l) for l in FORWARD_LAGS) + " gesucht."),
         "grenzen": ("EXPLORATIVE Suche ueber mehrere Versaetze: Wer fuenf Varianten testet "
                     "und die staerkste meldet, findet auch in reinem Rauschen ein Maximum. "
                     "Der ausgewiesene beste Versatz ist deshalb ein HINWEIS, keine Schaetzung "

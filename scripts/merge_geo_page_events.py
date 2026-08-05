@@ -339,30 +339,129 @@ def inject_into_dashboard(changes: list):
     return True
 
 
+class GeoDateiFehlt(Exception):
+    """Die Datei steht nachweislich NICHT im Dateibaum des GEO-Repos."""
+
+
+def _fetch_via_trees_blobs(path: str) -> bytes:
+    """Holt eine Datei ueber die Trees- + Blobs-API — der Weg ohne 1-MB-Limit.
+
+    Genauso wie scripts/fetch_search_ab.py, das damit eine 2,8-MB-Datei zieht.
+    Die Contents-API verweigert alles ueber 1 MB mit 403 'too large'; die
+    Blobs-API liefert bis 100 MB base64.
+
+    Wirft GeoDateiFehlt, wenn der Pfad im Dateibaum wirklich nicht vorkommt —
+    nur DANN darf der Aufrufer 'nicht im GEO-Repo' melden."""
+    tree_url = f"https://api.github.com/repos/{GEO_REPO}/git/trees/main?recursive=1"
+    tree = _api(tree_url)
+    truncated = bool(tree.get("truncated"))
+    blob_url, blob_size = None, None
+    for item in tree.get("tree", []):
+        if item.get("type") == "blob" and item.get("path") == path:
+            blob_url, blob_size = item.get("url"), item.get("size")
+            break
+    if not blob_url:
+        if truncated:
+            # Kein Befund ist kein Beleg: bei abgeschnittenem Baum wissen wir nicht,
+            # ob die Datei fehlt oder nur nicht mitgeliefert wurde.
+            raise RuntimeError(
+                f"{path} nicht im Dateibaum gefunden, aber Trees-API meldet "
+                "truncated=true — der Baum ist unvollstaendig, das ist KEIN Beleg "
+                "fuer eine fehlende Datei")
+        raise GeoDateiFehlt(f"{path} steht nicht im Dateibaum von {GEO_REPO}@main")
+    blob = _api(blob_url)
+    if blob.get("encoding") != "base64" or not blob.get("content"):
+        raise RuntimeError(
+            f"Blobs-API liefert {path} nicht als base64 "
+            f"(encoding={blob.get('encoding')!r}, size={blob_size}) — "
+            "bei >100 MB ist der Blob-Weg erschoepft")
+    raw = base64.b64decode(blob["content"])
+    print(f"[merge_geo] {path} ueber Blobs-API geladen: {len(raw)} Bytes "
+          f"(Trees-API meldet {blob_size} Bytes)")
+    return raw
+
+
 def fetch_page_dates() -> int:
     """Zieht die konsolidierte data/page_dates.json (url -> published/modified/
-    first_seen) aus dem GEO-Repo und legt sie lokal ab. Grundlage der
-    retrospektiven Neue-Seiten-Auswertung im Cockpit. Schutz gegen Ueberschreiben
-    mit Leerdatei: eine leere Antwort ersetzt eine vorhandene gute Datei NICHT
-    ('keine Daten ist kein Befund')."""
-    url = f"https://api.github.com/repos/{GEO_REPO}/contents/data/page_dates.json?ref=main"
-    try:
-        raw = _api_raw(url)  # Contents-API liefert base64 im 'content'
-        data = json.loads(raw.decode("utf-8"))
-    except Exception as e:
-        print(f"[merge_geo] page_dates.json noch nicht im GEO-Repo ({e}) — behalte lokalen Stand")
-        return -1
+    first_seen/published_obergrenze) aus dem GEO-Repo und legt sie lokal ab.
+    Grundlage der retrospektiven Neue-Seiten-Auswertung im Cockpit.
+
+    Beschaffungsreihenfolge:
+      0. lokaler GEO-Klon, NUR wenn $GEO_LOCAL_DIR gesetzt ist (fuer Tests)
+      1. Contents-API (schnell, aber hartes 1-MB-Limit)
+      2. Trees- + Blobs-API (kein Groessenlimit) — der Weg, den fetch_search_ab.py
+         schon fuer eine 2,8-MB-Datei nutzt
+
+    Die Datei ist seit Juli 2026 groesser als 1 MB; Schritt 1 schlaegt deshalb
+    im Normalbetrieb fehl. Das ist erwartet und wird als solches protokolliert —
+    'zu gross fuer die Contents-API' ist etwas ANDERES als 'im GEO-Repo nicht
+    vorhanden'. Nur wenn der Pfad im Dateibaum fehlt, wird Letzteres gemeldet.
+
+    Schutz gegen Ueberschreiben mit Leerdatei: eine leere Antwort ersetzt eine
+    vorhandene gute Datei NICHT ('keine Daten ist kein Befund')."""
+    rel = "data/page_dates.json"
+    data, weg = None, None
+
+    local_dir = os.environ.get("GEO_LOCAL_DIR", "")
+    if local_dir:
+        p = Path(local_dir) / rel
+        if p.exists():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+                weg = f"lokaler GEO-Klon ({p})"
+            except Exception as e:
+                print(f"[merge_geo] {rel} im lokalen GEO-Klon nicht lesbar "
+                      f"({str(e)[:120]}) — versuche die GitHub-API")
+        else:
+            print(f"[merge_geo] GEO_LOCAL_DIR gesetzt, aber {p} existiert nicht "
+                  "— versuche die GitHub-API")
+
+    if data is None:
+        contents_url = (f"https://api.github.com/repos/{GEO_REPO}/contents/"
+                        f"{rel}?ref=main")
+        try:
+            data = json.loads(_api_raw(contents_url).decode("utf-8"))
+            weg = "Contents-API"
+        except Exception as e_contents:
+            print(f"[merge_geo] Contents-API liefert {rel} nicht "
+                  f"({str(e_contents)[:160]}) — das ist bei >1 MB der Normalfall "
+                  "(403 'too large'); weiche auf die Trees-/Blobs-API aus")
+            try:
+                data = json.loads(_fetch_via_trees_blobs(rel).decode("utf-8"))
+                weg = "Blobs-API (zu gross fuer die Contents-API)"
+            except GeoDateiFehlt as e_missing:
+                print(f"[merge_geo] {rel} ist im GEO-Repo NICHT vorhanden "
+                      f"({e_missing}) — behalte lokalen Stand")
+                return -1
+            except Exception as e_blob:
+                print(f"[merge_geo] FEHLER: {rel} weder ueber Contents- noch ueber "
+                      f"Blobs-API ladbar (Contents: {str(e_contents)[:120]} / "
+                      f"Blobs: {str(e_blob)[:120]}) — behalte lokalen Stand. "
+                      "Das ist ein BESCHAFFUNGSFEHLER, kein Beleg dafuer, dass die "
+                      "Datei im GEO-Repo fehlt.")
+                return -1
+
     if not isinstance(data, dict) or not data:
         if PAGE_DATES_FILE.exists():
-            print("[merge_geo] page_dates.json leer/ungueltig — behalte vorhandene Datei")
+            print("[merge_geo] page_dates.json leer/ungueltig — behalte vorhandene "
+                  "Datei (keine Daten ist kein Befund)")
             return -1
+        print("[merge_geo] WARNUNG: page_dates.json leer/ungueltig und lokal noch "
+              "nicht vorhanden — schreibe leere Datei")
         data = {}
+
     PAGE_DATES_FILE.parent.mkdir(parents=True, exist_ok=True)
     PAGE_DATES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1,
                                           sort_keys=True), encoding="utf-8")
-    npub = sum(1 for v in data.values()
-               if isinstance(v, dict) and (v.get("published") or v.get("modified")))
-    print(f"[merge_geo] page_dates.json: {len(data)} Seiten ({npub} mit Datum) -> {PAGE_DATES_FILE}")
+    vals = [v for v in data.values() if isinstance(v, dict)]
+    npub = sum(1 for v in vals if v.get("published") or v.get("modified"))
+    n_echt = sum(1 for v in vals if v.get("published"))
+    n_obg = sum(1 for v in vals
+                if not v.get("published") and v.get("published_obergrenze"))
+    print(f"[merge_geo] page_dates.json via {weg}: {len(data)} Seiten "
+          f"({n_echt} mit echtem Publikationsdatum, {npub} mit Publikations- oder "
+          f"Aenderungsdatum, {n_obg} nur mit Obergrenze aus dem Sitemap-lastmod) "
+          f"-> {PAGE_DATES_FILE}")
     return npub
 
 

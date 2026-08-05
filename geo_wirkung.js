@@ -305,6 +305,7 @@
       var trendTxt;
       if(vw && vw.empfehlungsrate_light_pct!=null){
         var dlt=nsE.empfehlungsrate_light_pct-vw.empfehlungsrate_light_pct;
+        var arCol=(dlt>0.05?"#16a34a":(dlt<-0.05?ERGO_RED:MUTE));
         trendTxt='<span style="color:'+arCol+';font-weight:700">'+(dlt>0.05?"▲":(dlt<-0.05?"▼":"→"))+" "+num(Math.abs(dlt),1)+' pp</span> vs. Vorwoche';
       } else {
         trendTxt='<span style="color:'+MUTE+'">Trend ab naechster Woche</span>';

@@ -81,6 +81,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
           GEO_REPO: phoeser/geo-visibility-tool
         run: python scripts/merge_geo_page_events.py
+
+      - name: Websuche-A/B aus dem GEO-Repo holen (Aggregate, ohne Rohantworten)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
+          GEO_REPO: phoeser/geo-visibility-tool
+        run: python scripts/fetch_search_ab.py
+        continue-on-error: true
         continue-on-error: true
 
       - name: Externe Ratings aktualisieren (Finanztip + manuelle Quellen)
@@ -139,6 +146,7 @@ jobs:
           git add data/price_history.jsonl 2>/dev/null || true
           git add data/correlation_impact.json 2>/dev/null || true
           git add data/content_citations.json 2>/dev/null || true
+          git add data/search_ab.json 2>/dev/null || true
           git add data/press_url_cache.json 2>/dev/null || true
           git add data/driver_state.json 2>/dev/null || true
           git add data/pipeline_health.json 2>/dev/null || true

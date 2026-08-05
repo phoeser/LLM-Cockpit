@@ -5,7 +5,15 @@ on:
     # 04:30 UTC (06:30 MESZ) — NACH dem GEO-Workflow (03:00 UTC), damit
     # Snapshot/SoV/Korrelation mit den GEO-Daten von HEUTE rechnen
     # (Review-Fix 2026-06-04: vorher 01:00 -> 22h alte GEO-Daten).
-    - cron: '30 4 * * *'
+    # 05.08.2026 von 04:30 auf 05:30 UTC verschoben: Der GEO-Crawl braucht
+    # inzwischen 4,0-4,5 h (frueher 2,0-2,7 h), startet 23:10 und hat seine
+    # Daten am 05.08. erst um 04:44 gepusht - der Nightly lief da schon 14 min
+    # und arbeitete auf dem GEO-Stand vom Vortag. Lauf #475 hat daraufhin gar
+    # nichts committet. Achtung: GitHub verzoegert geplante Jobs im Free-Tier
+    # typisch um Stunden - die Verschiebung macht die Reihenfolge wahrschein-
+    # licher, nicht sicher. Der robuste Weg waere, dass der GEO-Lauf den
+    # Nightly am Ende selbst anstoesst (wie der Montags-Peec-Task, CLAUDE.md 3c).
+    - cron: '30 5 * * *'
   workflow_dispatch:
 
 concurrency:

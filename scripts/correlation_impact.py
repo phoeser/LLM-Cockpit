@@ -4533,8 +4533,18 @@ def new_page_impact_did(events=None):
 
     if not PAGE_DATES_FILE.exists():
         return {"available": False,
-                "grund": ("Noch keine data/page_dates.json — der GEO-Crawl schreibt sie ab "
-                          "dem ersten Lauf mit Datums-Extraktion (02.08.2026).")}
+                "grund": ("data/page_dates.json fehlt IM COCKPIT-Repo. Im GEO-Repo wird die "
+                          "Datei gepflegt; scripts/merge_geo_page_events.py (fetch_page_dates) "
+                          "kopiert sie hierher. Fehlt sie hier, ist die BESCHAFFUNG "
+                          "fehlgeschlagen — das sagt nichts darueber, ob der GEO-Crawl sie "
+                          "schreibt. Haeufigste Ursache: die Datei ist groesser als 1 MB, die "
+                          "GitHub-Contents-API verweigert sie dann und der Abruf muss ueber die "
+                          "Trees-/Blobs-API laufen. Weitere Ursachen: GITHUB_TOKEN fehlt, der "
+                          "Nightly-Schritt lief nicht, oder die Datei fehlt in der git-add-Liste. "
+                          "Pruefen: '[merge_geo] page_dates.json ...' im letzten Nightly-Log."),
+                "diagnose": {"erwarteter_pfad": str(PAGE_DATES_FILE),
+                             "geschrieben_von": ("scripts/merge_geo_page_events.py::"
+                                                 "fetch_page_dates")}}
     try:
         pdates = json.loads(PAGE_DATES_FILE.read_text(encoding="utf-8"))
     except Exception as ex:
@@ -4658,22 +4668,76 @@ def new_page_impact_did(events=None):
     n_with_pub = sum(1 for m in pdates.values() if isinstance(m, dict) and m.get("published"))
     n_with_any = sum(1 for m in pdates.values()
                      if isinstance(m, dict) and (m.get("published") or m.get("modified")))
+    # --- Blindstelle sichtbar machen -------------------------------------
+    # In die DiD kommen nur Seiten mit ECHTEM Publikationsdatum (`published`).
+    # Die Abdeckung ist je Marke extrem ungleich: ARAG/Debeka/DEVK liefern es
+    # fuer jede Seite aus, ERGO fuer keine einzige. Ohne diese Angabe liest sich
+    # ein Gesamtergebnis so, als gaelte es fuer alle Marken — tut es nicht.
+    je_marke = {}
+    for _m in pdates.values():
+        if not isinstance(_m, dict):
+            continue
+        b = _m.get("brand") or "Unbekannt"
+        s_ = je_marke.setdefault(b, {"brand": b, "seiten": 0, "mit_publikationsdatum": 0,
+                                     "nur_aenderungsdatum": 0, "nur_obergrenze": 0,
+                                     "ohne_jedes_datum": 0})
+        s_["seiten"] += 1
+        if _m.get("published"):
+            s_["mit_publikationsdatum"] += 1
+        elif _m.get("modified"):
+            s_["nur_aenderungsdatum"] += 1
+        elif _m.get("published_obergrenze"):
+            s_["nur_obergrenze"] += 1
+        else:
+            s_["ohne_jedes_datum"] += 1
+    for s_ in je_marke.values():
+        s_["anteil_pct"] = (round(100.0 * s_["mit_publikationsdatum"] / s_["seiten"], 1)
+                            if s_["seiten"] else None)
+    marken_rows = sorted(je_marke.values(), key=lambda x: -x["seiten"])
+    ohne = [x["brand"] for x in marken_rows if x["mit_publikationsdatum"] == 0]
+    duenn = [x["brand"] for x in marken_rows
+             if 0 < x["mit_publikationsdatum"] and (x["anteil_pct"] or 0) < 20]
+    if ohne:
+        blind = ("Fuer diese Marken traegt KEINE getrackte Seite ein echtes "
+                 "Publikationsdatum — die Neue-Seiten-Auswertung kann ueber sie nichts "
+                 "aussagen, auch nicht 'kein Effekt': " + ", ".join(ohne) + ".")
+    else:
+        blind = "Jede Marke hat mindestens eine Seite mit echtem Publikationsdatum."
+    if duenn:
+        blind += (" Unter 20 % Abdeckung und damit nur eingeschraenkt aussagefaehig: "
+                  + ", ".join(duenn) + ".")
+    gesamt_pct = round(100.0 * n_with_pub / n_pages, 1) if n_pages else None
+    blind += (" Gesamt: %d von %d Seiten (%s %%) mit echtem Publikationsdatum."
+              % (n_with_pub, n_pages, ("%.1f" % gesamt_pct) if gesamt_pct is not None else "?"))
+
     avail = bool(pub_sum.get("available") or ref_sum.get("available"))
     return {
         "available": avail,
         "grund": (None if avail else
                   "Noch keine neu veroeffentlichte Seite mit genug Vor/Nach-Beobachtung im "
-                  "Fenster — waechst mit der Level-Zellen-Historie."),
+                  "Fenster — waechst mit der Level-Zellen-Historie. " + blind),
         "zielgroesse": "grounded SoV im Thema (sov_g), Vor-/Nach-Mittel; DiD gegen andere Themen derselben Marke",
         "fenster": {"von": dmin, "bis": dmax, "halbfenster_tage": HALF, "min_tage_vor_nach": WIN},
         "datums_abdeckung": {"seiten_gesamt": n_pages, "mit_publikationsdatum": n_with_pub,
-                             "mit_irgendeinem_datum": n_with_any},
+                             "mit_irgendeinem_datum": n_with_any,
+                             "anteil_publikationsdatum_pct": gesamt_pct},
+        "datums_abdeckung_je_marke": {
+            "marken": marken_rows,
+            "blindstelle": blind,
+            "definition": ("mit_publikationsdatum = `published` (schema.org/OpenGraph aus dem "
+                           "Roh-HTML) — NUR diese Seiten koennen in die DiD eingehen. "
+                           "nur_aenderungsdatum = kein published, aber `modified`. "
+                           "nur_obergrenze = nur eine Obergrenze aus dem Sitemap-<lastmod> "
+                           "('veroeffentlicht <= X') — als Publikationstag NICHT verwendbar. "
+                           "ohne_jedes_datum = gar kein Datumssignal."),
+        },
         "neu_veroeffentlicht": pub_sum,
         "aktualisiert_refresh": ref_sum,
         "skipped_neu": sk_pub, "skipped_refresh": sk_ref,
         "hinweis": ("Eigenkontroll-DiD: grounded-Sichtbarkeit im Thema der neuen Seite vor/nach "
                     "dem ECHTEN Publikationstag, relativ zu den anderen Themen derselben Marke. "
-                    "Korrelation, kein Kausalnachweis; Cluster ist die Marke."),
+                    "Korrelation, kein Kausalnachweis; Cluster ist die Marke. "
+                    "Reichweite: " + blind),
     }
 
 

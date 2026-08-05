@@ -14,7 +14,8 @@ Datenquellen (alle lokal, KEIN Zugriff auf Peec-/LLM-APIs):
   2. data/peec_snapshots/*_sources.json  4 archivierte Staende -> Zitatverlauf je URL.
   3. shared/events.jsonl             page_new / page_change des GEO-Page-Trackers
                                      (URL, similarity, added_lines, classification).
-  4. GEO data/page_dates.json        brand, first_seen, last_seen, published, modified
+  4. GEO data/page_dates.json        brand, first_seen, last_seen, published, modified,
+                                     published_obergrenze (Sitemap-lastmod, ab 05.08.2026)
                                      je getrackter URL (Grundgesamtheit = Nenner).
   5. GEO data/runs/latest.json       eigener Crawl: `sources` je Antwort und Engine.
   6. data/press_data.json            Presseartikel je Marke (Medium-Name, kein Artikel-URL).
@@ -31,6 +32,11 @@ Projektregeln, die hier gelten:
   * Jede Kennzahl traegt ein Feld `vorbehalt` mit ihrer Einschraenkung.
   * Der Erstsichtungs-Zeitstempel des Crawlers ist KEIN Publikationsdatum. Er wird
     nur als Proxy ausgewiesen (published_quelle="proxy_first_seen").
+  * Der Sitemap-<lastmod> ist ebenfalls KEIN Publikationsdatum, sondern eine reine
+    OBERGRENZE ("veroeffentlicht <= X"). Er steht nur in published_obergrenze,
+    ersetzt `published` nie, und macht `tage_bis_erstes_zitat` zu einer unteren
+    Schranke (tage_bis_erstes_zitat_art="untere_schranke"). Sein Nutzen ist der
+    AUSSCHLUSS von Neuheit, nicht ihr Nachweis — kennzahlen.neuheit_ausschluss_je_marke.
   * Ko-Vorkommen (Seite wird zitiert, Marke wird genannt) ist kein Kausalnachweis.
 
 Aufruf:  python3 scripts/content_citations.py   (aus dem Repo-Wurzelverzeichnis)
@@ -448,6 +454,16 @@ def build():
             if proxy:
                 published, published_q = ts_date(proxy), "proxy_first_seen"
 
+        # Obergrenze aus dem Sitemap-<lastmod> (GEO ab 05.08.2026). STRIKT eine
+        # Obergrenze: "veroeffentlicht <= X". Sie ersetzt `published` NIE und wird
+        # nie als Publikationstag ausgegeben — die Seite kann beliebig aelter sein.
+        # Der GEO-Crawl setzt sie nur, wo `published` fehlt und der lastmod kein
+        # Massenstempel (CMS-/Deploy-Zeitstempel) ist.
+        obergrenze, obergrenze_q = None, None
+        if pdv and pdv.get("published_obergrenze") and not (pdv or {}).get("published"):
+            obergrenze = ts_date(pdv["published_obergrenze"])
+            obergrenze_q = pdv.get("published_obergrenze_quelle") or "sitemap_lastmod"
+
         # Zitatverlauf aus den Snapshots. Fehlt die URL in einem Stand, ist ihre
         # Zitatzahl UNBEKANNT (sie lag unter der Top-150-Kappung) — der Stand wird
         # dann weggelassen, nicht als 0 gefuehrt.
@@ -471,19 +487,43 @@ def build():
 
         zitiert = bool(pu) or bool(erstes_zitat_datum) or bool(own_pplx)
 
-        # Tage bis erstes Zitat — nur bei echtem Datum oder wenn der Proxy sicher
-        # VOR dem ersten Snapshot liegt (sonst ist die Reihenfolge nicht belegbar).
-        tage, tage_grund = None, None
+        # Tage bis erstes Zitat.
+        #   * echtes schema.org-Datum  -> Punktschaetzung
+        #   * Sitemap-Obergrenze       -> UNTERE SCHRANKE (published <= Obergrenze,
+        #                                 also ist die echte Spanne >= dem Wert)
+        #   * Erstsichtungs-Proxy      -> ebenfalls UNTERE SCHRANKE (published <=
+        #                                 Erstsichtung), und nur belegbar, wenn der
+        #                                 Proxy vor dem ersten Snapshot liegt.
+        tage, tage_grund, tage_art, tage_basis = None, None, None, None
         if not erstes_zitat_datum:
             tage_grund = "kein_zitat_in_snapshots"
-        elif not published:
-            tage_grund = "kein_datum"
         elif published_q == "schema":
             tage = days_between(published, erstes_zitat_datum)
-        elif erster_snapshot and published < erster_snapshot:
-            tage = days_between(published, erstes_zitat_datum)
+            tage_art, tage_basis = "punktschaetzung", "schema"
         else:
-            tage_grund = "proxy_nicht_vor_erstem_snapshot"
+            # Beide Ersatzquellen sind Obergrenzen des Publikationstags: die Seite
+            # existierte am lastmod-Tag und ebenso bei unserer Erstsichtung. Die
+            # FRUEHERE der beiden ist die schaerfere Schranke und liefert die
+            # groessere (also aussagekraeftigere) Untergrenze fuer die Spanne.
+            schranken = []
+            if obergrenze:
+                schranken.append((obergrenze, obergrenze_q))
+            if (published and published_q == "proxy_first_seen"
+                    and erster_snapshot and published < erster_snapshot):
+                schranken.append((published, "proxy_first_seen"))
+            if not schranken:
+                tage_grund = ("kein_datum" if not (published or obergrenze)
+                              else "proxy_nicht_vor_erstem_snapshot")
+            else:
+                schranken.sort(key=lambda x: (x[0], x[1] != "sitemap_lastmod"))
+                basis, basis_q = schranken[0]
+                _t = days_between(basis, erstes_zitat_datum)
+                if _t is not None and _t >= 0:
+                    tage, tage_art, tage_basis = _t, "untere_schranke", basis_q
+                else:
+                    # Schranke liegt NACH dem ersten Zitat -> die Untergrenze waere
+                    # negativ und damit inhaltsleer. Kein Wert statt Scheinpraezision.
+                    tage_grund = "schranke_nach_erstem_zitat"
         zensiert = bool(erstes_zitat_datum and erster_snapshot
                         and erstes_zitat_datum == erster_snapshot)
 
@@ -502,6 +542,8 @@ def build():
             "change_types": sorted((ev or {}).get("types", {}).keys()) if ev else [],
             "published": published,
             "published_quelle": published_q,
+            "published_obergrenze": obergrenze,
+            "published_obergrenze_quelle": obergrenze_q,
             "peec_cit": (pu or {}).get("cit"),
             "peec_ret": (pu or {}).get("ret"),
             "peec_cls": (pu or {}).get("cls"),
@@ -514,6 +556,8 @@ def build():
             "ist_getrackt": bool(pdv),
             "zitiert": zitiert,
             "tage_bis_erstes_zitat": tage,
+            "tage_bis_erstes_zitat_art": tage_art,
+            "tage_bis_erstes_zitat_basis": tage_basis,
             "erstes_zitat_snapshot": erstes_zitat_datum,
             "zitat_linkszensiert": zensiert,
         }
@@ -522,7 +566,9 @@ def build():
         # Platz sparen: rein optionale Zusatzfelder ohne Inhalt weglassen.
         # Die Pflichtfelder der Auswertung bleiben IMMER stehen (auch als null),
         # damit fehlende Werte sichtbar sind und nicht mit 0 verwechselt werden.
-        for opt in ("seitentyp_roh", "last_change_ts", "peec_title", "erstes_zitat_snapshot"):
+        for opt in ("seitentyp_roh", "last_change_ts", "peec_title", "erstes_zitat_snapshot",
+                    "published_obergrenze", "published_obergrenze_quelle",
+                    "tage_bis_erstes_zitat_art", "tage_bis_erstes_zitat_basis"):
             if row.get(opt) is None:
                 row.pop(opt, None)
         if not row["zitat_linkszensiert"]:
@@ -566,10 +612,21 @@ def build():
         },
         "published_quellen": {
             "schema": "schema.org/OpenGraph-Datum aus dem Roh-HTML (GEO data/page_dates.json).",
-            "sitemap": "Sitemap-lastmod — im aktuellen GEO-Stand nicht befuellt, Vokabular reserviert.",
             "proxy_first_seen": ("PROXY: erster page_new-/Crawl-Zeitstempel. Das ist der Tag "
                                  "unserer Erstsichtung, NICHT der Publikationstag."),
+            "sitemap_lastmod": ("OBERGRENZE, kein Publikationsdatum: aus dem Sitemap-<lastmod> "
+                                "folgt nur 'veroeffentlicht <= X'; die Seite kann beliebig "
+                                "aelter sein. Steht ausschliesslich im Feld "
+                                "published_obergrenze, nie in `published`. Der GEO-Crawl setzt "
+                                "sie nur, wo kein schema.org-Datum vorliegt und der lastmod "
+                                "kein Massenstempel (CMS-/Deploy-Zeitstempel) ist."),
         },
+        "published_obergrenze_lesart": ("published_obergrenze ist eine SCHRANKE, kein Datum: "
+                                        "die Seite wurde spaetestens an diesem Tag "
+                                        "veroeffentlicht. Damit laesst sich Neuheit "
+                                        "AUSSCHLIESSEN (Obergrenze alt => Seite sicher nicht "
+                                        "neu), aber nie belegen (Obergrenze jung => nur "
+                                        "Kandidat). Siehe kennzahlen.neuheit_ausschluss_je_marke."),
         "engines": {e: {"belastbar": b, "grund": ENGINE_GRUND[e]} for e, b in ENGINE_BELASTBAR.items()},
         "peec_cit_verlauf_lesart": ("Nur Staende, in denen die URL im Top-150 stand. Ein "
                                     "fehlender Stand heisst 'unter der Kappung, Zitatzahl "
@@ -580,9 +637,24 @@ def build():
             "proxy_nicht_vor_erstem_snapshot": ("Nur Erstsichtungs-Proxy, der nicht vor dem "
                                                 "ersten Snapshot liegt — die Reihenfolge "
                                                 "Publikation -> Zitat ist nicht belegbar."),
+            "schranke_nach_erstem_zitat": ("Nur eine Obergrenze (Sitemap-lastmod/Erstsichtung), "
+                                           "die NACH dem ersten beobachteten Zitat liegt — die "
+                                           "untere Schranke waere negativ und inhaltsleer."),
         },
-        "optionale_felder": ("seitentyp_roh, last_change_ts, peec_title, erstes_zitat_snapshot "
-                             "und zitat_linkszensiert fehlen in einer Zeile, wenn sie leer sind."),
+        "tage_bis_erstes_zitat_arten": {
+            "punktschaetzung": ("Start ist das echte schema.org-Publikationsdatum — der Wert "
+                                "schaetzt die Spanne direkt."),
+            "untere_schranke": ("Start ist eine Obergrenze des Publikationstags (Sitemap-"
+                                "lastmod oder unsere Erstsichtung). Weil die Seite hoechstens "
+                                "an diesem Tag veroeffentlicht wurde, ist die ECHTE Spanne "
+                                ">= dem ausgewiesenen Wert. Nicht mit Punktschaetzungen "
+                                "mitteln."),
+        },
+        "optionale_felder": ("seitentyp_roh, last_change_ts, peec_title, erstes_zitat_snapshot, "
+                             "zitat_linkszensiert, published_obergrenze, "
+                             "published_obergrenze_quelle, tage_bis_erstes_zitat_art und "
+                             "tage_bis_erstes_zitat_basis fehlen in einer Zeile, wenn sie "
+                             "leer sind."),
         "n_zeilen": len(rows),
     }
 
@@ -592,6 +664,92 @@ def build():
 # ---------------------------------------------------------------------------
 # Kennzahlen
 # ---------------------------------------------------------------------------
+NEU_ALT_TAGE = 90     # Obergrenze aelter als das => Seite ist SICHER nicht neu
+NEU_JUNG_TAGE = 30    # Obergrenze juenger als das => Neuheits-KANDIDAT
+
+
+def build_neuheit_ausschluss(pd_idx, stichtag=None):
+    """Neuheit ausschliessen — der eigentliche Nutzen der Sitemap-Obergrenze.
+
+    Die Obergrenze sagt 'veroeffentlicht <= X'. Damit laesst sich Neuheit nicht
+    BELEGEN, aber sauber AUSSCHLIESSEN: liegt X mehr als 90 Tage zurueck, ist die
+    Seite sicher nicht neu — unabhaengig davon, wie viel aelter sie tatsaechlich
+    ist. Umgekehrt macht ein junges X eine Seite nur zum Kandidaten.
+
+    Deshalb sind die beiden Spalten bewusst NICHT symmetrisch:
+      sicher_nicht_neu  = harte Aussage (Ausschluss)
+      kandidat_neu_30d  = weiche Aussage (Verdacht, nicht belegt)
+    """
+    if not pd_idx:
+        return {"available": False,
+                "grund": "Keine page_dates.json — ohne getrackte Seiten kein Nenner.",
+                "vorbehalt": VORBEHALT_NENNER}
+    stichtag = stichtag or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    je_marke = {}
+    for v in pd_idx.values():
+        b = v.get("brand") or "Unbekannt"
+        s = je_marke.setdefault(b, {
+            "brand": b, "seiten": 0,
+            "sicher_nicht_neu": 0, "davon_aus_publikationsdatum": 0,
+            "davon_aus_obergrenze": 0,
+            "kandidat_neu_30d": 0, "davon_sicher_neu": 0, "davon_nur_kandidat": 0,
+            "ohne_datumsschranke": 0})
+        s["seiten"] += 1
+        pub = ts_date(v.get("published"))
+        obg = ts_date(v.get("published_obergrenze")) if not v.get("published") else None
+        schranke = pub or obg          # in beiden Faellen gilt: published <= schranke
+        if not schranke:
+            s["ohne_datumsschranke"] += 1
+            continue
+        alter = days_between(schranke, stichtag)
+        if alter is None:
+            s["ohne_datumsschranke"] += 1
+            continue
+        if alter > NEU_ALT_TAGE:
+            s["sicher_nicht_neu"] += 1
+            if pub:
+                s["davon_aus_publikationsdatum"] += 1
+            else:
+                s["davon_aus_obergrenze"] += 1
+        elif alter <= NEU_JUNG_TAGE:
+            s["kandidat_neu_30d"] += 1
+            if pub:
+                s["davon_sicher_neu"] += 1
+            else:
+                s["davon_nur_kandidat"] += 1
+    for s in je_marke.values():
+        s["sicher_nicht_neu_pct"] = (round(100.0 * s["sicher_nicht_neu"] / s["seiten"], 1)
+                                     if s["seiten"] else None)
+        s["entscheidbar_pct"] = (round(100.0 * (s["seiten"] - s["ohne_datumsschranke"])
+                                       / s["seiten"], 1) if s["seiten"] else None)
+    marken = sorted(je_marke.values(), key=lambda s: -s["seiten"])
+    ges = sum(s["seiten"] for s in marken)
+    ohne = sum(s["ohne_datumsschranke"] for s in marken)
+    return {
+        "available": True,
+        "stichtag": stichtag,
+        "marken": marken,
+        "gesamt": {"seiten": ges, "mit_datumsschranke": ges - ohne,
+                   "ohne_datumsschranke": ohne,
+                   "mit_datumsschranke_pct": round(100.0 * (ges - ohne) / ges, 1) if ges else None,
+                   "sicher_nicht_neu": sum(s["sicher_nicht_neu"] for s in marken),
+                   "kandidat_neu_30d": sum(s["kandidat_neu_30d"] for s in marken)},
+        "definition": ("Datumsschranke = echtes Publikationsdatum ODER Sitemap-Obergrenze "
+                       "('veroeffentlicht <= X'). sicher_nicht_neu = Schranke aelter als %d "
+                       "Tage; das ist eine HARTE Aussage, denn aelter als die Schranke kann die "
+                       "Seite nur werden, nicht juenger. kandidat_neu_30d = Schranke juenger als "
+                       "%d Tage; nur wo sie aus einem echten Publikationsdatum stammt "
+                       "(davon_sicher_neu), ist die Seite belegbar neu — bei einer Obergrenze "
+                       "(davon_nur_kandidat) kann sie beliebig aelter sein. Seiten mit Schranke "
+                       "zwischen %d und %d Tagen sind in keiner der beiden Spalten."
+                       % (NEU_ALT_TAGE, NEU_JUNG_TAGE, NEU_JUNG_TAGE, NEU_ALT_TAGE)),
+        "vorbehalt": ("Die Obergrenze stammt aus dem Sitemap-<lastmod> und wird vom GEO-Crawl "
+                      "nur gesetzt, wo kein Publikationsdatum vorliegt und der lastmod kein "
+                      "Massenstempel ist — bei Marken ohne Sitemap-lastmod (oder mit "
+                      "Massenstempel) bleibt die Zeile unentscheidbar. " + VORBEHALT_NENNER),
+    }
+
+
 def build_kennzahlen(rows, peec, peec_urls, pd_idx, brand_getrackt, snaps,
                      own_per_engine, own_meta, domain_brand):
     k = {}
@@ -688,28 +846,68 @@ def build_kennzahlen(rows, peec, peec_urls, pd_idx, brand_getrackt, snaps,
                          "sind daher nicht unabhaengig."}
 
     # 5. Median-Tage bis erstes Zitat --------------------------------------
-    werte = [r["tage_bis_erstes_zitat"] for r in rows
-             if r["tage_bis_erstes_zitat"] is not None]
-    echte = [r for r in rows if r["tage_bis_erstes_zitat"] is not None
-             and r["published_quelle"] == "schema"]
-    if not werte:
+    # Punktschaetzungen (echtes Publikationsdatum) und untere Schranken
+    # (Sitemap-Obergrenze / Erstsichtungs-Proxy) werden GETRENNT ausgewiesen —
+    # ein gemeinsamer Median waere eine Zahl ohne definierte Bedeutung.
+    punkt = [r for r in rows if r["tage_bis_erstes_zitat"] is not None
+             and r.get("tage_bis_erstes_zitat_art") == "punktschaetzung"]
+    schranke = [r for r in rows if r["tage_bis_erstes_zitat"] is not None
+                and r.get("tage_bis_erstes_zitat_art") == "untere_schranke"]
+    s_obg = [r for r in schranke if r.get("tage_bis_erstes_zitat_basis") == "sitemap_lastmod"]
+    s_proxy = [r for r in schranke
+               if r.get("tage_bis_erstes_zitat_basis") == "proxy_first_seen"]
+    if schranke:
+        schranke_block = {
+            "available": True,
+            "median_tage_mindestens": median([r["tage_bis_erstes_zitat"] for r in schranke]),
+            "n": len(schranke),
+            "davon_sitemap_obergrenze": len(s_obg),
+            "davon_erstsichtungs_proxy": len(s_proxy),
+            "lesart": ("Untergrenze: die echte Spanne Publikation -> erstes Zitat ist "
+                       "MINDESTENS so gross. Nicht mit der Punktschaetzung mitteln und nicht "
+                       "als 'so schnell wurde zitiert' lesen."),
+        }
+    else:
+        schranke_block = {"available": False,
+                          "grund": ("Keine zitierte URL mit Sitemap-Obergrenze oder "
+                                    "verwertbarem Erstsichtungs-Proxy.")}
+    vorbehalt = ("Der Zitatzeitpunkt ist auf die %d archivierten Snapshots gerastert; URLs, "
+                 "die schon im ersten Stand zitiert wurden, sind linkszensiert (das echte "
+                 "erste Zitat liegt frueher). Ausgewiesen ist NUR die Punktschaetzung aus "
+                 "echten schema.org-Publikationsdaten; Seiten, fuer die es nur eine "
+                 "Sitemap-Obergrenze oder unsere Erstsichtung gibt, stehen getrennt unter "
+                 "`untere_schranke` und sind dort Mindestwerte." % len(snaps))
+    if not punkt:
+        grund = ("Fuer keine zitierte URL liegt ein echtes schema.org-Publikationsdatum vor "
+                 "(ERGO: %d von %d getrackten Seiten mit schema.org-Datum)."
+                 % (sum(1 for r in rows if r["brand"] == "ERGO"
+                        and r.get("published_quelle") == "schema"),
+                    brand_getrackt.get("ERGO", 0)))
+        if schranke:
+            grund += (" Es gibt nur untere Schranken: fuer %d URLs sind es mindestens %s Tage "
+                      "(davon %d aus der Sitemap-Obergrenze) — siehe `untere_schranke`."
+                      % (len(schranke), schranke_block["median_tage_mindestens"], len(s_obg)))
         k["median_tage_bis_erstes_zitat"] = {
-            "available": False,
-            "grund": ("Fuer keine zitierte URL liegt ein verwertbares Publikationsdatum vor "
-                      "(ERGO: 0 von %d getrackten Seiten mit schema.org-Datum)."
-                      % brand_getrackt.get("ERGO", 0)),
-            "vorbehalt": "Ohne echtes Publikationsdatum ist die Zeitspanne nicht schaetzbar."}
+            "available": False, "grund": grund,
+            "median_tage": None, "n": 0,
+            "davon_echtes_publikationsdatum": 0, "davon_proxy": 0,
+            "art": "punktschaetzung",
+            "untere_schranke": schranke_block,
+            "vorbehalt": vorbehalt}
     else:
         k["median_tage_bis_erstes_zitat"] = {
-            "available": True, "median_tage": median(werte), "n": len(werte),
-            "davon_echtes_publikationsdatum": len(echte),
-            "davon_proxy": len(werte) - len(echte),
+            "available": True,
+            "median_tage": median([r["tage_bis_erstes_zitat"] for r in punkt]),
+            "n": len(punkt),
+            "davon_echtes_publikationsdatum": len(punkt),
+            "davon_proxy": 0,
+            "art": "punktschaetzung",
             "linkszensiert": sum(1 for r in rows if r.get("zitat_linkszensiert")),
-            "vorbehalt": ("Der Zitatzeitpunkt ist auf die %d archivierten Snapshots gerastert; "
-                          "URLs, die schon im ersten Stand zitiert wurden, sind linkszensiert "
-                          "(das echte erste Zitat liegt frueher). Wo kein schema.org-Datum "
-                          "vorliegt, ist der Startpunkt nur unsere Erstsichtung."
-                          % len(snaps))}
+            "untere_schranke": schranke_block,
+            "vorbehalt": vorbehalt}
+
+    # 5b. Neuheit ausschliessen (Nutzen der Sitemap-Obergrenze) -------------
+    k["neuheit_ausschluss_je_marke"] = build_neuheit_ausschluss(pd_idx)
 
     # 6. Engine-Abdeckung eigener Seiten -----------------------------------
     if own_per_engine is None:

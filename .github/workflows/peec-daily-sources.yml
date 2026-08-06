@@ -1,0 +1,141 @@
+name: Peec Quellen taeglich
+
+# Taeglicher Snapshot von data/peec_sources.json.
+#
+# Warum es diesen Workflow gibt: Peec misst taeglich, aber peec_sources.json ist
+# eine MOMENTAUFNAHME ueber ein rollierendes 30-Tage-Fenster - einen Verlauf gibt
+# es nur ueber archivierte Snapshots. Beim woechentlichen Abruf entstanden nur ~4
+# Stuetzstellen, auf denen citation_target_analysis rechnen musste. Dieser Lauf
+# verdichtet sie auf taegliche Punkte.
+#
+# 04:00 UTC - VOR dem Nightly (05:30 UTC), damit dieser die frischen Snapshots
+# schon sieht. Gemeinsame concurrency-group mit dem Nightly ("repo-writes"),
+# damit sich die beiden nicht gegenseitig den Push wegschiessen.
+#
+# Ergaenzt den woechentlichen Peec-Export (Zellen/Footprint/Nordstern/Segmente),
+# ersetzt ihn NICHT - hier laeuft ausschliesslich export_peec_sources.py.
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: repo-writes
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # export_peec_sources.py nutzt ausschliesslich die Standardbibliothek
+      # (urllib/json) - es braucht bewusst keine requirements.txt.
+
+      - name: Secret vorhanden?
+        id: gate
+        env:
+          PEEC_TOKEN: ${{ secrets.PEEC_TOKEN }}
+        run: |
+          if [ -z "$PEEC_TOKEN" ]; then
+            echo "Secret PEEC_TOKEN ist nicht gesetzt - Lauf wird sauber uebersprungen."
+            echo "Anlegen unter: Repo -> Settings -> Secrets and variables -> Actions -> New repository secret (Name: PEEC_TOKEN)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Backfill VOR dem Ueberschreiben: Der Stand, der jetzt im Repo liegt,
+      # gehoert zu seinem eigenen Fensterende. Fehlt dessen Snapshot (z. B. weil
+      # ein Tageslauf ausfiel), wird er hier noch gerettet.
+      - name: Backfill des bisherigen Standes
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          python - <<'PY'
+          import json, pathlib, shutil
+          src = pathlib.Path("data/peec_sources.json")
+          if not src.exists():
+              print("Kein bisheriger Stand vorhanden - nichts zu sichern.")
+              raise SystemExit
+          alt = json.loads(src.read_text(encoding="utf-8")).get("window", {}).get("end")
+          if not alt:
+              print("Bisheriger Stand ohne window.end - kein Backfill moeglich.")
+              raise SystemExit
+          ziel = pathlib.Path(f"data/peec_snapshots/{alt}_sources.json")
+          if ziel.exists():
+              print(f"Snapshot {ziel.name} existiert bereits.")
+          else:
+              ziel.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(src, ziel)
+              print(f"Backfill: {ziel.name} aus dem bisherigen Stand angelegt.")
+          PY
+
+      - name: Peec-Quellen exportieren
+        if: steps.gate.outputs.ok == 'true'
+        env:
+          PEEC_TOKEN: ${{ secrets.PEEC_TOKEN }}
+        run: python scripts/export_peec_sources.py --days 30
+
+      # Plausibilitaet wie im Wochen-Task: lieber gar nichts als eine duenne
+      # Datei. Bei Verletzung wird der Arbeitsbaum zurueckgesetzt, damit der
+      # gute alte Stand im Repo bleibt.
+      - name: Plausibilitaet pruefen
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          p = pathlib.Path("data/peec_sources.json")
+          d = json.loads(p.read_text(encoding="utf-8"))
+          dom, urls = len(d.get("domains", [])), len(d.get("urls", []))
+          ende = d.get("window", {}).get("end")
+          print(f"Fenster bis {ende}: {dom} Domains, {urls} URLs")
+          if dom < 30 or urls < 100 or not ende:
+              sys.exit(f"ABBRUCH: Plausibilitaet verletzt ({dom} Domains, {urls} URLs, Ende={ende}).")
+          ergo = [x for x in d["domains"] if x.get("domain") == "ergo.de"]
+          if ergo:
+              print(f"ergo.de: {ergo[0].get('cit', 0)} Zitate")
+          PY
+
+      - name: Neuen Snapshot versionieren
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          python - <<'PY'
+          import json, pathlib, shutil
+          src = pathlib.Path("data/peec_sources.json")
+          ende = json.loads(src.read_text(encoding="utf-8"))["window"]["end"]
+          ziel = pathlib.Path(f"data/peec_snapshots/{ende}_sources.json")
+          ziel.parent.mkdir(parents=True, exist_ok=True)
+          if ziel.exists():
+              print(f"{ziel.name} existiert bereits - wird nicht ueberschrieben.")
+          else:
+              shutil.copyfile(src, ziel)
+              print(f"Snapshot {ziel.name} angelegt.")
+          n = len(list(pathlib.Path("data/peec_snapshots").glob("*_sources.json")))
+          print(f"sources-Snapshots gesamt: {n} (citation_target rechnet auf diesen Stuetzstellen)")
+          PY
+
+      - name: Committen
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/peec_sources.json data/peec_snapshots/ 2>/dev/null || true
+          if git diff --cached --quiet; then echo "Keine Aenderungen."; exit 0; fi
+          git commit -m "data: Peec-Quellen taeglich + Snapshot"
+          for i in 1 2 3; do
+            git pull --rebase origin main || git rebase --abort 2>/dev/null || true
+            if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
+            echo "Push fehlgeschlagen, Versuch $i"; sleep 10
+          done
+          echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1

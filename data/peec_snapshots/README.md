@@ -17,3 +17,23 @@ hier sind die unveränderliche Referenz).
 
 Hinweis: Der Nightly-Workflow committet nur explizit gelistete Dateien — dieser
 Ordner wird bewusst NICHT von der Pipeline befüllt, sondern nur vom Export-Task.
+
+## Kadenz (Korrektur 05.08.2026)
+
+**Peec misst taeglich, nicht woechentlich.** Belegt an den eigenen Exporten:
+`data/peec_history_daily.csv` enthaelt 30 Tageswerte, `data/peec_segments_history.csv` 31 —
+Peec liefert die Historie rueckwirkend tagesscharf.
+
+Fuer die Kennzahlen ist die Abrufkadenz deshalb egal. Fuer die **Zitatdaten nicht**:
+`peec_sources.json` ist eine Momentaufnahme ueber ein rollierendes 30-Tage-Fenster.
+Einen Verlauf gibt es nur ueber die Snapshots in diesem Ordner. Bei woechentlichem
+Abruf entstehen 4 statt 30 Stuetzstellen — `citation_target` im Treibermodell rechnete
+dadurch auf 3 Messpunkten, die sich zu ueber 90 % ueberlappen, und "Tage bis zum ersten
+Zitat" ist auf diese Staende gerastert.
+
+**Merke: Die zeitliche Aufloesung der Zitat-Zeitreihe bestimmt UNSERE Abrufkadenz,
+nicht Peec.** Seit 05.08.2026 legt ein taeglicher Cowork-Task (`peec-daily-snapshot`,
+laeuft auf Pauls Rechner, weil der persoenliche Peec-Token nicht in GitHub-Secrets
+gehoert) den Tages-Snapshot an; der Montags-Task bleibt fuer das volle Wochenpanel
+zustaendig. Fehlende Tage lassen sich NICHT nachholen — ein rollierendes Fenster gibt
+es nur zum Abrufzeitpunkt.

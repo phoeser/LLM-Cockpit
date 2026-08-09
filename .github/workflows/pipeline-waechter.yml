@@ -1,0 +1,123 @@
+name: Pipeline-Waechter
+
+# Warum es diesen Workflow gibt (09.08.2026):
+#
+# Vom 05. bis 09.08. lief der Nightly vier Tage lang nicht - ein Schritt hatte
+# zweimal 'continue-on-error', GitHub lehnt doppelte YAML-Schluessel ab und der
+# GESAMTE Workflow war ungueltig. Niemand hat es gemerkt: Der Frische-Alarm
+# (pipeline_health.py --check), der genau davor warnen soll, ist der LETZTE
+# SCHRITT DES NIGHTLY SELBST. Ein Waechter, der im ueberwachten Prozess sitzt,
+# kann dessen Totalausfall nicht melden - er faellt mit aus.
+#
+# Dieser Workflow steht bewusst DANEBEN. Er ist absichtlich winzig, hat keine
+# Secrets, keine Netzabhaengigkeit ausser dem Checkout, und faellt daher
+# praktisch nie aus eigenen Gruenden aus. Er wird ROT, wenn:
+#   1. irgendeine Workflow-Datei ungueltiges YAML enthaelt (doppelte Schluessel
+#      inklusive - genau der Fehler, der uns vier Tage gekostet hat), oder
+#   2. data/correlation_impact.json aelter als MAX_ALTER_TAGE ist, das Herz der
+#      Auswertung also nicht mehr frisch gerechnet wird.
+#
+# Ein roter Lauf hier heisst: die Pipeline steht, egal was die anderen
+# Workflows melden.
+
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 11:00 MESZ, mit Abstand nach Nightly (05:30 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MAX_ALTER_TAGE: '2'   # Nightly laeuft taeglich; 2 Tage Toleranz fuer Verzoegerungen
+
+jobs:
+  waechter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Alle Workflow-Dateien auf gueltiges YAML pruefen
+        run: |
+          python - <<'PY'
+          import pathlib, sys, yaml
+
+          class Streng(yaml.SafeLoader):
+              pass
+
+          def ohne_doppelte(loader, node, deep=False):
+              """PyYAML akzeptiert doppelte Schluessel stillschweigend, GitHub nicht."""
+              belegt = {}
+              for schluessel_node, wert_node in node.value:
+                  schluessel = loader.construct_object(schluessel_node, deep=deep)
+                  if schluessel in belegt:
+                      raise yaml.constructor.ConstructorError(
+                          None, None,
+                          f"doppelter Schluessel '{schluessel}' in Zeile {schluessel_node.start_mark.line + 1}",
+                          schluessel_node.start_mark)
+                  belegt[schluessel] = loader.construct_object(wert_node, deep=deep)
+              return belegt
+
+          Streng.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, ohne_doppelte)
+
+          fehler = []
+          dateien = sorted(pathlib.Path(".github/workflows").glob("*.y*ml"))
+          for datei in dateien:
+              try:
+                  inhalt = yaml.load(datei.open(encoding="utf-8"), Streng)
+                  if not inhalt or "jobs" not in inhalt:
+                      fehler.append(f"{datei.name}: kein 'jobs'-Block")
+                  else:
+                      print(f"OK   {datei.name}")
+              except Exception as ex:
+                  fehler.append(f"{datei.name}: {ex}")
+                  print(f"FEHL {datei.name}: {ex}")
+
+          print(f"\n{len(dateien)} Workflow-Dateien geprueft.")
+          if fehler:
+              sys.exit("UNGUELTIGE WORKFLOWS - GitHub startet sie nicht:\n  " + "\n  ".join(fehler))
+          PY
+
+      - name: Frische der Auswertung pruefen (correlation_impact.json)
+        run: |
+          python - <<'PY'
+          import datetime, json, os, pathlib, sys
+
+          grenze = int(os.environ["MAX_ALTER_TAGE"])
+          pfad = pathlib.Path("data/correlation_impact.json")
+          if not pfad.exists():
+              sys.exit("data/correlation_impact.json fehlt komplett.")
+
+          stand = json.loads(pfad.read_text(encoding="utf-8")).get("generated_at")
+          if not stand:
+              sys.exit("correlation_impact.json hat kein generated_at - Frische nicht pruefbar.")
+
+          erzeugt = datetime.datetime.fromisoformat(stand.replace("Z", "+00:00"))
+          alter = (datetime.datetime.now(datetime.timezone.utc) - erzeugt).total_seconds() / 86400
+          print(f"correlation_impact.json: generated_at {stand} -> {alter:.1f} Tage alt (Grenze {grenze})")
+
+          if alter > grenze:
+              sys.exit(
+                  f"AUSWERTUNG VERALTET: {alter:.1f} Tage alt.\n"
+                  "Der Nightly rechnet nicht mehr durch. Zuerst pruefen, ob er ueberhaupt\n"
+                  "startet (Actions -> Nightly Dashboard Update) - ein ungueltiges YAML\n"
+                  "oder ein hart fehlschlagender Schritt haelt ihn auf, ohne dass sonst\n"
+                  "etwas rot wird."
+              )
+          print("Frische in Ordnung.")
+          PY
+
+      - name: Peec-Snapshots wachsen weiter
+        run: |
+          python - <<'PY'
+          import pathlib
+          ordner = pathlib.Path("data/peec_snapshots")
+          snapshots = sorted(p.name for p in ordner.glob("*_sources.json"))
+          print(f"{len(snapshots)} sources-Snapshots (Stuetzstellen fuer citation_target)")
+          if snapshots:
+              print("juengster:", snapshots[-1])
+          # bewusst nur informativ, nicht rot: der taegliche Peec-Workflow meldet
+          # sich selbst, und ein fehlender Tag ist kein Pipeline-Stillstand.
+          PY

@@ -158,9 +158,19 @@ def main():
            "window_days": WINDOW, "n_results": len(uniq),
            "measure_days": len({d for m in ser.values() for d in m}),
            "results": uniq,
-           "note": "did_pp = kausaler Effekt der Maßnahme auf den SoV (Prozentpunkte) ggü. "
-                   "der Kontrollgruppe. p_placebo < 0,1 = der Effekt hebt sich klar von "
-                   "zufaelligen Kontroll-Schwankungen ab. Wenige Messtage -> als Tendenz lesen."}
+           # 10.08.2026: "kausaler Effekt" gestrichen. Die Rechnung prueft die
+           # Parallel-Trends-Annahme nicht, liefert kein Konfidenzintervall und
+           # korrigiert nicht fuer Mehrfachtests - drei Gruende, warum did_pp eine
+           # beschreibende Differenz ist und kein Kausalbefund.
+           # Ausserdem: p_placebo = (Treffer+1)/(Kontrollen+1). Der kleinstmoegliche
+           # Wert ist 1/(Kontrollen+1); unter 10 Kontrollen kann die 0,1-Schwelle
+           # rechnerisch NIE erreicht werden. Das Dashboard weist das je Zeile aus.
+           "note": "did_pp = Differenz zwischen der SoV-Aenderung der Marke und der "
+                   "gemittelten Aenderung der Kontrollmarken (Prozentpunkte) - eine "
+                   "beschreibende Groesse, kein Kausalbeleg: Parallel-Trends ungeprueft, "
+                   "kein Konfidenzintervall, keine Mehrfachtest-Korrektur. p_placebo ist "
+                   "erst ab 10 Kontrollen ueberhaupt unter 0,1 erreichbar "
+                   "(p_min = 1/(n_controls+1)). Wenige Messtage -> als Tendenz lesen."}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print("OK: %d Maßnahmen ausgewertet -> %s" % (len(uniq), OUT))

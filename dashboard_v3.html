@@ -756,8 +756,8 @@
 
   <!-- Maßnahmen-Wirkung (DiD) -->
   <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
-    <h3 class="text-lg font-bold text-ergo-dark mb-2">🎯 Maßnahmen-Wirkung (kausal, Difference-in-Differences)</h3>
-    <p class="text-xs text-gray-500 mb-3">Schätzt den <b>kausalen</b> SoV-Effekt datierter Maßnahmen gegen die anderen Marken als Kontrollgruppe. Eigene Maßnahmen in <code>data/interventions.json</code> taggen; „auto" = erkannte Aktivitäts-Spitzen.</p>
+    <h3 class="text-lg font-bold text-ergo-dark mb-2">🎯 Maßnahmen-Wirkung (Difference-in-Differences — Tendenz, kein Kausalbeleg)</h3>
+    <p class="text-xs text-gray-500 mb-3">Vergleicht die SoV-Änderung einer Marke rund um ein Datum mit der Änderung der übrigen Marken im selben Zeitraum. Eigene Maßnahmen in <code>data/interventions.json</code> taggen; „auto" = erkannte Aktivitäts-Spitzen, also <b>keine</b> belegte Maßnahme. Der Block ist der am dünnsten abgesicherte des Reiters — die Vorbehalte stehen unter der Tabelle und sind ernst gemeint.</p>
     <div id="corrInterventions"></div>
   </div>
 
@@ -3348,23 +3348,93 @@ function buildGeoTab() {
         host.innerHTML='<div class="text-sm text-gray-400 py-2">Noch keine auswertbaren Maßnahmen. Trage datierte Maßnahmen in <code>data/interventions.json</code> ein — der nächste Nightly-Lauf misst ihre Wirkung.</div>';
         return;
       }
-      var h='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
-        +'<th style="padding:6px 8px">Datum</th><th style="padding:6px 8px">Marke</th><th style="padding:6px 8px">Maßnahme</th>'
-        +'<th style="padding:6px 8px;text-align:right">Effekt (Pp)</th><th style="padding:6px 8px;text-align:center">Sicherheit</th><th style="padding:6px 8px">Quelle</th></tr></thead><tbody>';
+      // WARUM DIE SPALTEN SO AUSSEHEN (10.08.2026):
+      // Vorher stand hier nur did_pp und ein gruen/gelbes Placebo-Badge. Zwei
+      // Dinge fehlten und haben den Block staerker aussehen lassen, als er ist:
+      //   1. did_pp ist eine DIFFERENZ. Ob +13,9 aus einem Sprung der Marke oder
+      //      aus einem Einbruch der Kontrollgruppe kommt, entschied ueber die
+      //      Lesart - stand aber nicht da. Jetzt beide Haelften sichtbar.
+      //   2. p_placebo = (Treffer+1)/(Kontrollen+1). Bei 5 Kontrollen ist der
+      //      KLEINSTMOEGLICHE Wert 1/6 = 0,17 - die 0,1-Schwelle des Badges kann
+      //      dort rechnerisch nie erreicht werden. Ein gelbes "unsicher" bedeutet
+      //      dann nicht "geprueft und schwach", sondern "gar nicht pruefbar".
+      //      Diese beiden Faelle werden jetzt unterschieden.
+      var SCHWELLE=0.1;
+      // Eigene esc-Kopie: _esc lebt im spaeteren <script>-Block, nicht in diesem.
+      var _esc=function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+      var _z=function(v,dz){ return (v==null||isNaN(v))?'–':((v>0?'+':'')+Number(v).toFixed(dz==null?2:dz)); };
+      var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+        +'<th style="padding:6px 8px">Datum</th><th style="padding:6px 8px">Marke</th><th style="padding:6px 8px">Anlass</th>'
+        +'<th style="padding:6px 8px;text-align:right">Marke</th><th style="padding:6px 8px;text-align:right">Kontrollen</th>'
+        +'<th style="padding:6px 8px;text-align:right">Differenz</th><th style="padding:6px 8px;text-align:center">Datenbasis</th>'
+        +'<th style="padding:6px 8px;text-align:center">Placebo-Test</th><th style="padding:6px 8px">Quelle</th></tr></thead><tbody>';
+      var nPruefbar=0, nDeutlich=0, nAuto=0;
       d.results.forEach(function(r){
-        var pos=(r.did_pp||0)>=0; var strong=(r.p_placebo!=null && r.p_placebo<0.1);
-        var sig = strong
-          ? '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">deutlich (p='+r.p_placebo.toFixed(2)+')</span>'
-          : '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">unsicher (p='+(r.p_placebo!=null?r.p_placebo.toFixed(2):'?')+')</span>';
-        h+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#475569">'+r.date+'</td>'
-          +'<td style="padding:6px 8px;font-weight:600">'+r.brand+'</td>'
-          +'<td style="padding:6px 8px;color:#1e293b">'+(r.label||'')+'</td>'
-          +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+(pos?'#15803d':'#b91c1c')+'">'+(pos?'+':'')+r.did_pp+'</td>'
+        var pos=(r.did_pp||0)>=0;
+        var nC=(r.n_controls!=null?r.n_controls:0);
+        var pMin=nC>0?(1/(nC+1)):null;                 // kleinstmoeglicher p-Wert
+        var pruefbar=(pMin!=null && pMin<SCHWELLE);
+        var strong=(pruefbar && r.p_placebo!=null && r.p_placebo<SCHWELLE);
+        if(pruefbar) nPruefbar++;
+        if(strong) nDeutlich++;
+        if(r.source==='auto') nAuto++;
+        var sig;
+        if(strong){
+          sig='<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">deutlich (p='+r.p_placebo.toFixed(2)+')</span>';
+        } else if(pruefbar){
+          sig='<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">unsicher (p='+(r.p_placebo!=null?r.p_placebo.toFixed(2):'?')+')</span>';
+        } else {
+          sig='<span title="p = (Treffer+1)/(Kontrollen+1). Mit '+nC+' Kontrollen ist der kleinstmögliche Wert '+(pMin!=null?pMin.toFixed(2):'?')+' — die 0,10-Schwelle liegt darunter und ist hier nicht erreichbar."'
+             +' style="font-size:10px;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#64748b">nicht prüfbar (p≥'+(pMin!=null?pMin.toFixed(2):'?')+' möglich)</span>';
+        }
+        var basis=(r.n_pre!=null?r.n_pre:'?')+'/'+(r.n_post!=null?r.n_post:'?')+' Tage · '+nC+' Kontr.';
+        var duenn=(r.n_pre!=null && r.n_pre<5);
+        h+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#475569">'+_esc(r.date||'')+'</td>'
+          +'<td style="padding:6px 8px;font-weight:600">'+_esc(r.brand||'')+'</td>'
+          +'<td style="padding:6px 8px;color:#1e293b">'+_esc(r.label||'')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;color:#475569">'+_z(r.treated_delta_pp)+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;color:#475569">'+_z(r.control_delta_pp)+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+(pos?'#15803d':'#b91c1c')+'">'+_z(r.did_pp)+'</td>'
+          +'<td style="padding:6px 8px;text-align:center;font-size:11px;color:'+(duenn?'#b45309':'#94a3b8')+'">'+(duenn?'⚠ ':'')+basis+'</td>'
           +'<td style="padding:6px 8px;text-align:center">'+sig+'</td>'
-          +'<td style="padding:6px 8px;color:#94a3b8;font-size:11px">'+(r.source||'')+'</td></tr>';
+          +'<td style="padding:6px 8px;color:#94a3b8;font-size:11px">'+_esc(r.source||'')+'</td></tr>';
       });
-      h+='</tbody></table>';
-      h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">'+(d.note||'')+' · Fenster: ±'+(d.window_days||7)+' Tage · '+(d.measure_days||0)+' Messtage gesamt.</div>';
+      h+='</tbody></table></div>';
+      h+='<div style="margin-top:8px;font-size:11.5px;color:#475569;line-height:1.55">'
+        +'<b>Wie die Zeilen zu lesen sind.</b> „Marke" ist die SoV-Änderung der Marke selbst (Nachher-Mittel minus Vorher-Mittel), '
+        +'„Kontrollen" dieselbe Änderung gemittelt über die übrigen Marken, „Differenz" der Abstand beider — das ist die DiD-Zahl. '
+        +'Eine große Differenz kann also ebenso aus einem Einbruch der Kontrollgruppe stammen wie aus einem Anstieg der Marke; '
+        +'die beiden linken Spalten sagen, welches von beidem es war.</div>';
+      h+='<div style="margin-top:8px;font-size:11.5px;color:#475569;line-height:1.55">'
+        +'<b>Was dieser Block nicht leistet.</b> '
+        +'<u>Parallele Entwicklung</u>: DiD unterstellt, dass Marke und Kontrollgruppe sich ohne die Maßnahme gleich entwickelt hätten. '
+        +'Das ist eine Annahme, die hier <b>nicht geprüft</b> wird — bei '+(d.window_days||7)+' Vortagen ist ein Vortrend auch kaum sichtbar. '
+        +'<u>Kein Konfidenzintervall</u>: die Rechnung liefert keins, die Differenz steht ohne Streubereich da. '
+        +'<u>Schwelle</u>: das Badge greift bei p&nbsp;&lt;&nbsp;0,10 — <b>lockerer</b> als die 0,05 im Rest des Reiters — und ist '
+        +'<b>nicht</b> für Mehrfachtests korrigiert, anders als die Forest-Blöcke oben. '
+        +'<u>Anlass</u>: '+(nAuto===d.results.length?'alle '+d.results.length+' Zeilen sind automatisch erkannte Aktivitäts-Spitzen'
+                                                    :nAuto+' von '+d.results.length+' Zeilen sind automatisch erkannte Aktivitäts-Spitzen')
+        +' — eine Häufung von Ereignissen, keine belegte Kampagne. Was dort wirklich passiert ist, weiß nur, wer es getaggt hat.</div>';
+      var _fazit;
+      if(!nPruefbar){
+        _fazit='<b>Aussagekraft aktuell: keine.</b> Bei den vorhandenen Kontrollgruppen liegt der kleinstmögliche Placebo-Wert über der 0,10-Schwelle — '
+              +'keine einzige Zeile könnte sie erreichen, egal wie stark der Effekt wäre. Die Zahlen sind Beschreibung, nicht Nachweis. '
+              +'Belastbarer wird das erst mit mehr Marken in der Kontrollgruppe oder längeren Reihen.';
+      } else if(!nDeutlich){
+        _fazit='<b>Aussagekraft aktuell: keine gesicherte Zeile.</b> '+(nPruefbar===1?'Nur eine':nPruefbar+' ')+' von '+d.results.length+' Zeilen '
+              +(nPruefbar===1?'ist':'sind')+' überhaupt prüfbar (genug Kontrollen in der Vergleichsgruppe), und keine davon unterschreitet die 0,10-Schwelle. '
+              +'Die Zahlen sind Beschreibung, nicht Nachweis.';
+      } else {
+        _fazit='<b>'+nDeutlich+' von '+nPruefbar+' prüfbaren Zeilen</b> unterschreiten die 0,10-Schwelle. Auch diese bleiben Tendenz: '
+              +'ohne Prüfung der parallelen Entwicklung und ohne Mehrfachtest-Korrektur trägt der Block keinen Kausalbefund.';
+      }
+      h+='<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#f8fafc;border-left:3px solid #cbd5e1;font-size:11.5px;color:#334155;line-height:1.55">'+_fazit+'</div>';
+      // d.note bewusst NICHT ausgeben: der Text aus intervention_results.json nennt
+      // did_pp "kausalen Effekt" und widerspraeche allem, was daruebersteht. Das
+      // Skript ist mitkorrigiert; bis der naechste Nightly durch ist, stammt die
+      // Einordnung ausschliesslich aus den Absaetzen oben.
+      h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">Fenster: ±'+(d.window_days||7)+' Tage vor und nach dem Datum · '
+        +(d.measure_days||0)+' Messtage gesamt · Stand '+_esc((d.generated_at||'').slice(0,10))+'.</div>';
       host.innerHTML=h;
     }
 
@@ -4997,20 +5067,108 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         +'Gesichert: '+nfmt(ed.n_gesichert_taeglich)+' täglich, <b>'+nfmt(ed.n_gesichert_woechentlich)+'</b> wöchentlich. '+_esc(ed.kernaussage||'')+'</div></div>';
     }
 
-    // Funnel-Schichtung
+    // Prompt-Schichten (frueher "Funnel-Schichtung")
+    //
+    // WARUM DIESER BLOCK UMGEBAUT WURDE (10.08.2026):
+    // Vorher zeigte der Forest fest ['Awareness','Consideration','Decision'] —
+    // drei Zeilen. Die Fusszeile darunter meldete aber die FDR-Familie des
+    // GESAMTEN Blocks: 140 Einzeltests. Bild und Zahl gehoerten sichtbar nicht
+    // zusammen, und die uebrigen 15 Schichten (Absicht, Markenbezug, Themen)
+    // waren zwar gerechnet, aber nirgends abrufbar. Jetzt: alle Schichten
+    // zugaenglich, gruppiert, und die Fusszeile trennt sauber zwischen dem, was
+    // der Forest zeigt (page_change je Schicht), und dem, worueber korrigiert
+    // wird (alle Treiber x alle Schichten).
     var fs=ci.funnel_stratified||{}, fdr=fs.fdr||{};
     if(fs.available){
-      var stufen=['Awareness','Consideration','Decision'].filter(function(t){return (fs.je_tag||{})[t];});
-      var frows=[];
-      stufen.forEach(function(st){
-        var im=((fs.je_tag[st]||{}).impact||{}).page_change;
-        if(im && im.available) frows.push({label:st, sub:nfmt(im.n_with_event)+' Intervalle mit Ereignis', eff:im.avg_sov_effect_pp, lo:im.ci95_low_pp, hi:im.ci95_high_pp, n:im.n_with_event, sig:im.significant_fdr});
-      });
-      if(frows.length){
-        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Seitenänderungen je Funnel-Stufe</div>'
-          +'<div class="text-xs text-gray-500 mb-2">Dieselbe Rechnung innerhalb jeder Stufe ('+nfmt((fs.je_tag[stufen[0]]||{}).n_intervalle)+' Intervalle je Stufe gegen '+nfmt(ci.n_intervals_total)+' im Gesamtmodell). Intervalle hier auf iid-Basis — die Stufen liefern keine Cluster-Fehler, deshalb als Zusatzschnitt gelesen, nicht als Beleg.</div>'
-          +forestPlot(frows,{xlabel:'Effekt je Stufe (pp je Intervall) — Balken = 95-%-Intervall (iid)'})
-          +'<div class="text-xs text-gray-500 mt-2">'+nfmt(fdr.n_tests)+' Einzeltests, '+_esc(fdr.verfahren||'FDR')+': '+nfmt(fdr.n_signifikant_vor_korrektur)+' vor, <b>'+nfmt(fdr.n_signifikant_nach_korrektur)+'</b> nach der Korrektur signifikant. '+_esc(fdr.hinweis||'')+'</div></div>';
+      var _fsTags=fs.je_tag||{}, _mtage=fs.messtage_je_tag||{};
+      var FSLAB={ 'Awareness':'Awareness (Aufmerksamkeit)', 'Consideration':'Consideration (Abwägung)', 'Decision':'Decision (Entscheidung)',
+                  'commercial':'kommerziell', 'informational':'informierend', 'transactional':'transaktional',
+                  'branded':'mit Markenname', 'non-branded':'ohne Markenname', 'Unbranded':'ohne Markenname (2. Schreibweise)',
+                  'Core Values':'Werte', 'Corporate Trust':'Vertrauen', 'Coverage and Claims':'Deckung & Schaden',
+                  'Customer Excellence':'Kundenservice', 'Digital Innovation':'Digitalisierung', 'Market Presence':'Marktpräsenz',
+                  'Services and Operations':'Service & Abwicklung', 'Sustainability':'Nachhaltigkeit', 'Workplace Culture':'Arbeitgeber' };
+      var FSGRP=[
+        {key:'funnel', titel:'Funnel-Stufe', tags:['Awareness','Consideration','Decision'], fest:true},
+        {key:'absicht', titel:'Such-Absicht', tags:['informational','commercial','transactional']},
+        {key:'marke',  titel:'Markenbezug',  tags:['branded','non-branded','Unbranded']},
+        {key:'thema',  titel:'Thema',        tags:null}
+      ];
+      var _zugeordnet={}; FSGRP.forEach(function(g){ (g.tags||[]).forEach(function(t){_zugeordnet[t]=1;}); });
+      FSGRP[3].tags=Object.keys(_fsTags).filter(function(t){return !_zugeordnet[t];}).sort();
+
+      var _zeile=function(tag){
+        var im=((_fsTags[tag]||{}).impact||{}).page_change;
+        if(!im || !im.available) return null;
+        var md=_mtage[tag];
+        return { tag:tag, label:(FSLAB[tag]||tag),
+                 sub:nfmt(im.n_with_event)+' von '+nfmt(im.n_intervals)+' Intervallen'+(md?(' · '+nfmt(md)+' Messtage'):''),
+                 eff:im.avg_sov_effect_pp, lo:im.ci95_low_pp, hi:im.ci95_high_pp, n:im.n_with_event, sig:im.significant_fdr,
+                 _sig:JSON.stringify([im.avg_sov_effect_pp,im.ci95_low_pp,im.ci95_high_pp,im.n_with_event]) };
+      };
+      var _gruppen=FSGRP.map(function(g){
+        var rows=(g.tags||[]).map(_zeile).filter(Boolean);
+        if(!g.fest) rows.sort(function(a,b){return (b.eff||0)-(a.eff||0);});
+        return {titel:g.titel, rows:rows};
+      }).filter(function(g){return g.rows.length;});
+      var _alleRows=_gruppen.reduce(function(a,g){return a.concat(g.rows);},[]);
+
+      if(_alleRows.length){
+        // Doppelte Schichten aufdecken: identische Zahlen unter zwei Namen sind
+        // KEIN zweiter Befund, sondern derselbe Test zweimal gezaehlt.
+        var _nachSig={}; _alleRows.forEach(function(r){ (_nachSig[r._sig]=_nachSig[r._sig]||[]).push(r.tag); });
+        var _dubl=Object.keys(_nachSig).filter(function(k){return _nachSig[k].length>1;}).map(function(k){return _nachSig[k];});
+
+        var _mdWerte=_alleRows.map(function(r){return _mtage[r.tag];}).filter(function(v){return v!=null;});
+        var _mdMin=_mdWerte.length?Math.min.apply(null,_mdWerte):null, _mdMax=_mdWerte.length?Math.max.apply(null,_mdWerte):null;
+        var _ivWerte=_alleRows.map(function(r){return (( _fsTags[r.tag]||{}).n_intervalle);}).filter(function(v){return v!=null;});
+        var _ivMin=_ivWerte.length?Math.min.apply(null,_ivWerte):null, _ivMax=_ivWerte.length?Math.max.apply(null,_ivWerte):null;
+        var _nSig=_alleRows.filter(function(r){return r.sig;}).length;
+        // Ereignisarten NICHT aus 140/18 hochrechnen, sondern zaehlen: nicht jede
+        // Art ist in jeder Schicht auswertbar (140 = 18x7 + 14), die Division
+        // ergaebe eine Zahl, die so nirgends in den Daten steht.
+        var _arten={}; _alleRows.forEach(function(r){
+          var im=(_fsTags[r.tag]||{}).impact||{};
+          Object.keys(im).forEach(function(k){ if(im[k] && im[k].available) _arten[k]=1; });
+        });
+        var _nArten=Object.keys(_arten).length;
+
+        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Seitenänderungen je Prompt-Schicht</div>'
+          +'<div class="text-xs text-gray-500 mb-2">Peec verschlagwortet jeden Prompt. Diese Schlagworte sind <b>nicht nur Funnel-Stufen</b> — es sind '
+          +nfmt(_alleRows.length)+' Schichten aus vier Familien: Funnel-Stufe, Such-Absicht, Markenbezug und Thema. '
+          +'Dieselbe Rechnung wie im Gesamtmodell, aber innerhalb jeder Schicht ('
+          +((_ivMin!=null&&_ivMax!=null&&_ivMin!==_ivMax)?(nfmt(_ivMin)+' bis '+nfmt(_ivMax)):nfmt(_ivMax))+' Intervalle je Schicht gegen '
+          +nfmt(ci.n_intervals_total)+' im Gesamtmodell'
+          +((_mdMin!=null&&_mdMin!==_mdMax)?('; '+nfmt(_mdMin)+' bis '+nfmt(_mdMax)+' Messtage — die kürzeren Reihen sind Schichten, die Peec erst später führt'):'')
+          +'). Intervalle hier auf iid-Basis — die Schichten liefern keine Cluster-Fehler, deshalb als Zusatzschnitt gelesen, nicht als Beleg. '
+          +'Ein Prompt kann mehrere Schlagworte tragen: die Schichten überlappen sich, ihre Effekte addieren sich <b>nicht</b>.</div>';
+
+        var _forest=function(g){
+          return '<div class="text-xs font-semibold text-gray-500 mt-3 mb-1">'+_esc(g.titel)+'</div>'
+            +forestPlot(g.rows,{xlabel:'Effekt je Schicht (pp je Intervall) — Balken = 95-%-Intervall (iid)'});
+        };
+        h+=_forest(_gruppen[0]);
+        var _rest=_gruppen.slice(1), _nRest=_rest.reduce(function(a,g){return a+g.rows.length;},0);
+        if(_nRest){
+          h+='<details class="mt-2"><summary class="text-xs text-gray-600 cursor-pointer select-none hover:text-ergo-red">Die übrigen '
+            +nfmt(_nRest)+' Schichten anzeigen (Absicht, Markenbezug, Themen)</summary><div class="mt-1">'
+            +_rest.map(_forest).join('')+'</div></details>';
+        }
+
+        h+='<div class="text-xs text-gray-500 mt-3"><b>Was dieses Bild zeigt und was nicht.</b> Oben stehen '+nfmt(_alleRows.length)
+          +' Tests — <em>eine</em> Ursache (Seitenänderungen) in jeder Schicht'
+          +(_nSig?(', davon '+nfmt(_nSig)+' nach FDR gesichert'):', keiner davon übersteht die FDR-Korrektur')+'. '
+          +'Die Korrektur läuft aber über <b>'+nfmt(fdr.n_tests)+' Einzeltests</b>: dieselben Schichten mal alle '
+          +nfmt(_nArten)+' Ereignisarten (Presse, Bewertungen, neue Seiten …), nicht nur Seitenänderungen. '
+          +'Über diese ganze Familie gerechnet: '+_esc(fdr.verfahren||'FDR')+', '+nfmt(fdr.n_signifikant_vor_korrektur)
+          +' vor und <b>'+nfmt(fdr.n_signifikant_nach_korrektur)+'</b> nach der Korrektur signifikant. '+_esc(fdr.hinweis||'')+'</div>';
+
+        if(_dubl.length){
+          h+='<div class="text-xs text-amber-700 mt-2">⚠ Doppelte Schicht in den Rohdaten: '
+            +_dubl.map(function(g){return g.map(function(t){return '„'+_esc(t)+'“';}).join(' und ');}).join('; ')
+            +' liefern Zahl für Zahl dasselbe Ergebnis — Peec führt dieselbe Schicht unter zwei Schreibweisen. '
+            +'Das ist <b>ein</b> Befund, nicht zwei, und die Test-Familie oben zählt ihn doppelt (die Korrektur wird dadurch minimal zu streng, nicht zu lax).</div>';
+        }
+        h+='</div>';
       }
     }
 
@@ -5454,7 +5612,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var neben=[];
     if(lagHit) neben.push('die Versatz-Analyse führt '+nfmt(lagHit)+' gesicherte Treiber-Versatz-Kombination'+(lagHit>1?'en':'')+' (unkorrigiert über '+((la.getestete_lags||[]).length)+' Versätze × '+Object.keys(la.bester_lag_je_treiber||{}).length+' Treiber; '+nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen eine Lead-Warnung)');
     if(mvHits.length) neben.push('das multivariate Modell markiert '+mvHits.length+' Typ'+(mvHits.length>1?'en':'')+(mvSolid.length?(', davon '+mvSolid.length+' belastbar'):', keiner davon belastbar (Out-of-Sample-Güte ≤ 0)'));
-    if(fdr.n_signifikant_vor_korrektur) neben.push('die Funnel-Schichtung zeigt '+nfmt(fdr.n_signifikant_vor_korrektur)+' Treffer vor und '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Mehrfachtest-Korrektur über '+nfmt(fdr.n_tests)+' Tests');
+    if(fdr.n_signifikant_vor_korrektur) neben.push('die Schichtung nach Prompt-Schlagwort zeigt '+nfmt(fdr.n_signifikant_vor_korrektur)+' Treffer vor und '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Mehrfachtest-Korrektur über '+nfmt(fdr.n_tests)+' Tests');
     if(wja.n_gesichert!=null && wja.n_tests!=null) neben.push('nach Änderungsart sind '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert');
     if(neben.length) s+='<b>Nicht verschwiegen:</b> '+neben.join('; ')+'. Diese Tests laufen auf demselben Datensatz und sind voneinander abhängig — sie ändern die Kernaussage nicht, gehören aber dazu.';
     s+='</div></div>';

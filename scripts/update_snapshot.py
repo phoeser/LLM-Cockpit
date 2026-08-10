@@ -77,7 +77,15 @@ def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
 # weniger Tage bedeutet, dass die Kette stillsteht. Grosszuegig gewaehlt, damit ein
 # einzelner Ausfall (oder die eingestandene Free-Tier-Verzoegerung von 4-8 h) nicht
 # gleich blockiert.
-MAX_SNAPSHOT_AGE_DAYS = 7
+# 10.08.2026: 7 -> 10 Tage. Diese Grenze ist ein HARTER ABBRUCH - ist der
+# GEO-Snapshot aelter, uebernimmt update_snapshot.py ihn nicht und der ganze
+# Nightly rechnet auf dem Stand von gestern weiter. Seit heute laeuft der Crawl
+# nur noch woechentlich (Sonntag 23:10 UTC) und GitHub verzoegert geplante Jobs
+# im Free-Tier typisch 4-8 h. Der Snapshot ist damit im Normalbetrieb bis zu
+# 7,5 Tage alt - mit der alten 7-Tage-Grenze waere das Cockpit an jedem Sonntag
+# stehengeblieben, ohne dass ein Schritt rot geworden waere. 10 Tage lassen
+# einen ausgefallenen Wochenlauf noch durch, zwei ausgefallene nicht mehr.
+MAX_SNAPSHOT_AGE_DAYS = 10
 
 
 def _snapshot_age_days(geo: dict):

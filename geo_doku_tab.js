@@ -172,7 +172,7 @@
       'Zwei unabhaengige Messsysteme messen dieselbe Sache — das ist die zentrale Absicherung gegen Zirkularitaet:'+
       tbl(["Quelle","Rolle","Marken","Engines","Erhebung"],[
         ['<b>Peec AI</b> (fuehrend)','Primaerquelle LLM-Sichtbarkeit',num(R.P.n_brands,0),'5 (inkl. Google AI Overview / AI Mode)','UI-Scraping, woechentlich'],
-        ['Eigener API-Crawl','Backup & Konsistenzpruefung','7','2 (Gemini grounded, ChatGPT ungrounded; Perplexity pausiert)','eigene API, taeglich']
+        ['Eigener API-Crawl','Backup & Konsistenzpruefung','7','2 (Gemini grounded, ChatGPT ungrounded; Perplexity pausiert)','eigene API, woechentlich (seit 10.08.2026)']
       ])+
       note("Peec fuehrt, weil es mehr Marken und mehr Engines abdeckt; der eigene Crawl liefert den zirkularitaetsarmen externen Gegentest (Kapitel 4, Verfahren 5).")+
       h("Wirkungs- vs. Hebelmetrik")+
@@ -189,7 +189,7 @@
   function kap2(R){
     return 'Alle Rhythmen aus den Workflow-YMLs des Repos (bzw. der geo-visibility-tool-/Cowork-Pipeline). Zeiten in <b>UTC</b>.'+
       tbl(["Was","Workflow / Task","Rhythmus (UTC)","Zieldatei(en)"],[
-        ['Eigener LLM-Crawl','analyze.yml <span style="color:#9ca3af">(geo-visibility-tool)</span>','taeglich 23:10','geo_snapshot.json (in den Nightly geladen)'],
+        ['Eigener LLM-Crawl','analyze.yml <span style="color:#9ca3af">(geo-visibility-tool)</span>','woechentlich So 23:10','geo_snapshot.json (in den Nightly geladen)'],
         ['Cockpit-Nightly<br><span style="color:#9ca3af;font-weight:400">Snapshot laden, SoV-Historie, Korrelations-/Impact-Analyse, Interventionen, Check24-Preise, Ratings, Sentiment, Presse, Pipeline-Health</span>','nightly-update.yml','taeglich 04:30','correlation_impact.json, geo_snapshot.json, sov_history.jsonl, intervention_results.json u.&nbsp;a.'],
         ['Peec-Export<br><span style="color:#9ca3af;font-weight:400">versionierte Snapshots + Wochen-Panel (seit 18.07.)</span>','Cowork-Task peec-weekly-export','woechentlich Mo 07:07','peec_snapshots/YYYY-MM-DD_*.csv, peec_history_weekly.csv, peec_cells.csv, peec_footprint.json'],
         ['Check24-Preise & Reviews','weekly-prices.yml','woechentlich Mo 05:45','price_comparison.json, review_history.json'],

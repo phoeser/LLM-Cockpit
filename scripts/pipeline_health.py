@@ -82,7 +82,15 @@ def _geo_snapshot_health():
                 broken.add(llm)
     return {"name": "GEO-Snapshot (SoV)", "file": "data/geo_snapshot.json",
             "last": dt.date().isoformat() if dt else None, "age_days": _age_days(dt),
-            "max_age": 2, "broken_llms": sorted(broken)}  # taeglicher Crawl (seit 19.07. wieder)
+            # 10.08.2026: 2 -> 9 Tage. Der GEO-Crawl laeuft seit heute WOECHENTLICH
+            # (Sonntag 23:10 UTC), GitHub verzoegert geplante Jobs im Free-Tier
+            # typisch 4-8 h. Kurz vor dem naechsten Lauf ist der Snapshot also
+            # regulaer 7,x Tage alt. Bei max_age 2 waere dieses Element ab dem
+            # zweiten Tag jeder Woche dauerhaft rot gewesen - und ein Alarm, der
+            # immer leuchtet, wird nach drei Tagen ignoriert. Genau so verpasst man
+            # den echten Ausfall. 9 Tage lassen einen ausgefallenen Wochenlauf
+            # auffliegen, ohne im Normalbetrieb zu schreien.
+            "max_age": 9, "broken_llms": sorted(broken)}
 
 ELEMENTS = []
 
@@ -91,8 +99,14 @@ def build():
     ELEMENTS.append(_geo_snapshot_health())
 
     dt = _max_date_in_jsonl(DATA / "sov_history.jsonl")
+    # 10.08.2026: 2 -> 9, gleicher Grund wie beim GEO-Snapshot. sov_history.jsonl
+    # bekommt seine Messpunkte aus geo_snapshot.json und datiert sie auf das
+    # LAUFDATUM des Crawls (nicht auf heute) - bei woechentlichem Crawl also ein
+    # Messpunkt je Woche statt sieben identischer. Das ist gewollt: eine
+    # kuenstlich dichte Reihe aus fortgeschriebenen Werten waere schlimmer als
+    # eine ehrlich duenne.
     ELEMENTS.append({"name": "SoV-Historie", "file": "data/sov_history.jsonl",
-                     "last": dt.date().isoformat() if dt else None, "age_days": _age_days(dt), "max_age": 2})
+                     "last": dt.date().isoformat() if dt else None, "age_days": _age_days(dt), "max_age": 9})
 
     ci = _load_json(DATA / "correlation_impact.json") or {}
     dt = _parse_dt(ci.get("generated_at"))

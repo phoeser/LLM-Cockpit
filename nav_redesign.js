@@ -96,7 +96,7 @@
     while(peec.firstChild){ wrapP.appendChild(peec.firstChild); }
     var head=document.createElement("div");
     head.id="ownCrawlHead";
-    head.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px"><span style="font-size:11px;font-weight:800;color:#fff;background:#6b7280;border-radius:5px;padding:3px 9px">QUELLE 2 · Eigener Crawl</span><span style="font-size:11px;color:#6b7280">API-Messung (Gemini, Perplexity, ChatGPT mit und ohne Websuche), wöchentlich</span></div>';
+    head.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px"><span style="font-size:11px;font-weight:800;color:#fff;background:#6b7280;border-radius:5px;padding:3px 9px">QUELLE 2 · Eigener Crawl</span><span style="font-size:11px;color:#6b7280">API-Messung (Gemini, Perplexity, ChatGPT), wöchentlich</span></div>';
     geo.insertBefore(head, geo.firstChild);
     geo.insertBefore(wrapP, geo.firstChild);
     // 18.07.: geo_wirkung.js setzt sich per insertBefore(geo.firstChild) VOR diese

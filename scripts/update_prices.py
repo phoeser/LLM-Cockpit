@@ -768,6 +768,12 @@ def emit_price_events(old_data, new_data):
             for bk, nv in nb.items():
                 if bk.startswith("_other_"):
                     continue
+                # 10.08.2026: Fortgeschriebene Werte sind keine Messung. Ohne diese
+                # Zeile haette die Fortschreibung genau das Rauschen erzeugt, das sie
+                # verhindern soll - ein wiederauftauchender alter Wert saehe aus wie
+                # eine Preisaenderung.
+                if nv.get("_fortgeschrieben"):
+                    continue
                 np_, op_ = nv.get("price"), (ob.get(bk) or {}).get("price")
                 if not np_ or not op_ or op_ <= 0:
                     continue
@@ -1028,6 +1034,138 @@ def crawl_verivox_phv(product_config):
     return pd
 
 
+# ---------------------------------------------------------------------------
+# Fortschreiben statt ueberschreiben (10.08.2026)
+#
+# main() hat die Datei bisher KOMPLETT neu geschrieben. Lieferte ein Lauf
+# weniger Marken als der vorige - abgebrochener Flow, geaenderter Cookie-Layer,
+# Timeout, Bot-Erkennung - war der reichere Stand weg.
+#
+# Nachgerechnet ueber die Git-Historie von price_comparison.json: zwischen zwei
+# Staenden wechselten 3 bis 14 % der Zellen, an einem Tag verschwanden 18 Zellen
+# und tauchten am naechsten wieder auf. Die Preise selbst aenderten sich an den
+# meisten Tagen NULL Mal. Das Modell sah diese Fluktuation als Preisbewegung, der
+# Artefaktfilter raeumte sie weg, und uebrig blieb: "n=1 von 22 Preisereignissen".
+#
+# Die Konvention des Projekts steht schon laenger im scheduled_tasks-README:
+# "nie eine gute Datei mit einer leeren/unvollstaendigen ueberschreiben". Hier
+# wird sie jetzt auch fuer einzelne ZELLEN durchgesetzt.
+#
+# Regeln:
+#  - Marke neu oder mit neuem Preis  -> uebernehmen.
+#  - Marke fehlt in diesem Lauf      -> alten Wert BEHALTEN, markiert mit
+#                                       _fortgeschrieben und _stand.
+#  - Ganzes Profil bricht ein (< HALF_EINBRUCH des Vorstands) -> kompletter
+#    alter Profilstand bleibt, laut protokolliert. Ein halbierter Lauf ist ein
+#    Crawl-Fehler, kein Marktereignis.
+#  - Fortgeschriebenes aelter als MAX_FORTSCHREIBUNG_TAGE faellt raus, statt
+#    unbegrenzt als aktuell zu gelten.
+MAX_FORTSCHREIBUNG_TAGE = 60      # rund acht Wochenlaeufe
+HALF_EINBRUCH = 0.5               # unter der Haelfte = Crawl-Fehler, nicht Markt
+
+
+def _heute():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _tage_seit(datum):
+    try:
+        d = datetime.strptime(str(datum)[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+    return (datetime.now(timezone.utc) - d).days
+
+
+def _echte(brands):
+    return {k: v for k, v in (brands or {}).items() if not k.startswith("_other_")}
+
+
+def fortschreiben(alt_data, neu_data):
+    """Mischt den neuen Lauf ueber den alten, ohne je auszuduennen.
+
+    Rueckgabe: (ergebnis, protokoll) - protokoll ist eine Liste von Klartextzeilen
+    fuer das Lauf-Log UND fuer das Feld _fortschreibung im JSON, damit im Dashboard
+    nachvollziehbar bleibt, welche Zelle aus welchem Lauf stammt.
+    """
+    if not alt_data or not (alt_data.get("products")):
+        return neu_data, ["kein Vorstand vorhanden - neuer Lauf wird unveraendert uebernommen"]
+
+    heute = _heute()
+    alt_stand = alt_data.get("as_of") or heute
+    prot = []
+    erg = dict(neu_data)
+    erg["products"] = dict(neu_data.get("products") or {})
+
+    for pk, alt_prod in (alt_data.get("products") or {}).items():
+        neu_prod = erg["products"].get(pk)
+        if not neu_prod:
+            # Produkt in diesem Lauf komplett ausgefallen
+            kopie = json.loads(json.dumps(alt_prod))
+            for prof, pr in (kopie.get("profiles") or {}).items():
+                for bk, bv in (pr.get("brands") or {}).items():
+                    bv.setdefault("_stand", alt_stand)
+                    bv["_fortgeschrieben"] = True
+            erg["products"][pk] = kopie
+            prot.append("%s: im Lauf gar nicht geliefert - kompletter Vorstand behalten" % pk)
+            continue
+
+        neu_prod.setdefault("profiles", {})
+        for prof, alt_pr in (alt_prod.get("profiles") or {}).items():
+            alt_b = _echte(alt_pr.get("brands"))
+            neu_pr = neu_prod["profiles"].get(prof)
+            if not neu_pr:
+                kopie = json.loads(json.dumps(alt_pr))
+                for bv in (kopie.get("brands") or {}).values():
+                    bv.setdefault("_stand", alt_stand)
+                    bv["_fortgeschrieben"] = True
+                neu_prod["profiles"][prof] = kopie
+                prot.append("%s/%s: Profil fehlt im Lauf - Vorstand mit %d Marken behalten"
+                            % (pk, prof, len(alt_b)))
+                continue
+
+            neu_b = _echte(neu_pr.get("brands"))
+            if alt_b and len(neu_b) < len(alt_b) * HALF_EINBRUCH:
+                kopie = json.loads(json.dumps(alt_pr))
+                for bv in (kopie.get("brands") or {}).values():
+                    bv.setdefault("_stand", alt_stand)
+                    bv["_fortgeschrieben"] = True
+                neu_prod["profiles"][prof] = kopie
+                prot.append("%s/%s: EINBRUCH %d -> %d Marken - als Crawl-Fehler gewertet, "
+                            "Vorstand behalten" % (pk, prof, len(alt_b), len(neu_b)))
+                continue
+
+            ziel = neu_pr.setdefault("brands", {})
+            uebernommen = 0
+            for bk, bv in (alt_pr.get("brands") or {}).items():
+                if bk in ziel:
+                    continue
+                stand = bv.get("_stand") or alt_stand
+                alter = _tage_seit(stand)
+                if alter is not None and alter > MAX_FORTSCHREIBUNG_TAGE:
+                    prot.append("%s/%s/%s: seit %d Tagen nicht mehr geliefert - faellt raus"
+                                % (pk, prof, bk, alter))
+                    continue
+                kopie = dict(bv)
+                kopie["_stand"] = stand
+                kopie["_fortgeschrieben"] = True
+                ziel[bk] = kopie
+                if not bk.startswith("_other_"):
+                    uebernommen += 1
+            if uebernommen:
+                prot.append("%s/%s: %d Marken aus dem Vorstand fortgeschrieben (%d frisch)"
+                            % (pk, prof, uebernommen, len(neu_b)))
+
+    # Frische Werte tragen das heutige Datum und sind ausdruecklich nicht fortgeschrieben
+    for pk, prod in erg["products"].items():
+        for prof, pr in (prod.get("profiles") or {}).items():
+            for bk, bv in (pr.get("brands") or {}).items():
+                if not bv.get("_fortgeschrieben"):
+                    bv["_stand"] = heute
+                    bv["_fortgeschrieben"] = False
+    erg["_fortschreibung"] = {"lauf": heute, "vorstand": alt_stand, "protokoll": prot[:60]}
+    return erg, prot
+
+
 def main():
     print("=" * 60)
     print("[prices] Check24 Preisvergleich-Crawler")
@@ -1055,6 +1193,13 @@ def main():
             old_data = json.loads(PRICE_FILE.read_text(encoding="utf-8"))
         except Exception:
             old_data = None
+
+    # 10.08.2026: fortschreiben statt ueberschreiben (Begruendung oben bei fortschreiben())
+    all_data, _prot = fortschreiben(old_data, all_data)
+    if _prot:
+        print("\n[prices] Fortschreibung:")
+        for z in _prot[:40]:
+            print("   " + z)
 
     # Speichern
     PRICE_FILE.parent.mkdir(parents=True, exist_ok=True)

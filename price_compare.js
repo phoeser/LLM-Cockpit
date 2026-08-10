@@ -56,6 +56,18 @@
     "ruv": "nur in einzelnen Sparten gelistet"
   };
 
+  /* Altersunabhaengige Produkte (10.08.2026).
+     Bei Haftpflicht, Hausrat und Rechtsschutz haengt die Praemie nicht vom Alter
+     ab - die monatliche Erhebung erfasst sie deshalb bewusst nur bei age_50 (so
+     steht es in scheduled_tasks/monatliche-preiserhebung-check24). Das ist
+     richtig: dreimal dasselbe zu erheben braucht dreimal so lange und bringt
+     nichts.
+     Falsch war nur, was das Dashboard daraus machte - in den Profilen 30 und 65
+     stand "noch keine Preisdaten", als haette man vergessen zu messen. Jetzt wird
+     der age_50-Wert dort gezeigt und ausdruecklich als altersunabhaengig
+     gekennzeichnet. */
+  var ALTERSUNABHAENGIG = { haftpflicht:1, hausrat:1, rechtsschutz:1 };
+
   var data = null, profile = "age_50";
 
   function getData(){
@@ -188,6 +200,20 @@
     var prod = (data.products||{})[pid];
     var wrap = document.createElement("div");
     wrap.className="bg-white rounded-xl shadow p-6 mb-6";
+    // Altersunabhaengiges Produkt: age_50 stellvertretend fuer alle Stufen
+    var altersUnab = false;
+    /* Bedingung bewusst NICHT "nur wenn das Profil fehlt": der Crawler legt fuer
+       diese Produkte auch bei 30 und 65 duenne Profile an (Haftpflicht age_30 = 0
+       Marken, age_65 = 1, waehrend age_50 auf 42 kommt). Eine fast leere Tabelle
+       ist irrefuehrender als gar keine. Ist der Preis altersunabhaengig, gilt der
+       age_50-Stand fuer jede Stufe - also wird er auch ueberall gezeigt. */
+    if(prod && prod.profiles && ALTERSUNABHAENGIG[pid] && profile !== "age_50" && prod.profiles.age_50){
+      prod = Object.assign({}, prod);
+      var pp = {}; Object.keys(prod.profiles).forEach(function(k){ pp[k]=prod.profiles[k]; });
+      pp[profile] = prod.profiles.age_50;
+      prod.profiles = pp;
+      altersUnab = true;
+    }
     if(!prod || !prod.profiles || !prod.profiles[profile]){
       wrap.innerHTML='<h3 style="font-size:16px;font-weight:600;margin:0">'+pname+'</h3>'+
         '<p style="font-size:12px;color:#9ca3af;margin:8px 0 0">Noch keine Check24-Preisdaten. '+coveredProductsNote()+'</p>';
@@ -214,6 +240,11 @@
     rows.sort(function(x,y){ return x.price - y.price; });
 
     var params = prod.params ? ('<div style="font-size:11px;color:#9ca3af;margin:2px 0 10px">'+prod.params+'</div>') : '';
+    if(altersUnab){
+      params += '<div style="font-size:11px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:6px 9px;margin:0 0 10px">'
+        + '<b>Altersunabhängiges Produkt.</b> Die Prämie hängt hier nicht vom Alter ab — gezeigt wird der bei 50 Jahren erhobene Wert. '
+        + 'Er wird bewusst nur einmal erhoben; dreimal dasselbe zu messen bräuchte dreimal so lange und ergäbe dieselbe Zahl.</div>';
+    }
     var allianz = rows.filter(function(r){return r.key==="allianz";})[0];
     var rest = rows.filter(function(r){return r.key!=="allianz";});
 
@@ -222,9 +253,23 @@
       var bg = isErgo?"#fff1f3":(isBench?"#f3f6fb":"#fff");
       var badge = isErgo?'<span style="font-size:9px;font-weight:700;color:#dc0028;background:#fde7ec;border-radius:4px;padding:1px 5px;margin-left:6px">ERGO</span>'
                  : (isBench?'<span style="font-size:9px;font-weight:700;color:#2a78d6;background:#e7f0fb;border-radius:4px;padding:1px 5px;margin-left:6px">Marktführer</span>':'');
+      /* 10.08.2026: Fortgeschriebene Werte kennzeichnen. update_prices.py behaelt
+         seit heute den Vorstand, wenn ein Lauf eine Zelle nicht liefert - das
+         verhindert die Fluktuation, die das Preissignal ueberdeckt hat. Damit ein
+         acht Wochen alter Wert aber nicht wie der heutige Preis aussieht, steht
+         sein Stand daneben. */
+      var alt = '';
+      if(r.b._fortgeschrieben && r.b._stand){
+        var tage = Math.floor((Date.now() - Date.parse(r.b._stand)) / 86400000);
+        if(!isNaN(tage) && tage > 0){
+          alt = '<span title="Dieser Wert stammt aus einem früheren Lauf — der aktuelle Crawl hat die Zelle nicht geliefert. Er wird fortgeschrieben, statt die Zeile leer zu lassen."'
+              + ' style="font-size:9px;color:'+(tage>28?'#b45309':'#9ca3af')+';margin-left:6px;white-space:nowrap">Stand '
+              + r.b._stand + ' (' + tage + ' T.)</span>';
+        }
+      }
       return '<tr style="border-top:1px solid #f0f0f0;background:'+bg+'">'+
         '<td style="padding:7px 8px;font-weight:'+(isErgo||isBench?"700":"500")+'">'+r.name+badge+'</td>'+
-        '<td style="padding:7px 8px;font-weight:700;white-space:nowrap">'+eur(r.b.price)+'</td>'+
+        '<td style="padding:7px 8px;font-weight:700;white-space:nowrap">'+eur(r.b.price)+alt+'</td>'+
         '<td style="padding:7px 8px;white-space:nowrap">'+grade(r.b)+'</td>'+
         '<td style="padding:7px 8px;color:#4b5563">'+merkmale(pid, r.b)+'</td></tr>';
     }

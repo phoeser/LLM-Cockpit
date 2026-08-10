@@ -828,7 +828,7 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="peecCards"></div>
     <div class="bg-white rounded-xl shadow p-5 mb-6">
       <h3 class="font-semibold mb-1">Zitations-Footprint je Marke &times; Thema <span class="text-xs font-normal text-gray-500">(% der Zitate im Thema, deren Quelle die Marke erwähnt · Top 10 Marken)</span></h3>
-      <p class="text-xs text-gray-500 mb-3">Validierung: Footprint erklärt die Peec-Sichtbarkeit mit r&nbsp;=&nbsp;0,83 über 312 Zellen – unabhängige Replikation des eigenen Treibermodell-Kernbefunds (r&nbsp;&asymp;&nbsp;0,82–0,83).</p>
+      <p class="text-xs text-gray-500 mb-3" id="peecValidationNote">Validierung: wird aus den aktuellen Daten gefüllt.</p>
       <div class="overflow-x-auto"><table class="w-full text-xs" id="peecHeat"></table></div>
     </div>
     <div class="grid md:grid-cols-2 gap-6">
@@ -845,6 +845,20 @@
 </section>
 <script>
 function renderPeecTab(){
+  /* Die Validierungszahlen standen bis 10.08.2026 hart im HTML ("r = 0,83 ueber 312 Zellen")
+     und widersprachen dem, was der Korrelations-Reiter live rendert. Jetzt aus den Daten. */
+  try{
+    var _vn=document.getElementById('peecValidationNote');
+    if(_vn){
+      var _cv=((window.CORRELATION_IMPACT||{}).level_model||{}).cross_source_validation||{};
+      var _f=function(x){ return (x==null)?null:Number(x).toFixed(2).replace('.',','); };
+      _vn.innerHTML = (_cv.available!==false && _cv.pearson_r_cells!=null)
+        ? ('Validierung: Der Footprint erklärt die Peec-Sichtbarkeit mit r&nbsp;=&nbsp;'+_f(_cv.pearson_r_cells)
+           +' über '+_cv.n_cells+' Zellen (auf Markenebene r&nbsp;=&nbsp;'+_f(_cv.pearson_r_brands)+' über '+_cv.n_brands
+           +' Marken) — eine unabhängige Quelle repliziert damit den Kernbefund des eigenen Treibermodells.')
+        : 'Validierung: keine Angabe — der Quellenvergleich liegt in den aktuellen Daten nicht vor.';
+    }
+  }catch(e){}
   const P = window.PEEC_DATA;
   const cardsEl = document.getElementById('peecCards');
   if (!P) { cardsEl.innerHTML = '<div class="col-span-4 bg-white rounded-xl shadow p-5 text-sm text-gray-500">Peec-Daten (data/peec_footprint.json) noch nicht geladen – erscheinen nach dem nächsten wöchentlichen Peec-Export bzw. Reload.</div>'; return; }
@@ -2991,6 +3005,11 @@ function buildGeoTab() {
     }
 
     function renderImpactStudy() {
+      /* esc() lebt in einer spaeteren IIFE und ist hier NICHT im Scope. Ohne diese
+         lokale Kopie warf die Funktion einen ReferenceError, der vom try/catch des
+         Tab-Builders geschluckt wurde - die Karte blieb dauerhaft leer. (Fix 10.08.2026) */
+      var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
       var el = document.getElementById('corrImpactStudy');
       var badge = document.getElementById('impactStudyBadge');
       var ciRoot = window.CORRELATION_IMPACT;
@@ -4946,6 +4965,43 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(ct.available===false){
       h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mt-3 text-xs text-gray-700 leading-relaxed">'
         +'<b>In Vorbereitung — Zitate als zweite Zielgröße:</b> '+_esc(ct.grund||(nfmt(ct.n_messpunkte)+' von '+nfmt(ct.min_messpunkte)+' nötigen Messpunkten'))+'</div>';
+    } else if(ct.available===true){
+      /* Zitate als zweite Zielgroesse - frueher in der Wirkungskette als der SoV.
+         Bis 10.08.2026 wurde dieser Block NUR im Nicht-verfuegbar-Fall gerendert;
+         die fertige Auswertung war unsichtbar. */
+      var ctImp=ct.impact||{};
+      var ctRows=Object.keys(ctImp).map(function(k){
+        var r=ctImp[k]||{};
+        if(r.available===false || r.avg_citation_effect==null){
+          return { key:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), sub:'',
+                   eff:null, lo:null, hi:null,
+                   note:(r.grund||'kein Effekt schätzbar') };
+        }
+        return { key:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(),
+          sub:(r.n_with_event!=null?(r.n_with_event+' von '+nfmt(r.n_intervals)+' Intervallen mit Ereignis'):'Intervallzahl: keine Angabe')
+              +(r.p_value!=null?(' · p '+Number(r.p_value).toFixed(4).replace('.',',')):'')
+              +(r.type_confidence?(' · '+_esc(r.type_confidence)):''),
+          eff:r.avg_citation_effect, lo:r.ci95_low, hi:r.ci95_high,
+          sig:(r.significant===true), n:r.n_intervals };
+      });
+      ctRows.sort(function(a,b){ return Math.abs(b.eff||0)-Math.abs(a.eff||0); });
+      var ctSig=ctRows.filter(function(r){ return r.sig; });
+      h+='<div class="border-t mt-4 pt-4">'
+        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">Zitate als zweite Zielgröße — wirkt etwas schon <i>vor</i> dem Share of Voice?</h4>'
+        +'<p class="text-xs text-gray-500 mb-3">Zitiert zu werden steht in der Wirkungskette <b>vor</b> dem Genanntwerden. Dieselbe Event-Study-Logik wie oben, '
+        +'nur mit der Zitatzahl je Marke als Ziel (Peec <code>citation_count</code>). Stand: '
+        +nfmt(ct.n_messpunkte)+' Messpunkte, '+nfmt(ct.n_intervalle)+' Intervalle, '+nfmt((ct.marken||[]).length)+' Marken.</p>'
+        +forestPlot(ctRows,{xlabel:'Effekt auf die Zitatzahl je Marke und Intervall — Balken = 95-%-Intervall'});
+      h+='<div class="text-xs text-gray-600 mt-3 leading-relaxed">'
+        +(ctSig.length
+            ? ('<b>'+ctSig.length+' Treiber mit gesichertem Zusammenhang:</b> '
+               +ctSig.map(function(r){ return _esc(r.label)+' ('+(r.eff>0?'+':'')+nfmt(Math.round(r.eff))+' Zitate)'; }).join(', ')+'. ')
+            : 'Kein Treiber erreicht hier die Signifikanzschwelle. ')
+        +'<b>Wichtig zur Lesart:</b> '+_esc(ct.grenzen||'')+'</div>';
+      if(ct.intervalle_uebersprungen_bruch){
+        h+='<div class="text-xs text-gray-500 mt-1">'+nfmt(ct.intervalle_uebersprungen_bruch)+' Intervalle wurden wegen eines Strukturbruchs übersprungen.</div>';
+      }
+      h+='</div>';
     }
     return h+'</div>';
   }

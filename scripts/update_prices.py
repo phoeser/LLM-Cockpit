@@ -176,16 +176,45 @@ BRAND_KEYWORDS = [
 ]
 
 
+# 10.08.2026: Zusaetzliche Muster fuer Namensformen, an denen die alte Zuordnung
+# scheiterte. Getestet gegen realistische Schreibweisen:
+#   "HUK24"              -> traf nur ueber den exakten BRAND_MAP-Eintrag
+#   "HUK24 Versicherung" -> KEIN Treffer (Keyword "huk" scheitert an der Ziffer
+#                           dahinter, der exakte Eintrag greift nicht mehr)
+#   "huk24"              -> KEIN Treffer (BRAND_MAP hat nur "HUK24" in Grossschrift,
+#                           verglichen wird aber die kleingeschriebene Fassung)
+#   "RuV", "R + V"       -> KEIN Treffer
+# Ein solcher Fehlschlag ist besonders unangenehm, weil er still ist: die Marke
+# landet als "_other_<Name>" in der Datei, faellt aus der Anzeige und sieht
+# hinterher aus, als haette der Anbieter dort kein Angebot.
+BRAND_MUSTER = [
+    (r"huk\s*-?\s*(24|coburg)?", "huk"),
+    (r"r\s*[\+&u]\s*v", "ruv"),
+    (r"signal\s*-?\s*iduna", "signal-iduna"),
+    (r"cosmos\s*-?\s*direkt", "cosmosdirekt"),
+    (r"hannoversche", "hannoversche"),
+    (r"generali", "generali"),
+    (r"allianz", "allianz"),
+    (r"\bergo\b", "ergo"),
+    (r"\baxa\b", "axa"),
+    (r"\bdevk\b", "devk"),
+]
+
+
 def map_brand(c24_name):
     """Mappt einen Check24-Anbieternamen auf unseren Brand-Key (oder None)."""
     if c24_name in BRAND_MAP:
         return BRAND_MAP[c24_name]
-    n = c24_name.lower().strip()
+    n = (c24_name or "").lower().strip()
     if n in BRAND_MAP:
         return BRAND_MAP[n]
     for kw, key in BRAND_KEYWORDS:
         # Wortgrenzen, damit z.B. 'axa' nicht in 'Maxalta' matcht
         if re.search(r"(?<![a-z0-9])" + re.escape(kw) + r"(?![a-z0-9])", n):
+            return key
+    # Letzter Versuch mit toleranteren Mustern (siehe Kommentar oben)
+    for muster, key in BRAND_MUSTER:
+        if re.search(r"(?<![a-z])" + muster, n):
             return key
     return None
 
@@ -372,10 +401,50 @@ JS_DIAG = """() => {
 }"""
 
 
+def _consent_ablehnen(page):
+    """Versucht ZUERST, den Consent regulaer abzulehnen (nur notwendige Cookies).
+
+    10.08.2026: Bis heute lief es genau andersherum - der Crawler hat entweder
+    aktiv ALLEN Cookies zugestimmt (fuer die volle Tarifliste) oder den Layer per
+    DOM-remove weggeraeumt. Beides ist unnoetig: fuer eine reine Preisabfrage
+    braucht es keine Tracking-Einwilligung, und ein weggeraeumtes Overlay ist ein
+    umgangenes Bedienelement - es bricht, sobald Check24 das absichert.
+
+    Der Rueckgabewert sagt, welcher Weg gegriffen hat; er wird in die Diagnose je
+    Produkt geschrieben. Falls das Ablehnen die Tarifliste kuerzt, faellt das ueber
+    den Einbruchschutz in fortschreiben() auf, statt still eine duenne Liste zu
+    speichern.
+    """
+    pat = re.compile(r"(ablehnen|nur\s*(notwendige|essenzielle|erforderliche)|"
+                     r"ohne\s*einwilligung|reject\s*all|decline)", re.I)
+    for _t in range(2):
+        for fr in page.frames:
+            for finder in (lambda f: f.get_by_role("button", name=pat),
+                           lambda f: f.locator("button, a, [role=button]").filter(has_text=pat).first):
+                try:
+                    el = finder(fr)
+                    if el.count() > 0:
+                        el.first.click(timeout=3000) if hasattr(el, "first") else el.click(timeout=3000)
+                        page.wait_for_timeout(2000)
+                        print("    [consent] abgelehnt (nur notwendige Cookies)")
+                        return "abgelehnt"
+                except Exception:
+                    pass
+        page.wait_for_timeout(900)
+    return None
+
+
 def _accept_consent(page):
-    """Nimmt den Check24-Cookie-Consent AKTIV an (setzt Consent-Cookies), damit die
-    volle Tarifliste geladen wird statt einer abgeschnittenen Top-N-Liste. Sucht den
-    Zustimmen-Button im Haupt-DOM UND in iframes (Consent liegt oft in einem iframe)."""
+    """Consent-Behandlung. Reihenfolge seit 10.08.2026: erst ABLEHNEN versuchen,
+    nur wenn das nicht geht, zustimmen.
+
+    Die Zustimmung bleibt als Rueckfall drin, weil die Tarifliste sonst auf
+    manchen Seiten abgeschnitten geladen wird - das war der urspruengliche Grund
+    fuer den aktiven Klick. Welcher Weg gegriffen hat, steht im Lauf-Log und in
+    der Diagnose, damit man den Preis dieser Entscheidung sieht statt ihn zu
+    erraten."""
+    if _consent_ablehnen(page):
+        return True
     pat = re.compile(r"(alle\s*akzeptieren|akzeptieren|einverstanden|zustimmen|accept\s*all|einwilligen)", re.I)
     for _t in range(3):
         for fr in page.frames:
@@ -402,9 +471,18 @@ def _accept_consent(page):
 
 
 def _dismiss_overlays(page):
-    """Entfernt den C24-Cookie-Consent-Layer (per DOM-remove, OHNE Einwilligung — es
-    werden keine Consent-Cookies gesetzt) und klickt das 'OK, verstanden'-Modal weg.
-    Beide Overlays blockieren sonst saemtliche Klicks/Inhalte."""
+    """Raeumt blockierende Overlays weg.
+
+    10.08.2026 umgestellt: erst der regulaere Weg (Ablehnen-Button), DOM-remove nur
+    noch als letzter Ausweg und mit Protokollzeile. Vorher war das Entfernen der
+    erste Griff - datenschutzrechtlich eher unbedenklich, weil dabei keine
+    Einwilligung erschlichen, sondern keine erteilt wird, aber es umgeht ein
+    Bedienelement und bricht, sobald die Seite das absichert."""
+    if _consent_ablehnen(page):
+        pass
+    else:
+        print("    [overlay] kein Ablehnen-Button gefunden - entferne den Layer per DOM "
+              "(kein Consent-Cookie wird gesetzt)")
     try:
         page.evaluate(
             "() => { document.querySelectorAll('[class*=cookie-consent],[id*=cookie-consent]')"
@@ -1163,6 +1241,35 @@ def fortschreiben(alt_data, neu_data):
                     bv["_stand"] = heute
                     bv["_fortgeschrieben"] = False
     erg["_fortschreibung"] = {"lauf": heute, "vorstand": alt_stand, "protokoll": prot[:60]}
+
+    # Diagnose je Produkt x Profil (10.08.2026). Der Crawler holt bei Haftpflicht,
+    # Hausrat, Rechtsschutz und Sterbegeld deutlich weniger getrackte Marken als die
+    # manuelle Erhebung - 17 Zellen bei age_50. Warum, laesst sich ohne Live-Lauf
+    # nicht klaeren: die Namenszuordnung ist es nachweislich nicht (keiner der 67
+    # nicht zugeordneten Fremdanbieter ist eine getrackte Marke). Statt am Scraper
+    # blind herumzuraten schreibt der Lauf jetzt auf, was er je Zelle gesehen hat.
+    # Der naechste echte Lauf zeigt damit, ob die Ergebnisseite leer war, ob der
+    # Extraktor nichts fand oder ob die Marken schlicht nicht gelistet sind.
+    TRACKED = {"ergo", "allianz", "axa", "generali", "signal-iduna",
+               "cosmosdirekt", "huk", "ruv", "devk", "hannoversche"}
+    diag = {}
+    for pk, prod in erg["products"].items():
+        for prof, pr in (prod.get("profiles") or {}).items():
+            b = pr.get("brands") or {}
+            gemappt = [k for k in b if not k.startswith("_other_")]
+            fremd = [k for k in b if k.startswith("_other_")]
+            frisch = [k for k in b if not b[k].get("_fortgeschrieben")]
+            diag["%s/%s" % (pk, prof)] = {
+                "getrackt": len([k for k in gemappt if k in TRACKED]),
+                "fehlende_getrackte": sorted(TRACKED - set(gemappt)),
+                "fremdanbieter_gesehen": len(fremd),
+                "frisch_in_diesem_lauf": len(frisch),
+                "lesart": ("Ergebnisseite lieferte gar nichts" if not b else
+                           "nur Fremdanbieter gelistet - getrackte Marken dort vermutlich nicht im Vergleich"
+                           if not gemappt and fremd else
+                           "Zelle befuellt"),
+            }
+    erg["_diagnose"] = diag
     return erg, prot
 
 

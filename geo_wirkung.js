@@ -103,6 +103,13 @@
       .then(function(t){ var p=parsePeec(t); if(p) window.__GW_CELLS=p; return p; })
       .catch(function(){ return null; });
   }
+  function loadCross(){
+    if(window.__PEEC_CROSS!==undefined) return Promise.resolve(window.__PEEC_CROSS);
+    return fetch("data/peec_cross_matrix.json?t="+Date.now(),{cache:"no-store"})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ window.__PEEC_CROSS=j||null; return window.__PEEC_CROSS; })
+      .catch(function(){ window.__PEEC_CROSS=null; return null; });
+  }
   function loadNordstern(){
     if(window.__GW_NS) return Promise.resolve(window.__GW_NS);
     return fetch("data/peec_nordstern.json?t="+Date.now(),{cache:"no-store"})
@@ -455,7 +462,67 @@
       '<b>Zitatanteil engine-uebergreifend</b> (cited_sources aggregiert ueber alle Engines — nicht kanalgetrennt). '+
       '<b>Der Zitatanteil ist eine Untergrenze:</b> der Nenner ist die Gesamtzahl der Zitate im Thema, der Zaehler kann nur ERGO-Quellen erfassen, die es in die Top-15-Domainliste des Snapshots geschafft haben. Faellt ergo.de dort heraus, wird der Anteil zu niedrig ausgewiesen, nie zu hoch. '+
       'Nuancen: Mention ohne eigenes Zitat ist moeglich (LLM nennt ERGO aus Trainingswissen oder ueber Portal-Zitate); Zitat ohne Mention ebenso (ergo.de wird als Quelle gelesen, empfohlen wird aber z.&nbsp;B. Allianz). Themen ohne Kanal-Daten sind separat als „ohne Daten" ausgewiesen, nicht als Null.</div>';
-    return '<div id="gwCBox">'+grid+noRow+foot+'</div>';
+    return '<div id="gwCBox">'+grid+noRow+foot+peecKreuzBlock()+'</div>';
+  }
+
+  /* ============================================================
+     Peec-Kreuzmatrix je Kanal (10.08.2026)
+     ------------------------------------------------------------
+     data/peec_cross_matrix.json entsteht im Peec-Wochenexport und wurde bis
+     heute von KEINER Zeile gelesen - elf Kilobyte je Thema x Kanal, erhoben und
+     weggelegt. Derselbe Fehlertyp wie bei chatgpt_web.
+     Sie ist die Peec-Fassung der Kreuz-Matrix darueber, und zwar mit dem, was
+     der eigene Crawl nicht kann: getrennt nach Engine. Die Zahl, um die es geht,
+     ist der Abstand zwischen "erwaehnt" und "zitiert" - bei ERGO stehen im
+     openai-Kanal 870 Erwaehnungen 49 Zitaten gegenueber, bei Allianz 971 zu 212.
+     ============================================================ */
+  function peecKreuzBlock(){
+    var X=window.__PEEC_CROSS;
+    if(!X || !X.topics) return '';
+    /* kanaele ist ein OBJEKT {id: Klarname}, keine Liste - der erste Entwurf rief
+       darauf forEach und warf "kan.forEach is not a function". Der Klarname ist
+       ausserdem das, was man anzeigen will: "ChatGPT" statt "openai-0". */
+    var kanMap=X.kanaele||{};
+    var kan=Array.isArray(kanMap)?kanMap:Object.keys(kanMap);
+    var kanName=function(k){ return (Array.isArray(kanMap)?k:(kanMap[k]||k)); };
+    var sum={};
+    Object.keys(X.topics).forEach(function(t){
+      var byK=X.topics[t]||{};
+      kan.forEach(function(k){
+        var z=byK[k]; if(!z) return;
+        var s=sum[k]||(sum[k]={chats:0,ergo_e:0,ergo_z:0,all_e:0,all_z:0});
+        s.chats+=z.n_chats||0;
+        if(z.ergo){ s.ergo_e+=z.ergo.erwaehnt||0; s.ergo_z+=z.ergo.zitiert||0; }
+        if(z.allianz){ s.all_e+=z.allianz.erwaehnt||0; s.all_z+=z.allianz.zitiert||0; }
+      });
+    });
+    var zeilen=kan.filter(function(k){return sum[k];}).map(function(k){
+      var s=sum[k];
+      var qe=s.chats?100*s.ergo_e/s.chats:null, qz=s.chats?100*s.ergo_z/s.chats:null;
+      var ae=s.chats?100*s.all_e/s.chats:null, az=s.chats?100*s.all_z/s.chats:null;
+      var luecke=(qe!=null&&qz!=null)?(qe-qz):null;
+      return '<tr style="border-bottom:1px solid #f4f4f6">'
+        +'<td style="padding:5px 8px;font-weight:600">'+kanName(k)+' <span style="color:'+MUTE+';font-weight:400;font-size:10px">'+k+'</span></td>'
+        +'<td style="padding:5px 8px;text-align:right;color:'+GREY+'">'+s.chats.toLocaleString("de-DE")+'</td>'
+        +'<td style="padding:5px 8px;text-align:right">'+pctS(qe,1)+'</td>'
+        +'<td style="padding:5px 8px;text-align:right;font-weight:700;color:'+ERGO_RED+'">'+pctS(qz,1)+'</td>'
+        +'<td style="padding:5px 8px;text-align:right;color:'+MUTE+'">'+pctS(ae,1)+'</td>'
+        +'<td style="padding:5px 8px;text-align:right;color:'+MUTE+'">'+pctS(az,1)+'</td>'
+        +'<td style="padding:5px 8px;text-align:right;font-weight:700">'+(luecke!=null?("−"+num(luecke,1)+" pp"):"—")+'</td></tr>';
+    }).join("");
+    if(!zeilen) return '';
+    return '<div style="margin-top:14px;border-top:1px solid '+LINE+';padding-top:11px">'
+      +'<div style="font-size:12.5px;font-weight:700;color:'+INK+';margin-bottom:2px">Dasselbe aus Peec — und diesmal je Engine getrennt</div>'
+      +'<div style="font-size:11px;color:'+GREY+';margin-bottom:7px">Der eigene Crawl kann die Kreuz-Matrix nur engine-übergreifend. Peec zählt je Chat, ob die Marke <b>erwähnt</b> und ob eine ihrer Quellen <b>zitiert</b> wurde — getrennt nach Engine. Die letzte Spalte ist der Abstand zwischen beidem: wie oft ERGO genannt wird, ohne dass eine eigene Quelle dahintersteht.</div>'
+      +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="text-align:left;color:'+MUTE+';font-size:11px">'
+      +'<th style="padding:4px 8px">Engine</th><th style="padding:4px 8px;text-align:right">Chats</th>'
+      +'<th style="padding:4px 8px;text-align:right">ERGO erwähnt</th><th style="padding:4px 8px;text-align:right">ERGO zitiert</th>'
+      +'<th style="padding:4px 8px;text-align:right">Allianz erw.</th><th style="padding:4px 8px;text-align:right">Allianz zit.</th>'
+      +'<th style="padding:4px 8px;text-align:right">Lücke ERGO</th></tr></thead><tbody>'+zeilen+'</tbody></table></div>'
+      +'<div style="font-size:11px;color:'+MUTE+';margin-top:6px;line-height:1.5">Quelle: data/peec_cross_matrix.json, Fenster '
+      +(X.window||"o. A.")+'. Gezählt werden nur Chats mit mindestens einer zitierten URL. '
+      +'„Zitiert" heißt: eine Quelle der Marke stand in der Antwort — nicht, dass die Marke empfohlen wurde.</div></div>';
   }
 
   /* ============================================================
@@ -549,7 +616,7 @@
   var loadTries=0;
   function ensureData(host){
     // Peec-Zellen laden (einmal), Peec-Zeitraum merken; danach neu rendern.
-    Promise.all([loadNordstern(), loadCells()]).then(function(rs){
+    Promise.all([loadNordstern(), loadCells(), loadCross()]).then(function(rs){
       var cells=rs[1];
       if(cells && !window.__GW_ZR){
         // Zeitraum aus Roh-CSV einmalig ziehen (nur fuers Datenstand-Label)

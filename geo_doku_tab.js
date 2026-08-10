@@ -122,6 +122,53 @@
       " · "+part("Peec:",R.pDate)+(R.peecWin?(" (Fenster "+R.peecWin+(/^[0-9]+$/.test(String(R.peecWin))?" Tage":"")+")"):"")+".");
   }
 
+  /* Frische je Daten-Element (10.08.2026).
+     scripts/pipeline_health.py schreibt data/pipeline_health.json bei JEDEM Nightly -
+     und bis heute hat es niemand gelesen. Der Frische-Status faerbte nur den
+     Workflow rot; im Cockpit selbst war er unsichtbar. Genau derselbe Fehlertyp wie
+     bei chatgpt_web: erhoben, aber nicht angeschlossen. Jetzt steht er dort, wo man
+     ihn sucht - im Doku-Reiter unter dem Datenstand. */
+  function frischeBlock(){
+    /* Eigene esc-Kopie: dieses Modul hat keine. Der erste Entwurf rief ein globales
+       esc() auf, das es hier nicht gibt - der ReferenceError liess den GESAMTEN
+       Doku-Reiter leer, weil renderInner() bei einem Fehler abbricht. Genau die
+       Sorte stiller Ausfall, die heute schon zweimal aufgetaucht ist; hier hat der
+       headless-Test sie gefangen. */
+    function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    var H=window.__PIPELINE_HEALTH;
+    if(!H || !H.elements || !H.elements.length){
+      return note("Frische je Daten-Element: data/pipeline_health.json nicht geladen — die Datei entsteht im Nightly.");
+    }
+    var alt_=H.elements.filter(function(e){return e.stale;});
+    var kopf = alt_.length
+      ? '<div style="font-size:12.5px;font-weight:700;color:#b91c1c;margin-bottom:6px">'
+        + alt_.length + ' von ' + H.elements.length + ' Daten-Elementen sind veraltet</div>'
+      : '<div style="font-size:12.5px;font-weight:700;color:#067d3a;margin-bottom:6px">Alle '
+        + H.elements.length + ' Daten-Elemente sind frisch</div>';
+    var zeilen = H.elements.map(function(e){
+      var alter=(e.age_days==null)?null:Number(e.age_days);
+      var farbe = e.stale ? '#b91c1c' : (alter!=null && e.max_age && alter > e.max_age*0.7 ? '#b45309' : '#6b7280');
+      return '<tr style="border-bottom:1px solid #f4f4f6">'
+        + '<td style="padding:4px 8px">'+esc(e.name)+'</td>'
+        + '<td style="padding:4px 8px;color:#9ca3af;font-size:11px">'+esc(e.file||'')+'</td>'
+        + '<td style="padding:4px 8px;text-align:right;color:'+farbe+'">'
+          + (alter==null?'keine Angabe':(alter.toFixed(1)+' T.'))+'</td>'
+        + '<td style="padding:4px 8px;text-align:right;color:#9ca3af">Grenze '+(e.max_age!=null?e.max_age:'—')+'</td>'
+        + '<td style="padding:4px 8px;color:'+farbe+'">'+(e.stale?'veraltet':'frisch')+'</td></tr>';
+    }).join('');
+    return kopf
+      + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+      + '<thead><tr style="text-align:left;color:#9ca3af;font-size:11px">'
+      + '<th style="padding:4px 8px">Element</th><th style="padding:4px 8px">Datei</th>'
+      + '<th style="padding:4px 8px;text-align:right">Alter</th><th style="padding:4px 8px;text-align:right">Grenze</th>'
+      + '<th style="padding:4px 8px">Status</th></tr></thead><tbody>'+zeilen+'</tbody></table></div>'
+      + note('Aus data/pipeline_health.json, geschrieben im Nightly (Stand '
+             + esc(String(H.generated_at||'').slice(0,16).replace('T',' ')) + ' UTC). Die Grenzen für GEO-Snapshot '
+             + 'und SoV-Historie stehen seit dem 10.08.2026 auf 9 Tage statt 2 — der eigene Crawl läuft seitdem '
+             + 'wöchentlich, und ein Alarm, der jede Woche sechs Tage lang leuchtet, wird ignoriert.');
+  }
+
   /* ---------- Bausteine (Inline-Styles, Karten-Look) ---------- */
   function chapter(id, title, open, inner){
     return '<details id="'+id+'"'+(open?' open':'')+
@@ -188,6 +235,9 @@
      ============================================================ */
   function kap2(R){
     return 'Alle Rhythmen aus den Workflow-YMLs des Repos (bzw. der geo-visibility-tool-/Cowork-Pipeline). Zeiten in <b>UTC</b>.'+
+      h("Kommt auch wirklich Frisches an?")+
+      'Rhythmen sagen, was laufen SOLL. Der Block hier sagt, was tatsächlich ankommt:'+
+      frischeBlock()+
       tbl(["Was","Workflow / Task","Rhythmus (UTC)","Zieldatei(en)"],[
         ['Eigener LLM-Crawl','analyze.yml <span style="color:#9ca3af">(geo-visibility-tool)</span>','woechentlich So 23:10','geo_snapshot.json (in den Nightly geladen)'],
         ['Cockpit-Nightly<br><span style="color:#9ca3af;font-weight:400">Snapshot laden, SoV-Historie, Korrelations-/Impact-Analyse, Interventionen, Check24-Preise, Ratings, Sentiment, Presse, Pipeline-Health</span>','nightly-update.yml','taeglich 05:30','correlation_impact.json, geo_snapshot.json, sov_history.jsonl, intervention_results.json u.&nbsp;a.'],

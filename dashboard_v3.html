@@ -4120,7 +4120,14 @@ function buildGeoTab() {
            keiner Zeile gelesen worden - obwohl das Erzeugerskript sie ausdruecklich
            als 'Runtime-Fetch fuers Dashboard' beschreibt. Liefert die echte
            Prompt-Zahl und den Vergleich overall- gegen neutrale SoV. */
-        __v3_loadJSON('data/peec_neutral_sov.json')
+        __v3_loadJSON('data/peec_neutral_sov.json'),
+        /* 10.08.2026 ans ENDE der Liste angehaengt - bewusst nicht dazwischen: die
+           Zuweisungen darunter greifen ueber feste Indizes (res[8], res[10] ...),
+           eine Einfuegung in der Mitte haette alles danach still um eins verschoben.
+           pipeline_health.json wurde bei jedem Nightly geschrieben und von niemandem
+           gelesen; der Frische-Status faerbte nur den Workflow rot. Jetzt zeigt ihn
+           der Doku-Reiter (geo_doku_tab.js, Kapitel 2). */
+        __v3_loadJSON('data/pipeline_health.json')
       ]);
       GEO_SNAPSHOT = res[0]; window.GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       /* SENTIMENT_DATA/PRESS_DATA ebenfalls auf window spiegeln: 'let' auf oberster Ebene
@@ -4130,6 +4137,7 @@ function buildGeoTab() {
          und wies fuer ERGO 0 neue Bewertungen aus (real 19) -> Prioritaet faelschlich HOCH;
          der Zufriedenheits-Satz im Reiter Bewertungen fiel immer weg. (Fix 10.08.2026) */
       window.SENTIMENT_DATA = res[1]; window.PRESS_DATA = res[2];
+      window.__PIPELINE_HEALTH = res[res.length - 1] || null;
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
       window.GEO_PAGE_CHANGES = res[5] || []; window.PRICE_COMPARISON = res[6];
       window.RATINGS_EXTERNAL = res[7];

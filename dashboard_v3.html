@@ -865,6 +865,16 @@ function renderPeecTab(){
   document.getElementById('peecAsOf').textContent = P.as_of || '–';
   const wp = (window.CORRELATION_IMPACT && CORRELATION_IMPACT.level_model && CORRELATION_IMPACT.level_model.with_peec) || null;
   const val = wp && wp.validation || {};
+  /* Diese drei Zeilen standen bis 10.08.2026 WEITER UNTEN, wurden hier oben aber
+     schon benutzt. Durch var-Hoisting waren sie beim Zugriff undefined - mit der
+     Folge, dass der Umschalter dauerhaft 'inkl. Branding' als aktiv markierte,
+     der Hinweis 'neutrale Ansicht ab dem naechsten Export' immer stand und der
+     rote Kasten 'ERGO erscheint hier kuenstlich vorne' auch dann erschien, wenn
+     darunter laengst die branding-NEUTRALEN Zahlen standen. Der Nutzer bekam
+     also gesagt, die Zahlen seien verzerrt, waehrend er die fairen sah. */
+  var _neuAvail = !!(P.footprint_pct_neutral && P.peec_sov_pct_neutral);
+  if(window.__peecNeutral===undefined) window.__peecNeutral = true;
+  var _neu = window.__peecNeutral && _neuAvail;
   document.getElementById('peecHealth').innerHTML =
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span class="text-xs text-gray-400">Prompts:</span>'+
       _peecTb(1,'Neutral (ohne Branding)')+_peecTb(0,'inkl. Branding (ERGO-fokussiert)')+
@@ -873,9 +883,6 @@ function renderPeecTab(){
       ? '<div class="text-xs rounded-lg p-3 mb-3" style="background:#e6f5ec;border:1px solid #bfe3cd;color:#14532d"><b>Branding-neutrale Ansicht.</b> Nur Prompts ohne Markennamen (System-Tag non-branded) — das faire Marktbild: Allianz und HUK vor ERGO.</div>'
       : '<div class="text-xs rounded-lg p-3 mb-3" style="background:#fff4f4;border:1px solid #f3c6c6;color:#7a1420"><b>ERGO-fokussierte Ansicht (inkl. Branding-Prompts).</b> Kein neutrales Marktranking — ERGO erscheint hier künstlich vorne.</div>')+
     ((val.data_health)?'<div class="bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg p-3 mb-4"><b>Datenqualität:</b> '+val.data_health+'</div>':'');
-  var _neuAvail = !!(P.footprint_pct_neutral && P.peec_sov_pct_neutral);
-  if(window.__peecNeutral===undefined) window.__peecNeutral = true;
-  var _neu = window.__peecNeutral && _neuAvail;
   var FP  = _neu ? P.footprint_pct_neutral : P.footprint_pct;
   var VIS = _neu ? (P.peec_visibility_pct_neutral||P.peec_visibility_pct) : P.peec_visibility_pct;
   var SOV = _neu ? P.peec_sov_pct_neutral : P.peec_sov_pct;
@@ -3680,6 +3687,13 @@ function buildGeoTab() {
         __v3_loadJSON('data/peec_footprint.json')
       ]);
       GEO_SNAPSHOT = res[0]; window.GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
+      /* SENTIMENT_DATA/PRESS_DATA ebenfalls auf window spiegeln: 'let' auf oberster Ebene
+         eines klassischen <script> landet NICHT auf window. Module in spaeteren
+         Script-Bloecken greifen aber ueber window darauf zu und bekamen still undefined.
+         Folge bis 10.08.2026: buildDriverGap las window.SENTIMENT_DATA.recent_reviews als []
+         und wies fuer ERGO 0 neue Bewertungen aus (real 19) -> Prioritaet faelschlich HOCH;
+         der Zufriedenheits-Satz im Reiter Bewertungen fiel immer weg. (Fix 10.08.2026) */
+      window.SENTIMENT_DATA = res[1]; window.PRESS_DATA = res[2];
       window.DOMAIN_FOOTPRINT = res[3]; window.BERATER_DATA = res[4];
       window.GEO_PAGE_CHANGES = res[5] || []; window.PRICE_COMPARISON = res[6];
       window.RATINGS_EXTERNAL = res[7];

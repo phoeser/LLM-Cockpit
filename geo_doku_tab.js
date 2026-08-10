@@ -52,13 +52,18 @@
     var p=((C||{}).level_model||{}).peec26_model;
     if(p && p.available){
       var be=(((p.drivers_eff||{}).peec_foot||{}).between)||{};
-      var gd=p.gap_decomposition||{};
+      /* gap_decomposition ist im aktuellen Nightly null - die Zerlegung steht in
+         gap_neutral (branding-neutral gerechnet). Der Korrelations-Reiter wurde
+         darauf umgestellt, die Doku nicht: Kapitel 7 zeigte deshalb 'Rueckstand
+         ~— pp'. Der Fallback griff nicht, weil available=true ist. (Fix 10.08.2026) */
+      var gd=p.gap_neutral||p.gap_decomposition||{};
       return { dyn:true, eff:be.effect_std_pp, coef:be.coef,
         wild_p:(p.wild_p||{}).peec_foot, fdr_q:(p.fdr_q||{}).peec_foot,
         loo:p.between_loo||be.between_loo||FB.peec26.loo, size_wild_p:(p.wild_p||{}).size,
         brand_r:(p.brand_level||{}).pearson_r, brand_rho:(p.brand_level||{}).spearman_r,
         gap:gd.actual_gap_pp, foot:((gd.contrib_pp||{}).peec_foot),
-        n_cells:p.n_cells, n_brands:p.n_brands, n_topics:p.n_topics, leader:p.leader||"Allianz" };
+        n_cells:p.n_cells, n_brands:p.n_brands, n_topics:p.n_topics,
+        leader:p.leader_neutral||p.leader||"Allianz" };
     }
     return Object.assign({dyn:false},FB.peec26);
   }

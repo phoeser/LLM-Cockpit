@@ -112,6 +112,71 @@ TOPIC_RULES = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Beitragsanpassungen als eigenes Ereignis (10.08.2026)
+#
+# Warum das hier steht und nicht im Preis-Crawler: Der Preis-Crawler MISST
+# Niveaus. Fuer die Event-Study braucht das Modell aber DATIERTE AENDERUNGEN -
+# und die sind ueber Stichproben praktisch nicht zu bekommen. Nachgerechnet
+# ueber die Git-Historie von price_comparison.json aendern sich an den meisten
+# Tagen null von rund 230 Zellen; Versicherungstarife bewegen sich ein- bis
+# zweimal im Jahr. Der Impact-Block meldet entsprechend "nach Artefaktfilter zu
+# wenige Preisereignisse (n=1 von 22, noetig sind 5)".
+#
+# Beitragsanpassungen werden dagegen ANGEKUENDIGT - mit Marke und Datum, also
+# genau in dem Format, das die Event-Study braucht. Der Presse-Crawl laeuft
+# ohnehin; hier wird nur zusaetzlich klassifiziert.
+#
+# Bewusst eng gefasst: "Beitrag" allein triggert nicht (zu viele Treffer wie
+# "Beitrag zur Nachhaltigkeit"), es braucht die Kombination mit einer
+# Aenderungsrichtung oder einen der eindeutigen Fachbegriffe.
+_BAP_EINDEUTIG = [
+    r"beitragsanpassung", r"pr(ä|ae)mienanpassung", r"beitragserh(ö|oe)hung",
+    r"pr(ä|ae)mienerh(ö|oe)hung", r"beitragssenkung", r"tarifanpassung",
+    r"beitragsentlastung",
+]
+_BAP_KOMBI_A = [r"\bbeitr(a|ä)g", r"\bpr(ä|ae)mie", r"\btarif"]
+_BAP_KOMBI_B = [r"erh(ö|oe)h", r"steig", r"senk", r"g(ü|ue)nstiger", r"teurer",
+                r"anpass", r"\bplus\b", r"\bminus\b", r"prozent"]
+
+# Ausschluesse. Gegen die 1.111 Titel im Presse-Archiv getestet: ohne diese Liste
+# schlugen "Axa steigert Beitragseinnahmen" und "Signal Iduna steigert
+# Praemieneinnahmen auf 7,2 Milliarden Euro" als Beitragsanpassung an. Das ist
+# UMSATZ, nicht Preis - zwei von fuenf Treffern waren falsch. Beitragseinnahmen
+# steigen, wenn ein Versicherer mehr Vertraege verkauft, voellig unabhaengig
+# davon, was der einzelne Kunde zahlt.
+_BAP_NICHT = [
+    r"beitragseinnahm", r"pr(ä|ae)mieneinnahm", r"beitragsaufkommen",
+    r"beitragsvolumen", r"pr(ä|ae)mienvolumen", r"bruttobeitr",
+    r"gebuchte (beitr|pr(ä|ae)mie)", r"\bumsatz",
+]
+
+
+def erkenne_beitragsanpassung(titel):
+    """Ist das eine Meldung ueber eine Beitrags-/Praemienaenderung?
+
+    Rueckgabe: (True/False, richtung) mit richtung in {"hoch","runter",None}.
+    Die Richtung bleibt None, wenn der Titel sie nicht hergibt - dann steht im
+    Event ausdruecklich "unbekannt" statt einer geratenen Vorzeichenangabe.
+    """
+    t = (titel or "").lower()
+    if any(re.search(p, t) for p in _BAP_NICHT):
+        return False, None
+    treffer = any(re.search(p, t) for p in _BAP_EINDEUTIG)
+    if not treffer:
+        treffer = (any(re.search(p, t) for p in _BAP_KOMBI_A)
+                   and any(re.search(p, t) for p in _BAP_KOMBI_B))
+    if not treffer:
+        return False, None
+    hoch = re.search(r"erh(ö|oe)h|steig|teurer|\bplus\b|anheb", t)
+    runter = re.search(r"senk|g(ü|ue)nstiger|billiger|\bminus\b|entlast", t)
+    if hoch and not runter:
+        return True, "hoch"
+    if runter and not hoch:
+        return True, "runter"
+    return True, None
+
+
 def tag_topics(title):
     """Ordne einem Titel 1-3 Themen zu."""
     title_lower = title.lower()
@@ -826,6 +891,35 @@ def main():
                         sent = "positive"
                     
                     evt_type = "press_mention" if article.get("type") == "own" else "news_mention"
+
+                    # Beitragsanpassung? Dann ZUSAETZLICH ein eigenes, datiertes
+                    # Preisereignis schreiben. Das Presse-Event bleibt bestehen -
+                    # die Meldung ist beides, und die beiden Modelle lesen
+                    # getrennte Ereignistypen.
+                    ist_bap, richtung = erkenne_beitragsanpassung(article.get("title", ""))
+                    if ist_bap:
+                        emit_event(
+                            event_type="price_announcement",
+                            brand=name,
+                            source="google_news_rss",
+                            crawler="update_press",
+                            magnitude=1.0,
+                            url=article.get("url", ""),
+                            sentiment=("negative" if richtung == "hoch"
+                                       else "positive" if richtung == "runter" else "neutral"),
+                            detail={
+                                "title": article.get("title", "")[:120],
+                                "date": article.get("date", ""),
+                                "media_source": article.get("source", ""),
+                                "richtung": richtung or "unbekannt",
+                                "hinweis": ("Angekuendigte Beitrags-/Praemienanpassung aus der "
+                                            "Presseauswertung. KEIN gemessener Preis - das Datum "
+                                            "ist das Meldedatum, nicht zwingend der Wirksamkeitstag. "
+                                            "Richtung 'unbekannt' heisst: der Titel gibt sie nicht her."),
+                            },
+                        )
+                        event_count += 1
+
                     emit_event(
                         event_type=evt_type,
                         brand=name,

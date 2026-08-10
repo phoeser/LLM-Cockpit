@@ -33,8 +33,28 @@
     ["unfall","Unfallversicherung"],
     ["krankenhauszusatz","Krankenhauszusatzversicherung"]
   ];
-  // nur Wettbewerber aus DIESEM Projekt (geo-visibility config.competitors) + ERGO
-  var ALLOWED = ["ergo","allianz","axa","generali","signal-iduna","cosmosdirekt","huk","huk-coburg"];
+  /* Getrackte Marken. 10.08.2026 ergaenzt: R+V, DEVK und Hannoversche standen zwar
+     in BRAND_NAME, fehlten aber in ALLOWED - ihre Preise wurden also erhoben und
+     dann beim Rendern stillschweigend verworfen. Nachgezaehlt waren das 16 Zellen
+     (R+V 8, DEVK 4, Hannoversche 4). R+V steckte dabei unter ZWEI Schreibweisen in
+     den Daten ("ruv" im Crawl, "r-v" in der manuellen Erhebung) - ohne die
+     Alias-Normalisierung unten waere die Haelfte weiterhin unsichtbar geblieben. */
+  var ALIAS = { "r-v":"ruv", "r+v":"ruv", "rv":"ruv", "huk-coburg":"huk",
+                "hannoversche-leben":"hannoversche", "signal":"signal-iduna" };
+  function normMarke(k){ return ALIAS[String(k).toLowerCase()] || String(k).toLowerCase(); }
+  var ALLOWED = ["ergo","allianz","axa","generali","signal-iduna","cosmosdirekt","huk",
+                 "ruv","devk","hannoversche"];
+
+  /* Warum eine Marke in einer Zelle fehlen kann. Fehlt hier ein Eintrag, steht
+     "nicht erhoben" - das ist die ehrliche Vorgabe: eine Luecke ohne Grund sieht
+     aus wie ein Datenfehler, und genau so wurde sie bisher gelesen. */
+  var OHNE_PREIS_GRUND = {
+    "huk": "nicht auf Vergleichsportalen gelistet — die HUK-Coburg ist 2021 bei Verivox ausgestiegen und vertreibt direkt; über Portal-Crawling nicht erreichbar",
+    "generali": "in den meisten Vergleichsrechnern nicht gelistet",
+    "devk": "in den meisten Vergleichsrechnern nicht gelistet",
+    "hannoversche": "nur in einzelnen Sparten gelistet",
+    "ruv": "nur in einzelnen Sparten gelistet"
+  };
 
   var data = null, profile = "age_50";
 
@@ -46,21 +66,63 @@
           .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
     var man = fetch("data/price_manual.json?t="+Date.now(),{cache:"no-store"})
           .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-    function nBrands(prod){
-      var b=((prod.profiles||{}).age_50||{}).brands||{};
-      return Object.keys(b).filter(function(k){return k.indexOf("_other_")!==0;}).length;
+    /* MERGE JE PROFIL — umgebaut 10.08.2026.
+       Vorher: "die Quelle mit mehr Marken gewinnt", gezaehlt wurden aber NUR die
+       Marken im Profil age_50, und ersetzt wurde das GANZE Produkt mit allen
+       Profilen. Die manuelle Erhebung hat bei sechs von zehn Produkten ueberhaupt
+       nur age_50 - dadurch verschwanden bei Haftpflicht, Hausrat und Rechtsschutz
+       die vom Crawler erhobenen 30er- und 65er-Werte vollstaendig aus dem
+       Dashboard. Rund zehn bereits erhobene Preispunkte, die niemand sah.
+       Jetzt: je Profil entscheiden, und innerhalb des Profils die Marken beider
+       Quellen VEREINIGEN statt eine zu verwerfen. Bei derselben Marke in beiden
+       Quellen gewinnt der frischere Stand; steht der nicht fest, die Quelle mit
+       mehr Detail (Note, Tarif, Leistung). Je Profil wird mitgefuehrt, woher die
+       Werte stammen - das steht als Fussnote unter der Tabelle. */
+    function echteMarken(obj){
+      return Object.keys(obj||{}).filter(function(k){return k.indexOf("_other_")!==0;});
+    }
+    function detailTiefe(v){
+      var n=0; ["grade","grade_label","tariff","leistung","waiting_period","customer_score"].forEach(function(f){ if(v&&v[f]!=null&&v[f]!=="") n++; });
+      return n;
     }
     return Promise.all([base,man]).then(function(res){
       var a=res[0], b=res[1];
       if(!b) return a;
       if(!a) return b;
       a.products=a.products||{};
+      var aStand=a.as_of||"", bStand=b.as_of||"";
+      var manFrischer = (bStand && aStand) ? (bStand>aStand) : false;
       Object.keys(b.products||{}).forEach(function(pid){
-        var mp=b.products[pid], cp=a.products[pid];
-        if(!cp || nBrands(mp)>nBrands(cp)){
-          mp.params=(mp.params||"")+" · Quelle: manuelle Erhebung "+(b.as_of||"");
+        var mp=b.products[pid];
+        var cp=a.products[pid];
+        if(!cp){ // Produkt kennt der Crawler gar nicht
+          mp._quellen={};
+          Object.keys(mp.profiles||{}).forEach(function(prof){ mp._quellen[prof]="manuell"; });
           a.products[pid]=mp;
+          return;
         }
+        cp.profiles=cp.profiles||{};
+        cp._quellen=cp._quellen||{};
+        Object.keys(mp.profiles||{}).forEach(function(prof){
+          var mpr=mp.profiles[prof]||{}, cpr=cp.profiles[prof];
+          if(!cpr){                                   // Profil nur manuell vorhanden
+            cp.profiles[prof]=mpr; cp._quellen[prof]="manuell"; return;
+          }
+          var cb=cpr.brands||{}, mb=mpr.brands||{};
+          var ausManuell=0, ausCrawl=echteMarken(cb).length;
+          Object.keys(mb).forEach(function(marke){
+            if(!(marke in cb)){ cb[marke]=mb[marke]; if(marke.indexOf("_other_")!==0) ausManuell++; return; }
+            // Marke in beiden: frischerer Stand gewinnt, sonst der detailreichere
+            var nimmManuell = manFrischer ? true : (detailTiefe(mb[marke])>detailTiefe(cb[marke]));
+            if(nimmManuell) cb[marke]=mb[marke];
+          });
+          cpr.brands=cb;
+          cp._quellen[prof] = ausManuell
+            ? ("gemischt: "+ausCrawl+" aus dem Crawl, "+ausManuell+" ergänzt aus der manuellen Erhebung "+(bStand||"o. D."))
+            : "Crawl";
+        });
+        // Produktbeschreibung nur ergaenzen, nicht ersetzen
+        if(mp.params && (cp.params||"").indexOf(mp.params)<0 && !cp.params){ cp.params=mp.params; }
       });
       return a;
     });
@@ -134,13 +196,21 @@
     var brands = prod.profiles[profile].brands || {};
     // nur getrackte Heatmap-Marken (kein "_other_")
     var rows=[];
+    var gesehen = {};
     Object.keys(brands).forEach(function(k){
       if(k.indexOf("_other_")===0) return;
-      if(ALLOWED.indexOf(k)<0) return;
-      var nm = BRAND_NAME[k]; if(!nm) return;
+      var nk = normMarke(k);
+      if(ALLOWED.indexOf(nk)<0) return;
+      var nm = BRAND_NAME[nk] || BRAND_NAME[k]; if(!nm) return;
       var b=brands[k];
-      rows.push({key:k, name:nm, b:b, price: (b.price==null?Infinity:b.price)});
+      if(gesehen[nk]){                       // dieselbe Marke unter zwei Schreibweisen
+        if(b.price!=null && (gesehen[nk].b.price==null || b.price<gesehen[nk].b.price)) gesehen[nk].b=b;
+        return;
+      }
+      var zeile={key:nk, name:nm, b:b, price: (b.price==null?Infinity:b.price)};
+      gesehen[nk]=zeile; rows.push(zeile);
     });
+    rows.forEach(function(r){ r.price = (r.b.price==null?Infinity:r.b.price); });
     rows.sort(function(x,y){ return x.price - y.price; });
 
     var params = prod.params ? ('<div style="font-size:11px;color:#9ca3af;margin:2px 0 10px">'+prod.params+'</div>') : '';
@@ -171,7 +241,29 @@
         '<thead><tr style="text-align:left;color:#6b7280;font-size:11px">'+
           '<th style="padding:6px 8px">Anbieter</th><th style="padding:6px 8px">Preis / Monat</th>'+
           '<th style="padding:6px 8px">Check24-Tarifnote</th><th style="padding:6px 8px">Kernmerkmale</th></tr></thead>'+
-        '<tbody>'+body+'</tbody></table></div>';
+        '<tbody>'+body+'</tbody></table></div>'+
+      (function(){
+        /* 10.08.2026: Fehlende Marken bekommen einen Grund statt einer Leerstelle.
+           Vorher endete die Tabelle einfach - wer ERGO, Allianz und AXA sah, hielt
+           das fuer den Markt, obwohl sieben getrackte Marken fehlten. */
+        var da={}; rows.forEach(function(r){ da[r.key]=1; });
+        var offen = ALLOWED.filter(function(k){ return !da[k] && BRAND_NAME[k]; });
+        if(!offen.length) return '';
+        var mitGrund=[], ohneGrund=[];
+        offen.forEach(function(k){
+          if(OHNE_PREIS_GRUND[k]) mitGrund.push(BRAND_NAME[k]+' ('+OHNE_PREIS_GRUND[k]+')');
+          else ohneGrund.push(BRAND_NAME[k]);
+        });
+        var t='<div style="font-size:11px;color:#9ca3af;margin-top:8px;line-height:1.55"><b>Ohne Preis in dieser Zelle:</b> ';
+        var teile=[];
+        if(ohneGrund.length) teile.push(ohneGrund.join(', ')+' — in diesem Profil nicht erhoben');
+        mitGrund.forEach(function(x){ teile.push(x); });
+        return t+teile.join(' · ')+'. Eine fehlende Zeile heißt <b>nicht</b> „kein Angebot" und schon gar nicht „Preis null".</div>';
+      })()+
+      (function(){
+        var q=(prod._quellen||{})[profile];
+        return q ? ('<div style="font-size:11px;color:#cbd5e1;margin-top:4px">Quelle dieser Zelle: '+q+'</div>') : '';
+      })();
     return wrap;
   }
 

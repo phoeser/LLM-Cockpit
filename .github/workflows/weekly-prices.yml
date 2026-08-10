@@ -6,6 +6,13 @@ on:
     # mit dem Nightly fuehrte in der Concurrency-Gruppe "repo-writes" dazu,
     # dass GitHub einen der Runs stillschweigend verwerfen kann (1 Pending-Slot).
     - cron: '45 5 * * 1'
+    # 10.08.2026: Saisonfenster Kfz-Wechselsaison. Kuendigungsstichtag ist der
+    # 30. November, die neuen Tarife greifen zum 1. Januar - Oktober und November
+    # sind damit der einzige Zeitraum im Jahr, in dem sich viele Preise
+    # gleichzeitig UND angekuendigt bewegen. Nur dort lohnt taegliches Messen;
+    # den Rest des Jahres erzeugt es Rauschen (siehe Kommentar in
+    # nightly-update.yml, wo der taegliche Lauf deshalb entfernt wurde).
+    - cron: '45 5 * 10,11 *'
   workflow_dispatch:
 
 concurrency:
@@ -37,11 +44,28 @@ jobs:
           pip install playwright
           playwright install chromium --with-deps
 
-      - name: Preisvergleich crawlen (3 Produkte x 3 Altersprofile)
+      - name: Preisvergleich crawlen (7 Produkte x 3 Altersprofile)
         run: python scripts/update_prices.py
         continue-on-error: true
 
+      # 10.08.2026: Die beiden Review-Schritte laufen NUR im Wochenlauf. Das
+      # Saisonfenster (taeglich im Oktober/November) dient allein den Preisen -
+      # Bewertungen taeglich zu crawlen kostet Gemini-Aufrufe und Laufzeit, ohne
+      # dass sich dort etwas bewegt. 'is_wochenlauf' ist wahr am Montag und bei
+      # jeder Handauslösung.
+      - name: Wochenlauf oder Saisonfenster?
+        id: modus
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] || [ "$(date -u +%u)" = "1" ]; then
+            echo "wochenlauf=true" >> "$GITHUB_OUTPUT"
+            echo "Wochenlauf: Preise + Reviews"
+          else
+            echo "wochenlauf=false" >> "$GITHUB_OUTPUT"
+            echo "Saisonfenster (Kfz-Wechselsaison): nur Preise"
+          fi
+
       - name: Check24 Einzelbewertungen crawlen
+        if: steps.modus.outputs.wochenlauf == 'true'
         env:
           CHECK24_REVIEWS_ENABLED: "1"
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
@@ -50,6 +74,7 @@ jobs:
         continue-on-error: true
 
       - name: Review-Themen-Clustering (Gemini)
+        if: steps.modus.outputs.wochenlauf == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/review_themes.py
@@ -67,7 +92,7 @@ jobs:
           git add data/review_themes.json 2>/dev/null || true
           git add data/review_themes_cache.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Aenderungen."; exit 0; fi
-          git commit -m "data: weekly Check24 update (Preise + Reviews)"
+          git commit -m "data: Check24 update (${{ steps.modus.outputs.wochenlauf == 'true' && 'Preise + Reviews' || 'nur Preise, Saisonfenster' }})"
           for i in 1 2 3; do
             git pull --rebase -X theirs origin main || git rebase --abort 2>/dev/null || true
             if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi

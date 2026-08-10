@@ -129,6 +129,22 @@ IMPACT_TYPES = [
     "page_change", "page_new", "page_removed", "press_mention", "news_mention",
     "domain_change", "review_change", "review_volume", "price_change",
     "wikipedia_change", "portal_rank_change", "rating_status_change",
+    # 10.08.2026: "price_announcement" ergaenzt - angekuendigte Beitrags- und
+    # Praemienanpassungen aus dem Presse-Crawl (update_press.py).
+    #
+    # Warum als EIGENER Typ und nicht als price_change: price_change entsteht aus
+    # dem Vorher-Nachher-Vergleich gecrawlter Preise und ist ein GEMESSENER Wert.
+    # price_announcement ist eine Meldung ueber eine Aenderung - das Datum ist das
+    # MELDEDATUM, nicht zwingend der Wirksamkeitstag, und die Hoehe steht meist
+    # gar nicht drin. Beides in einen Topf zu werfen wuerde eine Genauigkeit
+    # vortaeuschen, die nur die eine Haelfte hat.
+    #
+    # Der Grund, warum es diesen Typ ueberhaupt gibt: price_change ist als Treiber
+    # tot ("nach Artefaktfilter zu wenige Preisereignisse, n=1 von 22, noetig sind
+    # 5"), weil sich Tarife ein- bis zweimal im Jahr aendern und Stichproben sie
+    # deshalb kaum treffen. Angekuendigte Anpassungen sind dagegen datierte
+    # Ereignisse - genau das, was die Event-Study braucht.
+    "price_announcement",
 ]
 # Treiber mit Valenz: Feature wird vorzeichenbehaftet (positiv/negativ aus Event-Sentiment)
 # 04.08.2026: "price_change" ergaenzt. Preis-Events tragen KEIN sentiment, wohl aber
@@ -154,7 +170,8 @@ TYPE_LABEL = {
     "domain_change": "Domain-/Subdomain-Aenderungen",
     "review_change": "Bewertungs-Trend (±)",
     "review_volume": "Bewertungs-Volumen",
-    "price_change": "Preis-Aenderungen",
+    "price_change": "Preis-Aenderungen (gemessen)",
+    "price_announcement": "Beitragsanpassung (angekuendigt)",
     "wikipedia_change": "Wikipedia-Ausbau (±)",
     "portal_rank_change": "Portal-Rang Check24 (±)",
     "rating_status_change": "Testsieger-/Rating-Trend (±)",

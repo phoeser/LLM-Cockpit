@@ -93,9 +93,28 @@ jobs:
         run: python scripts/update_ratings.py
         continue-on-error: true
 
-      - name: Preisvergleich crawlen (Check24, 3 Produkte x 3 Altersprofile)
-        run: python scripts/update_prices.py
-        continue-on-error: true
+      # 10.08.2026 ENTFERNT: "Preisvergleich crawlen" lief hier TAEGLICH - und
+      # zusaetzlich jeden Montag in weekly-prices.yml. Beide riefen dasselbe
+      # scripts/update_prices.py.
+      #
+      # Warum das schaedlich war: Versicherungstarife aendern sich ein- bis zweimal
+      # im Jahr. Nachgerechnet ueber die Git-Historie von price_comparison.json
+      # aendern sich an den meisten Tagen NULL von rund 230 Zellen. Was sich sehr
+      # wohl aenderte, war die Zusammensetzung: je Lauf tauchten 3 bis 14 % der
+      # Zellen neu auf oder verschwanden, weil der Crawl mal mehr und mal weniger
+      # Anbieter greift. Das Modell sah diese Fluktuation als Preisbewegung - und
+      # der Artefaktfilter in correlation_impact.py raeumte sie korrekt wieder weg:
+      # "nach Artefaktfilter zu wenige Preisereignisse (n=1 von 22, noetig sind 5)".
+      # Taeglich zu messen hat also nicht mehr Signal erzeugt, sondern nur mehr
+      # Rauschen, das das wenige Signal ueberdeckt.
+      #
+      # Der Crawl laeuft weiterhin woechentlich (weekly-prices.yml, Mo 05:45 UTC)
+      # und im Oktober/November zusaetzlich taeglich - dann bewegen sich die Preise
+      # wegen der Kfz-Wechselsaison (Stichtag 30.11.) wirklich.
+      #
+      # archive_price_cells.py bleibt hier: es schreibt die Zeitreihe aus dem
+      # vorhandenen Stand fort und ist idempotent je (Tag, Marke, Produkt) - es
+      # crawlt nichts.
 
       - name: Preis-Zeitreihe archivieren (Relativpreis je Marke x Produkt)
         run: python scripts/archive_price_cells.py

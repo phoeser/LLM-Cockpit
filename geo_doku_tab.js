@@ -212,7 +212,7 @@
       ['Visibility / Appearance-Rate','Anteil der Prompts/Antworten je Thema, in denen die Marke ueberhaupt erscheint.'],
       ['Position / avg_rank','Durchschnittliche Rang-Position der Marke innerhalb der Antwort (frueher genannt = besser).'],
       ['citation_rate','Anteil der Antworten, in denen mindestens eine Quelle der Marke zitiert wird.'],
-      ['Footprint','<b>footprint_pct</b> (Peec, 26 Marken) bzw. <b>cite_share</b> (eigener Crawl, 7 Marken): Anteil der markeneigenen Domain an allen zitierten URLs je Thema.'],
+      ['Footprint','<b>footprint_pct</b> (Peec) bzw. <b>cite_share</b> (eigener Crawl): Anteil der markeneigenen Domain an allen zitierten URLs je Thema.'],
       ['Peec-Sentiment','Skala 0&ndash;100, hoeher = positiver. ERGO ~51 (neutral). <b>&ne; Kundenbewertungs-Sentiment</b> des eigenen Crawls (Check24/Google-Reviews) — nie mischen.'],
       ['Empfehlungsrate (Nordstern)','Anteil der Prompts, in denen die Marke <b>positiv</b> genannt wird — die eigentliche Zielgroesse. <b>Empfehlungsrate light</b> als <b>Naeherung</b> seit 18.07.2026: Nennung <b>und</b> Peec-Sentiment&nbsp;&ge;&nbsp;60. Grounded aktuell ERGO&nbsp;<b>'+num(R.NS.ergo,1)+'&nbsp;%</b> vs. Allianz&nbsp;<b>'+num(R.NS.allianz,1)+'&nbsp;%</b> '+srcOf(R.NS.dyn,R.NS.date)+'. Quelle: <code>data/peec_nordstern.json</code>, woechentlich. <b>Keine echte Empfehlungs-Klassifikation</b> — die braucht NLP auf den Antwort-Volltexten; die Datengrundlage dafuer (mention_contexts &plusmn;1&nbsp;Satz im eigenen Crawl, A.2b) wird seit 19.07.2026 erhoben.']
     ])+
@@ -272,7 +272,7 @@
       warum:"Zeigt, wie viel des Rueckstands mit steuerbarem Footprint einhergeht.",
       wo:"Block 1 (Karte 'ERGO-Rueckstand'), Block 4 (Ursachen-Wasserfall).",
       interp:"Rueckstand ~"+num(P.gap,1)+"&nbsp;pp (Peec grounded), davon ~"+num(P.foot,1)+"&nbsp;pp footprint-erklaert "+srcOf(P.dyn,R.cDate)+".",
-      grenzen:"<b>Deskriptive Zerlegung, kein Kausalnachweis.</b> 'Autoritaet' = Groesse + Footprint als EINE Stufe, weil beide bei 7 Marken nicht trennbar sind." })+
+      grenzen:"<b>Deskriptive Zerlegung, kein Kausalnachweis.</b> 'Autoritaet' = Groesse + Footprint als EINE Stufe, weil beide bei dieser Fallzahl nicht trennbar sind." })+
     method({ name:"8 · Event-Study (multivariat) mit Out-of-Sample-Validierung", badge:badge("Nullbefund","muted"),
       was:"Multivariate Event-Study auf Interventionen/Marktereignisse, mit Out-of-Sample-Pruefung (r2_oos_vs_baseline) und Placebo-Falsch-Positiv-Rate.",
       warum:"Testet, ob kurzfristige Ereignisse die Sichtbarkeit vorhersagen — und ob das Modell die reine Marken-Basislinie schlaegt.",

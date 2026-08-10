@@ -126,24 +126,24 @@
     </div>
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-blue-500">
       <div class="text-xs uppercase text-gray-500 font-semibold">URLs gesamt</div>
-      <div class="text-3xl font-bold text-ergo-dark mt-1">~10.700</div>
-      <div class="text-xs text-gray-500 mt-1">aus 10 Sitemaps</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1" id="ovKpiUrls">–</div>
+      <div class="text-xs text-gray-500 mt-1" id="ovKpiUrlsSub">wird berechnet …</div>
     </div>
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-green-500">
       <div class="text-xs uppercase text-gray-500 font-semibold">FAQ-Marktführer</div>
-      <div class="text-3xl font-bold text-ergo-red mt-1">ERGO</div>
-      <div class="text-xs text-gray-500 mt-1">158 FAQ-Seiten</div>
+      <div class="text-3xl font-bold text-ergo-red mt-1" id="ovKpiFaq">–</div>
+      <div class="text-xs text-gray-500 mt-1" id="ovKpiFaqSub">wird berechnet …</div>
     </div>
     <div class="kpi-card bg-white rounded-xl p-5 shadow border-l-4 border-yellow-500">
       <div class="text-xs uppercase text-gray-500 font-semibold">Glossar-White-Space</div>
-      <div class="text-3xl font-bold text-ergo-dark mt-1">9 / 10</div>
-      <div class="text-xs text-gray-500 mt-1">nur AXA hat Glossar</div>
+      <div class="text-3xl font-bold text-ergo-dark mt-1" id="ovKpiGlossar">–</div>
+      <div class="text-xs text-gray-500 mt-1" id="ovKpiGlossarSub">wird berechnet …</div>
     </div>
   </div>
 
-  <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
-    <span class="font-bold text-blue-900">Datenstand-Update 25.04.2026 (v3 KONSOLIDIERT):</span>
-    <span class="text-gray-700">Allianz wurde über 3 Entitäten konsolidiert: <b>allianz.de</b> (1.751) + <b>allianzdirect.de</b> (438, mit 180 Ratgeber + 50 FAQ) + <b>markt-und-kunde.de</b> (89). Neue Gesamtzahlen: 2.278 URLs, 275 Ratgeber, 64 FAQ. Die Allianz fragmentiert ihren Content über Subdomains/Töchter — für LLMs aber alles "Allianz". <b>Konsequenz für ERGO:</b> Der vermeintliche Ratgeber-Vorsprung schrumpft, FAQ-Marktführerschaft (158 vs. 64) bleibt aber bestehen.</span>
+  <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm" id="ovKonsolidierung">
+    <span class="font-bold text-blue-900">Markenkonsolidierung:</span>
+    <span class="text-gray-700">wird aus den aktuellen Crawl-Daten gefüllt …</span>
   </div>
 
   <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 mb-6 text-sm">
@@ -154,7 +154,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
     <div class="bg-white rounded-xl p-6 shadow">
       <h3 class="text-lg font-bold text-ergo-dark mb-1">Gesamt-URLs pro Anbieter</h3>
-      <p class="text-xs text-gray-500 mb-3">Datenbasis: Sitemap-Analysen 2026-04</p>
+      <p class="text-xs text-gray-500 mb-3">Datenbasis: laufender Sitemap-Crawl, nächtlich aktualisiert</p>
       <div class="chart-container"><canvas id="chartTotalUrls"></canvas></div>
     </div>
     <div class="bg-white rounded-xl p-6 shadow">
@@ -172,37 +172,24 @@
         <div class="badge badge-blue mb-2">SEO-First</div>
         <h4 class="font-bold text-ergo-dark mb-1">Ratgeber-Dominiert</h4>
         <p class="text-sm text-gray-600 mb-2">Massive Ratgeber-Investition als organischer Traffic-Treiber</p>
-        <ul class="text-xs text-gray-700 space-y-1">
-          <li><span class="font-bold">HUK-Coburg:</span> 693 URLs (83%)</li>
-          <li><span class="font-bold">Signal Iduna:</span> 182 URLs (32%)</li>
-        </ul>
+        <ul class="text-xs text-gray-700 space-y-1" id="ovPosRatgeber"></ul>
       </div>
       <div class="border rounded-lg p-4 bg-gradient-to-br from-green-50 to-white">
         <div class="badge badge-green mb-2">UX-First</div>
         <h4 class="font-bold text-ergo-dark mb-1">Service-Fokussiert</h4>
-        <p class="text-sm text-gray-600 mb-2">Customer Journey & Self-Service als Content-Asset</p>
-        <ul class="text-xs text-gray-700 space-y-1">
-          <li><span class="font-bold">Generali:</span> 152 URLs (11%)</li>
-          <li><span class="font-bold">R+V:</span> ~150 URLs (~11%) + Rechner</li>
-        </ul>
+        <p class="text-sm text-gray-600 mb-2">Customer Journey &amp; Self-Service als Content-Asset</p>
+        <ul class="text-xs text-gray-700 space-y-1" id="ovPosService"></ul>
       </div>
       <div class="border rounded-lg p-4 bg-gradient-to-br from-yellow-50 to-white">
         <div class="badge badge-yellow mb-2">Brand-First</div>
         <h4 class="font-bold text-ergo-dark mb-1">Authority/News</h4>
-        <p class="text-sm text-gray-600 mb-2">Pressearbeit & Corporate-Signals für Markenstärke</p>
-        <ul class="text-xs text-gray-700 space-y-1">
-          <li><span class="font-bold">Allianz:</span> 261 Presse + 42 Rechner</li>
-          <li><span class="font-bold">AXA:</span> 96 Presse + 24 Glossar</li>
-        </ul>
+        <p class="text-sm text-gray-600 mb-2">Pressearbeit &amp; Corporate-Signals für Markenstärke</p>
+        <ul class="text-xs text-gray-700 space-y-1" id="ovPosPresse"></ul>
       </div>
     </div>
     <div class="mt-4 p-4 bg-red-50 border-l-4 border-ergo-red rounded">
       <div class="font-bold text-ergo-dark">Wo steht ERGO?</div>
-      <p class="text-sm text-gray-700 mt-1">
-        ERGO verfolgt aktuell eine <span class="font-semibold">Hybrid-Strategie</span> mit starker FAQ-Basis (158, Marktführer)
-        und solider Ratgeber-Tiefe (489), aber wenigen Tools (7) und keinem systematischen Glossar.
-        <span class="font-semibold ergo-red">→ Größtes Potenzial: Glossar aufbauen + FAQ mit Schema-Markup absichern.</span>
-      </p>
+      <p class="text-sm text-gray-700 mt-1" id="ovErgoPosition">wird aus den aktuellen Crawl-Daten gefüllt …</p>
     </div>
   </div>
 
@@ -377,7 +364,7 @@
   <!-- ===== WIRKUNG AUF LLM-SICHTBARKEIT + HEBEL ===== -->
   <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
     <h3 class="text-lg font-bold text-ergo-dark mb-2">Wirkung auf die LLM-Sichtbarkeit von ergo.de &mdash; und was hilft</h3>
-    <p class="text-sm text-gray-700 mb-4">Rund <strong>4.168 Vermittler-Subdomains</strong> (gesch&auml;tzt 42.000&ndash;62.500 Unterseiten) spiegeln zu <strong>100&nbsp;%</strong> dieselben Produktthemen wie ergo.de &mdash; Haftpflicht (&#216;&nbsp;152 Nennungen/Seite), Reise (101), Zahnzusatz (93). Statt einer starken Autorit&auml;ts-Domain verteilt sich ERGOs Content auf tausende quasi-identische Templates. F&uuml;r generative KI wirkt das <strong>verw&auml;ssernd</strong>: LLMs b&uuml;ndeln Vertrauen und Zitate auf <em>eine</em> klare Quelle &mdash; zersplitterte Duplikate schw&auml;chen das Signal und kosten ergo.de potenziell Share of Voice.</p>
+    <p class="text-sm text-gray-700 mb-4" id="berWirkungText">Rund <strong>4.168 Vermittler-Subdomains</strong> (gesch&auml;tzt 42.000&ndash;62.500 Unterseiten) spiegeln zu <strong>100&nbsp;%</strong> dieselben Produktthemen wie ergo.de &mdash; Haftpflicht (&#216;&nbsp;152 Nennungen/Seite), Reise (101), Zahnzusatz (93). Statt einer starken Autorit&auml;ts-Domain verteilt sich ERGOs Content auf tausende quasi-identische Templates. F&uuml;r generative KI wirkt das <strong>verw&auml;ssernd</strong>: LLMs b&uuml;ndeln Vertrauen und Zitate auf <em>eine</em> klare Quelle &mdash; zersplitterte Duplikate schw&auml;chen das Signal und kosten ergo.de potenziell Share of Voice.</p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
         <div class="text-sm font-bold text-emerald-800 mb-1">1. ergo.de kanonisieren</div>
@@ -616,7 +603,7 @@
 
   <!-- Bewertungs-History (aufklappbar, nach Datum gruppiert, scrollbar) -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-1">Bewertungs-Archiv (6 Monate)</h3>
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">Bewertungs-Archiv</h3>
     <p class="text-xs text-gray-500 mb-3">Echte Kundenbewertungen aus Trustpilot, Google, eKomi — aufklappbar nach Crawl-Datum, scrollbar</p>
     <div class="flex flex-wrap gap-2 mb-3" id="reviewBrandFilter"></div>
     <div class="flex flex-wrap gap-2 mb-4" id="reviewSourceFilter"></div>
@@ -822,7 +809,7 @@
       <h2 class="text-xl font-bold">Peec AI – zweite Messquelle (UI-Scraping)</h2>
       <span class="text-xs text-gray-500">Datenstand Peec: <span id="peecAsOf">–</span> · aktualisiert sich mit dem wöchentlichen Peec-Export</span>
     </div>
-    <p class="text-sm text-gray-600 mb-4">Unabhängige Validierung des Treibermodells: Peec misst dieselben Marken &times; Themen über ChatGPT, Gemini, AI Overview, AI Mode und Perplexity (366 Prompts, echte UI-Antworten). Footprint = zitatgewichteter Anteil der Quellen mit Markenerwähnung je Thema.</p>
+    <p class="text-sm text-gray-600 mb-4">Unabhängige Validierung des Treibermodells: Peec misst dieselben Marken &times; Themen über ChatGPT, Gemini, AI Overview, AI Mode und Perplexity (<span id="peecPromptZahl">…</span> Prompts, echte UI-Antworten). Footprint = zitatgewichteter Anteil der Quellen mit Markenerwähnung je Thema.</p>
     <div style="background:#f6f7f9;border:1px solid #e3e6ea;border-left:4px solid #6b7280;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12.5px;color:#374151;line-height:1.55"><b>Ansicht umschaltbar (Standard: branding-neutral).</b> Peecs Prompt-Satz ist ERGO-zentriert — 21 % der Prompts nennen ERGO ausdrücklich, kein Wettbewerber. In der <b>neutralen</b> Ansicht (nur markenfreie Prompts) liegt ERGO marktplausibel hinter Allianz und HUK; die <b>ERGO-fokussierte</b> Ansicht (inkl. Branding-Prompts) ist eine Monitoring-Kennzahl, kein Marktranking. Umschalter unten. <span style="color:#9ca3af">(Prüfung 31.07.2026 · Details: 18b_PEEC_BRANDING_FILTER.md.)</span></div>
     <div id="peecHealth"></div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="peecCards"></div>
@@ -845,6 +832,16 @@
 </section>
 <script>
 function renderPeecTab(){
+  /* Prompt-Zahl stand bis 10.08.2026 fest im HTML ("366 Prompts"), tatsaechlich
+     sind es 584 (data/peec_neutral_sov.json). Jetzt aus den Daten. */
+  try{
+    var _pz=document.getElementById('peecPromptZahl');
+    if(_pz){
+      var _ns=window.PEEC_NEUTRAL_SOV||null;
+      var _n=_ns && (_ns.n_prompts!=null?_ns.n_prompts:null);
+      _pz.textContent = (_n!=null) ? Number(_n).toLocaleString('de-DE') : 'zahlreiche';
+    }
+  }catch(e){}
   /* Die Validierungszahlen standen bis 10.08.2026 hart im HTML ("r = 0,83 ueber 312 Zellen")
      und widersprachen dem, was der Korrelations-Reiter live rendert. Jetzt aus den Daten. */
   try{
@@ -897,7 +894,7 @@ function renderPeecTab(){
     ['Konvergenz eigener Crawl ↔ Peec', r!=null ? ('r = '+r.toFixed(2)) : '–', ((val.combined&&val.combined.n)||val.n_common_cells||0)+' gemeinsame Zellen'],
     ['Peec-Zellen im Modell', wp ? (wp.n_cells_added||0) : '–', 'zusätzlich zu den eigenen Zellen'],
     ['Footprint-Effekt (integriert, between)', de && de.between ? (de.between.coef.toFixed(2)+' Pp/Pp') : '–', de && de.between ? ('P(Richtung) '+Math.round(100*de.between.prob_direction)+' %') : ''],
-    ['Footprint ERGO vs. Allianz', fpE.toFixed(1)+' % vs. '+fpA.toFixed(1)+' %', 'Ø über 12 Themen (Peec)']
+    ['Footprint ERGO vs. Allianz', fpE.toFixed(1)+' % vs. '+fpA.toFixed(1)+' %', 'Ø über alle erfassten Themen (Peec)']
   ];
   cardsEl.innerHTML = cards.map(c =>
     '<div class="bg-white rounded-xl shadow p-4"><div class="text-xs text-gray-500 uppercase tracking-wide">'+c[0]+'</div>'+
@@ -1007,34 +1004,20 @@ window.renderPeecTab = renderPeecTab;
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
     <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-5">
       <div class="text-xs uppercase font-semibold text-green-700">ERGO Stärken</div>
-      <ul class="mt-2 text-sm text-gray-700 space-y-1">
-        <li>✅ <span class="font-semibold">FAQ-Marktführer</span> (158 vs. Ø 14)</li>
-        <li>✅ <span class="font-semibold">Größte Sitemap</span> (2.064 URLs)</li>
-        <li>✅ <span class="font-semibold">Solide Ratgeber-Basis</span> (489 URLs)</li>
-        <li>✅ <span class="font-semibold">Breite Sparten-Abdeckung</span></li>
-      </ul>
+      <ul class="mt-2 text-sm text-gray-700 space-y-1" id="gapStaerken"></ul>
     </div>
     <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-5">
       <div class="text-xs uppercase font-semibold text-yellow-700">Mittlerer Aufholbedarf</div>
-      <ul class="mt-2 text-sm text-gray-700 space-y-1">
-        <li>🟡 <span class="font-semibold">Ratgeber-Volumen</span>: HUK 693 vs. ERGO 489</li>
-        <li>🟡 <span class="font-semibold">Pressebereich</span>: Allianz 261, AXA 96</li>
-        <li>🟡 <span class="font-semibold">Service-Hub</span>: Generali/R+V führend</li>
-        <li>🟡 <span class="font-semibold">Sparten-Tiefe Tier/Rechtsschutz</span></li>
-      </ul>
+      <ul class="mt-2 text-sm text-gray-700 space-y-1" id="gapMittel"></ul>
     </div>
     <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-5">
       <div class="text-xs uppercase font-semibold text-red-700">Hoher Handlungsbedarf</div>
-      <ul class="mt-2 text-sm text-gray-700 space-y-1">
-        <li>🔴 <span class="font-semibold">Rechner/Tools</span>: ERGO 7 vs. Allianz 42</li>
-        <li>🔴 <span class="font-semibold">Glossar/Lexikon</span>: keines vorhanden</li>
-        <li>🔴 <span class="font-semibold">Video-Content</span>: HUK pflegt 73 Videos</li>
-        <li>🔴 <span class="font-semibold">Schema.org-Markup</span> auf FAQ ausbauen</li>
-      </ul>
+      <ul class="mt-2 text-sm text-gray-700 space-y-1" id="gapHoch"></ul>
     </div>
   </div>
+  <p class="text-xs text-gray-400 mb-8" id="gapAmpelNote"></p>
 
-  <!-- Trennlinie zwischen GAP-Analyse und Maßnahmen -->
+<!-- Trennlinie zwischen GAP-Analyse und Maßnahmen -->
   <div class="border-t-2 border-ergo-red pt-8 mb-6">
     <h3 class="text-xl font-bold text-ergo-dark mb-2">Priorisierte Maßnahmen</h3>
     <p class="text-sm text-gray-600 mb-4">Impact/Effort-Bewertung. Klick auf Karte für Details.</p>
@@ -1123,18 +1106,18 @@ const PROVIDERS = {
     name: "ERGO", url: "ergo.de + ergo.com", color: "#DC0028",
     total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: 308, glossar: 0, b2b: 150, video: null, service: 161, produkt: 400,
     strategy: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis + großer Konzern-Newsroom",
-    strengths: ["FAQ-Marktführer mit 158 Seiten", "Größte Sitemap aller Anbieter (2.064 URLs)", "Breite Produktabdeckung über alle Kernsparten", "Eigener Rechtsportal-Bereich (944 URLs)", "Konzern-Newsroom auf ergo.com/de mit 308 Presse-URLs", "161 Service-URLs (Datenschutz, AGB, Schadenmeldung)"],
-    weaknesses: ["Kein systematisches Glossar/Lexikon", "Nur 7 Rechner/Tools (Allianz: 42)", "Service-Subseiten sind primär Datenschutz/Rechtliches, weniger Self-Service", "Sparten Tier (10) und Rechtsschutz (8) untergewichtet"],
+    strengths_qual: ["Breite Produktabdeckung über alle Kernsparten"],
+    weaknesses_qual: ["Kein systematisches Glossar/Lexikon", "Service-Subseiten sind primär Datenschutz/Rechtliches, weniger Self-Service"],
     sparten: { "Reise":133, "KFZ":113, "Kranken":36, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":8, "Tier":10, "Unfall":null },
-    llmRelevance: "MITTEL-HOCH: Starke FAQ-Basis ist LLM-Gold, sobald Schema.org ausgerollt ist; Konzern-Newsroom liefert Authority-Signale",
+    llmRelevance: "MITTEL-HOCH: Eine ausgebaute FAQ-Basis mit Schema.org waere ein starkes LLM-Signal; Konzern-Newsroom liefert Authority-Signale",
     quelle: "Sitemap 2026-04-24 ergo.de + 2026-04-26 ergo.com/de (Konzern-Newsroom)"
   },
   allianz: {
     name: "Allianz (konsolidiert)", url: "allianz.de + allianzdirect.de + markt-und-kunde.de", color: "#003781",
     total: 2278, ratgeber: 275, faq: 64, rechner: 47, presse: 258, glossar: 0, b2b: 164, video: null, service: 79, produkt: 800,
     strategy: "Multi-Entitäten-Strategie (Konzern + Direct + B2B)",
-    strengths: ["Best-in-Class Rechner-Portfolio (47 Tools)", "Eigene Direktmarke allianzdirect.de mit 438 URLs (180 Ratgeber, 50 FAQ)", "B2B-Plattform markt-und-kunde.de (89 URLs, Yoast-SEO)", "Dominanter Pressebereich (258 URLs)"],
-    weaknesses: ["Content fragmentiert über 3 Domains – schwächt zentrale Markenwahrnehmung", "FAQ-Volumen 64 deutlich unter ERGO (158)", "Kein zentrales Versicherungs-Glossar", "Kein einheitlicher Magazin-Hub"],
+    strengths_qual: [],
+    weaknesses_qual: ["Kein zentrales Versicherungs-Glossar", "Kein einheitlicher Magazin-Hub"],
     sparten: { "Hausrat/Recht":279, "Kranken":263, "Leben/Vorsorge":247, "KFZ":217, "B2B":164, "Reise":37, "Rechtsschutz":null, "Tier":null, "Unfall":null },
     llmRelevance: "SEHR HOCH: Multi-Domain-Portfolio mit Direct + B2B + Konzern. LLMs nehmen das als 'Allianz' wahr — Wettbewerbsvorteil!",
     quelle: "Konsolidiert v3 2026-04-25: allianz.de + allianzdirect.de + markt-und-kunde.de"
@@ -1143,8 +1126,8 @@ const PROVIDERS = {
     name: "HUK-Coburg", url: "huk.de", color: "#FFD500",
     total: 1028, ratgeber: 693, faq: 7, rechner: 0, presse: 39, glossar: 0, b2b: 3, video: 73, service: 44, produkt: 120,
     strategy: "SEO-First: Ratgeber-Maschine",
-    strengths: ["Best-in-Class Ratgeber-Volumen (693, 83%)", "Eigene Video-Sitemap (73 Videos)", "Klarer Kranken+KFZ-Fokus (478+428 URLs)", "Massiver organischer Traffic-Treiber"],
-    weaknesses: ["Keine Rechner indexiert", "Nur 7 FAQ-Seiten", "Schwache Service-Seiten", "Kein Glossar"],
+    strengths_qual: ["Massiver organischer Traffic-Treiber"],
+    weaknesses_qual: ["Keine Rechner indexiert", "Schwache Service-Seiten", "Kein Glossar"],
     sparten: { "Kranken":478, "KFZ":428, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
     llmRelevance: "SEHR HOCH: Großes Ratgeber-Volumen = starkes Trainings-Signal für LLMs",
     quelle: "Sitemap 2026-04-25 (WebFetch)"
@@ -1153,8 +1136,8 @@ const PROVIDERS = {
     name: "AXA", url: "axa.de", color: "#00008F",
     total: 782, ratgeber: 21, faq: null, rechner: 2, presse: 96, glossar: 24, b2b: null, video: null, service: 26, produkt: 200,
     strategy: "Brand/News-First mit Glossar-Differenzierung",
-    strengths: ["Einziger Anbieter mit Glossar (24 URLs)", "Starker Newsroom (96 Presse-URLs, 12%)", "Haftpflicht-Tiefe (106 URLs)"],
-    weaknesses: ["Sehr wenig Ratgeber (21 URLs, nur 3%)", "77% der Sitemap sind Admin-Seiten", "Schwache Service-Präsenz", "Insgesamt SEO-schwach"],
+    strengths_qual: [],
+    weaknesses_qual: ["Schwache Service-Präsenz", "Insgesamt SEO-schwach"],
     sparten: { "Haftpflicht":106, "KFZ":null, "Kranken":null, "Leben":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
     llmRelevance: "MITTEL: Glossar-Asset stark, Ratgeber-Schwäche limitiert Reichweite",
     quelle: "Sitemap 2026-04-25 (WebFetch mit Custom User-Agent)"
@@ -1163,8 +1146,8 @@ const PROVIDERS = {
     name: "Generali", url: "generali.de", color: "#C8102E",
     total: 1379, ratgeber: 75, faq: 29, rechner: 1, presse: 16, glossar: 0, b2b: 3, video: null, service: 152, produkt: 700,
     strategy: "UX-First: Service- und FAQ-orientiert",
-    strengths: ["Größte FAQ-Datenbank nach ERGO (29)", "Top-Service-Hub (152 URLs)", "Aktives Magazin (75 URLs)", "Ausgewogene Sparten-Verteilung"],
-    weaknesses: ["Nur 1 Rechner indexiert", "Kein Glossar", "Kleines Ratgeber-Volumen", "Wenig Presse"],
+    strengths_qual: ["Ausgewogene Sparten-Verteilung"],
+    weaknesses_qual: ["Kein Glossar", "Kleines Ratgeber-Volumen", "Wenig Presse"],
     sparten: { "KFZ":265, "Kranken":203, "Haftpflicht":196, "Leben":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
     llmRelevance: "MITTEL: FAQ-Dichte hilft bei präzisen Prompts",
     quelle: "Sitemap 2026-04-25 (WebFetch)"
@@ -1173,8 +1156,8 @@ const PROVIDERS = {
     name: "Signal Iduna", url: "signal-iduna.de", color: "#005CA9",
     total: 576, ratgeber: 182, faq: 1, rechner: 0, presse: 10, glossar: 0, b2b: null, video: null, service: 54, produkt: 200,
     strategy: "Balanced Hybrid: Ratgeber + Service",
-    strengths: ["Solide Ratgeber-Quote (32%)", "Nischen-Produkte (Pedelec, Krankenvoll)", "Strukturierte Service-Navigation"],
-    weaknesses: ["Kleines Gesamtvolumen (576)", "Keine Rechner indexiert", "Minimal Presse", "Keine FAQ erkennbar"],
+    strengths_qual: ["Nischen-Produkte (Pedelec, Krankenvoll)", "Strukturierte Service-Navigation"],
+    weaknesses_qual: ["Keine Rechner indexiert", "Minimal Presse", "Keine FAQ erkennbar"],
     sparten: { "Kranken":61, "KFZ":null, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
     llmRelevance: "MITTEL: Ratgeber-Anteil OK, aber kleines Gesamtvolumen",
     quelle: "Sitemap 2026-04-25 (WebFetch mit Custom User-Agent)"
@@ -1183,8 +1166,8 @@ const PROVIDERS = {
     name: "R+V", url: "ruv.de", color: "#FFCD00",
     total: 1350, ratgeber: 215, faq: null, rechner: 3, presse: 122, glossar: 0, b2b: null, video: null, service: 154, produkt: 500,
     strategy: "Hybrid mit Altersvorsorge-Fokus & Rechner-Vorteil",
-    strengths: ["Einziger mit indexierten Rechnern (KFZ, Hausrat, Rentenlücke)", "Altersvorsorge-Hub als USP", "Aktiver Newsroom + Blog 'bunte Seiten'", "Studie 'Ängste der Deutschen' als Authority-Signal"],
-    weaknesses: ["Keine offizielle Sitemap (HTTP 401)", "Daten nur via Stichprobe (~80% Coverage)", "Kein Glossar", "FAQ schwer messbar"],
+    strengths_qual: ["Einziger mit indexierten Rechnern (KFZ, Hausrat, Rentenlücke)", "Altersvorsorge-Hub als USP", "Aktiver Newsroom + Blog 'bunte Seiten'", "Studie 'Ängste der Deutschen' als Authority-Signal"],
+    weaknesses_qual: ["Kein Glossar", "FAQ schwer messbar"],
     sparten: { "KFZ":275, "Kranken":null, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
     llmRelevance: "HOCH durch Studien-Authority + Rechner-Conversion-Signal",
     quelle: "WebSearch-Stichprobe 2026-04-25 (geschätzte Werte)"
@@ -1193,8 +1176,8 @@ const PROVIDERS = {
     name: "DEVK", url: "devk.de", color: "#009A3D",
     total: 314, ratgeber: 36, faq: 0, rechner: 13, presse: 78, glossar: 0, b2b: 1, video: null, service: 28, produkt: 100,
     strategy: "Kompakter Privatkunden-Vollsortimenter mit Newsroom-Fokus",
-    strengths: ["KFZ-stark (49 URLs, Eisenbahner-DNA)", "13 Tarif-Rechner (mehr als ERGO mit 7)", "Aktiver Newsroom mit 78 Pressemitteilungen", "Haftpflicht (29) + Hausrat (22) strukturell dichter als ERGO"],
-    weaknesses: ["Nur 314 URLs - kompakteste Sitemap aller Wettbewerber", "0 FAQ-Seiten indexiert", "0 Glossar/Lexikon", "Praktisch kein B2B-Bereich (1 URL)", "Nur 5 Standortseiten - Local-SEO ungenutzt"],
+    strengths_qual: [],
+    weaknesses_qual: [],
     sparten: { "KFZ": 49, "Haftpflicht": 29, "Hausrat": 22, "Kranken": 21, "Leben": 17, "Rechtsschutz": 12, "Unfall": 8, "Reise": 7, "Finanzen": 7 },
     llmRelevance: "GERING-MITTEL: kleines URL-Volumen begrenzt LLM-Sichtbarkeit, aber gute Strukturqualität",
     quelle: "Sitemap 2026-04-26 (devk_inventar.csv)"
@@ -1203,8 +1186,8 @@ const PROVIDERS = {
     name: "Hannoversche", url: "hannoversche.de", color: "#005CA9",
     total: 366, ratgeber: 56, faq: 10, rechner: 11, presse: 7, glossar: 0, b2b: null, video: null, service: 33, produkt: 150,
     strategy: "Lebensversicherungs-Spezialist mit Beratungsfokus",
-    strengths: ["56 Ratgeber-Artikel (15% der Sitemap) trotz Spezialisierung", "11 Rechner indexiert", "Klarer Leben-Fokus (72 URLs)"],
-    weaknesses: ["Nur 366 URLs gesamt – sehr klein", "Eingeschränktes Sparten-Spektrum (kein KFZ-Schwerpunkt)", "Wenig Presse-Content"],
+    strengths_qual: [],
+    weaknesses_qual: ["Eingeschränktes Sparten-Spektrum (kein KFZ-Schwerpunkt)", "Wenig Presse-Content"],
     sparten: { "Leben": 72, "Kranken": 12, "KFZ": 8, "Sach": 3, "Haftpflicht": 2, "Tier": 2, "Reise": 1 },
     llmRelevance: "MITTEL für Lebens-Versicherung-Anfragen, sonst niedrig",
     quelle: "Sitemap 2026-04-26"
@@ -1213,13 +1196,64 @@ const PROVIDERS = {
     name: "Cosmos Direkt", url: "cosmosdirekt.de", color: "#FF6600",
     total: 694, ratgeber: 105, faq: null, rechner: 3, presse: 3, glossar: 0, b2b: null, video: null, service: 32, produkt: 421,
     strategy: "Direktversicherer mit starker Produkt-Fokussierung",
-    strengths: ["421 Produktseiten (61% der Sitemap)", "105 Ratgeber-Artikel", "Breites Sparten-Portfolio (Leben, KFZ, Hausrat, Haftpflicht, Kranken)"],
-    weaknesses: ["Nur 3 Rechner indexiert", "Wenig Presse-Content", "Kein Glossar"],
+    strengths_qual: ["Breites Sparten-Portfolio (Leben, KFZ, Hausrat, Haftpflicht, Kranken)"],
+    weaknesses_qual: ["Wenig Presse-Content", "Kein Glossar"],
     sparten: { "Leben": 158, "KFZ": 126, "Hausrat": 68, "Haftpflicht": 46, "Kranken": 40, "Unfall": 25, "Reise": 14, "Rechtsschutz": 2 },
     llmRelevance: "MITTEL-HOCH durch breite Produkt-Tiefe und Direktvertrieb-Reputation",
     quelle: "Sitemap 2026-04-26"
   }
 };
+
+
+/* Staerken und Schwaechen je Anbieter aus den LIVE-Crawl-Zahlen ableiten.
+   Bis 10.08.2026 standen sie als feste Texte aus 04/2026 in PROVIDERS und
+   widersprachen den Kacheln auf DERSELBEN Seite - z. B. bei ERGO 'FAQ-Marktfuehrer
+   mit 158 Seiten' (tatsaechlich 8) oder bei AXA 'Einziger Anbieter mit Glossar
+   (24 URLs)' (tatsaechlich 0). Die zeitlosen, qualitativen Saetze aus
+   strengths_qual / weaknesses_qual bleiben erhalten und werden angehaengt. */
+function ableitenProfil(key){
+  var P = PROVIDERS[key]; if(!P) return {stark:[], schwach:[]};
+  var alle = Object.entries(PROVIDERS).filter(function(x){ return x[1] && x[1].total; });
+  var f = function(n){ return Number(n||0).toLocaleString('de-DE'); };
+  var FELDER = [
+    {k:'ratgeber', lab:'Ratgeber'}, {k:'faq', lab:'FAQ-Seiten'}, {k:'rechner', lab:'Rechner und Tools'},
+    {k:'presse', lab:'Pressebereich'}, {k:'service', lab:'Service-Seiten'}, {k:'glossar', lab:'Glossar'},
+    {k:'video', lab:'Video-Inhalte'}
+  ];
+  var stark=[], schwach=[];
+  // Gesamtvolumen einordnen
+  var nachTotal = alle.slice().sort(function(a,b){ return b[1].total-a[1].total; });
+  var platzTotal = nachTotal.findIndex(function(x){ return x[0]===key; })+1;
+  if(platzTotal<=3) stark.push('Großes Gesamtvolumen: '+f(P.total)+' URLs (Platz '+platzTotal+' von '+alle.length+')');
+  else if(platzTotal>=alle.length-2) schwach.push('Kleines Gesamtvolumen: '+f(P.total)+' URLs (Platz '+platzTotal+' von '+alle.length+')');
+  FELDER.forEach(function(F){
+    var werte = alle.map(function(x){ return {key:x[0], name:(x[1].name||x[0]), v:(x[1][F.k]||0)}; });
+    var sortiert = werte.slice().sort(function(a,b){ return b.v-a.v; });
+    var top = sortiert[0]; var eigen = P[F.k]||0;
+    var mit = werte.filter(function(x){ return x.v>0; });
+    if(!top || top.v===0) return;                        // Feld bei niemandem belegt
+    var schnitt = mit.length ? mit.reduce(function(a,x){return a+x.v;},0)/mit.length : 0;
+    if(eigen>0 && eigen===top.v){
+      var zweiter = sortiert.filter(function(x){ return x.key!==key; })[0];
+      var gleich  = zweiter && zweiter.v===eigen;
+      stark.push(F.lab+': '+f(eigen)+(gleich
+        ? (' — gleichauf mit '+zweiter.name)
+        : (' — führend vor '+(zweiter&&zweiter.v?zweiter.name+' ('+f(zweiter.v)+')':'allen anderen'))));
+    } else if(eigen>0 && eigen>=schnitt){
+      stark.push(F.lab+': '+f(eigen)+' — über dem Schnitt von '+f(Math.round(schnitt)));
+    } else if(eigen===0 && mit.length>=3){
+      schwach.push(F.lab+': nicht vorhanden (Spitze: '+top.name+' mit '+f(top.v)+')');
+    } else if(eigen>0 && top.v && eigen/top.v < 0.34){
+      schwach.push(F.lab+': nur '+f(eigen)+' gegen '+f(top.v)+' bei '+top.name);
+    }
+  });
+  // Qualitative, zeitlose Aussagen anhaengen
+  (P.strengths_qual||[]).forEach(function(s){ stark.push(s); });
+  (P.weaknesses_qual||[]).forEach(function(s){ schwach.push(s); });
+  if(!stark.length)   stark.push('keine Angabe — im aktuellen Crawl kein Feld über dem Wettbewerbsschnitt');
+  if(!schwach.length) schwach.push('keine Angabe — im aktuellen Crawl keine auffällige Lücke');
+  return {stark:stark, schwach:schwach};
+}
 
 function providerTemplate(key) {
   const p = PROVIDERS[key];
@@ -1278,11 +1312,11 @@ function providerTemplate(key) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-5">
         <div class="text-xs uppercase font-semibold text-green-700 mb-2">Stärken</div>
-        <ul class="text-sm text-gray-700 space-y-2">${p.strengths.map(s=>`<li>✅ ${s}</li>`).join('')}</ul>
+        <ul class="text-sm text-gray-700 space-y-2">${ableitenProfil(key).stark.map(s=>`<li>✅ ${s}</li>`).join('')}</ul>
       </div>
       <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-5">
         <div class="text-xs uppercase font-semibold text-red-700 mb-2">Schwächen</div>
-        <ul class="text-sm text-gray-700 space-y-2">${p.weaknesses.map(s=>`<li>🔴 ${s}</li>`).join('')}</ul>
+        <ul class="text-sm text-gray-700 space-y-2">${ableitenProfil(key).schwach.map(s=>`<li>🔴 ${s}</li>`).join('')}</ul>
       </div>
     </div>
 
@@ -1420,11 +1454,11 @@ function providerTemplate(key) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       <div class="bg-green-50 border-l-4 border-green-500 rounded-xl p-5">
         <div class="text-xs uppercase font-semibold text-green-700 mb-2">Stärken</div>
-        <ul class="text-sm text-gray-700 space-y-2">${p.strengths.map(s=>`<li>✅ ${s}</li>`).join('')}</ul>
+        <ul class="text-sm text-gray-700 space-y-2">${ableitenProfil(key).stark.map(s=>`<li>✅ ${s}</li>`).join('')}</ul>
       </div>
       <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-5">
         <div class="text-xs uppercase font-semibold text-red-700 mb-2">Schwächen</div>
-        <ul class="text-sm text-gray-700 space-y-2">${p.weaknesses.map(s=>`<li>🔴 ${s}</li>`).join('')}</ul>
+        <ul class="text-sm text-gray-700 space-y-2">${ableitenProfil(key).schwach.map(s=>`<li>🔴 ${s}</li>`).join('')}</ul>
       </div>
     </div>
 
@@ -2007,7 +2041,7 @@ function renderRatingsTables() {
 
     var html = '<div class="bg-white rounded-xl p-6 shadow mb-6">';
     html += '<h3 class="text-lg font-bold text-ergo-dark mb-1">' + prod.icon + ' ' + prod.label + '</h3>';
-    html += '<p class="text-xs text-gray-500 mb-4">Alle Produktratings im Vergleich — 6 unabhängige Quellen</p>';
+    html += '<p class="text-xs text-gray-500 mb-4">Alle Produktratings im Vergleich — 5 unabhängige Quellen</p>';
     html += '<div class="overflow-x-auto">';
     html += '<table class="w-full text-sm">';
     html += '<thead><tr class="bg-gray-100 text-left">';
@@ -2491,6 +2525,145 @@ function buildOverviewCharts() {
 }
 
 function buildProviderCharts() {
+  /* Uebersicht: alles, was frueher als April-Zahl im HTML stand, aus PROVIDERS rechnen.
+     PROVIDERS ist zu diesem Zeitpunkt bereits mit providers.json gemerged (Z. ~3710),
+     enthaelt also dieselben Werte wie die Tabellen darunter. Bis 10.08.2026 standen
+     hier Zahlen aus 04/2026, die der Tabelle auf derselben Seite widersprachen -
+     z. B. 'FAQ-Marktfuehrer ERGO, 158 Seiten' gegen tatsaechlich 8 (Spitze: Generali). */
+  function fillOverviewStatic(){
+    var eintraege = Object.entries(PROVIDERS).filter(function(x){ return x[1] && x[1].total; });
+    if(!eintraege.length) return;
+    var f = function(n){ return (n==null) ? 'keine Angabe' : Number(n).toLocaleString('de-DE'); };
+    var setzen = function(id, txt){ var el=document.getElementById(id); if(el) el.textContent = txt; };
+    var setzenHtml = function(id, html){ var el=document.getElementById(id); if(el) el.innerHTML = html; };
+
+    // URLs gesamt
+    var summe = eintraege.reduce(function(a,x){ return a + (x[1].total||0); }, 0);
+    setzen('ovKpiUrls', f(summe));
+    setzen('ovKpiUrlsSub', 'über ' + eintraege.length + ' Anbieter');
+
+    // Marktfuehrer je Feld
+    var spitze = function(feld){
+      var sortiert = eintraege.slice().sort(function(a,b){ return (b[1][feld]||0)-(a[1][feld]||0); });
+      return sortiert[0];
+    };
+    var faqTop = spitze('faq');
+    setzen('ovKpiFaq', (faqTop[1].name||faqTop[0]));
+    var ergoFaq = (PROVIDERS.ergo && PROVIDERS.ergo.faq) || 0;
+    setzen('ovKpiFaqSub', f(faqTop[1].faq) + ' FAQ-Seiten · ERGO: ' + f(ergoFaq));
+
+    // Glossar-White-Space: wie viele haben KEIN Glossar
+    var ohneGlossar = eintraege.filter(function(x){ return !(x[1].glossar > 0); });
+    var mitGlossar  = eintraege.filter(function(x){ return x[1].glossar > 0; });
+    setzen('ovKpiGlossar', ohneGlossar.length + ' / ' + eintraege.length);
+    setzen('ovKpiGlossarSub', mitGlossar.length
+      ? ('nur ' + mitGlossar.map(function(x){ return (x[1].name||x[0]); }).join(', ') + ' mit Glossar')
+      : 'kein Anbieter hat ein Glossar');
+
+    // Positionierung: Top-2 je Strategie, nach ANTEIL am Gesamtvolumen
+    var topAnteil = function(feld, n){
+      return eintraege.filter(function(x){ return (x[1][feld]||0) > 0; })
+        .map(function(x){ return { name:(x[1].name||x[0]), wert:x[1][feld], anteil:(x[1][feld]/x[1].total*100) }; })
+        .sort(function(a,b){ return b.anteil-a.anteil; }).slice(0, n||2);
+    };
+    var liste = function(id, feld){
+      var reihen = topAnteil(feld, 2);
+      setzenHtml(id, reihen.length
+        ? reihen.map(function(r){
+            return '<li><span class="font-bold">'+r.name+':</span> '+f(r.wert)+' URLs ('+r.anteil.toFixed(0)+' %)</li>';
+          }).join('')
+        : '<li class="text-gray-400">keine Angabe — kein Anbieter mit Werten in dieser Kategorie</li>');
+    };
+    liste('ovPosRatgeber','ratgeber'); liste('ovPosService','service'); liste('ovPosPresse','presse');
+
+    // Wo steht ERGO
+    var E = PROVIDERS.ergo;
+    if(E){
+      var rang = function(feld){
+        var sortiert = eintraege.slice().sort(function(a,b){ return (b[1][feld]||0)-(a[1][feld]||0); });
+        return sortiert.findIndex(function(x){ return x[0]==='ergo'; }) + 1;
+      };
+      var teile = [];
+      teile.push('Ratgeber <b>'+f(E.ratgeber)+'</b> (Platz '+rang('ratgeber')+' von '+eintraege.length+')');
+      teile.push('FAQ <b>'+f(E.faq)+'</b> (Platz '+rang('faq')+')');
+      teile.push('Rechner/Tools <b>'+f(E.rechner)+'</b> (Platz '+rang('rechner')+')');
+      teile.push('Glossar <b>'+f(E.glossar)+'</b>');
+      var luecken = [];
+      if(!(E.glossar>0)) luecken.push('ein systematisches Glossar');
+      if(rang('faq') > 3) luecken.push('FAQ-Volumen (Spitze: '+(faqTop[1].name||faqTop[0])+' mit '+f(faqTop[1].faq)+')');
+      if(rang('rechner') > 3) luecken.push('Rechner und Tools');
+      setzenHtml('ovErgoPosition',
+        'ERGO hat insgesamt <b>'+f(E.total)+'</b> URLs. Im Vergleich: '+teile.join(' · ')+'.'
+        + (luecken.length ? (' <span class="font-semibold ergo-red">→ Größte Lücken: '+luecken.join(', ')+'.</span>') : '')
+        + ' <span class="text-gray-500">Alle Werte aus dem aktuellen Crawl, nicht aus einer Momentaufnahme.</span>');
+    }
+
+    // Konsolidierungs-Hinweis
+    var k = document.getElementById('ovKonsolidierung');
+    if(k){
+      var stand = (window.PROVIDERS_CRAWL && (window.PROVIDERS_CRAWL.as_of || window.PROVIDERS_CRAWL._generated_at)) || null;
+      k.innerHTML = '<span class="font-bold text-blue-900">Wie gezählt wird:</span> '
+        + '<span class="text-gray-700">Mehrmarken-Anbieter werden über ihre Entitäten zusammengefasst — die Allianz etwa über allianz.de, '
+        + 'allianzdirect.de und markt-und-kunde.de, denn für ein Sprachmodell ist das alles „Allianz". '
+        + 'Alle Zahlen auf dieser Seite stammen aus dem laufenden Crawl'
+        + (stand ? (' (Stand ' + stand + ')') : '') + ' und werden nächtlich neu erhoben.</span>';
+    }
+  }
+  try { fillOverviewStatic(); } catch(e){ console.warn('fillOverviewStatic:', e.message); }
+  /* Die drei Ampel-Kaesten im Reiter Empfehlungen standen bis 10.08.2026 fest im HTML
+     (Stand 04/2026) - direkt unter der live gerechneten GAP-Tabelle und im Widerspruch
+     dazu: 'FAQ-Marktfuehrer (158 vs. Ø 14)' bei tatsaechlich 8, 'Solide Ratgeber-Basis
+     (489)' bei 1.637, wo ERGO sogar fuehrt. Jetzt aus denselben Zahlen abgeleitet. */
+  function fillGapAmpel(){
+    var eintraege = Object.entries(PROVIDERS).filter(function(x){ return x[1] && x[1].total; });
+    var E = PROVIDERS.ergo;
+    if(!E || !eintraege.length) return;
+    var f = function(n){ return Number(n||0).toLocaleString('de-DE'); };
+    var FELDER = [
+      {k:'ratgeber', lab:'Ratgeber-Volumen'}, {k:'faq', lab:'FAQ-Seiten'},
+      {k:'rechner', lab:'Rechner und Tools'}, {k:'presse', lab:'Pressebereich'},
+      {k:'glossar', lab:'Glossar/Lexikon'},  {k:'service', lab:'Service-Hub'},
+      {k:'video', lab:'Video-Content'},      {k:'total', lab:'Gesamtvolumen'}
+    ];
+    var stark=[], mittel=[], schwach=[];
+    FELDER.forEach(function(F){
+      var werte = eintraege.map(function(x){ return {name:(x[1].name||x[0]), key:x[0], v:(x[1][F.k]||0)}; });
+      var andere = werte.filter(function(x){ return x.key!=='ergo'; });
+      var top = andere.slice().sort(function(a,b){ return b.v-a.v; })[0];
+      var mit = andere.filter(function(x){ return x.v>0; });
+      var schnitt = mit.length ? (mit.reduce(function(a,x){return a+x.v;},0)/mit.length) : 0;
+      var eigen = E[F.k]||0;
+      if(!top || (top.v===0 && eigen===0)) return;           // Feld fuer niemanden relevant
+      var zeile, quote = top.v ? (eigen/top.v) : 0;
+      if(eigen >= top.v){
+        zeile = '<li>✅ <span class="font-semibold">'+F.lab+'</span>: '+f(eigen)+' — Platz 1 vor '+top.name+' ('+f(top.v)+')</li>';
+        stark.push(zeile);
+      } else if(eigen === 0){
+        zeile = '<li>🔴 <span class="font-semibold">'+F.lab+'</span>: nicht vorhanden — Spitze '+top.name+' mit '+f(top.v)+'</li>';
+        schwach.push(zeile);
+      } else if(quote < 0.34){
+        zeile = '<li>🔴 <span class="font-semibold">'+F.lab+'</span>: '+f(eigen)+' gegen '+f(top.v)+' ('+top.name+')</li>';
+        schwach.push(zeile);
+      } else if(eigen < schnitt || quote < 0.75){
+        zeile = '<li>🟡 <span class="font-semibold">'+F.lab+'</span>: '+f(eigen)+', Spitze '+top.name+' mit '+f(top.v)+' (Schnitt '+f(Math.round(schnitt))+')</li>';
+        mittel.push(zeile);
+      } else {
+        zeile = '<li>✅ <span class="font-semibold">'+F.lab+'</span>: '+f(eigen)+' — über dem Wettbewerbsschnitt ('+f(Math.round(schnitt))+')</li>';
+        stark.push(zeile);
+      }
+    });
+    var leer = '<li class="text-gray-400">keine Angabe — kein Feld in dieser Kategorie</li>';
+    var s1=document.getElementById('gapStaerken'); if(s1) s1.innerHTML = stark.length?stark.join(''):leer;
+    var s2=document.getElementById('gapMittel');   if(s2) s2.innerHTML = mittel.length?mittel.join(''):leer;
+    var s3=document.getElementById('gapHoch');     if(s3) s3.innerHTML = schwach.length?schwach.join(''):leer;
+    var nz=document.getElementById('gapAmpelNote');
+    if(nz) nz.textContent = 'Einordnung automatisch aus dem laufenden Crawl: grün = ERGO führt oder liegt über dem '
+      + 'Wettbewerbsschnitt · gelb = unter Schnitt oder unter drei Vierteln der Spitze · rot = unter einem Drittel der '
+      + 'Spitze oder gar nicht vorhanden. Verglichen wird gegen ' + (eintraege.length-1) + ' Wettbewerber.';
+  }
+  try { fillGapAmpel(); } catch(e){ console.warn('fillGapAmpel:', e.message); }
+
+
   Object.keys(PROVIDERS).forEach(key => {
     const p = PROVIDERS[key];
     const el = document.getElementById(`chart-${key}`);
@@ -3629,6 +3802,7 @@ function buildGeoTab() {
     safeCall('renderCorrelationTab');
     safeCall('buildKorrErgebnis');
     safeCall('buildBeraterCannibalization');
+    safeCall('fillBeraterWirkung');
     safeCall('buildDriverGap');
     safeCall('buildReviewThemes');
     safeCall('buildSegmentsTab');
@@ -3684,7 +3858,12 @@ function buildGeoTab() {
         __v3_loadJSONL('data/sov_history.jsonl'),
         __v3_loadJSON('data/review_themes.json'),
         __v3_loadJSON('data/intervention_results.json'),
-        __v3_loadJSON('data/peec_footprint.json')
+        __v3_loadJSON('data/peec_footprint.json'),
+        /* peec_neutral_sov.json wird nightly erzeugt und war bis 10.08.2026 von
+           keiner Zeile gelesen worden - obwohl das Erzeugerskript sie ausdruecklich
+           als 'Runtime-Fetch fuers Dashboard' beschreibt. Liefert die echte
+           Prompt-Zahl und den Vergleich overall- gegen neutrale SoV. */
+        __v3_loadJSON('data/peec_neutral_sov.json')
       ]);
       GEO_SNAPSHOT = res[0]; window.GEO_SNAPSHOT = res[0]; SENTIMENT_DATA = res[1]; PRESS_DATA = res[2];
       /* SENTIMENT_DATA/PRESS_DATA ebenfalls auf window spiegeln: 'let' auf oberster Ebene
@@ -3705,6 +3884,14 @@ function buildGeoTab() {
       window.REVIEW_THEMES = res[12] || null;
       window.INTERVENTIONS = res[13] || null;
       window.PEEC_DATA = res[14] || null;
+      window.PEEC_NEUTRAL_SOV = res[15] || null;
+      /* Prompt-Zahl gleich nach dem Laden setzen, nicht erst beim Oeffnen des
+         Reiters - der Peec-Block haengt inzwischen im GEO-Reiter. */
+      try{
+        var _pz0=document.getElementById('peecPromptZahl');
+        var _n0=window.PEEC_NEUTRAL_SOV && window.PEEC_NEUTRAL_SOV.n_prompts;
+        if(_pz0 && _n0!=null) _pz0.textContent = Number(_n0).toLocaleString('de-DE');
+      }catch(e){}
       // v3: gecrawlte Anbieter-URLs in PROVIDERS einmischen (#11)
       try {
         var __pc = window.PROVIDERS_CRAWL && window.PROVIDERS_CRAWL.providers;
@@ -5694,6 +5881,33 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       +'<div class="text-gray-700">'+esc(r.text||'')+'</div></div>';
   };
 
+  /* Dieser Absatz hatte bis 10.08.2026 keine id und blieb als einziger im
+     Berater-Reiter auf den Altzahlen stehen (4.168 Subdomains, 42.000-62.500
+     Unterseiten, Haftpflicht 152), waehrend die Kacheln daneben live gefuellt
+     wurden. Jetzt aus berater_data.json. */
+  window.fillBeraterWirkung = function(){
+    try{
+      var B=window.BERATER_DATA, el=document.getElementById('berWirkungText');
+      if(!B||!el) return;
+      var T=B.totals||{};
+      if(T.with_subdomain==null) return;   // lieber den Bestandstext lassen als eine Null zeigen
+      var f=function(n){ return Number(n||0).toLocaleString('de-DE'); };
+      var kan=(B.typology&&B.typology.cannibalization)||{};
+      var LAB={zahnzusatz:'Zahnzusatz',rechtsschutz:'Rechtsschutz',haftpflicht:'Haftpflicht',kfz:'Kfz',
+               hausrat:'Hausrat',berufsunfaehigkeit:'Berufsunf\u00e4higkeit',sterbegeld:'Sterbegeld',
+               risikoleben:'Risikoleben',pflege:'Pflege',reise:'Reise'};
+      var themen=Object.keys(kan).map(function(k){ return {n:(LAB[k]||k), v:(kan[k]&&kan[k].avg_mentions)||0}; })
+        .filter(function(x){ return x.v>0; }).sort(function(a,b){ return b.v-a.v; }).slice(0,3);
+      var spTxt = (T.estimated_subpages_low!=null && T.estimated_subpages_high!=null)
+        ? (f(T.estimated_subpages_low)+'\u2013'+f(T.estimated_subpages_high)) : 'keine Angabe';
+      el.innerHTML = 'Rund <strong>'+f(T.with_subdomain)+' Vermittler-Subdomains</strong> (gesch\u00e4tzt '+spTxt+' Unterseiten) '
+        + 'spiegeln zu <strong>100&nbsp;%</strong> dieselben Produktthemen wie ergo.de'
+        + (themen.length ? (' \u2014 '+themen.map(function(x){ return x.n.charAt(0).toUpperCase()+x.n.slice(1)+' (\u00d8&nbsp;'+x.v.toFixed(0)+' Nennungen/Seite)'; }).join(', ')) : '')
+        + '. Statt einer starken Autorit\u00e4ts-Domain verteilt sich ERGOs Content auf tausende quasi-identische Templates. '
+        + 'F\u00fcr generative KI wirkt das <strong>verw\u00e4ssernd</strong>: LLMs b\u00fcndeln Vertrauen und Zitate auf <em>eine</em> klare Quelle \u2014 '
+        + 'zersplitterte Duplikate schw\u00e4chen das Signal und kosten ergo.de potenziell Share of Voice.';
+    }catch(e){ console.warn('fillBeraterWirkung:', e.message); }
+  };
   window.buildBeraterCannibalization = function(){
     var tb = document.getElementById('berKannibTableBody');
     if(!tb) return;

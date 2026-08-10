@@ -82,7 +82,7 @@
     var gd=(fj.gap_decomposition||{}).ERGO;
     if(gd&&gd.contrib_pp){
       cards.push(card("info","Einordnung: Was ist NICHT beeinflussbar?",
-        "Vom "+pp(gd.actual_gap_pp).replace("+","")+"-Rückstand zu "+leader+" entfallen "+pp(gd.contrib_pp.size)+" auf Größe/Marktmacht (kein Hebel). Beeinflussbar bleiben Footprint ("+pp(gd.contrib_pp.cite_share)+") und Preis ("+pp(gd.contrib_pp.relprice)+"). Achtung: Größe/Footprint-Aufteilung ist bei 7 Marken nur eine Tendenz.",
+        "Vom "+pp(gd.actual_gap_pp).replace("+","")+"-Rückstand zu "+leader+" entfallen "+pp(gd.contrib_pp.size)+" auf Größe/Marktmacht (kein Hebel). Beeinflussbar bleiben Footprint ("+pp(gd.contrib_pp.cite_share)+") und Preis ("+pp(gd.contrib_pp.relprice)+"). Achtung: Die Aufteilung zwischen Größe und Footprint ist bei dieser Fallzahl nur eine Tendenz.",
         "Voll-Zerlegung full_joint (Nightly "+String(ci.generated_at||"").slice(0,10)+")",
         chip("⚪ strukturell")));
     }

@@ -1,0 +1,54 @@
+name: Dashboard ausliefern
+
+# Warum es diesen Workflow gibt (10.08.2026):
+#
+# Das ausgelieferte index.html entsteht aus dashboard_v3.html per
+# encrypt_dashboard.py. Gebaut wurde das bisher NUR am Ende des Nightly - eine
+# reine Anzeige-Aenderung war damit erst am naechsten Morgen sichtbar, oder man
+# liess den vollen Nightly (rund eine Stunde Crawls, Preise, Modellrechnung)
+# nur wegen einer Textzeile laufen.
+#
+# Dieser Workflow macht ausschliesslich den letzten Schritt: verschluesseln und
+# veroeffentlichen. Laufzeit rund eine Minute. Er rechnet NICHTS neu - die Daten
+# bleiben exakt so, wie der letzte Nightly sie hinterlassen hat.
+#
+# Gleiche concurrency-Gruppe wie der Nightly, damit sich die beiden nicht
+# gegenseitig den Push wegschiessen.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard_v3.html'
+      - 'dashboard_template.html'
+      - '*.js'
+  workflow_dispatch:
+
+concurrency:
+  group: repo-writes
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build und Deploy
+        uses: ./.github/actions/build-and-deploy
+        with:
+          dashboard-password: ${{ secrets.DASHBOARD_PASSWORD }}
+          commit-message: "chore: dashboard ausgeliefert (Anzeige-Aenderung)"

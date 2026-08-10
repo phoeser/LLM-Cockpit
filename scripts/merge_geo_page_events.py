@@ -434,12 +434,28 @@ def fetch_page_dates() -> int:
                       f"({e_missing}) — behalte lokalen Stand")
                 return -1
             except Exception as e_blob:
-                print(f"[merge_geo] FEHLER: {rel} weder ueber Contents- noch ueber "
-                      f"Blobs-API ladbar (Contents: {str(e_contents)[:120]} / "
-                      f"Blobs: {str(e_blob)[:120]}) — behalte lokalen Stand. "
-                      "Das ist ein BESCHAFFUNGSFEHLER, kein Beleg dafuer, dass die "
-                      "Datei im GEO-Repo fehlt.")
-                return -1
+                # 3. raw.githubusercontent — OHNE Token und ohne Groessenlimit.
+                # Das GEO-Repo ist oeffentlich, dieser Weg funktioniert also auch
+                # dann noch, wenn der Token abgelaufen ist, sein Scope nicht mehr
+                # reicht oder die API zickt. Genau dieser Fall hat die Neue-Seiten-
+                # Auswertung ab dem 06.08.2026 still lahmgelegt: Die Datei lag im
+                # GEO-Repo (3,6 MB, 6.497 Eintraege), kam im Cockpit aber nie an,
+                # und new_page_did meldete seitdem 'page_dates.json fehlt'.
+                raw_url = (f"https://raw.githubusercontent.com/{GEO_REPO}/main/{rel}")
+                try:
+                    with urllib.request.urlopen(raw_url, timeout=180) as r:
+                        data = json.loads(r.read().decode("utf-8"))
+                    weg = "raw.githubusercontent (ohne Token)"
+                    print(f"[merge_geo] {rel} ueber raw.githubusercontent geladen — "
+                          "die beiden API-Wege waren nicht nutzbar (Token oder "
+                          "Berechtigung pruefen).")
+                except Exception as e_raw:
+                    print(f"[merge_geo] FEHLER: {rel} ueber keinen der drei Wege "
+                          f"ladbar (Contents: {str(e_contents)[:100]} / "
+                          f"Blobs: {str(e_blob)[:100]} / raw: {str(e_raw)[:100]}) — "
+                          "behalte lokalen Stand. Das ist ein BESCHAFFUNGSFEHLER, "
+                          "kein Beleg dafuer, dass die Datei im GEO-Repo fehlt.")
+                    return -1
 
     if not isinstance(data, dict) or not data:
         if PAGE_DATES_FILE.exists():

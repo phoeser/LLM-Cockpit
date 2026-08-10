@@ -307,7 +307,7 @@
     if (dat) meta.push("Lauf " + dat);
     return '<div style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;'
       + 'color:#8a6d00;background:#fdf6e6;border:1px solid #f3d7a5;border-radius:999px;padding:2px 9px">Kontrolliertes Experiment</div>'
-      + '<h3 style="font-size:16px;font-weight:700;color:' + COL.text + ';margin:7px 0 2px">Wirkt die Websuche? Dieselben Fragen unter zwei Bedingungen</h3>'
+      + '<h3 style="font-size:16px;font-weight:700;color:' + COL.text + ';margin:7px 0 2px">3 · Wirkt die Websuche? Dieselben Fragen unter zwei Bedingungen</h3>'
       + '<p style="font-size:11.5px;color:#6b7280;line-height:1.6;margin:0 0 10px">'
       + 'Der Rest dieses Reiters <b>beobachtet</b>: er vergleicht, was ohnehin passiert. Hier wurde <b>eingegriffen</b> — '
       + 'jeder Prompt lief einmal mit erzwungener Websuche und einmal ohne jedes Werkzeug, sonst identisch, '

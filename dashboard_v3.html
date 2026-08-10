@@ -740,7 +740,7 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="mb-5">
     <h2 class="text-2xl font-bold text-ergo-dark mb-1">Wirkt unsere Arbeit auf die LLM-Sichtbarkeit?</h2>
-    <p class="text-sm text-gray-600">Vier Fragen, in dieser Reihenfolge: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was schafft es überhaupt in die Zitate? <b>4.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p>
+    <p class="text-sm text-gray-600 mb-3">Sechs Abschnitte, in der Reihenfolge, in der sie unten stehen: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was bringt die Websuche — im kontrollierten Experiment? <b>4.</b> Was schafft es überhaupt in die Zitate? <b>5.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? <b>6.</b> Warum liegt der Marktführer vorn? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p><div class="bg-white border rounded-lg p-3 mb-4"><div class="text-xs font-semibold text-gray-600 mb-2">Wie belastbar ist ein Befund? Drei Stufen, die im ganzen Reiter gelten</div><div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs"><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold h-fit">kausal belegt</span><span class="text-gray-600">Es wurde <b>eingegriffen</b> und gegen eine Kontrollbedingung verglichen. Nur Abschnitt 3 und die DiD-Auswertung erreichen diese Stufe.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold h-fit">Zusammenhang</span><span class="text-gray-600">Beobachtet, nicht eingegriffen. Robust gerechnet (cluster-robust, FDR-korrigiert), aber die Richtung der Ursache bleibt offen.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold h-fit">nicht nachweisbar</span><span class="text-gray-600">Kein Effekt gefunden. Das heißt <b>nicht</b> „kein Effekt vorhanden" — siehe Nachweisgrenze in Abschnitt 5.</span></div></div></div>
   </div>
   <div id="korrErgebnis"><div class="text-sm text-gray-400">Lade Auswertung…</div></div>
 
@@ -4886,7 +4886,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   /* ---------- Block 3: Was schafft es in die Zitate? ---------- */
   function kBlock3(ci, cc){
     var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-      +'<h3 class="text-base font-bold text-ergo-dark mb-1">3 · Was schafft es in die Zitate?</h3>'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">4 · Was schafft es in die Zitate?</h3>'
       +'<p class="text-xs text-gray-500 mb-3">Kurzer Anriss — die vollständige Auswertung je URL steht im Reiter <b>Content &amp; Zitate</b>.</p>';
     if(!cc || !cc.kennzahlen){
       h+='<div class="bg-slate-50 border-l-4 border-slate-400 rounded-lg p-3 text-xs text-gray-700">'
@@ -4956,6 +4956,99 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
             +'<td class="px-2 text-right" style="color:'+(d>0?'#047857':(d<0?'#b91c1c':'#9ca3af'))+'">'+(d!=null?_kpp(d,2):_kmiss())+'</td></tr>';
         }).join('')+'</tbody></table></div>';
     }
+    /* ---- Wie lange dauert es bis zum ersten Zitat? (content_citations) ----
+       Bis 10.08.2026 lag diese Auswertung ungenutzt im JSON. Sie ist bewusst
+       ZWEIGETEILT: eine Punktschaetzung aus echten Publikationsdaten und eine
+       untere Schranke aus Sitemap-Obergrenzen - beides zu vermengen ergaebe
+       eine Zahl, die weder das eine noch das andere ist. */
+    var mb=((cc.kennzahlen||{}).median_tage_bis_erstes_zitat)||{};
+    if(mb.available){
+      var us=mb.untere_schranke||{};
+      h+='<div class="border-t mt-4 pt-4">'
+        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">Wie lange dauert es, bis eine Seite zum ersten Mal zitiert wird?</h4>'
+        +'<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">'
+        +'<div class="bg-gray-50 rounded-lg p-3">'
+          +'<div class="text-xs text-gray-500">Punktschätzung — Seiten mit echtem Publikationsdatum</div>'
+          +'<div class="text-xl font-bold text-ergo-dark">'+_kv(mb.median_tage,0)+' Tage</div>'
+          +'<div class="text-xs text-gray-500 mt-1">Median über '+nfmt(mb.n)+' Seiten</div></div>'
+        +'<div class="bg-gray-50 rounded-lg p-3">'
+          +'<div class="text-xs text-gray-500">Untere Schranke — Seiten mit Datums-Obergrenze</div>'
+          +'<div class="text-xl font-bold text-ergo-dark">'+(us.available?('mindestens '+_kv(us.median_tage_mindestens,0)+' Tage'):'keine Angabe')+'</div>'
+          +'<div class="text-xs text-gray-500 mt-1">'+(us.available?('über '+nfmt(us.n)+' Seiten'):'')+'</div></div>'
+        +'</div>';
+      if(mb.linkszensiert){
+        h+='<div class="text-xs text-gray-600 mt-2 leading-relaxed"><b>'+nfmt(mb.linkszensiert)+' Seiten sind nicht auswertbar</b>, '
+          +'weil sie schon im ersten archivierten Stand zitiert waren — ihr echtes Erstzitat liegt davor und ist unbekannt. '
+          +'Sie fehlen in beiden Zahlen oben, was den Median tendenziell zu hoch erscheinen lässt.</div>';
+      }
+      if(mb.vorbehalt){ h+='<div class="text-xs text-gray-500 mt-1">'+_esc(mb.vorbehalt)+'</div>'; }
+      h+='</div>';
+    }
+
+    /* ---- Neuheits-Ausschluss je Marke ----
+       Der eigentliche Nutzen einer Datums-OBERGRENZE ist der Ausschluss: man kann
+       damit beweisen, dass eine Seite NICHT neu ist - aber nie, dass sie neu ist.
+       Die Tabelle ist deshalb bewusst asymmetrisch beschriftet. */
+    var na=((cc.kennzahlen||{}).neuheit_ausschluss_je_marke)||{};
+    if(na.available && (na.marken||[]).length){
+      var g=na.gesamt||{};
+      var top=na.marken.slice().sort(function(a,b){ return (b.seiten||0)-(a.seiten||0); }).slice(0,10);
+      h+='<div class="border-t mt-4 pt-4">'
+        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">Wie viele Seiten lassen sich als „nicht neu" ausschließen?</h4>'
+        +'<p class="text-xs text-gray-500 mb-2">Wo ein echtes Publikationsdatum fehlt, liefert das Sitemap-<code>lastmod</code> eine <b>Obergrenze</b> („veröffentlicht spätestens am …"). '
+        +'Damit lässt sich Neuheit <b>ausschließen</b>, nie beweisen: Eine Seite mit alter Obergrenze ist sicher nicht neu; eine mit junger Obergrenze ist nur ein <i>Kandidat</i> und kann beliebig älter sein. '
+        +'Stand '+_esc(na.stichtag||'')+' · '+nfmt(g.seiten)+' Seiten, davon '+_kv(g.mit_datumsschranke_pct,0)+' % mit Datumsschranke.</p>'
+        +'<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-gray-500 border-b">'
+        +'<th class="text-left py-1">Marke</th><th class="text-right">Seiten</th>'
+        +'<th class="text-right">sicher nicht neu</th><th class="text-right">Kandidat (≤30 T.)</th>'
+        +'<th class="text-right">unentscheidbar</th><th class="text-right">entscheidbar</th></tr></thead><tbody>'
+        +top.map(function(m){
+            var eigen=(m.brand==='ERGO');
+            return '<tr class="border-b'+(eigen?' bg-red-50 font-semibold':'')+'">'
+              +'<td class="py-1">'+_esc(m.brand)+'</td>'
+              +'<td class="text-right">'+nfmt(m.seiten)+'</td>'
+              +'<td class="text-right">'+nfmt(m.sicher_nicht_neu)+'</td>'
+              +'<td class="text-right">'+nfmt(m.kandidat_neu_30d)+'</td>'
+              +'<td class="text-right text-gray-400">'+nfmt(m.ohne_datumsschranke)+'</td>'
+              +'<td class="text-right">'+_kv(m.entscheidbar_pct,1)+' %</td></tr>';
+          }).join('')
+        +'</tbody></table></div>';
+      var ergo=na.marken.filter(function(m){ return m.brand==='ERGO'; })[0];
+      if(ergo){
+        h+='<div class="bg-amber-50 border-l-4 border-amber-400 rounded p-3 mt-2 text-xs text-gray-700 leading-relaxed">'
+          +'<b>Für ERGO stammt die Entscheidbarkeit vollständig aus der Obergrenze:</b> von '+nfmt(ergo.sicher_nicht_neu)
+          +' als „nicht neu" ausgeschlossenen Seiten kommen '+nfmt(ergo.davon_aus_publikationsdatum)+' aus einem echten Publikationsdatum. '
+          +'ergo.de liefert im HTML kein <code>datePublished</code> — solange das so bleibt, kann für die eigene Marke keine Aussage darüber entstehen, '
+          +'ob eine Seite <i>wirklich</i> neu ist. Genau das ist der Grund, warum die Neue-Seiten-Auswertung für ERGO blind bleibt.</div>';
+      }
+      if(na.vorbehalt){ h+='<div class="text-xs text-gray-500 mt-1">'+_esc(na.vorbehalt)+'</div>'; }
+      h+='</div>';
+    }
+
+    /* ---- Quellpraesenz je Thema (footprint_analysis) ---- */
+    var fa=ci.footprint_analysis||{};
+    var pt=fa.per_topic_grounded||{};
+    var ptK=Object.keys(pt);
+    if(fa.available && ptK.length){
+      var reihen=ptK.map(function(k){ return {name:(pt[k].name||k), r:pt[k].pearson_r, n:pt[k].n}; })
+                    .filter(function(x){ return x.r!=null; })
+                    .sort(function(a,b){ return b.r-a.r; });
+      h+='<div class="border-t mt-4 pt-4">'
+        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">In welchen Themen hängt Quellpräsenz am engsten mit Sichtbarkeit zusammen?</h4>'
+        +'<p class="text-xs text-gray-500 mb-2">Zusammenhang zwischen dem Zitations-Footprint einer Marke und ihrem Share of Voice, je Thema gerechnet (grounded, '
+        +nfmt(fa.n_cells)+' Zellen über '+nfmt(fa.n_brands)+' Marken und '+nfmt(fa.n_topics)+' Themen). '
+        +'<b>Deskriptiv</b> — ein hoher Wert heißt: dort gehen Quellpräsenz und Sichtbarkeit besonders eng miteinander, nicht dass das eine das andere verursacht.</p>'
+        +'<div class="space-y-1">'
+        +reihen.map(function(x){
+            var pct=Math.max(0,Math.min(100,x.r*100));
+            return '<div class="flex items-center gap-2 text-xs">'
+              +'<div class="w-44 truncate text-gray-700">'+_esc(x.name)+'</div>'
+              +'<div class="flex-1 bg-gray-100 rounded h-3 relative"><div class="bg-ergo-red h-3 rounded" style="width:'+pct.toFixed(0)+'%"></div></div>'
+              +'<div class="w-24 text-right text-gray-600">r = '+_kv(x.r,2)+' <span class="text-gray-400">(n='+nfmt(x.n)+')</span></div></div>';
+          }).join('')
+        +'</div></div>';
+    }
+
     var npd=ci.new_page_did||{};
     if(npd.available===false){
       h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mt-3 text-xs text-gray-700 leading-relaxed">'
@@ -5010,7 +5103,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   function kBlock4(ci){
     var v=ci.validation||{}, oos=(v.out_of_sample||{}).r2_oos_vs_baseline, fp=v.placebo_false_positive_rate;
     var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
-      +'<h3 class="text-base font-bold text-ergo-dark mb-1">4 · Wie gut ist die Messung?</h3>'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">5 · Wie gut ist die Messung?</h3>'
       +'<p class="text-xs text-gray-500 mb-3">Was die Zahlen oben tragen können — und wo die Grenze liegt.</p>'
       +'<div class="grid md:grid-cols-4 gap-3">'
       +_kcard('Messtage',(ci.sov_measure_days!=null?nfmt(ci.sov_measure_days):'<span class="text-gray-400 text-base">keine Angabe</span>'),_esc((ci.sov_measure_range||[]).join(' bis ')),'','grau')

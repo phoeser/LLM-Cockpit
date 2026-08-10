@@ -334,7 +334,7 @@
 
     box.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
-        '<div><h3 style="font-size:16px;font-weight:700;margin:0">4 · Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
+        '<div><h3 style="font-size:16px;font-weight:700;margin:0">6 · Ursachenanalyse: Warum liegt '+leader+' vor '+brand+'?</h3>'+
         '<p style="font-size:12px;color:#6b7280;margin:2px 0 0">Woraus sich ERGOs Rückstand zum Marktführer zusammensetzt <span style="color:#9ca3af">('+modeLbl()+')</span></p></div>'+
         sel+'</div>'+ compareHead + bar + legend + notes + hsHtml + benchSection(brand, leader);
 

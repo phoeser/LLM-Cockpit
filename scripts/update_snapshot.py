@@ -272,13 +272,27 @@ def transform_to_dashboard_format(geo: dict) -> dict:
                 _ov[_row["domain"]] += _row["count"]; _tot += _row["count"]
             for _k, _v in _cs.get("by_category", {}).items():
                 _cat[_k] += _v.get("count", 0)
+        # 10.08.2026: Hier wurden zwei verschiedene Grundgesamtheiten durcheinander
+        # geworfen. _tot summiert die je Produkt bereits auf Top-15 GEKAPPTEN Listen
+        # (4.288), _cat summiert die VOLLSTAENDIGEN Kategoriezahlen (9.479). Die
+        # Kategorie-Anteile wurden trotzdem gegen _tot gerechnet - Ergebnis: "sonstige
+        # 94,7 %", "wettbewerber 69,7 %", zusammen 221 %. Im Dashboard standen daneben
+        # die korrekt gerechneten Anteile aus citation_channels.js (42,9 / 31,5 / 23,5 /
+        # 2,2 %), also dieselbe Kennzahl zweimal mit Faktor 2 bis 40 Unterschied.
+        # Jetzt hat jede Zahl ihren eigenen, benannten Nenner.
+        _tot_kat = sum(_cat.values())
         if _tot:
             out["cited_sources_overall"] = {
                 "total": _tot,
+                "total_hinweis": ("Summe der je Thema auf die Top 15 gekappten Domainlisten - "
+                                  "Basis der Liste 'overall', NICHT der Kategorie-Anteile."),
+                "total_alle_zitate": _tot_kat,
                 "overall": [{"domain": d, "count": c, "share": round(c / _tot * 100, 1),
                              "category": _classify_source(d)[0]} for d, c in _ov.most_common(20)],
-                "by_category": {k: {"count": v, "share": round(v / _tot * 100, 1)}
+                "by_category": {k: {"count": v,
+                                    "share": round(v / _tot_kat * 100, 1) if _tot_kat else None}
                                 for k, v in _cat.most_common()},
+                "by_category_basis": _tot_kat,
             }
     except Exception as _e:
         print("WARN cited_sources_overall:", str(_e)[:80])

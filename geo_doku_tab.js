@@ -119,7 +119,7 @@
   function standLine(R){
     function part(name,date){ return name+" "+(date?("Stand "+date):AUDIT); }
     return note("Datenstand — "+part("eigener Crawl:",R.gDate)+" · "+part("Korrelations-Analyse:",R.cDate)+
-      " · "+part("Peec:",R.pDate)+(R.peecWin?(" (Fenster "+R.peecWin+" Tage)"):"")+".");
+      " · "+part("Peec:",R.pDate)+(R.peecWin?(" (Fenster "+R.peecWin+(/^[0-9]+$/.test(String(R.peecWin))?" Tage":"")+")"):"")+".");
   }
 
   /* ---------- Bausteine (Inline-Styles, Karten-Look) ---------- */
@@ -190,7 +190,7 @@
     return 'Alle Rhythmen aus den Workflow-YMLs des Repos (bzw. der geo-visibility-tool-/Cowork-Pipeline). Zeiten in <b>UTC</b>.'+
       tbl(["Was","Workflow / Task","Rhythmus (UTC)","Zieldatei(en)"],[
         ['Eigener LLM-Crawl','analyze.yml <span style="color:#9ca3af">(geo-visibility-tool)</span>','woechentlich So 23:10','geo_snapshot.json (in den Nightly geladen)'],
-        ['Cockpit-Nightly<br><span style="color:#9ca3af;font-weight:400">Snapshot laden, SoV-Historie, Korrelations-/Impact-Analyse, Interventionen, Check24-Preise, Ratings, Sentiment, Presse, Pipeline-Health</span>','nightly-update.yml','taeglich 04:30','correlation_impact.json, geo_snapshot.json, sov_history.jsonl, intervention_results.json u.&nbsp;a.'],
+        ['Cockpit-Nightly<br><span style="color:#9ca3af;font-weight:400">Snapshot laden, SoV-Historie, Korrelations-/Impact-Analyse, Interventionen, Check24-Preise, Ratings, Sentiment, Presse, Pipeline-Health</span>','nightly-update.yml','taeglich 05:30','correlation_impact.json, geo_snapshot.json, sov_history.jsonl, intervention_results.json u.&nbsp;a.'],
         ['Peec-Export<br><span style="color:#9ca3af;font-weight:400">versionierte Snapshots + Wochen-Panel (seit 18.07.)</span>','Cowork-Task peec-weekly-export','woechentlich Mo 07:07','peec_snapshots/YYYY-MM-DD_*.csv, peec_history_weekly.csv, peec_cells.csv, peec_footprint.json'],
         ['Check24-Preise & Reviews','weekly-prices.yml','woechentlich Mo 05:45','price_comparison.json, review_history.json'],
         ['Berater Google Reviews','berater-reviews.yml','woechentlich So 05:00','berater_reviews.json, brand_reviews.json'],
@@ -198,7 +198,7 @@
         ['Anbieter-Sitemaps (URLs)','monthly-urls.yml','monatlich 1. um 06:45','providers.json'],
         ['Berater-Daten','berater-update.yml','manuell (workflow_dispatch)','berater_data.json']
       ])+
-      note("Der Nightly startet um 04:30 UTC bewusst NACH dem GEO-Crawl (23:10 UTC), damit Snapshot, SoV und Korrelation mit den GEO-Daten desselben Tages rechnen. Alle schreibenden Workflows teilen die Concurrency-Gruppe <code>repo-writes</code> und sind gestaffelt, weil diese Gruppe nur einen Pending-Slot hat.")+
+      note("Der Nightly startet um 05:30 UTC bewusst NACH dem GEO-Crawl (23:10 UTC), damit Snapshot, SoV und Korrelation mit den GEO-Daten desselben Tages rechnen. Alle schreibenden Workflows teilen die Concurrency-Gruppe <code>repo-writes</code> und sind gestaffelt, weil diese Gruppe nur einen Pending-Slot hat.")+
       warn("Nicht ins Repo pushen, waehrend ein Workflow laeuft — dessen Commit scheitert sonst am Fast-Forward.")+
       standLine(R);
   }

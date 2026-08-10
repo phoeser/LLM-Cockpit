@@ -147,18 +147,36 @@
     return Object.keys(out).length?out:null;
   }
 
-  /* ---------- ERGO-Zitatanteil je Thema (engine-uebergreifend aggregiert) ---------- */
+  /* ---------- ERGO-Zitatanteil je Thema (engine-uebergreifend aggregiert) ----------
+     KORREKTUR 10.08.2026: Der Nenner war die Summe von cited_sources.overall -
+     und das ist eine auf die TOP 15 gekuerzte Liste, nicht die Grundgesamtheit.
+     Der Zaehler (ERGO-Zitate) steht dagegen fast vollstaendig in diesen Top 15,
+     weil ergo.de dort meist weit oben liegt. Ergebnis: der Anteil war rund um
+     den Faktor 2,4 zu hoch (Sterbegeld 10,4 % statt 4,4 %, Reise 12,9 % statt
+     5,3 %).
+     Schlimmer als die schiefe Prozentzahl war die Folge: die Kreuz-Matrix
+     schneidet bei "zitiert = Anteil >= 5 %" und meldete daraufhin fuenf Themen
+     im Quadranten "Idealzustand - erwaehnt UND zitiert". Vier davon liegen
+     richtig gerechnet darunter. Zwei Bildschirmseiten tiefer stand in der
+     Themen-Tabelle laengst der korrekte Wert - dasselbe Thema, zwei Zahlen,
+     gegenlaeufige Aussage.
+     Jetzt: cited_sources.total als Nenner, wo vorhanden. Fehlt das Feld, gibt
+     die Funktion null zurueck statt still auf die Top-15-Summe auszuweichen -
+     eine fehlende Angabe ist besser als eine doppelt so hohe. */
   function ergoCiteShare(pid){
     var g=snapData(); if(!g||!g.products||!g.products[pid]) return null;
-    var ov=((g.products[pid].cited_sources||{}).overall)||[];
+    var cs=(g.products[pid].cited_sources)||{};
+    var ov=cs.overall||[];
     if(!ov.length) return null;
-    var tot=0, ergo=0;
+    var tot=cs.total;
+    if(tot==null || !(tot>0)) return null;   // kein Ersatznenner - lieber keine Zahl
+    var ergo=0;
     ov.forEach(function(s){
-      var c=s.count||0; tot+=c;
+      var c=s.count||0;
       var dom=(s.domain||"").toLowerCase();
       for(var i=0;i<ERGO_DOMAINS.length;i++){ if(dom.indexOf(ERGO_DOMAINS[i])>=0){ ergo+=c; break; } }
     });
-    return tot>0 ? 100*ergo/tot : null;
+    return 100*ergo/tot;
   }
 
   /* ---------- Peec-ERGO-Aggregat je Kanal (Mittel ueber Themen) ---------- */
@@ -399,14 +417,19 @@
     if(!C||!od){ return '<div id="gwCBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'"><b>Kreuz-Matrix benoetigt eigenen Crawl und Peec-Themenliste</b> — erscheint nach Reload. Keine Ersatz-Nullen.</div>'; }
     // Universum = B-Datenbasis des Kanals (gemeinsame Themen)
     var pids=blockBData(cells,od)||[];
-    var q={mc:[],mn:[],nc:[],nn:[]}, noData=[];
+    var q={mc:[],mn:[],nc:[],nn:[]}, noData=[], noCite=[];
     pids.forEach(function(pid){
       var o=od[pid];
       var app=o.app;                     // Kanal-abhaengig
       var cite=ergoCiteShare(pid);       // engine-uebergreifend
       if(app==null){ noData.push(o._name||pid); return; }
+      // 10.08.2026: fehlender Zitatanteil hiess hier frueher stillschweigend
+      // "nicht zitiert" - das Thema landete also im roten Quadranten, obwohl
+      // niemand es gemessen hatte. Jetzt eigene Zeile, wie der Reiterkopf es
+      // fuer fehlende Werte verspricht.
+      if(cite==null){ noCite.push(o._name||pid); return; }
       var men=app>=TH_MENTION;
-      var cit=(cite!=null)&&(cite>=TH_CITE);
+      var cit=cite>=TH_CITE;
       var label=(o._name||pid);
       if(men&&cit) q.mc.push(label);
       else if(men&&!cit) q.mn.push(label);
@@ -425,10 +448,12 @@
       quad("gwQnc","🟠","Potenzial ungenutzt","Zitiert, aber nicht empfohlen — Quelle wird gelesen, ERGO aber nicht genannt.",q.nc,"#b45309","#fff8f1")+
       quad("gwQnn","🔴","Handlungsbedarf — weder noch","Weder erwaehnt noch zitiert.",q.nn,"#b91c1c","#fff5f5")+
     '</div>';
-    var noRow='<div id="gwCNoData" style="font-size:11px;color:'+MUTE+';margin-top:8px">ohne Daten: '+(noData.length?noData.join(", "):"—")+'</div>';
+    var noRow='<div id="gwCNoData" style="font-size:11px;color:'+MUTE+';margin-top:8px">ohne Daten: '+(noData.length?noData.join(", "):"—")+
+      (noCite.length?('<br>ohne Zitat-Basis (Gesamtzahl der Zitate fehlt im Snapshot, deshalb nicht einsortiert): '+noCite.join(", ")):"")+'</div>';
     var foot='<div style="font-size:11px;color:'+MUTE+';margin-top:8px;line-height:1.55">'+
       'Datenbasis: eigener Crawl (Kanal '+chanLbl()+'). Schwellen: <b>erwaehnt</b> = Appearance-Rate ≥ '+TH_MENTION+' %, <b>zitiert</b> = ERGO-Zitatanteil ≥ '+TH_CITE+' % der zitierten URLs. '+
       '<b>Zitatanteil engine-uebergreifend</b> (cited_sources aggregiert ueber alle Engines — nicht kanalgetrennt). '+
+      '<b>Der Zitatanteil ist eine Untergrenze:</b> der Nenner ist die Gesamtzahl der Zitate im Thema, der Zaehler kann nur ERGO-Quellen erfassen, die es in die Top-15-Domainliste des Snapshots geschafft haben. Faellt ergo.de dort heraus, wird der Anteil zu niedrig ausgewiesen, nie zu hoch. '+
       'Nuancen: Mention ohne eigenes Zitat ist moeglich (LLM nennt ERGO aus Trainingswissen oder ueber Portal-Zitate); Zitat ohne Mention ebenso (ergo.de wird als Quelle gelesen, empfohlen wird aber z.&nbsp;B. Allianz). Themen ohne Kanal-Daten sind separat als „ohne Daten" ausgewiesen, nicht als Null.</div>';
     return '<div id="gwCBox">'+grid+noRow+foot+'</div>';
   }
@@ -449,7 +474,7 @@
     var body;
     if(have){
       body='<div style="display:flex;gap:22px;flex-wrap:wrap;margin:6px 0 10px">'+
-        '<div><div style="font-size:11px;color:'+GREY+'">ERGO-Footprint</div><div style="font-size:20px;font-weight:800;color:'+ERGO_RED+'">'+pctS(eF,1)+'</div></div>'+
+        '<div><div style="font-size:11px;color:'+GREY+'" title="Mittel über die Themen OHNE Corporate, aus PEEC_DATA.footprint_pct. Der Peec-Block weiter unten zeigt denselben Namen mit einem anderen Wert — dort ist es die neutrale Variante INKLUSIVE Corporate. Zwei Definitionen, beide richtig.">ERGO-Footprint <span style="color:#9ca3af">(ohne Corporate)</span></div><div style="font-size:20px;font-weight:800;color:'+ERGO_RED+'">'+pctS(eF,1)+'</div></div>'+
         '<div><div style="font-size:11px;color:'+GREY+'">Allianz-Footprint</div><div style="font-size:20px;font-weight:800;color:#003781">'+pctS(aF,1)+'</div></div>'+
         ((eF!=null&&aF!=null)?('<div><div style="font-size:11px;color:'+GREY+'">Abstand</div><div style="font-size:20px;font-weight:800;color:'+INK+'">'+signed(eF-aF,1)+' pp</div></div>'):'')+
         '</div>';

@@ -150,13 +150,28 @@
     var peecZit = eigenZit.filter(function (r) { return r.peec_cit != null; });
     var nurPplx = eigenZit.filter(function (r) { return r.peec_cit == null && r.own_cit_perplexity; });
 
+    /* KORREKTUR 10.08.2026: Der Satz lautete "Von 1.099 getrackten Seiten sind 45
+       zitiert — davon 50 im Peec-Top-150". Das ist arithmetisch unmoeglich. Ursache:
+       das "davon" bezog sich auf die 45 GETRACKTEN, gezaehlt wurden aber peecZit und
+       nurPplx ueber ALLE eigenen zitierten Seiten (50 + 48 = 98) — zwei
+       Grundgesamtheiten in einem Satz. Jetzt wird die Zerlegung der 45 aus den
+       getrackten Seiten selbst gerechnet, und die weitere Menge steht als eigener
+       Satz daneben. */
+    var getracktZit = eigenZit.filter(function (r) { return r.ist_getrackt; });
+    var gtPeec = getracktZit.filter(function (r) { return r.peec_cit != null; });
+    var gtPplx = getracktZit.filter(function (r) { return r.peec_cit == null && r.own_cit_perplexity; });
+
     var kern;
     if (ergo) {
       kern = "Von " + num(ergo.getrackt) + " getrackten ERGO-Seiten sind " + num(ergo.zitiert) + " (" +
-        pct(ergo.quote_pct) + ") überhaupt als zitierte Quelle nachweisbar — davon " + num(peecZit.length) +
-        " im Peec-Top-150, die übrigen nur im eigenen Perplexity-Lauf (" + num(nurPplx.length) +
-        " eigene URLs insgesamt nur dort). Zusammen sind " + num(eigenZit.length) +
-        " eigene URLs zitiert, auch solche außerhalb der getrackten Seitenmenge.";
+        pct(ergo.quote_pct) + ") überhaupt als zitierte Quelle nachweisbar";
+      if (getracktZit.length) {
+        kern += " — davon " + num(gtPeec.length) + " im Peec-Top-150 und " + num(gtPplx.length) +
+          " nur im eigenen Perplexity-Lauf";
+      }
+      kern += ". Über die getrackte Menge hinaus sind insgesamt " + num(eigenZit.length) +
+        " eigene URLs zitiert (" + num(peecZit.length) + " im Peec-Top-150, " + num(nurPplx.length) +
+        " nur im eigenen Lauf) — diese Zahl ist größer, weil sie auch eigene Seiten enthält, die gar nicht getrackt werden.";
     } else {
       kern = num(peecZit.length) + " eigene Seiten stehen im Peec-Top-150. Eine Trefferquote ist nicht berechenbar: " +
         (tq.grund || "kein Nenner verfuegbar.");

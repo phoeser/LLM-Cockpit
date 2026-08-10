@@ -126,7 +126,10 @@
              baseSov:(mf.sov||0), leadSov:(mr.sov||0), refCandidates:ahead,
              brands:brands, cols:{size:COL.size, cite_share:COL.foot, relprice:COL.price},
              label:"Bekanntheit + Quellpräsenz + Preis · gemeinsames Modell, über "+(plp.n_days||"?")+" saubere Tage",
-             n:ge.n_cells, nb:brands.length, nt:null, reliability:ge.driver_reliability,
+             // 10.08.2026: nt stand fest auf null, gerendert wurde daraus '? Themen' -
+             // obwohl der Reiterkopf verspricht, dass statt einer Luecke 'keine Angabe
+             // mit Grund' steht. n_topics liegt im selben Modellblock vor.
+             n:ge.n_cells, nb:brands.length, nt:(ge.n_topics!=null?ge.n_topics:null), reliability:ge.driver_reliability,
              favors:favors, explorer:true, n_days:plp.n_days };
   }
 
@@ -201,7 +204,7 @@
       '<div style="font-size:19px;font-weight:800;color:'+(accent||"#282d37")+';line-height:1.1">'+v+'</div>'+
       '<div style="font-size:10.5px;color:#6b7280;margin-top:2px;line-height:1.4">'+l+'</div></div>'; }
     var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">Ein externer 16-Branchen-Benchmark zeigt qualitativ: <b>LLM-Sichtbarkeit folgt der Marktgr\u00f6\u00dfe nur unterproportional</b> \u2014 gro\u00dfe Anbieter werden gestaucht, Testsieger-/Ratgeber-Marken verst\u00e4rkt (Pearson r '+fx(r.pearson,2)+' \u00fcber '+(B.n_marken||"?")+' Marken in '+(B.n_branchen||"?")+' Branchen). \u00dcbertragen auf ERGO: der R\u00fcckstand zu Allianz ist <b>kein reiner Gr\u00f6\u00dfeneffekt</b> \u2014 er entsteht aus Autorit\u00e4t/Quellpr\u00e4senz (vgl. Kernbefund K1/K3). Chancen-Seite derselben Regel: weil LLMs Gr\u00f6\u00dfe stauchen, ist Sichtbarkeit f\u00fcr Herausforderer \u201ebilliger\u201c zu holen als Marktanteil.</div>';
-    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' \u2014 <b>anderer Messweg (ein Modell OHNE Websuche, positionsgewichtet, normiert \u00fcber nur 7 Versicherer).</b> Nur <b>qualitativ</b> als Quercheck \u00fcber 16 Branchen lesbar; absolute Niveaus und Verh\u00e4ltnisse sind <b>nicht</b> mit dem Dashboard-SoV vergleichbar (der Benchmark \u00fcberzeichnet gro\u00dfe Marken). Details: data/benchmark_branchen.json.</div>';
+    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' \u2014 <b>anderer Messweg (ein Modell OHNE Websuche, positionsgewichtet, normiert \u00fcber nur '+(((B.versicherungen_set||{}).core_real||[]).length||"wenige")+' Versicherer).</b> Nur <b>qualitativ</b> als Quercheck \u00fcber '+(B.n_branchen!=null?B.n_branchen:"mehrere")+' Branchen lesbar; absolute Niveaus und Verh\u00e4ltnisse sind <b>nicht</b> mit dem Dashboard-SoV vergleichbar (der Benchmark \u00fcberzeichnet gro\u00dfe Marken). Details: data/benchmark_branchen.json.</div>';
     return head+txt+disc+'</div>';
   }
 
@@ -299,7 +302,7 @@
     legend+='</div>';
 
     var notes='<div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5">'+
-      'Zerlegung: <b>'+d.label+'</b> · '+(d.n||"?")+' Zellen, '+(d.nb||"?")+' Marken, '+(d.nt||"?")+' Themen ('+modeLbl()+')'+(capped?' · Beiträge proportional auf 100 % des Gaps gekappt':'')+'. '+
+      'Zerlegung: <b>'+d.label+'</b> · '+(d.n||"keine Angabe")+' Zellen, '+(d.nb||"keine Angabe")+' Marken, '+(d.nt!=null?(d.nt+' Themen'):'<span title="n_topics fehlt in diesem Modellblock — wird mit dem naechsten Nightly geliefert">Themenzahl: keine Angabe</span>')+' ('+modeLbl()+')'+(capped?' · Beiträge proportional auf 100 % des Gaps gekappt':'')+'. '+
       (d.explorer?'<b>Hinweis zur Aufteilung:</b> „Bekanntheit & Größe" ist ein fester Näherungswert (Marktanteil + Markenbekanntheit), keine geschätzte Größe — dadurch weniger mit der Quellpräsenz vermengt als zwei geschätzte Treiber. Die Trennung ist im gepoolten Modell richtungsstabil, bleibt aber eine <b>Tendenz</b>, kein Kausalnachweis. '+
         (function(){ var f=d.favors||{}; var ks=Object.keys(f); if(!ks.length) return '';
           var L={size:"Bekanntheit & Größe",cite_share:"Quellpräsenz",relprice:"Preisniveau"};

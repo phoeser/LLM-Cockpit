@@ -154,7 +154,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
     <div class="bg-white rounded-xl p-6 shadow">
       <h3 class="text-lg font-bold text-ergo-dark mb-1">Gesamt-URLs pro Anbieter</h3>
-      <p class="text-xs text-gray-500 mb-3">Datenbasis: laufender Sitemap-Crawl, nächtlich aktualisiert</p>
+      <p class="text-xs text-gray-500 mb-3">Datenbasis: laufender Sitemap-Crawl, wöchentlich aktualisiert (seit 10.08.2026; vorher täglich)</p>
       <div class="chart-container"><canvas id="chartTotalUrls"></canvas></div>
     </div>
     <div class="bg-white rounded-xl p-6 shadow">
@@ -324,8 +324,8 @@
       </div>
       <div class="bg-white rounded-lg p-3 shadow-sm border border-red-200">
         <div class="text-xs text-gray-500 uppercase">Mit &laquo;Jetzt berechnen&raquo;</div>
-        <div class="text-2xl font-bold text-red-600">100%</div>
-        <div class="text-xs text-gray-400">Online-Abschluss-CTA</div>
+        <div class="text-2xl font-bold text-red-600" id="berRechnerQuote">&ndash;</div>
+        <div class="text-xs text-gray-400" id="berRechnerSub">Online-Abschluss-CTA</div>
       </div>
       <div class="bg-white rounded-lg p-3 shadow-sm border border-red-200">
         <div class="text-xs text-gray-500 uppercase">Meta Robots</div>
@@ -387,23 +387,21 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="border rounded-lg p-4">
         <h4 class="font-semibold text-red-700 mb-2">&#10060; Problematisch</h4>
-        <ul class="text-sm text-gray-700 space-y-2">
-          <li>&#8226; <strong>robots: index, follow</strong> &mdash; alle Berater-Seiten werden voll indexiert</li>
-          <li>&#8226; <strong>Identisches Produkt-Template</strong> &mdash; ~4.168 Seiten mit gleichem Content = Duplicate/Thin Content</li>
-          <li>&#8226; <strong>&laquo;Jetzt berechnen&raquo;-CTAs</strong> auf jeder Berater-Seite leiten in die Abschlussstrecke &mdash; Abschl&uuml;sse werden provisioniert</li>
-          <li>&#8226; <strong>Kein Canonical-Tag</strong> auf ergo.de/produkte &mdash; Google weiss nicht, welche Seite die &laquo;richtige&raquo; ist</li>
-          <li>&#8226; <strong>275 Links pro Seite</strong> (104 auf ergo.de) &mdash; Link-Equity wird massiv fragmentiert</li>
-        </ul>
+        <!-- 10.08.2026: Diese Liste stand komplett fest im HTML und war an drei von
+             fuenf Punkten falsch: "100 % mit Jetzt-berechnen" (echt: 2 von 125 Seiten),
+             "Kein Canonical-Tag" (echt: 125 von 125 haben eines) und "275 Links pro
+             Seite" (echt: 256,2). Sie war der einzige Absatz des Blocks ohne id und
+             wurde deshalb vom Laufzeit-Update nie angefasst, waehrend die Nachbarn
+             mitwuchsen. Jetzt aus berater_data.json. -->
+        <ul class="text-sm text-gray-700 space-y-2" id="berSeoListe"><li class="text-gray-400">wird aus den Crawl-Daten gefüllt &hellip;</li></ul>
       </div>
       <div class="border rounded-lg p-4">
         <h4 class="font-semibold text-green-700 mb-2">&#9989; Empfohlene Ma&szlig;nahmen</h4>
-        <ul class="text-sm text-gray-700 space-y-2">
-          <li>&#8226; <strong>Produkt-Seiten auf noindex</strong> setzen oder per Canonical auf ergo.de/produkte verweisen</li>
-          <li>&#8226; <strong>&laquo;Jetzt berechnen&raquo;-CTAs entfernen</strong> &mdash; stattdessen &laquo;Termin vereinbaren&raquo; als einziger CTA</li>
-          <li>&#8226; <strong>Berater-Seiten auf Beratung fokussieren</strong>: pers&ouml;nliche Bio, lokale FAQ, Spezialisierung</li>
-          <li>&#8226; <strong>Schema.org LocalBusiness</strong> statt Produktkatalog &mdash; f&uuml;r lokale Suchen positionieren</li>
-          <li>&#8226; <strong>Google Search Console pr&uuml;fen:</strong> Welche Berater-Seiten ranken f&uuml;r Produkt-Keywords?</li>
-        </ul>
+        <!-- 10.08.2026: Die ersten beiden Empfehlungen hingen an Befunden, die der
+             aktuelle Crawl nicht mehr hergibt (Canonical ist inzwischen ueberall
+             gesetzt, die Rechner-CTAs stehen auf 2 von 125 Seiten). Sie werden
+             deshalb nur noch gezeigt, wenn die Daten sie tragen. -->
+        <ul class="text-sm text-gray-700 space-y-2" id="berMassnahmen"></ul>
       </div>
     </div>
   </div>
@@ -485,7 +483,7 @@
     <p class="text-xs text-gray-500 mb-3">Entwicklung der LLM-Sichtbarkeit (Share of Voice %) je Marke. Je LLM (ChatGPT, Gemini, Perplexity) oder gesamt auswählbar.</p>
     <div style="position:relative;height:320px"><canvas id="geoSovTimeChart"></canvas></div>
     <p id="geoSovTimeEmpty" class="text-sm text-gray-400 mt-2" style="display:none">Noch keine SoV-Zeitreihe verfügbar.</p>
-    <div class="mt-3"><div class="text-xs text-gray-500 mb-1">Tägliche Veränderung (letzter Messpunkt ggü. Vortag):</div><div id="geoSovDelta" class="flex flex-wrap gap-2"></div></div>
+    <div class="mt-3"><div class="text-xs text-gray-500 mb-1" id="geoSovDeltaLbl">Veränderung zum vorherigen Messpunkt:</div><div id="geoSovDelta" class="flex flex-wrap gap-2"></div></div>
   </div>
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-3">Anbieter-Ranking gesamt (über alle Produkte und LLMs)</h3>
@@ -615,7 +613,7 @@
 
   <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
     <span class="font-bold text-blue-900">Datenquellen:</span>
-    <span class="text-gray-700">Trustpilot (Live-Crawl), eKomi (HTML-Scrape), Google Places API, Check24 (JSON-LD) · Nightly Update um 02:00 UTC</span>
+    <span class="text-gray-700">Trustpilot (Live-Crawl), eKomi (HTML-Scrape), Google Places API, Check24 (JSON-LD) · Aktualisierung im Cockpit-Nightly (täglich <span class="__nightlyZeit">05:30</span> UTC)</span>
   </div>
 
     <!-- Review-Themen-Cluster (Gemini-Klassifikation echter Bewertungstexte) -->
@@ -649,7 +647,7 @@
 
   <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
     <span class="font-bold text-blue-900">Datenquellen:</span>
-    <span class="text-gray-700">Franke & Bornberg (AJAX-API live), Finanztip, Stiftung Warentest / Finanztest, Morgen & Morgen, DFSI · F&B wird nightly aktualisiert, andere Quellen aus redaktioneller Recherche</span>
+    <span class="text-gray-700">Franke &amp; Bornberg, Finanztip, Stiftung Warentest / Finanztest, Morgen &amp; Morgen, DFSI · der F&amp;B-Abruf läuft im Nightly mit, liefert derzeit aber keine Werte — wo die Tabelle F&amp;B zeigt, steht der hinterlegte Stand 05/2026, je Produkt ausgewiesen. Die anderen Quellen stammen aus redaktioneller Recherche</span>
   </div>
 </section>
 
@@ -719,7 +717,7 @@
 
   <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 mb-6 text-sm">
     <span class="font-bold text-blue-900">Datenquellen:</span>
-    <span class="text-gray-700">Google News RSS (eigene Pressemitteilungen via site:-Filter + allgemeine Medienberichte) · Nightly Update um 02:00 UTC</span>
+    <span class="text-gray-700">Google News RSS (eigene Pressemitteilungen via site:-Filter + allgemeine Medienberichte) · Aktualisierung im Cockpit-Nightly (täglich <span class="__nightlyZeit">05:30</span> UTC)</span>
   </div>
 </section>
 
@@ -727,7 +725,7 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="mb-5">
     <h2 class="text-2xl font-bold text-ergo-dark mb-1">Wirkt unsere Arbeit auf die LLM-Sichtbarkeit?</h2>
-    <p class="text-sm text-gray-600 mb-3">Sechs Abschnitte, in der Reihenfolge, in der sie unten stehen: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was bringt die Websuche — im kontrollierten Experiment? <b>4.</b> Was schafft es überhaupt in die Zitate? <b>5.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? <b>6.</b> Warum liegt der Marktführer vorn? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p><div class="bg-white border rounded-lg p-3 mb-4"><div class="text-xs font-semibold text-gray-600 mb-2">Wie belastbar ist ein Befund? Drei Stufen, die im ganzen Reiter gelten</div><div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs"><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold h-fit">kausal belegt</span><span class="text-gray-600">Es wurde <b>eingegriffen</b> und gegen eine Kontrollbedingung verglichen. Nur Abschnitt 3 und die DiD-Auswertung erreichen diese Stufe.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold h-fit">Zusammenhang</span><span class="text-gray-600">Beobachtet, nicht eingegriffen. Robust gerechnet (cluster-robust, FDR-korrigiert), aber die Richtung der Ursache bleibt offen.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold h-fit">nicht nachweisbar</span><span class="text-gray-600">Kein Effekt gefunden. Das heißt <b>nicht</b> „kein Effekt vorhanden" — siehe Nachweisgrenze in Abschnitt 5.</span></div></div></div>
+    <p class="text-sm text-gray-600 mb-3">Sechs Abschnitte, in der Reihenfolge, in der sie unten stehen: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was bringt die Websuche — im kontrollierten Experiment? <b>4.</b> Was schafft es überhaupt in die Zitate? <b>5.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? <b>6.</b> Warum liegt der Marktführer vorn? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p><div class="bg-white border rounded-lg p-3 mb-4"><div class="text-xs font-semibold text-gray-600 mb-2">Wie belastbar ist ein Befund? Drei Stufen, die im ganzen Reiter gelten</div><div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs"><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold h-fit">kausal belegt</span><span class="text-gray-600">Es wurde <b>eingegriffen</b> und gegen eine Kontrollbedingung verglichen. Nur Abschnitt 3 erreicht diese Stufe. <b>Die DiD-Auswertung gehört ausdrücklich nicht dazu</b> — sie prüft die Parallel-Trends-Annahme nicht, liefert kein Konfidenzintervall und korrigiert nicht für Mehrfachtests; der Block sagt das unter seiner Tabelle selbst.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold h-fit">Zusammenhang</span><span class="text-gray-600">Beobachtet, nicht eingegriffen. Robust gerechnet (cluster-robust, FDR-korrigiert), aber die Richtung der Ursache bleibt offen.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold h-fit">nicht nachweisbar</span><span class="text-gray-600">Kein Effekt gefunden. Das heißt <b>nicht</b> „kein Effekt vorhanden" — siehe Nachweisgrenze in Abschnitt 5.</span></div></div></div>
   </div>
   <div id="korrErgebnis"><div class="text-sm text-gray-400">Lade Auswertung…</div></div>
 
@@ -810,7 +808,7 @@
       <span class="text-xs text-gray-500">Datenstand Peec: <span id="peecAsOf">–</span> · aktualisiert sich mit dem wöchentlichen Peec-Export</span>
     </div>
     <p class="text-sm text-gray-600 mb-4">Unabhängige Validierung des Treibermodells: Peec misst dieselben Marken &times; Themen über ChatGPT, Gemini, AI Overview, AI Mode und Perplexity (<span id="peecPromptZahl">…</span> Prompts, echte UI-Antworten). Footprint = zitatgewichteter Anteil der Quellen mit Markenerwähnung je Thema.</p>
-    <div style="background:#f6f7f9;border:1px solid #e3e6ea;border-left:4px solid #6b7280;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12.5px;color:#374151;line-height:1.55"><b>Ansicht umschaltbar (Standard: branding-neutral).</b> Peecs Prompt-Satz ist ERGO-zentriert — 21 % der Prompts nennen ERGO ausdrücklich, kein Wettbewerber. In der <b>neutralen</b> Ansicht (nur markenfreie Prompts) liegt ERGO marktplausibel hinter Allianz und HUK; die <b>ERGO-fokussierte</b> Ansicht (inkl. Branding-Prompts) ist eine Monitoring-Kennzahl, kein Marktranking. Umschalter unten. <span style="color:#9ca3af">(Prüfung 31.07.2026 · Details: 18b_PEEC_BRANDING_FILTER.md.)</span></div>
+    <div style="background:#f6f7f9;border:1px solid #e3e6ea;border-left:4px solid #6b7280;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12.5px;color:#374151;line-height:1.55"><b>Ansicht umschaltbar (Standard: branding-neutral).</b> Peecs Prompt-Satz ist ERGO-zentriert — <span id="peecBrandAnteil">…</span> der Prompts nennen ERGO ausdrücklich, kein Wettbewerber. In der <b>neutralen</b> Ansicht (nur markenfreie Prompts) liegt ERGO marktplausibel hinter Allianz und HUK; die <b>ERGO-fokussierte</b> Ansicht (inkl. Branding-Prompts) ist eine Monitoring-Kennzahl, kein Marktranking. Umschalter unten. <span style="color:#9ca3af">(Details: 18b_PEEC_BRANDING_FILTER.md.)</span></div>
     <div id="peecHealth"></div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="peecCards"></div>
     <div class="bg-white rounded-xl shadow p-5 mb-6">
@@ -840,6 +838,18 @@ function renderPeecTab(){
       var _ns=window.PEEC_NEUTRAL_SOV||null;
       var _n=_ns && (_ns.n_prompts!=null?_ns.n_prompts:null);
       _pz.textContent = (_n!=null) ? Number(_n).toLocaleString('de-DE') : 'zahlreiche';
+    }
+  }catch(e){}
+  /* Der Branding-Anteil stand bis 10.08.2026 als "21 %" fest im HTML, samt Datum
+     "Prüfung 31.07.2026". peec_neutral_sov.json fuehrt beide Zaehler mit - der Satz
+     rechnet sie jetzt selbst aus und altert nicht mehr weg. */
+  try{
+    var _ba=document.getElementById('peecBrandAnteil');
+    if(_ba){
+      var _n2=window.PEEC_NEUTRAL_SOV||{};
+      var _b=_n2.n_branded_prompts, _g=_n2.n_prompts;
+      _ba.textContent = (_b!=null && _g) ? ((_b*100/_g).toFixed(1).replace('.',',')+' %') : 'ein Teil';
+      if(_b!=null && _g) _ba.title = _b+' von '+_g+' Prompts (data/peec_neutral_sov.json)';
     }
   }catch(e){}
   /* Die Validierungszahlen standen bis 10.08.2026 hart im HTML ("r = 0,83 ueber 312 Zellen")
@@ -894,7 +904,13 @@ function renderPeecTab(){
     ['Konvergenz eigener Crawl ↔ Peec', r!=null ? ('r = '+r.toFixed(2)) : '–', ((val.combined&&val.combined.n)||val.n_common_cells||0)+' gemeinsame Zellen'],
     ['Peec-Zellen im Modell', wp ? (wp.n_cells_added||0) : '–', 'zusätzlich zu den eigenen Zellen'],
     ['Footprint-Effekt (integriert, between)', de && de.between ? (de.between.coef.toFixed(2)+' Pp/Pp') : '–', de && de.between ? ('P(Richtung) '+Math.round(100*de.between.prob_direction)+' %') : ''],
-    ['Footprint ERGO vs. Allianz', fpE.toFixed(1)+' % vs. '+fpA.toFixed(1)+' %', 'Ø über alle erfassten Themen (Peec)']
+    /* 10.08.2026: Beschriftung praezisiert. Weiter oben im selben Reiter steht eine
+       Karte "ERGO-Footprint" mit 32,4 % - das ist das Mittel OHNE Corporate. Hier
+       stehen je nach Umschalter 21,9 % (neutral, INKLUSIVE Corporate) oder der
+       Gesamtwert. Beide Zahlen sind richtig, nur stand nirgends, dass es zwei
+       verschiedene Definitionen sind. */
+    ['Footprint ERGO vs. Allianz', fpE.toFixed(1)+' % vs. '+fpA.toFixed(1)+' %',
+     'Ø über alle erfassten Themen inkl. Corporate (Peec, '+(_neu?'neutrale Prompts':'alle Prompts')+') — die Karte „ERGO-Footprint" oben rechnet ohne Corporate und liegt deshalb höher']
   ];
   cardsEl.innerHTML = cards.map(c =>
     '<div class="bg-white rounded-xl shadow p-4"><div class="text-xs text-gray-500 uppercase tracking-wide">'+c[0]+'</div>'+
@@ -931,7 +947,17 @@ function renderPeecTab(){
       (d.between? '<li>Footprint <b>between</b> (Autorität): <b>'+d.between.coef.toFixed(2)+' Pp SoV je Pp Footprint</b> · P(Richtung) '+Math.round(100*d.between.prob_direction)+' %</li>':'')+
       (d.within? '<li>Footprint <b>within</b> (Hebel im Thema): '+d.within.coef.toFixed(2)+' Pp/Pp · P '+Math.round(100*d.within.prob_direction)+' %</li>':'')+
       (sp.within? '<li class="text-gray-500">Quellen-Dummy (Niveau UI vs. API): '+sp.within.coef.toFixed(1)+' Pp – erwartbar, stört die Treiber-Schätzung nicht</li>':'')+
-      '</ul><p class="text-xs text-gray-500 mt-3">'+(wp.note||'')+'</p>';
+      /* 10.08.2026: wp.note wurde woertlich ausgegeben und trug "366 Prompts" -
+         ein Freitext aus correlation_impact.py, waehrend derselbe Reiter oben die
+         584 aus peec_neutral_sov.json zeigt. Das Skript ist korrigiert, die
+         vorhandene JSON traegt den Satz aber bis zum naechsten Nightly weiter.
+         Deshalb wird eine eingebaute Prompt-Zahl hier abgefangen und durch den
+         gemessenen Wert ersetzt, statt sie noch einen Tag lang zu wiederholen. */
+      '</ul><p class="text-xs text-gray-500 mt-3">'+(function(){
+         var t=String(wp.note||'');
+         var n=(window.PEEC_NEUTRAL_SOV||{}).n_prompts;
+         return t.replace(/,?\s*\d[\d.\s]*\s*Prompts/i, n?(', '+Number(n).toLocaleString('de-DE')+' Prompts'):'');
+       })()+'</p>';
   }
 }
 window.__peecToggle = function(n){ window.__peecNeutral = !!n; try{ renderPeecTab(); }catch(e){} };
@@ -1105,101 +1131,101 @@ const PROVIDERS = {
   ergo: {
     name: "ERGO", url: "ergo.de + ergo.com", color: "#DC0028",
     total: 2064, ratgeber: 489, faq: 158, rechner: 7, presse: 308, glossar: 0, b2b: 150, video: null, service: 161, produkt: 400,
-    strategy: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis + großer Konzern-Newsroom",
+    strategy_alt_04_2026: "Hybrid: FAQ-Marktführer + solide Ratgeber-Basis + großer Konzern-Newsroom",
     strengths_qual: ["Breite Produktabdeckung über alle Kernsparten"],
-    weaknesses_qual: ["Kein systematisches Glossar/Lexikon", "Service-Subseiten sind primär Datenschutz/Rechtliches, weniger Self-Service"],
+    weaknesses_qual: ["Service-Subseiten sind primär Datenschutz/Rechtliches, weniger Self-Service"],
     sparten: { "Reise":133, "KFZ":113, "Kranken":36, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":8, "Tier":10, "Unfall":null },
-    llmRelevance: "MITTEL-HOCH: Eine ausgebaute FAQ-Basis mit Schema.org waere ein starkes LLM-Signal; Konzern-Newsroom liefert Authority-Signale",
+    llmRelevance_alt_04_2026: "MITTEL-HOCH: Eine ausgebaute FAQ-Basis mit Schema.org waere ein starkes LLM-Signal; Konzern-Newsroom liefert Authority-Signale",
     quelle: "Sitemap 2026-04-24 ergo.de + 2026-04-26 ergo.com/de (Konzern-Newsroom)"
   },
   allianz: {
     name: "Allianz (konsolidiert)", url: "allianz.de + allianzdirect.de + markt-und-kunde.de", color: "#003781",
     total: 2278, ratgeber: 275, faq: 64, rechner: 47, presse: 258, glossar: 0, b2b: 164, video: null, service: 79, produkt: 800,
-    strategy: "Multi-Entitäten-Strategie (Konzern + Direct + B2B)",
+    strategy_alt_04_2026: "Multi-Entitäten-Strategie (Konzern + Direct + B2B)",
     strengths_qual: [],
-    weaknesses_qual: ["Kein zentrales Versicherungs-Glossar", "Kein einheitlicher Magazin-Hub"],
+    weaknesses_qual: ["Kein einheitlicher Magazin-Hub"],
     sparten: { "Hausrat/Recht":279, "Kranken":263, "Leben/Vorsorge":247, "KFZ":217, "B2B":164, "Reise":37, "Rechtsschutz":null, "Tier":null, "Unfall":null },
-    llmRelevance: "SEHR HOCH: Multi-Domain-Portfolio mit Direct + B2B + Konzern. LLMs nehmen das als 'Allianz' wahr — Wettbewerbsvorteil!",
+    llmRelevance_alt_04_2026: "SEHR HOCH: Multi-Domain-Portfolio mit Direct + B2B + Konzern. LLMs nehmen das als 'Allianz' wahr — Wettbewerbsvorteil!",
     quelle: "Konsolidiert v3 2026-04-25: allianz.de + allianzdirect.de + markt-und-kunde.de"
   },
   huk: {
     name: "HUK-Coburg", url: "huk.de", color: "#FFD500",
     total: 1028, ratgeber: 693, faq: 7, rechner: 0, presse: 39, glossar: 0, b2b: 3, video: 73, service: 44, produkt: 120,
-    strategy: "SEO-First: Ratgeber-Maschine",
+    strategy_alt_04_2026: "SEO-First: Ratgeber-Maschine",
     strengths_qual: ["Massiver organischer Traffic-Treiber"],
-    weaknesses_qual: ["Keine Rechner indexiert", "Schwache Service-Seiten", "Kein Glossar"],
+    weaknesses_qual: [],
     sparten: { "Kranken":478, "KFZ":428, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
-    llmRelevance: "SEHR HOCH: Großes Ratgeber-Volumen = starkes Trainings-Signal für LLMs",
+    llmRelevance_alt_04_2026: "SEHR HOCH: Großes Ratgeber-Volumen = starkes Trainings-Signal für LLMs",
     quelle: "Sitemap 2026-04-25 (WebFetch)"
   },
   axa: {
     name: "AXA", url: "axa.de", color: "#00008F",
     total: 782, ratgeber: 21, faq: null, rechner: 2, presse: 96, glossar: 24, b2b: null, video: null, service: 26, produkt: 200,
-    strategy: "Brand/News-First mit Glossar-Differenzierung",
+    strategy_alt_04_2026: "Brand/News-First mit Glossar-Differenzierung",
     strengths_qual: [],
-    weaknesses_qual: ["Schwache Service-Präsenz", "Insgesamt SEO-schwach"],
+    weaknesses_qual: [],
     sparten: { "Haftpflicht":106, "KFZ":null, "Kranken":null, "Leben":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
-    llmRelevance: "MITTEL: Glossar-Asset stark, Ratgeber-Schwäche limitiert Reichweite",
+    llmRelevance_alt_04_2026: "MITTEL: Glossar-Asset stark, Ratgeber-Schwäche limitiert Reichweite",
     quelle: "Sitemap 2026-04-25 (WebFetch mit Custom User-Agent)"
   },
   generali: {
     name: "Generali", url: "generali.de", color: "#C8102E",
     total: 1379, ratgeber: 75, faq: 29, rechner: 1, presse: 16, glossar: 0, b2b: 3, video: null, service: 152, produkt: 700,
-    strategy: "UX-First: Service- und FAQ-orientiert",
+    strategy_alt_04_2026: "UX-First: Service- und FAQ-orientiert",
     strengths_qual: ["Ausgewogene Sparten-Verteilung"],
-    weaknesses_qual: ["Kein Glossar", "Kleines Ratgeber-Volumen", "Wenig Presse"],
+    weaknesses_qual: [],
     sparten: { "KFZ":265, "Kranken":203, "Haftpflicht":196, "Leben":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
-    llmRelevance: "MITTEL: FAQ-Dichte hilft bei präzisen Prompts",
+    llmRelevance_alt_04_2026: "MITTEL: FAQ-Dichte hilft bei präzisen Prompts",
     quelle: "Sitemap 2026-04-25 (WebFetch)"
   },
   signal: {
     name: "Signal Iduna", url: "signal-iduna.de", color: "#005CA9",
     total: 576, ratgeber: 182, faq: 1, rechner: 0, presse: 10, glossar: 0, b2b: null, video: null, service: 54, produkt: 200,
-    strategy: "Balanced Hybrid: Ratgeber + Service",
+    strategy_alt_04_2026: "Balanced Hybrid: Ratgeber + Service",
     strengths_qual: ["Nischen-Produkte (Pedelec, Krankenvoll)", "Strukturierte Service-Navigation"],
-    weaknesses_qual: ["Keine Rechner indexiert", "Minimal Presse", "Keine FAQ erkennbar"],
+    weaknesses_qual: [],
     sparten: { "Kranken":61, "KFZ":null, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
-    llmRelevance: "MITTEL: Ratgeber-Anteil OK, aber kleines Gesamtvolumen",
+    llmRelevance_alt_04_2026: "MITTEL: Ratgeber-Anteil OK, aber kleines Gesamtvolumen",
     quelle: "Sitemap 2026-04-25 (WebFetch mit Custom User-Agent)"
   },
   ruv: {
     name: "R+V", url: "ruv.de", color: "#FFCD00",
     total: 1350, ratgeber: 215, faq: null, rechner: 3, presse: 122, glossar: 0, b2b: null, video: null, service: 154, produkt: 500,
-    strategy: "Hybrid mit Altersvorsorge-Fokus & Rechner-Vorteil",
-    strengths_qual: ["Einziger mit indexierten Rechnern (KFZ, Hausrat, Rentenlücke)", "Altersvorsorge-Hub als USP", "Aktiver Newsroom + Blog 'bunte Seiten'", "Studie 'Ängste der Deutschen' als Authority-Signal"],
-    weaknesses_qual: ["Kein Glossar", "FAQ schwer messbar"],
+    strategy_alt_04_2026: "Hybrid mit Altersvorsorge-Fokus & Rechner-Vorteil",
+    strengths_qual: ["Altersvorsorge-Hub als USP", "Aktiver Newsroom + Blog 'bunte Seiten'", "Studie 'Ängste der Deutschen' als Authority-Signal"],
+    weaknesses_qual: ["FAQ schwer messbar"],
     sparten: { "KFZ":275, "Kranken":null, "Leben":null, "Haftpflicht":null, "Hausrat":null, "Rechtsschutz":null, "Reise":null, "Tier":null, "Unfall":null },
-    llmRelevance: "HOCH durch Studien-Authority + Rechner-Conversion-Signal",
+    llmRelevance_alt_04_2026: "HOCH durch Studien-Authority + Rechner-Conversion-Signal",
     quelle: "WebSearch-Stichprobe 2026-04-25 (geschätzte Werte)"
   },
   devk: {
     name: "DEVK", url: "devk.de", color: "#009A3D",
     total: 314, ratgeber: 36, faq: 0, rechner: 13, presse: 78, glossar: 0, b2b: 1, video: null, service: 28, produkt: 100,
-    strategy: "Kompakter Privatkunden-Vollsortimenter mit Newsroom-Fokus",
+    strategy_alt_04_2026: "Kompakter Privatkunden-Vollsortimenter mit Newsroom-Fokus",
     strengths_qual: [],
     weaknesses_qual: [],
     sparten: { "KFZ": 49, "Haftpflicht": 29, "Hausrat": 22, "Kranken": 21, "Leben": 17, "Rechtsschutz": 12, "Unfall": 8, "Reise": 7, "Finanzen": 7 },
-    llmRelevance: "GERING-MITTEL: kleines URL-Volumen begrenzt LLM-Sichtbarkeit, aber gute Strukturqualität",
+    llmRelevance_alt_04_2026: "GERING-MITTEL: kleines URL-Volumen begrenzt LLM-Sichtbarkeit, aber gute Strukturqualität",
     quelle: "Sitemap 2026-04-26 (devk_inventar.csv)"
   },
   hannoversche: {
     name: "Hannoversche", url: "hannoversche.de", color: "#005CA9",
     total: 366, ratgeber: 56, faq: 10, rechner: 11, presse: 7, glossar: 0, b2b: null, video: null, service: 33, produkt: 150,
-    strategy: "Lebensversicherungs-Spezialist mit Beratungsfokus",
+    strategy_alt_04_2026: "Lebensversicherungs-Spezialist mit Beratungsfokus",
     strengths_qual: [],
-    weaknesses_qual: ["Eingeschränktes Sparten-Spektrum (kein KFZ-Schwerpunkt)", "Wenig Presse-Content"],
+    weaknesses_qual: ["Eingeschränktes Sparten-Spektrum (kein KFZ-Schwerpunkt)"],
     sparten: { "Leben": 72, "Kranken": 12, "KFZ": 8, "Sach": 3, "Haftpflicht": 2, "Tier": 2, "Reise": 1 },
-    llmRelevance: "MITTEL für Lebens-Versicherung-Anfragen, sonst niedrig",
+    llmRelevance_alt_04_2026: "MITTEL für Lebens-Versicherung-Anfragen, sonst niedrig",
     quelle: "Sitemap 2026-04-26"
   },
   cosmosdirekt: {
     name: "Cosmos Direkt", url: "cosmosdirekt.de", color: "#FF6600",
     total: 694, ratgeber: 105, faq: null, rechner: 3, presse: 3, glossar: 0, b2b: null, video: null, service: 32, produkt: 421,
-    strategy: "Direktversicherer mit starker Produkt-Fokussierung",
+    strategy_alt_04_2026: "Direktversicherer mit starker Produkt-Fokussierung",
     strengths_qual: ["Breites Sparten-Portfolio (Leben, KFZ, Hausrat, Haftpflicht, Kranken)"],
-    weaknesses_qual: ["Wenig Presse-Content", "Kein Glossar"],
+    weaknesses_qual: [],
     sparten: { "Leben": 158, "KFZ": 126, "Hausrat": 68, "Haftpflicht": 46, "Kranken": 40, "Unfall": 25, "Reise": 14, "Rechtsschutz": 2 },
-    llmRelevance: "MITTEL-HOCH durch breite Produkt-Tiefe und Direktvertrieb-Reputation",
+    llmRelevance_alt_04_2026: "MITTEL-HOCH durch breite Produkt-Tiefe und Direktvertrieb-Reputation",
     quelle: "Sitemap 2026-04-26"
   }
 };
@@ -1255,6 +1281,54 @@ function ableitenProfil(key){
   return {stark:stark, schwach:schwach};
 }
 
+/* Strategie-Zeile und LLM-Einschaetzung ebenfalls aus den Live-Zahlen.
+   10.08.2026: Beides stand als fester Satz aus 04/2026 in PROVIDERS und
+   widersprach den Kacheln auf DERSELBEN Seite - ERGO war dort "Hybrid:
+   FAQ-Marktfuehrer" bei acht FAQ-Seiten gegen Generalis 24, AXA hatte
+   "Glossar-Differenzierung" bei null Glossar-URLs, R+V war "Einziger mit
+   indexierten Rechnern" bei fuenf gegen Allianz' 55.
+   Statt die Saetze neu zu schreiben - was sie beim naechsten Crawl wieder
+   veralten liesse - werden sie jetzt aus dem Profil erzeugt: welche Bereiche
+   tragen das Volumen, wo steht der Anbieter im Feld. Der frueher hart kodierte
+   Text bleibt als P.strategy_alt erhalten und wird nirgends mehr angezeigt. */
+function strategieAusDaten(key){
+  var P=PROVIDERS[key]; if(!P||!P.total) return {strategie:'keine Angabe — kein Crawl-Stand vorhanden', llm:'keine Angabe'};
+  var alle=Object.entries(PROVIDERS).filter(function(x){ return x[1] && x[1].total; });
+  var f=function(n){ return Number(n||0).toLocaleString('de-DE'); };
+  var BER=[{k:'ratgeber',lab:'Ratgeber'},{k:'produkt',lab:'Produktseiten'},{k:'presse',lab:'Presse/Newsroom'},
+           {k:'service',lab:'Service'},{k:'faq',lab:'FAQ'},{k:'rechner',lab:'Rechner'},
+           {k:'glossar',lab:'Glossar'},{k:'b2b',lab:'B2B'},{k:'standorte',lab:'Standorte'},{k:'konzern',lab:'Konzern'}];
+  // 1) Was traegt das Volumen? Die zwei groessten Bereiche mit Anteil.
+  var anteile=BER.map(function(B){ return {lab:B.lab, v:(P[B.k]||0)}; })
+                 .filter(function(x){ return x.v>0; })
+                 .sort(function(a,b){ return b.v-a.v; });
+  var traeger=anteile.slice(0,2).map(function(x){ return x.lab+' '+Math.round(x.v/P.total*100)+' %'; });
+  // 2) Wo fuehrt der Anbieter das Feld an?
+  var fuehrend=BER.filter(function(B){
+    var eigen=P[B.k]||0; if(!eigen) return false;
+    return !alle.some(function(x){ return (x[1][B.k]||0)>eigen; });
+  }).map(function(B){ return B.lab; });
+  // 3) Platz nach Gesamtvolumen
+  var platz=alle.slice().sort(function(a,b){ return b[1].total-a[1].total; })
+                .findIndex(function(x){ return x[0]===key; })+1;
+  var strategie='Schwerpunkt: '+(traeger.length?traeger.join(' · '):'keine Angabe')
+    +' · '+f(P.total)+' URLs (Platz '+platz+' von '+alle.length+')'
+    +(fuehrend.length?(' · führend bei '+fuehrend.join(', ')):'');
+  // 4) LLM-Einschaetzung: Volumen und redaktionelle Tiefe, beides gemessen.
+  var redak=(P.ratgeber||0)+(P.faq||0)+(P.glossar||0);
+  var redakAnteil=P.total?redak/P.total:0;
+  var medTotal=(function(){ var v=alle.map(function(x){return x[1].total;}).sort(function(a,b){return a-b;});
+                            return v.length?v[Math.floor(v.length/2)]:0; })();
+  var stufe = (P.total>=medTotal && redakAnteil>=0.25) ? 'HOCH'
+            : (P.total>=medTotal || redakAnteil>=0.25) ? 'MITTEL' : 'GERING';
+  var llm=stufe+': '+f(redak)+' redaktionelle URLs (Ratgeber, FAQ, Glossar) = '
+    +Math.round(redakAnteil*100)+' % des Bestands; Gesamtvolumen '
+    +(P.total>=medTotal?'über':'unter')+' dem Median des Feldes ('+f(medTotal)+').'
+    +' Einordnung aus dem Crawl vom '+((window.PROVIDERS_STAND||'').slice(0,10)||'aktuellen Stand')
+    +' — sie misst Umfang und Struktur, nicht die inhaltliche Qualität.';
+  return {strategie:strategie, llm:llm};
+}
+
 function providerTemplate(key) {
   const p = PROVIDERS[key];
   if (!p.total) return '';
@@ -1276,7 +1350,7 @@ function providerTemplate(key) {
           <h2 class="text-2xl font-bold text-ergo-dark">${p.name}</h2>
           <p class="text-sm text-gray-500">${p.url} · ${p._crawl_as_of ? ('Sitemap-Crawl ' + p._crawl_as_of) : p.quelle}</p>
         </div>
-        <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${p.strategy}</div>
+        <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${strategieAusDaten(key).strategie}</div>
       </div>
     </div>
 
@@ -1294,7 +1368,10 @@ function providerTemplate(key) {
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechtliches</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechtliches)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Medien</div><div class="text-2xl font-bold text-ergo-dark">${num(p.medien)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow" title="Internationale Konzern-Domain (.com) — separat ausgewiesen, kein deutsches Produktgeschäft"><div class="text-xs text-gray-500 uppercase">Konzern (.com)</div><div class="text-2xl font-bold text-gray-500">${num(p.konzern)}</div></div>
-      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
+      <!-- 10.08.2026: stand hier als ${'$'}{num(p.video ?? p.b2b)}. Der ??-Operator faellt nur
+           bei null/undefined zurueck - providers.json liefert aber video: 0. Ergebnis:
+           ERGO zeigte 0 statt 43 B2B-URLs, R+V 0 statt 109. Jetzt beide Werte, getrennt. -->
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video / B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video||0)} / ${num(p.b2b||0)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.sonstige != null ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0)))}</div></div>
     </div>
 
@@ -1322,7 +1399,7 @@ function providerTemplate(key) {
 
     <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-5 mb-6">
       <div class="text-xs uppercase font-semibold text-blue-700">LLM-Relevanz-Einschätzung</div>
-      <p class="text-sm text-gray-700 mt-1">${p.llmRelevance}</p>
+      <p class="text-sm text-gray-700 mt-1">${strategieAusDaten(key).llm}</p>
     </div>
 
     ${SITEMAPS[key] ? `
@@ -1357,33 +1434,86 @@ let SENTIMENT_DATA = null;
 let PRESS_DATA = null;
 
 
+/* 10.08.2026: Die Begruendungen der Maßnahmen trugen feste Zahlen aus 04/2026 und
+   widersprachen der GAP-Tabelle im selben Reiter - "ERGO hat 158 FAQ-Seiten" bei
+   acht, "Allianz hat 42 Rechner" bei 55, "AXA mit 24 Glossar-Eintraegen" bei null,
+   "HUK pflegt 73 Videos" bei null. Statt sie neu zu schreiben, stehen dort jetzt
+   Platzhalter, die aus providers.json gefuellt werden. Und die Zeithorizonte lauteten
+   durchweg "Q2 2026" - am 10.08. laengst verstrichen, ohne dass es jemandem auffiel. */
+function aktionText(t){
+  if(!t) return '';
+  var P=(typeof PROVIDERS!=='undefined')?PROVIDERS:{};
+  var f=function(n){ return Number(n||0).toLocaleString('de-DE'); };
+  var mit=function(feld){ return Object.entries(P).filter(function(x){ return x[1]&&x[1].total; }); };
+  var spitze=function(feld,lab){
+    var e=mit().map(function(x){ return {n:(x[1].name||x[0]), v:(x[1][feld]||0)}; }).sort(function(a,b){ return b.v-a.v; })[0];
+    return (e&&e.v)?(e.n+' hat '+f(e.v)+' '+lab):('kein Anbieter im Feld führt '+lab);
+  };
+  var K={
+    '{{ergo.faq}}':      f((P.ergo||{}).faq),
+    '{{ergo.rechner}}':  f((P.ergo||{}).rechner),
+    '{{ergo.presse}}':   f((P.ergo||{}).presse),
+    '{{rechner.spitze}}': spitze('rechner','Rechner'),
+    '{{presse.spitze}}':  spitze('presse','Presse-URLs'),
+    '{{video.spitze}}':   spitze('video','Videos in der eigenen Sitemap'),
+    '{{glossar.lage}}': (function(){
+        var g=mit().map(function(x){ return {n:(x[1].name||x[0]), v:(x[1].glossar||0)}; }).filter(function(x){ return x.v>0; });
+        return g.length ? ('nur '+g.map(function(x){ return x.n+' mit '+f(x.v); }).join(' und ')) : 'kein Anbieter im Feld hat eines';
+      })(),
+    '{{tier.spitze}}': (function(){
+        var e=mit().map(function(x){ return {n:(x[1].name||x[0]), v:(((x[1].sparten)||{})['Tier']||0)}; })
+                   .sort(function(a,b){ return b.v-a.v; })[0];
+        return (e&&e.v)?(e.n+' führt die Sparte Tier mit '+f(e.v)+' URLs (ERGO: '+f((((P.ergo||{}).sparten)||{})['Tier'])+')')
+                       :'keine Sparten-Zahlen für Tier im Crawl';
+      })(),
+    '{{sparten.duenn}}': (function(){
+        var sp=((P.ergo||{}).sparten)||{};
+        var arr=Object.keys(sp).map(function(k){ return {k:k, v:sp[k]}; }).filter(function(x){ return x.v!=null; })
+                 .sort(function(a,b){ return a.v-b.v; }).slice(0,2);
+        return arr.length ? arr.map(function(x){ return x.k+' nur '+f(x.v)+' URLs'; }).join(', ') : 'mehrere Sparten dünn besetzt';
+      })()
+  };
+  return String(t).replace(/\{\{[a-z.]+\}\}/g, function(m){ return (K[m]!=null?K[m]:'keine Angabe'); });
+}
+function horizontText(h){
+  if(!h) return '';
+  var m=String(h).match(/Q([1-4])(?:-Q([1-4]))?\s*(\d{4})/);
+  if(!m) return h;
+  var q=Number(m[2]||m[1]), jahr=Number(m[3]);
+  var ende=new Date(Date.UTC(jahr, q*3, 0));   // letzter Tag des Quartals
+  if(Date.now() > ende.getTime()){
+    var tage=Math.floor((Date.now()-ende.getTime())/86400000);
+    return '<span class="text-amber-700" title="Der geplante Zeitraum ist verstrichen — der Horizont steht fest im Code und wurde nie fortgeschrieben.">'+h+' · überfällig seit '+tage+' Tagen</span>';
+  }
+  return h;
+}
 const ACTIONS = [
   { id:1, title:"FAQPage-Schema-Markup auf alle FAQ-Seiten", category:"Strukt. Daten", impact:5, effort:2,
-    why:"ERGO hat 158 FAQ-Seiten – ohne Schema-Markup verschenken wir den größten LLM-Hebel. Mit Markup explodiert die Wahrscheinlichkeit, in ChatGPT/Gemini-Antworten zitiert zu werden.",
+    why:"ERGO hat {{ergo.faq}} FAQ-Seiten – ohne Schema-Markup verschenken wir den größten LLM-Hebel. Mit Markup explodiert die Wahrscheinlichkeit, in ChatGPT/Gemini-Antworten zitiert zu werden.",
     how:"Technische Implementierung im CMS, JSON-LD pro FAQ-Seite, Rich Results Test je Stichprobe", horizon:"Q2 2026" },
   { id:2, title:"Versicherungs-Glossar A-Z aufbauen (300+ Begriffe)", category:"Themenabdeckung", impact:5, effort:3,
-    why:"Niemand der Wettbewerber hat ein systematisches Glossar (außer AXA mit 24 Einträgen). White Space, in dem ERGO dominieren kann.",
+    why:"Ein systematisches Glossar hat im Feld praktisch niemand ({{glossar.lage}}). White Space, in dem ERGO dominieren kann.",
     how:"Begriffsliste aus FAQ + Ratgeber extrahieren, Definitionen kuratieren, Schema-DefinedTerm einsetzen", horizon:"Q2-Q3 2026" },
   { id:3, title:"Autoren-Profile & E-E-A-T-Signale etablieren", category:"E-E-A-T", impact:4, effort:3,
     why:"E-E-A-T ist das stärkste Vertrauenssignal für LLMs. Autoren mit Qualifikationen, Foto, Vita = mehr Zitierwahrscheinlichkeit.",
     how:"Autoren-Hub auf ergo.de, Autor pro Ratgeber-Artikel, schema:Person mit Qualifikationen", horizon:"Q3 2026" },
   { id:4, title:"Rechner-Portfolio von 7 auf 25+ ausbauen", category:"Tools", impact:4, effort:4,
-    why:"Allianz hat 42 Rechner, ERGO nur 7. Rechner werden in AI-Suche prominent zitiert und liefern Conversion-Signale.",
+    why:"{{rechner.spitze}}, ERGO hat {{ergo.rechner}}. Rechner werden in AI-Suche prominent zitiert und liefern Conversion-Signale.",
     how:"KFZ, Hausrat, Rentenlücke, BU, Risikolebens, Auslandskranken-Rechner mit kurzen URL-Pfaden + Schema-WebApplication", horizon:"Q3-Q4 2026" },
   { id:5, title:"Krankheitslexikon für Tier- und Krankenversicherung", category:"Themenabdeckung", impact:4, effort:3,
-    why:"Allianz hat 60+ Tier-Krankheitsseiten. Strukturiertes Lexikon = LLM-Magnet bei Symptom-Anfragen.",
+    why:"{{tier.spitze}}. Strukturiertes Lexikon = LLM-Magnet bei Symptom-Anfragen.",
     how:"60-100 Krankheitsseiten je Tier/Mensch, Symptome → Versicherungsleistung, Schema:MedicalCondition", horizon:"Q4 2026" },
   { id:6, title:"Pressebereich für Authority-Signale stärken", category:"E-E-A-T", impact:3, effort:3,
-    why:"Allianz: 261 Presse-URLs, AXA: 96. ERGO Pressepräsenz ist in Sitemap kaum sichtbar – Auswirkung auf LLM-Vertrauen.",
+    why:"{{presse.spitze}}; ERGO steht bei {{ergo.presse}}. Die ERGO-Pressepräsenz ist in der Sitemap kaum sichtbar – Auswirkung auf LLM-Vertrauen.",
     how:"Presse-Hub mit Pressemitteilungen, Studien, Statements; Verlinkung mit Ratgeber-Hub", horizon:"Q3 2026" },
   { id:7, title:"Content-Tiefe schwacher Sparten ausbauen (Tier, Rechtsschutz)", category:"Themenabdeckung", impact:4, effort:4,
-    why:"Tier nur 10 URLs, Rechtsschutz nur 8 – Wettbewerber dominieren hier mit Faktor 5-10x.",
+    why:"{{sparten.duenn}} – Wettbewerber dominieren diese Sparten deutlich.",
     how:"Pro Sparte: 30+ Ratgeber, FAQ-Cluster, Schaden-Beispiele, Rechtsfall-Datenbank", horizon:"Q4 2026" },
   { id:8, title:"Monatliches LLM-Monitoring als Scheduled Task", category:"Operations", impact:5, effort:2,
     why:"Ohne kontinuierliches Tracking verpassen wir Veränderungen in Prompt-Antworten und Wettbewerber-Bewegungen.",
     how:"Scheduled Task: 100+ Standardprompts in ChatGPT & Gemini, Zitierhäufigkeit & Sentiment, monatlicher Trend-Report", horizon:"Q2 2026" },
   { id:9, title:"Video-Content-Strategie evaluieren & pilotieren", category:"Format-Diversifikation", impact:3, effort:4,
-    why:"HUK pflegt 73 Videos in eigener Sitemap – Gemini AI Overviews bevorzugt Video-Snippets bei vielen Anfragen.",
+    why:"{{video.spitze}} – Gemini AI Overviews bevorzugt Video-Snippets bei vielen Anfragen.",
     how:"Video-Sitemap, schema:VideoObject, Top-20-Erklärvideos je Sparte, YouTube-Integration", horizon:"Q3-Q4 2026" },
   { id:10, title:"Sprach- und Promptfreundlichkeit der Top-Seiten", category:"Sprache", impact:4, effort:2,
     why:"LLMs zitieren bevorzugt prägnante Definitionen und 'TL;DR'-artige Antworten. Gute UX-Copy = mehr LLM-Zitate.",
@@ -1418,7 +1548,7 @@ function providerTemplate(key) {
           <h2 class="text-2xl font-bold text-ergo-dark">${p.name}</h2>
           <p class="text-sm text-gray-500">${p.url} · ${p._crawl_as_of ? ('Sitemap-Crawl ' + p._crawl_as_of) : p.quelle}</p>
         </div>
-        <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${p.strategy}</div>
+        <div class="px-4 py-2 rounded text-white font-semibold" style="background:${p.color}">${strategieAusDaten(key).strategie}</div>
       </div>
     </div>
 
@@ -1436,7 +1566,10 @@ function providerTemplate(key) {
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Rechtliches</div><div class="text-2xl font-bold text-ergo-dark">${num(p.rechtliches)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Medien</div><div class="text-2xl font-bold text-ergo-dark">${num(p.medien)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow" title="Internationale Konzern-Domain (.com) — separat ausgewiesen, kein deutsches Produktgeschäft"><div class="text-xs text-gray-500 uppercase">Konzern (.com)</div><div class="text-2xl font-bold text-gray-500">${num(p.konzern)}</div></div>
-      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video/B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video ?? p.b2b)}</div></div>
+      <!-- 10.08.2026: stand hier als ${'$'}{num(p.video ?? p.b2b)}. Der ??-Operator faellt nur
+           bei null/undefined zurueck - providers.json liefert aber video: 0. Ergebnis:
+           ERGO zeigte 0 statt 43 B2B-URLs, R+V 0 statt 109. Jetzt beide Werte, getrennt. -->
+      <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Video / B2B</div><div class="text-2xl font-bold text-ergo-dark">${num(p.video||0)} / ${num(p.b2b||0)}</div></div>
       <div class="kpi-card bg-white rounded-xl p-4 shadow"><div class="text-xs text-gray-500 uppercase">Sonstige</div><div class="text-2xl font-bold text-gray-500">${num(p.sonstige != null ? p.sonstige : (p.total - (p.ratgeber||0) - (p.faq||0) - (p.rechner||0) - (p.presse||0) - (p.glossar||0) - (p.b2b||0) - (p.service||0) - (p.produkt||0)))}</div></div>
     </div>
 
@@ -1464,7 +1597,7 @@ function providerTemplate(key) {
 
     <div class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-5 mb-6">
       <div class="text-xs uppercase font-semibold text-blue-700">LLM-Relevanz-Einschätzung</div>
-      <p class="text-sm text-gray-700 mt-1">${p.llmRelevance}</p>
+      <p class="text-sm text-gray-700 mt-1">${strategieAusDaten(key).llm}</p>
     </div>
 
     ${SITEMAPS[key] ? `
@@ -2030,11 +2163,18 @@ function renderRatingsTables() {
     }
 
     // Statischer F&B-Fallback (greift nur, wenn der Live-Crawl nichts geliefert hat)
+    // 10.08.2026: Der Live-Zweig oben greift derzeit bei KEINEM Eintrag - in
+    // sentiment_dashboard.json ist fb_stars bei allen 30 Eintraegen null. Gezeigt wurde
+    // also durchgehend dieser Block von Mai, waehrend darueber "Datenstand: 2026-08-10"
+    // und in der Quellenzeile "F&B wird nightly aktualisiert" stand. Die Zahlen bleiben
+    // (sie sind nicht falsch, nur alt), aber sie werden jetzt als alt gekennzeichnet.
+    var fbAusFallback = 0, fbLiveZahl = 0;
+    prod.versicherer.forEach(function(v){ if(v.fb) fbLiveZahl++; });
     if (RATINGS_FB_STATIC[prodKey]) {
       prod.versicherer.forEach(function(v) {
         if (!v.fb) {
           var s = RATINGS_FB_STATIC[prodKey][v.name.toLowerCase()];
-          if (s) v.fb = s;
+          if (s) { v.fb = s; v._fbAlt = true; fbAusFallback++; }
         }
       });
     }
@@ -2042,6 +2182,13 @@ function renderRatingsTables() {
     var html = '<div class="bg-white rounded-xl p-6 shadow mb-6">';
     html += '<h3 class="text-lg font-bold text-ergo-dark mb-1">' + prod.icon + ' ' + prod.label + '</h3>';
     html += '<p class="text-xs text-gray-500 mb-4">Alle Produktratings im Vergleich — 5 unabhängige Quellen</p>';
+    if (fbAusFallback) {
+      html += '<div class="text-xs mb-3 rounded p-2" style="background:#fffbeb;border:1px solid #fde68a;color:#92400e">'
+        + '<b>Franke &amp; Bornberg: Stand 05/2026.</b> ' + fbAusFallback + ' von ' + prod.versicherer.length
+        + ' Einträgen stammen aus der hinterlegten Liste, nicht aus dem Live-Abruf'
+        + (fbLiveZahl ? (' (' + fbLiveZahl + ' kamen live)') : ' — der Live-Abruf liefert für dieses Produkt derzeit gar keine F&amp;B-Werte')
+        + '. Der Datenstand oben bezieht sich auf die übrigen Quellen.</div>';
+    }
     html += '<div class="overflow-x-auto">';
     html += '<table class="w-full text-sm">';
     html += '<thead><tr class="bg-gray-100 text-left">';
@@ -2372,7 +2519,27 @@ function buildDomainFootprint() {
   // As-of
   const asOf = document.getElementById('domAsOf');
   if (asOf && data.generated_at) {
-    asOf.textContent = 'Stand: ' + data.generated_at + ' - Subdomains pro Marke (max 50/Domain via hackertarget.com)';
+    /* 10.08.2026: "max 50/Domain" stand fest im Text - in domain_footprint_data.json
+       fuehren zehn Domains je 51 Subdomains. Die Grenze wird jetzt aus den Daten
+       abgelesen, statt sie zu behaupten. */
+    var _maxSub = 0, _amKap = 0;
+    try {
+      (data.brands||[]).forEach(function(b){
+        var pd = b.per_domain || {};
+        Object.keys(pd).forEach(function(dom){
+          var n = (pd[dom]||{}).count || 0;
+          if(n > _maxSub) _maxSub = n;
+        });
+      });
+      (data.brands||[]).forEach(function(b){
+        var pd = b.per_domain || {};
+        Object.keys(pd).forEach(function(dom){ if(((pd[dom]||{}).count||0) === _maxSub) _amKap++; });
+      });
+    } catch(e){}
+    asOf.textContent = 'Stand: ' + data.generated_at + ' - Subdomains pro Marke via hackertarget.com'
+      + (_maxSub ? (' (höchster Wert im aktuellen Abruf: ' + _maxSub + ' Subdomains je Domain'
+            + (_amKap > 2 ? (', erreicht von ' + _amKap + ' Domains — dort kappt der Dienst die Liste, die echten Bestände sind größer') : '')
+            + ')') : '');
   }
 }
 
@@ -2392,7 +2559,12 @@ function buildOverviewMatrix() {
   headers.forEach(h => html += `<th class="text-left px-3 py-2">${h}</th>`);
   html += '</tr></thead><tbody>';
   Object.entries(PROVIDERS).forEach(([k,p]) => {
-    if (k === 'devk') return;
+    // 10.08.2026: hier stand 'if (k === "devk") return;' ohne Begruendung. Die Folge
+    // war eine Tabelle mit 9 Zeilen unter einer KPI 'Anbieter analysiert 10/10' und
+    // einer Ueberschrift 'alle 10 Anbieter'. providers.json fuehrt DEVK mit 327 URLs,
+    // es gibt keinen Datengrund fuer den Ausschluss. Nur Anbieter ohne Crawl-Stand
+    // bleiben aussen vor - und die fehlen dann auch in den Nachbarzahlen.
+    if (!PROVIDERS[k] || !PROVIDERS[k].total) return;
     html += `<tr class="border-b hover:bg-gray-50"><td class="px-3 py-2 font-semibold">${p.name}</td>`;
     keys.forEach(field => {
       let v;
@@ -2431,10 +2603,20 @@ function buildGapTable() {
   let html = '';
   fields.forEach(f => {
     const ergo = PROVIDERS.ergo[f.key];
-    const wettb = Object.entries(PROVIDERS).filter(([k,_])=>k!=='ergo'&&k!=='devk').map(([_,p])=>p[f.key]).filter(v=>v!=null);
+    /* 10.08.2026: Hier wurde ohne ERGO UND ohne DEVK gemittelt, aber MIT Nullwerten
+       (25.755/8 = 3.219). Der Ampel-Kasten zwei Bloecke tiefer mittelte mit DEVK und
+       ohne Nullen (26.082/9 = 2.898) - und nannte in seiner Fussnote "9 Wettbewerber",
+       waehrend diese Tabelle gegen 8 rechnete. Derselbe Reiter, dieselbe Kennzahl
+       "Ø Wettbewerb", zwei Zahlen. Jetzt beide nach derselben Regel: alle Anbieter
+       mit Crawl-Stand ausser ERGO, Nullen zaehlen nicht mit (ein Anbieter ohne
+       Glossar hat keinen kleinen Glossar-Bestand, er hat gar keinen - er darf den
+       Schnitt der anderen nicht druecken). */
+    const wettb = Object.entries(PROVIDERS)
+      .filter(([k,pv])=>k!=='ergo' && pv && pv.total)
+      .map(([_,pv])=>pv[f.key]).filter(v=>v!=null && v>0);
     const max = wettb.length ? Math.max(...wettb) : 0;
     const avg = wettb.length ? wettb.reduce((a,b)=>a+b,0)/wettb.length : 0;
-    const leaderEntry = Object.entries(PROVIDERS).find(([k,p])=>k!=='ergo'&&p[f.key]===max);
+    const leaderEntry = Object.entries(PROVIDERS).find(([k,p])=>k!=='ergo'&&p&&p.total&&p[f.key]===max);
     const leader = leaderEntry ? leaderEntry[1].name : '-';
     const ergoVal = ergo ?? 0;
     const delta = ergoVal - max;
@@ -2465,7 +2647,7 @@ function buildActionCards() {
           <div>
             <div class="badge badge-blue mb-1">${a.category}</div>
             <h4 class="font-bold text-ergo-dark text-base leading-tight">${a.title}</h4>
-            <div class="text-xs text-gray-500 mt-1">${a.horizon}</div>
+            <div class="text-xs text-gray-500 mt-1">${horizontText(a.horizon)}</div>
           </div>
           <div class="text-right whitespace-nowrap">
             <div class="text-xs text-gray-500">I/E</div>
@@ -2474,7 +2656,7 @@ function buildActionCards() {
           </div>
         </summary>
         <div class="mt-3 pt-3 border-t text-sm text-gray-700 space-y-2">
-          <div><span class="font-semibold">Warum:</span> ${a.why}</div>
+          <div><span class="font-semibold">Warum:</span> ${aktionText(a.why)}</div>
           <div><span class="font-semibold">Wie:</span> ${a.how}</div>
         </div>
       </details>`;
@@ -2605,8 +2787,17 @@ function buildProviderCharts() {
       k.innerHTML = '<span class="font-bold text-blue-900">Wie gezählt wird:</span> '
         + '<span class="text-gray-700">Mehrmarken-Anbieter werden über ihre Entitäten zusammengefasst — die Allianz etwa über allianz.de, '
         + 'allianzdirect.de und markt-und-kunde.de, denn für ein Sprachmodell ist das alles „Allianz". '
+        // 10.08.2026: "naechtlich neu erhoben" stimmt nicht mehr - der Anbieter-Crawl
+        // haengt am GEO-Lauf, und der ist seit heute woechentlich. Statt eine neue
+        // Kadenz fest hineinzuschreiben, wird das Alter des Standes gerechnet: das
+        // altert nicht, egal wie oft der Rhythmus noch wechselt.
         + 'Alle Zahlen auf dieser Seite stammen aus dem laufenden Crawl'
-        + (stand ? (' (Stand ' + stand + ')') : '') + ' und werden nächtlich neu erhoben.</span>';
+        + (stand ? (' (Stand ' + String(stand).slice(0,10) + (function(){
+              var t=Date.parse(stand); if(isNaN(t)) return '';
+              var tage=Math.floor((Date.now()-t)/86400000);
+              return tage<=0 ? ', von heute' : (', vor ' + tage + (tage===1?' Tag':' Tagen'));
+            })() + ')') : '')
+        + '.</span>';
     }
   }
   try { fillOverviewStatic(); } catch(e){ console.warn('fillOverviewStatic:', e.message); }
@@ -2659,7 +2850,8 @@ function buildProviderCharts() {
     var nz=document.getElementById('gapAmpelNote');
     if(nz) nz.textContent = 'Einordnung automatisch aus dem laufenden Crawl: grün = ERGO führt oder liegt über dem '
       + 'Wettbewerbsschnitt · gelb = unter Schnitt oder unter drei Vierteln der Spitze · rot = unter einem Drittel der '
-      + 'Spitze oder gar nicht vorhanden. Verglichen wird gegen ' + (eintraege.length-1) + ' Wettbewerber.';
+      + 'Spitze oder gar nicht vorhanden. Verglichen wird gegen ' + (eintraege.length-1) + ' Wettbewerber mit Crawl-Stand; '
+      + 'in den Schnitt gehen je Feld nur die ein, die dort überhaupt etwas haben — dieselbe Regel wie in der GAP-Tabelle oben.';
   }
   try { fillGapAmpel(); } catch(e){ console.warn('fillGapAmpel:', e.message); }
 
@@ -2684,50 +2876,12 @@ function buildProviderCharts() {
   });
 }
 
-function buildGapCharts() {
-  const fields = ['Ratgeber','FAQ','Rechner','Presse','Glossar','Service','Produkt'];
-  const ergoVals = [
-    PROVIDERS.ergo.ratgeber||0, PROVIDERS.ergo.faq||0, PROVIDERS.ergo.rechner||0,
-    PROVIDERS.ergo.presse||0, PROVIDERS.ergo.glossar||0, PROVIDERS.ergo.service||0, PROVIDERS.ergo.produkt||0
-  ];
-  const wettbAvg = fields.map((f,i) => {
-    const k = ['ratgeber','faq','rechner','presse','glossar','service','produkt'][i];
-    const v = Object.entries(PROVIDERS).filter(([key,_])=>key!=='ergo'&&key!=='devk').map(([_,p])=>p[k]).filter(x=>x!=null);
-    return v.length ? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : 0;
-  });
-  new Chart(document.getElementById('chartGapRadar'), {
-    type: 'radar',
-    data: {
-      labels: fields,
-      datasets: [
-        { label: 'ERGO', data: ergoVals, borderColor: '#DC0028', backgroundColor: 'rgba(220,0,40,0.2)', borderWidth: 2 },
-        { label: 'Ø Wettbewerb', data: wettbAvg, borderColor: '#282D37', backgroundColor: 'rgba(40,45,55,0.2)', borderWidth: 2 }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true } } }
-  });
-
-  // Delta-Bar
-  const maxVals = fields.map((f,i) => {
-    const k = ['ratgeber','faq','rechner','presse','glossar','service','produkt'][i];
-    const v = Object.entries(PROVIDERS).filter(([key,_])=>key!=='ergo'&&key!=='devk').map(([_,p])=>p[k]).filter(x=>x!=null);
-    return v.length ? Math.max(...v) : 0;
-  });
-  const deltas = ergoVals.map((v,i) => v - maxVals[i]);
-  new Chart(document.getElementById('chartGapBar'), {
-    type: 'bar',
-    data: {
-      labels: fields,
-      datasets: [{
-        label: 'Delta (ERGO - Marktführer)',
-        data: deltas,
-        backgroundColor: deltas.map(d => d >= 0 ? '#10B981' : '#DC0028')
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-}
-
+/* buildGapCharts entfernt 10.08.2026. Die Funktion zeichnete in die Canvas
+   chartGapRadar und chartGapBar; beide sind mit dem alten 'gap'-Reiter
+   verschwunden. Uebrig blieb ein Aufruf, der bei jedem Laden
+   "Cannot read properties of null (reading 'id')" warf - geschluckt von
+   einem try/catch. Nichts Sichtbares ging verloren; die Luecken-Analyse
+   liegt seit Juli in gap_waterfall.js. */
 // ============= GEO TAB =============
 // LLM-Anzeige-Namen (robust gegenueber unbekannten Keys)
 function geoLlmLabel(key) {
@@ -2767,8 +2921,9 @@ function buildGeoCitedSources(data, geoSel){
   var CATLBL={eigen:'ERGO (eigen)',wettbewerber:'Wettbewerber',portal:'Portale/Vergleich',sonstige:'Sonstige'};
   var CATCOL={eigen:'#DC0028',wettbewerber:'#003781',portal:'#00BFA5',sonstige:'#9CA3AF'};
   var prods=data.products||{};
-  var agg={}, cat={}, total=0;
-  function add(d,c,k){ if(!d)return; agg[d]=(agg[d]||0)+c; k=k||'sonstige'; cat[k]=(cat[k]||0)+c; total+=c; }
+  var agg={}, cat={}, total=0, katVon={};
+  function add(d,c,k){ if(!d)return; agg[d]=(agg[d]||0)+c; k=k||'sonstige'; cat[k]=(cat[k]||0)+c; total+=c;
+                       if(k && !katVon[d]) katVon[d]=k; }
   if(geoSel==='__all__'){
     var ov=data.cited_sources_overall;
     if(ov && ov.overall){ ov.overall.forEach(function(r){ add(r.domain,r.count,r.category); }); }
@@ -2791,18 +2946,43 @@ function buildGeoCitedSources(data, geoSel){
     for(var i=0;i<portalsHints.length;i++){ if(d.indexOf(portalsHints[i])>=0) return 'portal'; }
     return 'sonstige';
   }
+  /* 10.08.2026: Die Kategorie-Leiste rechnete gegen 'total' - und das ist die Summe
+     der je Thema auf Top 15 GEKAPPTEN Listen. Die Kategoriezahlen selbst sind
+     ungekappt. Ergebnis waren Anteile, die sich zu deutlich mehr als 100 % addierten
+     und dem Quellen-Mix aus citation_channels.js im selben Reiter widersprachen
+     (dort ERGO 2,2 %, hier 5 %). Jetzt: Kategorie-Anteile gegen die Summe der
+     Kategoriezahlen, die Domain-Tabelle darunter gegen ihre eigene, benannte Basis. */
+  // Fuer die Gesamtansicht die UNGEKAPPTEN Kategoriezahlen aus dem Snapshot nehmen -
+  // 'cat' oben entsteht sonst nur aus der Top-20-Liste und ergibt einen anderen Mix
+  // als citation_channels.js im selben Reiter. Je Engine gibt es diese Zahlen nicht,
+  // dort bleibt es bei der Listenbasis, klar benannt.
+  var _csoAll=(data.cited_sources_overall||{}), _bc=_csoAll.by_category;
+  var katQuelle='Liste';
+  if(geoSel==='__all__' && _bc && Object.keys(_bc).length){
+    var _neu={}; Object.keys(_bc).forEach(function(k){ _neu[k]=(_bc[k]&&_bc[k].count)||0; });
+    if(Object.keys(_neu).some(function(k){return _neu[k]>0;})){ cat=_neu; katQuelle='voll'; }
+  }
+  var katBasis=0; Object.keys(cat).forEach(function(k){ katBasis+=cat[k]; });
+  var vollBasis = _csoAll.by_category_basis || katBasis || total;
   // category summary bar
   var catOrder=['eigen','wettbewerber','portal','sonstige'];
   var h='<div class="flex flex-wrap gap-4 mb-3 text-sm">';
-  catOrder.forEach(function(k){ if(!cat[k]) return; var pct=Math.round(cat[k]/total*100);
+  catOrder.forEach(function(k){ if(!cat[k]) return; var pct=Math.round(cat[k]/(katBasis||1)*100);
     h+='<div class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+CATCOL[k]+'"></span><b>'+CATLBL[k]+':</b> '+pct+'%</div>'; });
+  h+='<span class="text-xs text-gray-400">Basis: '+katBasis.toLocaleString('de-DE')+' Zitat-Nennungen'
+     +(katQuelle==='voll'?' über alle Themen (ungekappt)':' aus der Tabelle unten (je Engine liegen die ungekappten Kategoriezahlen nicht vor)')+'</span>';
   h+='</div>';
   // insight line
-  var ergoPct=Math.round((cat['eigen']||0)/total*100), portalPct=Math.round((cat['portal']||0)/total*100), compPct=Math.round((cat['wettbewerber']||0)/total*100);
+  var ergoPct=Math.round((cat['eigen']||0)/(katBasis||1)*100), portalPct=Math.round((cat['portal']||0)/(katBasis||1)*100), compPct=Math.round((cat['wettbewerber']||0)/(katBasis||1)*100);
   h+='<div class="text-xs rounded-lg p-3 mb-3" style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412">ERGO wird in <b>'+ergoPct+'%</b> der zitierten Quellen herangezogen, Wettbewerber in <b>'+compPct+'%</b>, Portale/Vergleichsseiten in <b>'+portalPct+'%</b>. Hebel: dort präsent/empfohlen sein, wo die LLMs zitieren (v.a. Portale).</div>';
   // table
   h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0"><th style="padding:5px 8px">#</th><th style="padding:5px 8px">Quelle (Domain)</th><th style="padding:5px 8px">Kategorie</th><th style="padding:5px 8px;text-align:right">Zitate</th><th style="padding:5px 8px;text-align:right">Anteil</th></tr></thead><tbody>';
-  rows.forEach(function(r,i){ var k=catFor(r.domain); var own=(k==='eigen');
+  /* Badge-Kategorie: bevorzugt die aus dem Snapshot mitgelieferte Einstufung.
+     catFor() ist eine hart kodierte Nachbildung der Server-Logik und sortierte
+     adac.de, hansemerkur.de, debeka.de und handelsblatt.com als "Sonstige" ein,
+     obwohl die Chips direkt darueber sie korrekt fuehren. Neue Domains fielen
+     automatisch durch. catFor bleibt nur noch Rueckfall. */
+  rows.forEach(function(r,i){ var k=katVon[r.domain]||catFor(r.domain); var own=(k==='eigen');
     h+='<tr style="border-bottom:1px solid #f1f5f9'+(own?';background:#fef2f2':'')+'"><td style="padding:5px 8px;color:#94a3b8">'+(i+1)+'</td>'
       +'<td style="padding:5px 8px;'+(own?'font-weight:700;color:#dc0028':'color:#1e293b')+'">'+r.domain+'</td>'
       +'<td style="padding:5px 8px"><span style="font-size:10px;padding:1px 7px;border-radius:8px;color:#fff;background:'+CATCOL[k]+'">'+CATLBL[k]+'</span></td>'
@@ -2810,7 +2990,10 @@ function buildGeoCitedSources(data, geoSel){
       +'<td style="padding:5px 8px;text-align:right;color:#64748b">'+Math.round(r.count/total*100)+'%</td></tr>';
   });
   h+='</tbody></table>';
-  h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">Basis: '+total+' Quellen-Zitate'+(geoSel==='__all__'?' (alle LLMs)':' ('+geoSel+')')+'. „Sonstige" enthält u.a. weitere Versicherer ausserhalb des Kernsets.</div>';
+  h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">Basis dieser Tabelle: '+total.toLocaleString('de-DE')+' Zitate aus den je Thema meistzitierten Domains'
+     +(geoSel==='__all__'?' (alle LLMs)':' ('+geoSel+')')
+     +(vollBasis>total?(' — von insgesamt '+vollBasis.toLocaleString('de-DE')+' Zitat-Nennungen; der Rest verteilt sich auf den langen Schwanz und steht nicht in der Liste'):'')
+     +'. Die Prozentwerte in der Spalte „Anteil" beziehen sich auf diese Tabellenbasis, die Kategorie-Anteile oben auf die volle. „Sonstige" enthält u.a. weitere Versicherer ausserhalb des Kernsets.</div>';
   host.innerHTML=h;
 }
 
@@ -3811,7 +3994,11 @@ function buildGeoTab() {
   // Pro Tab: welche Build-Funktion erneut aufrufen (wegen Chart-Render in vorher hidden Containers)
   const TAB_BUILDERS = {
     overview: ['buildOverviewMatrix','buildOverviewCharts'],
-    gap: ['buildGapTable','buildGapCharts'],
+    // 'gap' entfernt 10.08.2026: den Reiter gibt es nicht mehr (kein
+    // data-content="gap"), und buildGapCharts schreibt in die Canvas chartGapRadar/
+    // chartGapBar - beide existieren ebenfalls nicht mehr. Der Aufruf warf bei JEDEM
+    // Laden einen Fehler, den ein try/catch schluckte. Fuer sich harmlos, aber er
+    // verdeckt echte Fehler in derselben Konsole.
     geo: ['buildGeoTab','renderGeoData_init'],
     actions: ['buildActionCards','buildDriverGap','buildPeecActions'],
     domain: ['buildDomainFootprint'],
@@ -3859,7 +4046,7 @@ function buildGeoTab() {
   }
   function __v3_runBuilds() {
     ['fillProviderTabs','buildOverviewMatrix','buildOverviewCharts','buildProviderCharts',
-     'buildGapTable','buildGapCharts','buildActionCards','buildGeoTab','buildSentimentChart',
+     'buildGapTable','buildActionCards','buildGeoTab','buildSentimentChart',
      'buildDomainFootprint'].forEach(safeCall);
     var sdh = document.getElementById('sentimentDateHeader');
     if (sdh && SENTIMENT_DATA) sdh.textContent = 'Stand: ' + SENTIMENT_DATA.as_of;
@@ -3974,6 +4161,9 @@ function buildGeoTab() {
               PROVIDERS[k]._crawl_as_of = c.as_of;
             }
           });
+          // 10.08.2026: Crawl-Stand global bereitstellen. strategieAusDaten()
+          // datiert damit ihre Einschaetzung, statt sie zeitlos wirken zu lassen.
+          window.PROVIDERS_STAND = window.PROVIDERS_CRAWL.as_of || window.PROVIDERS_CRAWL._generated_at || '';
         }
       } catch(e){ console.warn('providers merge:', e.message); }
       // v3: Datenstand-Anzeige dynamisch aus den frischesten geladenen Daten setzen (#1, #5)
@@ -4022,6 +4212,57 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(d.generated_at){
       var dt = d.generated_at.replace('T',' ').replace('Z',' UTC');
       setText('berAsOf', 'Stand: ' + dt + ' - Daten aus ergo.de Vermittler-API');
+    }
+    // --- Rechner-Quote und SEO-Liste (10.08.2026 aus festen Texten geloest) ---
+    var ty = d.typology || {}, seiten = ty.pages || [], seo = ty.seo_stats || {};
+    if(seiten.length){
+      var mitRechner = seiten.filter(function(s){ return s && s.has_calculator; }).length;
+      var quote = mitRechner*100/seiten.length;
+      setText('berRechnerQuote', (quote>0 && quote<10 ? quote.toFixed(1).replace('.',',') : Math.round(quote)) + ' %');
+      setText('berRechnerSub', mitRechner + ' von ' + seiten.length + ' geprüften Seiten mit Online-Abschluss-CTA');
+    }
+    var elSeo = document.getElementById('berSeoListe');
+    if(elSeo){
+      var n = seiten.length, punkte = [];
+      var idx = function(s){ return s && (s.robots==null || /index/i.test(String(s.robots))); };
+      var nIdx = seiten.filter(idx).length;
+      if(n) punkte.push('<strong>robots: index, follow</strong> &mdash; ' + nIdx + ' von ' + n + ' geprüften Berater-Seiten werden voll indexiert');
+      if(t.with_subdomain!=null)
+        punkte.push('<strong>Identisches Produkt-Template</strong> &mdash; rund ' + fmt(t.with_subdomain)
+          + ' Seiten mit gleichem Content = Duplicate/Thin Content');
+      if(seiten.length){
+        var mR = seiten.filter(function(s){ return s && s.has_calculator; }).length;
+        punkte.push('<strong>&laquo;Jetzt berechnen&raquo;-CTAs</strong> auf ' + mR + ' von ' + seiten.length
+          + ' geprüften Seiten &mdash; wo sie stehen, leiten sie in die Abschlussstrecke, und der Abschluss wird provisioniert');
+      }
+      if(seo.with_canonical!=null && seiten.length){
+        var ohne = seiten.length - seo.with_canonical;
+        punkte.push(ohne>0
+          ? ('<strong>Kein Canonical-Tag</strong> auf ' + ohne + ' von ' + seiten.length + ' Seiten &mdash; dort weiss Google nicht, welche die &laquo;richtige&raquo; ist')
+          : ('<strong>Canonical-Tag vorhanden</strong> auf allen ' + seiten.length + ' geprüften Seiten &mdash; der frühere Befund „kein Canonical" trifft nach diesem Crawl nicht mehr zu'));
+      }
+      if(ty.avg_links!=null)
+        punkte.push('<strong>' + Math.round(ty.avg_links) + ' Links pro Seite</strong> im Schnitt &mdash; Link-Equity wird fragmentiert');
+      elSeo.innerHTML = punkte.length
+        ? punkte.map(function(x){ return '<li>&#8226; ' + x + '</li>'; }).join('')
+        : '<li class="text-gray-400">keine Angabe &mdash; berater_data.json enthält keine Typologie-Daten</li>';
+    }
+    var elMass = document.getElementById('berMassnahmen');
+    if(elMass){
+      var m = [];
+      if(seiten.length && seo.with_canonical!=null && seo.with_canonical < seiten.length){
+        m.push('<strong>Produkt-Seiten auf noindex</strong> setzen oder per Canonical auf ergo.de/produkte verweisen &mdash; betrifft '
+               + (seiten.length - seo.with_canonical) + ' der ' + seiten.length + ' geprüften Seiten');
+      }
+      var mRech = seiten.filter(function(x){ return x && x.has_calculator; }).length;
+      if(mRech > 0){
+        m.push('<strong>&laquo;Jetzt berechnen&raquo;-CTAs entfernen</strong> &mdash; stattdessen &laquo;Termin vereinbaren&raquo; als einziger CTA ('
+               + mRech + ' von ' + seiten.length + ' Seiten betroffen)');
+      }
+      m.push('<strong>Berater-Seiten auf Beratung fokussieren</strong>: persönliche Bio, lokale FAQ, Spezialisierung');
+      m.push('<strong>Schema.org LocalBusiness</strong> statt Produktkatalog &mdash; für lokale Suchen positionieren');
+      m.push('<strong>Google Search Console prüfen:</strong> Welche Berater-Seiten ranken für Produkt-Keywords?');
+      elMass.innerHTML = m.map(function(x){ return '<li>&#8226; ' + x + '</li>'; }).join('');
     }
     var p = d.subdomain_pattern || {};
     var elP = document.getElementById('berPattern');
@@ -4246,8 +4487,19 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(!Object.keys(dateSet).length){ if(emptyEl){emptyEl.style.display='block'; emptyEl.textContent = pick ? ('Noch keine per-LLM-Messpunkte für '+pick+' — startet mit dem nächsten Nightly.') : emptyEl.textContent;} canvas.style.display='none'; return; }
     if(emptyEl) emptyEl.style.display='none'; canvas.style.display='block';
     var dates = Object.keys(dateSet).sort();
-    // Tägliche Veränderung (letzter vs. vorletzter Messpunkt) je Marke — grafisch +/-
+    /* 10.08.2026: Die Ueberschrift lautete "Tägliche Veränderung (ggü. Vortag)",
+       gerechnet wurden aber immer die beiden letzten vorhandenen Messpunkte. In
+       sov_history.jsonl liegen 04., 05., 09. und 10.08. - der Vergleich ueberspannte
+       also schon vier Tage, und mit dem woechentlichen Crawl werden es Wochen. Jetzt
+       steht der tatsaechliche Abstand in der Beschriftung. */
     var deltaHost = document.getElementById('geoSovDelta');
+    var deltaLbl = document.getElementById('geoSovDeltaLbl');
+    if(deltaLbl && dates.length>=2){
+      var d1=dates[dates.length-2], d2=dates[dates.length-1];
+      var tage=Math.round((Date.parse(d2)-Date.parse(d1))/86400000);
+      deltaLbl.textContent = 'Veränderung zum vorherigen Messpunkt (' + d1 + ' → ' + d2 + ', '
+        + (isNaN(tage) ? 'Abstand unbekannt' : (tage + (tage===1?' Tag':' Tage') + ' Abstand')) + '):';
+    }
     if(deltaHost){
       var chips = Object.keys(byBrand).filter(function(b){return geoBrandActive(b);}).map(function(b){
         var vals = dates.map(function(d){ return byBrand[b][d]; }).filter(function(v){ return v!=null; });
@@ -4451,7 +4703,28 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var byTag={}; seg.forEach(function(s){ (byTag[s.tag]=byTag[s.tag]||{})[s.brand]=s; });
     var tags=Object.keys(byTag);
     var funnel=(d.funnel_order||[]).filter(function(f){return byTag[f];});
-    var themen=tags.filter(function(t){return (d.funnel_order||[]).indexOf(t)<0;}).sort();
+    /* 10.08.2026: Hier landete ALLES, was nicht in funnel_order steht, in einer
+       Tabelle namens "Sichtbarkeit nach Themenfeld" — auch informational/commercial/
+       transactional (Such-Absicht) und branded/non-branded/Unbranded (Markenbezug).
+       Der Korrelations-Reiter weist aus denselben Daten seit heute vier Familien
+       getrennt aus; hier standen sie unter einer Ueberschrift, die sie falsch
+       benennt. Jetzt dieselbe Einteilung wie dort. */
+    var ABSICHT=['informational','commercial','transactional'];
+    var MARKE=['branded','non-branded','Unbranded'];
+    var rest=tags.filter(function(t){return (d.funnel_order||[]).indexOf(t)<0;});
+    var absicht=ABSICHT.filter(function(t){return byTag[t];});
+    var marke=MARKE.filter(function(t){return byTag[t];});
+    var themen=rest.filter(function(t){return ABSICHT.indexOf(t)<0 && MARKE.indexOf(t)<0;}).sort();
+    /* Doubletten aufdecken: Peec fuehrt "non-branded" und "Unbranded" als zwei Tags
+       mit identischen Zahlen. Der Korrelations-Reiter sagt das seit heute; hier
+       standen sie unkommentiert als zwei Zeilen nebeneinander. */
+    var _sig={}, _dubl=[];
+    tags.forEach(function(t){
+      var e=byTag[t]&&byTag[t]['ERGO']; if(!e) return;
+      var k=JSON.stringify([e.sov,e.vis,e.mentions]);
+      (_sig[k]=_sig[k]||[]).push(t);
+    });
+    Object.keys(_sig).forEach(function(k){ if(_sig[k].length>1) _dubl.push(_sig[k]); });
     // Vergleichsmarke
     var allBrands={}; seg.forEach(function(s){ allBrands[s.brand]=(allBrands[s.brand]||0)+(s.mentions||0); });
     var others=Object.keys(allBrands).filter(function(b){return b!=='ERGO';})
@@ -4484,22 +4757,36 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       });
       h+='</tbody></table></div>';
     }
-    // Themenfelder
-    if(themen.length){
-      h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><div class="text-base font-bold text-ergo-dark mb-1">Sichtbarkeit nach Themenfeld</div>'
-        +'<div class="text-xs text-gray-500 mb-4">Themen-Tags aus dem Peec-Setup (z. B. Digital Innovation, Nachhaltigkeit).</div>'
-        +'<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Themenfeld</th>'
+    // Uebrige Schichten: Such-Absicht, Markenbezug, Thema - je eigene Tabelle
+    function schichtTabelle(titel, unter, liste){
+      if(!liste.length) return '';
+      var t='<div class="bg-white rounded-xl p-5 shadow mb-6"><div class="text-base font-bold text-ergo-dark mb-1">'+titel+'</div>'
+        +'<div class="text-xs text-gray-500 mb-4">'+unter+'</div>'
+        +'<table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b"><tr><th class="text-left py-1">Schicht</th>'
         +'<th class="text-right">ERGO SoV</th><th class="text-right">'+esc(cmp)+' SoV</th><th class="text-right">Verhältnis</th></tr></thead><tbody>';
-      themen.map(function(t){
-        var e=byTag[t]['ERGO']||{}, c=byTag[t][cmp]||{};
-        return {t:t,e:e.sov||0,c:c.sov||0,r:(c.sov?((e.sov||0)/c.sov):null)};
+      liste.map(function(x){
+        var e=byTag[x]['ERGO']||{}, c=byTag[x][cmp]||{};
+        return {t:x,e:e.sov||0,c:c.sov||0,r:(c.sov?((e.sov||0)/c.sov):null)};
       }).sort(function(a,b){return (a.r==null?9:a.r)-(b.r==null?9:b.r);}).forEach(function(x){
         var cl=(x.r!=null&&x.r<0.25)?'text-red-600 font-semibold':(x.r!=null&&x.r<0.5?'text-amber-600':'text-gray-600');
-        h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc(x.t)+'</td>'
+        var dub=_dubl.filter(function(g){ return g.indexOf(x.t)>=0; })[0];
+        var hint=dub?(' <span class="text-amber-700" title="'+esc(dub.join(' und '))+' liefern Zahl für Zahl dasselbe Ergebnis — Peec führt dieselbe Schicht unter zwei Schreibweisen.">⚠ Doublette</span>'):'';
+        t+='<tr style="border-bottom:1px solid #f1f5f9"><td class="py-1.5">'+esc(x.t)+hint+'</td>'
           +'<td class="text-right">'+pct(x.e)+'</td><td class="text-right text-gray-500">'+pct(x.c)+'</td>'
           +'<td class="text-right '+cl+'">'+(x.r!=null?(x.r*100).toFixed(0)+' %':'–')+'</td></tr>';
       });
-      h+='</tbody></table><div class="text-xs text-gray-500 mt-3">Sortiert nach größtem Rückstand. Ein Prompt kann mehrere Tags tragen — die Zellen überschneiden sich und summieren sich nicht auf 100 %.</div></div>';
+      return t+'</tbody></table><div class="text-xs text-gray-500 mt-3">Sortiert nach größtem Rückstand. Ein Prompt kann mehrere Tags tragen — die Zeilen überschneiden sich und summieren sich nicht auf 100 %.</div></div>';
+    }
+    h+=schichtTabelle('Sichtbarkeit nach Such-Absicht',
+        'Wonach gefragt wird: informierend, kommerziell oder transaktional. Kein Themenfeld — dieselbe Frage kann in jedem Thema stehen.', absicht);
+    h+=schichtTabelle('Sichtbarkeit nach Markenbezug',
+        'Ob der Prompt einen Markennamen nennt. Prompts mit Markennamen heben die genannte Marke naturgemäß an — deshalb steht die neutrale Ansicht im Peec-Block auf Standard.', marke);
+    h+=schichtTabelle('Sichtbarkeit nach Themenfeld',
+        'Themen-Tags aus dem Peec-Setup (z. B. Digital Innovation, Nachhaltigkeit).', themen);
+    if(_dubl.length){
+      h+='<div class="text-xs text-amber-700 mb-6">⚠ Doppelte Schicht in den Rohdaten: '
+        +_dubl.map(function(g){return g.map(function(x){return '„'+esc(x)+'“';}).join(' und ');}).join('; ')
+        +' liefern identische Werte — Peec führt dieselbe Schicht unter zwei Schreibweisen. Das ist <b>eine</b> Zeile, nicht zwei.</div>';
     }
     // Fanout-Queries
     var flt=(window.__segQ||'').toLowerCase();
@@ -5007,9 +5294,26 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var imp=ci.impact||{};
     var la=ci.lag_analysis||{};
     var leadOf=function(k){ var b=(la.bester_lag_je_treiber||{})[k]; return (b&&b.lead_warnung)?(b.lead_begruendung||'Lead-Warnung: stärkster Zusammenhang liegt vor dem Ereignis.'):null; };
-    var rows=Object.keys(imp).map(function(k){
-      var r0=imp[k];
+    /* 10.08.2026: Die Zeile lautete Object.keys(imp) - und imp enthaelt 11 Treiber,
+       waehrend citation_target.impact 12 fuehrt. rating_status_change
+       ("Testsieger-/Rating-Trend") fehlte im SoV-Forest komplett: weder als Balken
+       noch in der "Nicht schaetzbar"-Liste, obwohl der Absatz darueber ausdruecklich
+       verspricht, dass nichts verschwindet. Im Zitate-Forest desselben Reiters stand
+       er ordnungsgemaess mit Grund. Auch die Fusszeile zaehlte deshalb "0 von 11"
+       statt "0 von 12".
+       Jetzt: Vereinigung beider Treiberlisten. Was nur im Zitate-Modell existiert,
+       erscheint hier als nicht schaetzbar - mit dem Grund, warum. */
+    var impCT=((ci.citation_target||{}).impact)||{};
+    var alleTreiber=Object.keys(imp).concat(Object.keys(impCT).filter(function(k){ return !(k in imp); }));
+    var rows=alleTreiber.map(function(k){
+      var nurCT=!(k in imp);
+      var r0=imp[k]||{};
       var e=_kimp(r0);
+      if(nurCT){
+        var rc=impCT[k]||{};
+        e={label:(rc.label||k), eff:null, lo:null, hi:null, sig:false, basis:null,
+           grund:'für die Sichtbarkeit nicht gerechnet — dieser Treiber liegt nur im Zitate-Modell vor'};
+      }
       var lead=leadOf(k);
       return { key:k, label:(e.label||k).replace(/\(Wettbewerb\)/,'').trim(),
         sub:(e.nc!=null?(e.nc+(e.ncg!=null?(' von '+e.ncg):'')+' Marke(n) mit Ereignis'):'Cluster-Zahl: keine Angabe')
@@ -5473,29 +5777,70 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
 
     // ---- Nachweisgrenze (MDE) ----
     var imp=ci.impact||{};
-    var K=2.8; // zweiseitig, alpha 5 %, Power 80 % -> ~2,8 x SE
+    /* KORREKTUR 10.08.2026: Hier stand fest 'var K=2.8' - die Normalapproximation
+       fuer alpha 5 % und 80 % Power. Die Konfidenzintervalle im selben Reiter kommen
+       aber aus der t-Verteilung mit cluster_df Freiheitsgraden, und bei wenigen
+       Clustern ist t VIEL breiter als die Normalverteilung. Folge: der Portal-Rang
+       (df = 1) bekam eine Nachweisgrenze von 1,92 pp, waehrend sein eigenes
+       95-%-Intervall eine Halbbreite von 8,70 pp hat - der Reiter wirkte
+       viereinhalbmal empfindlicher, als er ist. Ausgerechnet dieser Treiber und
+       Wikipedia (df = 2) trug der Fliesstext als "empfindlichsten" und
+       "unempfindlichsten" Anker.
+       Jetzt wird K je Treiber aus seinen Freiheitsgraden gebildet: t(0,975; df) +
+       t(0,80; df) statt 1,96 + 0,84. Ohne df bleibt die Normalnaeherung, dann aber
+       ausdruecklich gekennzeichnet. */
+    function _tQuantil(p, df){
+      // df 1 und 2 exakt (Cauchy bzw. geschlossene Form) - dort ist die
+      // Cornish-Fisher-Entwicklung unbrauchbar: sie lieferte fuer df=1 rund 3,4
+      // statt 12,71 und haette die Nachweisgrenze genau bei dem Treiber wieder
+      // zu klein gemacht, um den es hier geht. Ab df=3 stimmt die Entwicklung
+      // gegen die exakten t-Quantile auf 0,12 % genau (geprueft df 3 bis 60).
+      if(df===1) return Math.tan(Math.PI*(p-0.5));
+      if(df===2) return (2*p-1)*Math.sqrt(2/(4*p*(1-p)));
+      var z=(function(pp){ // inverse Standardnormalverteilung (Acklam, gekuerzt)
+        var a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239];
+        var b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
+        var c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
+        var d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+        var pl=0.02425, q, r;
+        if(pp<pl){ q=Math.sqrt(-2*Math.log(pp));
+          return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+        if(pp>1-pl){ q=Math.sqrt(-2*Math.log(1-pp));
+          return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+        q=pp-0.5; r=q*q;
+        return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+      })(p);
+      if(!(df>0)) return z;
+      var g1=(z*z*z+z)/4, g2=(5*Math.pow(z,5)+16*z*z*z+3*z)/96,
+          g3=(3*Math.pow(z,7)+19*Math.pow(z,5)+17*z*z*z-15*z)/384,
+          g4=(79*Math.pow(z,9)+776*Math.pow(z,7)+1482*Math.pow(z,5)-1920*z*z*z-945*z)/92160;
+      return z + g1/df + g2/(df*df) + g3/(df*df*df) + g4/Math.pow(df,4);
+    }
+    var K_NORMAL=2.8;                       // 1,96 + 0,84, nur noch Rueckfall
     var mrows=Object.keys(imp).map(function(k){
-      var r=imp[k], se=r.effect_se_cluster_pp;
-      return { key:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), se:se,
+      var r=imp[k], se=r.effect_se_cluster_pp, df=r.cluster_df;
+      var K=(df>0) ? (_tQuantil(0.975,df)+_tQuantil(0.80,df)) : K_NORMAL;
+      return { key:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), se:se, df:df, K:K,
                mde:(se!=null?K*se:null), eff:r.avg_sov_effect_pp, nc:r.n_clusters, sig:(r.significant===true),
                grund:(r.grund||r.type_confidence_grund||null) };
     });
     var est=mrows.filter(function(r){ return r.mde!=null; }).sort(function(a,b){ return a.mde-b.mde; });
     h+='<div class="mt-4 border-t pt-3"><div class="text-sm font-bold text-ergo-dark mb-1">Nachweisgrenze: Wie groß müsste eine Wirkung sein, damit wir sie finden?</div>'
-      +'<div class="text-xs text-gray-500 mb-2">Der <b>minimal detektierbare Effekt (MDE)</b> ergibt sich aus dem cluster-robusten Standardfehler: MDE ≈ '+String(K).replace('.',',')+' × SE (zweiseitig, 5 % Irrtum, 80 % Power). Er sagt, ab welcher Größe ein echter Effekt bei der heutigen Datenlage überhaupt sichtbar würde. Damit wird „nicht signifikant“ interpretierbar.</div>';
+      +'<div class="text-xs text-gray-500 mb-2">Der <b>minimal detektierbare Effekt (MDE)</b> ergibt sich aus dem cluster-robusten Standardfehler: MDE = <i>K</i> × SE (zweiseitig, 5 % Irrtum, 80 % Power). <b>K hängt an den Freiheitsgraden</b> — bei vielen Clustern liegt es nahe 2,8, bei zwei oder drei Clustern deutlich darüber, weil dort die t-Verteilung gilt und nicht die Normalverteilung. Der Faktor steht je Zeile in der Spalte <i>K</i>. Die Grenze sagt, ab welcher Größe ein echter Effekt bei der heutigen Datenlage überhaupt sichtbar würde — damit wird „nicht signifikant“ interpretierbar.</div>';
     if(!est.length){
       h+='<div class="text-xs text-gray-600">'+_kmiss('Für keinen Treiber liegt ein cluster-robuster Standardfehler vor — ohne SE keine Nachweisgrenze.')+'</div>';
     } else {
       h+='<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'
         +'<thead><tr class="text-xs text-gray-400 text-left border-b"><th class="px-2 py-1">Treiber</th>'
         +'<th class="px-2 text-right">gemessener Effekt</th><th class="px-2 text-right">SE (cluster)</th>'
-        +'<th class="px-2 text-right">Nachweisgrenze (MDE)</th><th class="px-2 text-right">Cluster</th><th class="px-2">Lesart</th></tr></thead><tbody>';
+        +'<th class="px-2 text-right">Nachweisgrenze (MDE)</th><th class="px-2 text-right" title="Faktor aus der t-Verteilung: t(0,975; df) + t(0,80; df). Ohne Freiheitsgrade die Normalnäherung 2,8.">K</th><th class="px-2 text-right">Cluster</th><th class="px-2">Lesart</th></tr></thead><tbody>';
       est.forEach(function(r){
         var unter=(Math.abs(r.eff||0) < r.mde);
         h+='<tr style="border-bottom:1px solid #f1f5f9"><td class="px-2 py-1 text-gray-800">'+_esc(r.label)+'</td>'
           +'<td class="px-2 text-right font-semibold">'+_kpp(r.eff,3)+'</td>'
           +'<td class="px-2 text-right text-gray-500">± '+_kv(r.se,3)+'</td>'
           +'<td class="px-2 text-right font-semibold" style="color:#b45309">'+_kv(r.mde,2)+' pp</td>'
+          +'<td class="px-2 text-right text-gray-500">'+((r.df>0)?_kv(r.K,1):('<span title="keine Freiheitsgrade in den Daten — Normalnäherung">'+_kv(r.K,1)+'*</span>'))+'</td>'
           +'<td class="px-2 text-right text-gray-500">'+(r.nc!=null?r.nc:'–')+'</td>'
           +'<td class="px-2 text-xs text-gray-600">'+(r.sig?'gesichert':(unter?'gemessener Effekt liegt <b>unter</b> der Nachweisgrenze — ein Effekt dieser Größe wäre hier grundsätzlich nicht auffindbar':'gemessener Effekt über der Grenze, aber Intervall schließt die Null ein'))+'</td></tr>';
       });
@@ -5503,7 +5848,17 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var best=est[0], worst=est[est.length-1];
       h+='<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed mt-2">'
         +'<b>Praktisch heißt das:</b> Am empfindlichsten misst „'+_esc(best.label)+'“ — dort wäre erst ein Effekt ab <b>'+_kv(best.mde,2)+' pp pro Tag</b> nachweisbar; am unempfindlichsten „'+_esc(worst.label)+'“ mit <b>'+_kv(worst.mde,2)+' pp</b>. '
-        +'Ein Effekt unter '+_kv(best.mde,2)+' pp pro Tag ist mit der heutigen Datenlage <b>grundsätzlich nicht nachweisbar</b> — ein Nullbefund heißt hier „nicht gefunden“, nicht „nicht vorhanden“. Enger wird die Grenze nur über mehr Marken mit Ereignis (Cluster), nicht über mehr Tage derselben Marken.</div>';
+        +'Ein Effekt unter '+_kv(best.mde,2)+' pp pro Tag ist mit der heutigen Datenlage <b>grundsätzlich nicht nachweisbar</b> — ein Nullbefund heißt hier „nicht gefunden“, nicht „nicht vorhanden“. Enger wird die Grenze nur über mehr Marken mit Ereignis (Cluster), nicht über mehr Tage derselben Marken. '
+        +(function(){
+            // Beide Anker mit ihren Freiheitsgraden versehen. Wer den Satz liest,
+            // soll sehen, ob er auf einem Treiber mit einem einzigen Freiheitsgrad
+            // steht - dort ist die Grenze naemlich vor allem eine Aussage ueber die
+            // Duennheit der Daten, nicht ueber die Messgenauigkeit.
+            var t=[];
+            [best,worst].forEach(function(r){ if(r && r.df!=null && r.df<=3) t.push('„'+r.label+'“ stützt sich auf nur '+r.df+' Freiheitsgrad'+(r.df===1?'':'e')); });
+            return t.length ? ('<br><span class="text-amber-700">Vorsicht bei diesen beiden Ankern: '+t.join(' und ')+' — die Grenze misst dort vor allem, wie dünn die Datenlage ist.</span>') : '';
+          })()
+        +'</div>';
     }
     var nd=mrows.filter(function(r){ return r.mde==null; });
     if(nd.length){
@@ -5663,6 +6018,13 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       L.messtage=ci.sov_measure_days; L.intervalle=nfmt(ci.n_intervals_total);
       L.range=(ci.sov_measure_range||[]).join(' bis ');
       L.n_marken=(ci.brands_with_sov||[]).length;
+      /* 10.08.2026: Im Methodik-Text stand "26 Marken, 12 Themen" fest - der
+         Doku-Reiter zeigte dynamisch 25, peec_cells.csv fuehrt 28. Die 26 war
+         durch keine Datei gedeckt. Jetzt aus demselben Modellblock, den der
+         Doku-Reiter liest. */
+      var _p26=(ci.level_model||{}).peec26_model||{};
+      L.peec_marken=(_p26.n_brands!=null)?_p26.n_brands:'keine Angabe';
+      L.peec_themen=(_p26.n_topics!=null)?_p26.n_topics:'keine Angabe';
       var f=ci.funnel_stratified||{};
       var aw=(f.je_tag||{}).Awareness||{};
       L.funnel_intervalle=nfmt(aw.n_intervalle||0);
@@ -5939,7 +6301,20 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         +'</tr>';
     }).join('');
     var note=document.getElementById('driverGapNote');
-    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Bewertungs-Volumen" zählt neue Einzelbewertungen aus dem Bewertungs-Archiv (Quellenabdeckung variiert je Marke). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. Seiten-Tracking: ERGO, Allianz, AXA, Generali, HUK-Coburg.';
+    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Bewertungs-Volumen" zählt neue Einzelbewertungen aus dem Bewertungs-Archiv (Quellenabdeckung variiert je Marke). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. '+(function(){
+        /* 10.08.2026: Hier stand eine feste Liste von fuenf Marken. Im 30-Tage-Fenster
+           liegen Seiten-Events fuer deutlich mehr - die Tabelle darueber nennt selbst
+           ADAC und LV 1871, die in der Liste fehlten. Jetzt aus den Events gezaehlt. */
+        var m={}; evs.forEach(function(e){
+          if(!e || !e.brand) return;
+          var t=e.event_type;
+          if(t!=='page_change' && t!=='page_new' && t!=='page_removed') return;
+          if((e.timestamp||'').slice(0,10) < cutoff) return;
+          m[e.brand]=1;
+        });
+        var n=Object.keys(m).length;
+        return n ? ('Seiten-Tracking im Fenster: '+n+' Marken mit Seiten-Ereignissen.') : 'Seiten-Tracking: im Fenster keine Seiten-Ereignisse im Event-Log — der Crawl liefert sie erst mit dem nächsten Wochenlauf.';
+      })();
   };
 
   // ===== Review-Themen-Cluster + Ampel + Einzelbewertungen (data/review_themes.json) =====

@@ -2361,7 +2361,7 @@ def _cross_source_check(own_cells):
     faelschlich eine "unabhaengige Replikation" — das ist hiermit korrigiert.)
 
     Dieser Test kreuzt zwei getrennte Messsysteme:
-        Treiber    = Peec-Footprint (UI-Scraping, zitierte URLs, 366 Prompts, 5 Engines)
+        Treiber    = Peec-Footprint (UI-Scraping, zitierte URLs, 5 Engines)
         Zielgroesse = eigener grounded-SoV (Gemini-API, eigener Crawl)
     Kein gemeinsames Antwortmaterial -> Zirkularitaet konstruktiv ausgeschlossen.
 
@@ -2856,7 +2856,12 @@ def level_model_mundlak():
                                             "spearman_r": round(_rhoc, 3) if _rhoc is not None else None},
                                "data_health": _health,
                                "criterion": "Rangfolgen-Konvergenz > 0,7 erwartet (13_PEEC_INTEGRATION_ANLEITUNG)"},
-                "note": ("Peec AI (UI-Scraping, 366 Prompts, inkl. Google AI Overview/AI Mode) als zweite, "
+                # 10.08.2026: Die Prompt-Zahl stand hier als "366" im Freitext und wurde
+                # vom Dashboard woertlich ausgegeben - waehrend derselbe Reiter drei
+                # Zeilen hoeher die 584 aus peec_neutral_sov.json rendert. Ein Satz mit
+                # einer eingebauten Zahl altert immer; deshalb steht sie jetzt gar nicht
+                # mehr drin. Wer die Zahl braucht, findet sie in den Peec-Exporten.
+                "note": ("Peec AI (UI-Scraping, inkl. Google AI Overview/AI Mode) als zweite, "
                          "unabhaengige Messquelle. Zellen mit src_peec-Dummy (Mundlak-Kontrolle fuer "
                          "Niveau-Unterschiede UI vs. API) zum eigenen Crawl hinzugefuegt; Footprint-Treiber "
                          "stammt weiterhin aus dem eigenen Crawl. drivers_eff.cite_share = integrierter "
@@ -4034,8 +4039,14 @@ def price_level_pooled(max_days=45):
             d["cite_share"] += c["cite_share"]; d["relprice"] += c["relprice"]
             _cnt[b] = _cnt.get(b, 0) + 1
         means = {b: {k: round(_sum[b][k] / _cnt[b], 3) for k in _sum[b]} for b in _sum}
+        # 10.08.2026: n_topics ergaenzt. Das Dashboard rendert an dieser Stelle
+        # "<n> Zellen, <n> Marken, <n> Themen" - die Themenzahl fehlte im Block und
+        # wurde als "? Themen" ausgegeben, obwohl der Reiterkopf verspricht, dass
+        # statt einer Luecke "keine Angabe mit Grund" steht.
+        _topics = sorted({c.get("topic") for c in fcells if c.get("topic")})
         gap_explorer[lab] = {
             "available": True, "n_cells": len(fcells),
+            "n_topics": (len(_topics) or None), "topics": (_topics or None),
             "brands": sorted(means.keys()), "leader": fit.get("leader"),
             "between_coef": {k: (round(bc[k], 4) if bc[k] is not None else None) for k in bc},
             "driver_reliability": rel, "brand_means": means,

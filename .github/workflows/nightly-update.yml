@@ -136,6 +136,13 @@ jobs:
         run: python scripts/pipeline_health.py --write
         continue-on-error: true
 
+      # Muss NACH der Korrelationsanalyse und dem Pipeline-Health laufen: das
+      # Faktenblatt liest deren Ergebnisse. Kein continue-on-error - wenn das
+      # Faktenblatt nicht entsteht, soll das auffallen, statt still zu einer
+      # veralteten Wissensbasis zu fuehren.
+      - name: Faktenblatt fuer GEOrg erzeugen
+        run: python scripts/geo_faktenblatt.py
+
       - name: Daten-Dateien zurueck in main committen
         run: |
           git config user.name "github-actions[bot]"
@@ -170,6 +177,7 @@ jobs:
           git add data/pipeline_health.json 2>/dev/null || true
           git add data/intervention_results.json 2>/dev/null || true
           git add data/interventions.json 2>/dev/null || true
+          git add data/geo_faktenblatt.md 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
           git commit -m "data: nightly update (alle Daten + Events)"
           for i in 1 2 3; do
@@ -178,6 +186,16 @@ jobs:
             echo "Push fehlgeschlagen, Versuch $i"; sleep 10
           done
           echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1
+
+      # Nach dem Commit: GEOrg bekommt das Faktenblatt von heute Nacht. Ohne
+      # gesetzte Secrets tut der Schritt nichts und endet gruen - so laeuft der
+      # Nightly unveraendert weiter, bis der Agent tatsaechlich eingerichtet ist.
+      - name: GEOrg-Wissensbasis aktualisieren (still, wenn nicht eingerichtet)
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          GEORG_AGENT_ID: ${{ secrets.GEORG_AGENT_ID }}
+        run: python scripts/georg_sync.py
+        continue-on-error: true
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy

@@ -1017,8 +1017,8 @@ window.renderPeecTab = renderPeecTab;
             <th class="text-right px-3 py-2">Aktivster Wettbewerber</th>
             <th class="text-right px-3 py-2">Ø Wettbewerb</th>
             <th class="text-right px-3 py-2">GAP zu Ø</th>
-            <th class="text-right px-3 py-2">Impact (SoV)</th>
-            <th class="text-center px-3 py-2">Priorität</th>
+            <th class="text-right px-3 py-2">Wirkung auf SoV</th>
+            <th class="text-center px-3 py-2">Rückstands-Prio</th>
           </tr>
         </thead>
         <tbody id="driverGapBody"></tbody>
@@ -3384,9 +3384,19 @@ function buildGeoTab() {
         }
         if (ciRoot.by_grounding && ciRoot.by_grounding.ungrounded) {
           var ou=document.createElement('option'); ou.value='__ungrounded__';
-          ou.textContent='Nicht web-gestützt ('+(ciRoot.ungrounded_llms||[]).join(', ')+')'; sel.appendChild(ou);
+          var _ug=(ciRoot.ungrounded_llms||[]).map(function(l){ return l==='chatgpt_web'?'chatgpt_web†':l; });
+          ou.textContent='Nicht web-gestützt ('+_ug.join(', ')+(_ug.indexOf('chatgpt_web†')>=0?', † abgeschaltet':'')+')'; sel.appendChild(ou);
         }
-        if (ciRoot.by_llm) Object.keys(ciRoot.by_llm).sort().forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+        /* 11.08.2026: chatgpt_web wurde am 10.08. abgeschaltet, steht aber weiter in
+           der Auswahl - fuer den historischen Zeitraum voellig korrekt, der Kanal
+           wurde bis dahin erhoben. Nur: er sammelt nichts mehr und faellt in einigen
+           Wochen lautlos aus dem 60-Tage-Fenster. Dann verschieben sich die Zahlen der
+           Gruppe "ungrounded", ohne dass irgendwo steht, warum. Deshalb beschriftet. */
+        var ABGESCHALTET={ 'chatgpt_web':'bis 10.08.2026 erhoben, seither abgeschaltet' };
+        if (ciRoot.by_llm) Object.keys(ciRoot.by_llm).sort().forEach(function(l){
+          var o=document.createElement('option'); o.value=l;
+          o.textContent=l+(ABGESCHALTET[l]?(' — '+ABGESCHALTET[l]):'');
+          sel.appendChild(o); });
       }
       var bsel = document.getElementById('impactBrandSel');
       if (bsel && ciRoot && ciRoot.by_brand && bsel.options.length <= 1) {
@@ -3626,7 +3636,10 @@ function buildGeoTab() {
     try { buildInterventions(); } catch(e){ console.warn('interventions:', e.message); }
     const EI = { review_change:'⭐', press_mention:'📰', news_mention:'🗞️', page_change:'🌐', page_new:'🆕', domain_change:'🔗', sov_change:'📈', berater_shift:'👥', review_volume:'📊', rating_update:'🏆', wikipedia_change:'📚', portal_rank_change:'🛒', rating_status_change:'🏅', price_announcement:'📣' };
     const EC = { review_change:'#f59e0b', press_mention:'#3b82f6', news_mention:'#6366f1', page_change:'#8b5cf6', page_new:'#06b6d4', domain_change:'#14b8a6', sov_change:'#ef4444', berater_shift:'#ec4899', review_volume:'#f59e0b', rating_update:'#10b981', wikipedia_change:'#0ea5e9', portal_rank_change:'#f97316', rating_status_change:'#eab308', price_announcement:'#e11d48' };
-    const EN = { review_change:'Bewertungen', press_mention:'Presse', news_mention:'News', page_change:'Seitenänderungen', page_new:'Neue Seiten', domain_change:'Domain', sov_change:'SoV', berater_shift:'Berater', review_volume:'Review-Volumen', rating_update:'Rating-Update', wikipedia_change:'Wikipedia', portal_rank_change:'Portal-Rang', rating_status_change:'Testsieger-Status', price_announcement:'Beitragsanpassung' };
+    /* 11.08.2026: price_change und page_removed fehlten in dieser Tabelle - Tagesuebersicht
+       und Event-Stream zeigten deshalb die rohen Feldnamen mitten in einer sonst
+       durchgaengig deutschen Anzeige. */
+    const EN = { review_change:'Bewertungen', press_mention:'Presse', news_mention:'News', page_change:'Seitenänderungen', page_new:'Neue Seiten', page_removed:'Gelöschte Seiten', domain_change:'Domain', sov_change:'SoV', berater_shift:'Berater', review_volume:'Review-Volumen', price_change:'Preisänderungen', rating_update:'Rating-Update', wikipedia_change:'Wikipedia', portal_rank_change:'Portal-Rang', rating_status_change:'Testsieger-Status', price_announcement:'Beitragsanpassung' };
     const BC = { 'ERGO':'#c2002f','Allianz':'#003781','AXA':'#00008f','HUK-Coburg':'#006633','Generali':'#c8102e','R+V':'#004f9f','Signal Iduna':'#003e7e','Cosmos Direkt':'#f59e0b','DEVK':'#10b981','Hannoversche':'#6366f1' };
     const defC = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6'];
 
@@ -3669,8 +3682,26 @@ function buildGeoTab() {
       }
 
       kpiEl.innerHTML = kpiCard('📊', 'Events (14 Tage)', events14.length, brands.length + ' Brands, ' + days14.length + ' Tage')
-        + kpiCard('📈', 'ERGO SoV', ergoLatest !== null ? ergoLatest.toFixed(1) + '%' : '–', ergoTrend !== null ? (ergoTrend >= 0 ? '↑ +' : '↓ ') + ergoTrend.toFixed(1) + ' Pp' : 'Kein GEO-Run', ergoTrend !== null ? (ergoTrend >= 0 ? '#16a34a' : '#dc2626') : '#6b7280')
-        + kpiCard('🗣️', 'Mention-Trend', totalMentionDelta !== 0 ? (totalMentionDelta > 0 ? '+' : '') + totalMentionDelta : '–', mentions.length + ' Messungen')
+        /* 11.08.2026: Zwei Kleinigkeiten mit Irrefuehrungspotenzial.
+           (1) Bei einer Veraenderung von exakt 0,0 stand hier ein Aufwaertspfeil
+               ("↑ +0.0 Pp"), weil >=0 als Anstieg galt. Null ist kein Anstieg.
+           (2) "Mention-Trend -412" stand ohne jede Bezugsgroesse da - minus 412
+               wovon, gegen wann? Jetzt mit Basis und Prozentwert. */
+        + kpiCard('📈', 'ERGO SoV', ergoLatest !== null ? ergoLatest.toFixed(1) + '%' : '–',
+            ergoTrend === null ? 'Kein GEO-Run'
+              : (Math.abs(ergoTrend) < 0.05 ? 'unverändert zum Vorlauf'
+                 : (ergoTrend > 0 ? '↑ +' : '↓ ') + ergoTrend.toFixed(1) + ' Pp zum Vorlauf'),
+            ergoTrend === null ? '#6b7280' : (Math.abs(ergoTrend) < 0.05 ? '#6b7280' : (ergoTrend > 0 ? '#16a34a' : '#dc2626')))
+        + (function(){
+            var basis = mentions.reduce(function(s,e){ return s + (e.detail.old_mentions||0); }, 0);
+            var rel = basis > 0 ? (100*totalMentionDelta/basis) : null;
+            return kpiCard('🗣️', 'Mention-Trend',
+              totalMentionDelta !== 0 ? (totalMentionDelta > 0 ? '+' : '') + totalMentionDelta : '–',
+              'Summe der Änderungen über alle Marken in 14 Tagen'
+                + (rel !== null ? ' — ' + (rel>0?'+':'') + rel.toFixed(1).replace('.',',') + ' % gegenüber ' + basis.toLocaleString('de-DE') + ' Nennungen im Ausgangsstand' : '')
+                + ' · ' + mentions.length + ' Messungen',
+              totalMentionDelta === 0 ? '#6b7280' : (totalMentionDelta > 0 ? '#16a34a' : '#dc2626'));
+          })()
         + kpiCard('📰', 'Presse & News', nonSov.filter(e => e.event_type==='press_mention'||e.event_type==='news_mention').length, 'Artikel in 14 Tagen');
     }
 
@@ -3884,6 +3915,27 @@ function buildGeoTab() {
     });
     h += '<td style="text-align:center;padding:4px 8px;font-weight:800;color:#1e293b;">' + nonSov.length + '</td></tr>';
     h += '</tbody></table>';
+    /* 11.08.2026: Seit der Umstellung auf den woechentlichen GEO-Crawl (10.08.2026)
+       fallen Seiten-Ereignisse nur noch an einem Tag der Woche an. In dieser Tabelle
+       sah das aus wie ein Zusammenbruch der Pipeline: 7 und 12 Ereignisse gegen 100
+       bis 200 an den Tagen davor. Der Hinweis wird aus den Daten selbst gebildet -
+       er erscheint nur, wenn die letzten Tage tatsaechlich deutlich duenner sind. */
+    (function(){
+      var SEITEN={page_change:1,page_new:1,page_removed:1};
+      var proTag=days14.map(function(dd){
+        return nonSov.filter(function(e){ return SEITEN[e.event_type] && (e.timestamp||'').substring(0,10)===dd; }).length; });
+      if(proTag.length>=6){
+        var letzte=proTag.slice(-2), frueher=proTag.slice(0,-2);
+        var mLetzte=letzte.reduce(function(a,b){return a+b;},0)/letzte.length;
+        var mFrueher=frueher.reduce(function(a,b){return a+b;},0)/Math.max(frueher.length,1);
+        if(mFrueher>=20 && mLetzte < mFrueher*0.25){
+          h += '<div style="margin-top:10px;background:#eff6ff;border-left:3px solid #60a5fa;border-radius:6px;padding:8px 11px;font-size:11.5px;color:#1e3a5f;line-height:1.5">'
+             + '<b>Kein Ausfall — der Seiten-Crawl läuft seit dem 10.08.2026 wöchentlich statt täglich.</b> '
+             + 'Seiten-Ereignisse fallen deshalb gebündelt an einem Tag der Woche an; die dünnen letzten Spalten sind der Normalzustand zwischen zwei Läufen. '
+             + 'Presse, News und Bewertungen werden weiterhin täglich erhoben.</div>';
+        }
+      }
+    })();
     hmEl.innerHTML = h;
   };
 
@@ -5744,7 +5796,11 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         return { key:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(),
           sub:(r.n_with_event!=null?(r.n_with_event+' von '+nfmt(r.n_intervals)+' Intervallen mit Ereignis'):'Intervallzahl: keine Angabe')
               +(r.p_value!=null?(' · p '+Number(r.p_value).toFixed(4).replace('.',',')):'')
-              +(r.type_confidence?(' · '+_esc(r.type_confidence)):''),
+              +(r.type_confidence?(' · '+_esc(r.type_confidence)):'')
+              /* type_confidence beschreibt die Datendichte, nicht die Gueltigkeit.
+                 Bei den signifikanten Zeilen stand dort "belastbar" - direkt neben
+                 einem Befund, der aus der Fensterueberlappung stammen duerfte. */
+              +(r.significant===true?' · ⚠ Artefaktverdacht (Fensterüberlappung)':''),
           eff:r.avg_citation_effect, lo:r.ci95_low, hi:r.ci95_high,
           sig:(r.significant===true), n:r.n_intervals };
       });
@@ -5756,12 +5812,35 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         +'nur mit der Zitatzahl je Marke als Ziel (Peec <code>citation_count</code>). Stand: '
         +nfmt(ct.n_messpunkte)+' Messpunkte, '+nfmt(ct.n_intervalle)+' Intervalle, '+nfmt((ct.marken||[]).length)+' Marken.</p>'
         +forestPlot(ctRows,{xlabel:'Effekt auf die Zitatzahl je Marke und Intervall — Balken = 95-%-Intervall'});
+      /* 11.08.2026: Dieser Block fuehrt den EINZIGEN "gesicherten" Kurzfrist-Befund des
+         ganzen Reiters (Seitenaenderungen -> Zitate, p = 0,0001) - und er ist der
+         unglaubwuerdigste. Bisher stand die Einschraenkung als allgemeiner Satz
+         DAHINTER; der Befund wirkte dadurch staerker, als er ist. Der Grund laesst
+         sich beziffern: Peec misst Zitate in einem rollierenden 30-Tage-Fenster, die
+         Messpunkte liegen aber ueberwiegend einen Tag auseinander. Zwei
+         aufeinanderfolgende Snapshots teilen sich damit fast ihren gesamten Inhalt -
+         die "Veraenderung" zwischen ihnen ist ueberwiegend dieselbe Messung. Dazu
+         kommt, dass Seitenaenderungen der mit Abstand haeufigste Ereignistyp sind und
+         mit derselben Ursache wachsen wie die Zitatzahl: der Aktivitaet einer Marke.
+         Die Zahl steht weiter da - jetzt aber mit dem Vorbehalt davor, nicht danach. */
+      var _ueb=(function(){
+        var d=(ct.messpunkte||[]).map(function(s){return Date.parse(s);}).filter(function(x){return !isNaN(x);}).sort();
+        if(d.length<2) return null;
+        var gaps=[]; for(var i=1;i<d.length;i++) gaps.push(Math.round((d[i]-d[i-1])/86400000));
+        gaps.sort(function(a,b){return a-b;});
+        var med=gaps[Math.floor(gaps.length/2)];
+        return (med>0&&med<30)?{med:med, pct:Math.round(100*(30-med)/30)}:null;
+      })();
       h+='<div class="text-xs text-gray-600 mt-3 leading-relaxed">'
         +(ctSig.length
-            ? ('<b>'+ctSig.length+' Treiber mit gesichertem Zusammenhang:</b> '
-               +ctSig.map(function(r){ return _esc(r.label)+' ('+(r.eff>0?'+':'')+nfmt(Math.round(r.eff))+' Zitate)'; }).join(', ')+'. ')
+            ? ('<b>Vorsicht bei '+(ctSig.length===1?'der einen „gesicherten“ Zeile':('den '+ctSig.length+' „gesicherten“ Zeilen'))+' — hier vermutlich Messartefakt, nicht Wirkung.</b> '
+               +(_ueb?('Die Zielgröße stammt aus einem rollierenden 30-Tage-Fenster, die Messpunkte liegen im Mittel aber nur '+_ueb.med+' Tag'+(_ueb.med===1?'':'e')+' auseinander: zwei aufeinanderfolgende Snapshots überlappen sich zu rund '+_ueb.pct+' %. Die „Veränderung“ zwischen ihnen ist überwiegend dieselbe Messung. '):'')
+               +'Hinzu kommt, dass der auffällige Treiber zugleich der häufigste ist und mit derselben Ursache wächst wie die Zitatzahl — der allgemeinen Aktivität einer Marke. Betroffen: '
+               +ctSig.map(function(r){ return _esc(r.label)+' ('+(r.eff>0?'+':'')+nfmt(Math.round(r.eff))+' Zitate je Intervall)'; }).join(', ')
+               +'. Diese Zeilen gehen deshalb <b>nicht</b> in die Kernaussage des Reiters ein; belastbar wäre der Befund erst mit nicht überlappenden Fenstern. ')
             : 'Kein Treiber erreicht hier die Signifikanzschwelle. ')
-        +'<b>Wichtig zur Lesart:</b> '+_esc(ct.grenzen||'')+'</div>';
+        +'Der absolute Wert ist zudem ohne Bezugsgröße nicht lesbar — bei einer großen Marke sind +100 Zitate wenige Prozent, bei einer kleinen eine Verdopplung. '
+        +'<b>Weitere Grenzen:</b> '+_esc(ct.grenzen||'')+'</div>';
       if(ct.intervalle_uebersprungen_bruch){
         h+='<div class="text-xs text-gray-500 mt-1">'+nfmt(ct.intervalle_uebersprungen_bruch)+' Intervalle wurden wegen eines Strukturbruchs übersprungen.</div>';
       }
@@ -5924,6 +6003,214 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     return h+'</div>';
   }
 
+  /* ---------- Antwort-Tafel (11.08.2026) ----------
+     Der Reiter beantwortete "was treibt GEO-Sichtbarkeit wie stark" schon richtig -
+     nur lag die Antwort in Stuecken ueber sechs Bloecke verteilt: der belegte
+     Struktur-Treiber in Abschnitt 1, das Experiment in Abschnitt 3, die Zerlegung des
+     Marktfuehrer-Abstands ganz unten in Abschnitt 6, die Nachweisgrenze in
+     Abschnitt 5. Wer nur den Anfang las, bekam die Methodik statt der Antwort.
+     Diese Tafel zieht die vier Treiber in EINE Rangfolge, vollstaendig aus denselben
+     Feldern, aus denen die Bloecke unten rechnen - sie ist eine Zusammenfassung,
+     keine zweite Rechnung. Fehlt ein Wert, steht "keine Angabe" mit Grund. */
+  function kAntwort(ci){
+    var lm=ci.level_model||{}, P=lm.peec26_model||{};
+    var pf=((P.drivers_eff||{}).peec_foot)||{};
+    var sz=((P.drivers_eff||{}).size)||{};
+    var pl=ci.price_level_pooled||{};
+    /* 11.08.2026: Hier stand zuerst full_joint.gap_decomposition. Beim Gegenlesen fiel
+       auf, dass das Dashboard denselben 9,9-pp-Rueckstand an ZWEI Stellen
+       unterschiedlich zerlegt: Abschnitt 6 rechnet aus gap_explorer (Preis-Modell,
+       18 Marken) und kommt auf rund 10 % Groesse, der Empfehlungs-Reiter liest
+       full_joint und kommt auf rund 2 %. Beide Modelle sind fuer sich richtig, aber
+       sie widersprechen sich ausgerechnet auf der Dimension, die fuer "was koennen wir
+       beeinflussen" entscheidend ist. Diese Tafel folgt gap_explorer - derselben
+       Quelle wie die Wasserfall-Grafik weiter unten im selben Reiter -, damit der
+       Reiter sich nicht selbst widerspricht. Die Abweichung steht unter der Tabelle. */
+    var ge=((pl.gap_explorer||{}).grounded)||{};
+    var gd=(function(){
+      var bc=ge.between_coef, bm=ge.brand_means, ld=ge.leader;
+      if(!bc||!bm||!ld||!bm.ERGO||!bm[ld]) return null;
+      var c={}, sum=0;
+      ['size','cite_share','relprice'].forEach(function(k){
+        if(bc[k]==null||bm[ld][k]==null||bm.ERGO[k]==null) return;
+        c[k]=bc[k]*(bm[ld][k]-bm.ERGO[k]); sum+=Math.max(c[k],0);
+      });
+      var gap=(bm[ld].sov!=null&&bm.ERGO.sov!=null)?(bm[ld].sov-bm.ERGO.sov):null;
+      if(gap==null||!sum) return null;
+      var f=(sum>gap)?(gap/sum):1;   // proportional auf 100 % des Gaps gekappt, wie Abschnitt 6
+      Object.keys(c).forEach(function(k){ c[k]=c[k]*f; });
+      return {actual_gap_pp:gap, contrib_pp:c, leader:ld};
+    })();
+    var fjGd=(((lm.full_joint||{}).grounded||{}).gap_decomposition||{}).ERGO||null;
+    var imp=ci.impact||{};
+    var ab=window.__SEARCH_AB||null;
+
+    function stufe(t){
+      var M={kausal:['kausal belegt','bg-green-100 text-green-800'],
+             zus:['Zusammenhang','bg-amber-100 text-amber-800'],
+             nein:['nicht nachweisbar','bg-gray-100 text-gray-700'],
+             nah:['Näherung, nicht geschätzt','bg-gray-100 text-gray-700'],
+             offen:['noch keine Angabe','bg-gray-100 text-gray-500']};
+      var m=M[t]||M.offen;
+      return '<span class="px-2 py-0.5 rounded-full text-xs font-semibold '+m[1]+'">'+m[0]+'</span>';
+    }
+    var rows=[];
+
+    // 1) Quellpraesenz - der einzige nach FDR gesicherte Struktur-Treiber
+    var be=pf.between||{}, wi=pf.within||{};
+    var beOK=(be.wild_cluster_p_fdr!=null)?(be.wild_cluster_p_fdr<0.05):null;
+    if(be.effect_std_pp!=null){
+      rows.push({sort:1, name:'Quellpräsenz (Zitations-Footprint)',
+        was:'In wie vielen der von LLMs zitierten Quellen die Marke vorkommt',
+        staerke:_kpp(be.effect_std_pp,2)+' je +1 SD'
+          +(gd&&gd.contrib_pp&&gd.actual_gap_pp?('<div class="text-xs text-gray-500">erklärt '+Math.round(100*Math.abs(gd.contrib_pp.cite_share||0)/Math.max(Math.abs(gd.actual_gap_pp),1e-9))+' % des Rückstands zum Marktführer</div>'):''),
+        stufe:beOK?stufe('zus'):stufe('nein'),
+        beleg:'Wild-p '+_kp(be.wild_cluster_p)+(be.wild_cluster_p_fdr!=null?(', q '+_kp(be.wild_cluster_p_fdr)):'')+' · '+nfmt(P.n_brands)+' Marken',
+        hebel:'🟡 mittelbar — über Portale, Redaktionen, Vergleichsseiten'});
+    }
+    // 2) Websuche im Antwortkanal - die einzige Zeile auf Stufe "kausal belegt".
+    //    Leitkennzahl aus search_ab.json; Anteile dort als Bruch, hier in pp.
+    var abL=null;
+    if(ab&&Array.isArray(ab.kennzahlen)){
+      abL=ab.kennzahlen.filter(function(k){ return k.leitkennzahl===true; })[0]
+          || ab.kennzahlen.filter(function(k){ return k.key==='sov_pooled'; })[0] || null;
+    }
+    if(abL&&abL.diff!=null){
+      rows.push({sort:2, name:'Websuche im Antwortkanal',
+        was:'Ob das Modell bei der Antwort im Netz nachschlägt oder aus dem Gedächtnis antwortet',
+        staerke:_kpp(100*abL.diff,1)+' ERGO-Anteil',
+        stufe:stufe('kausal'),
+        beleg:'gepaartes Experiment, '+nfmt(((ab.umfang||{}).n_pairs)||abL.n)+' Prompt-Paare'
+              +(ab.permutation_p!=null?(', p '+_kp(ab.permutation_p)):'')
+              +(abL.ci_low!=null?(' · 95-%-Intervall '+_kpp(100*abL.ci_low,1)+' … '+_kpp(100*abL.ci_high,1)):''),
+        hebel:'⚪ nicht direkt steuerbar — bestimmt aber, welcher Kanal überhaupt zitiert'});
+    } else {
+      /* Die Datei wird von search_ab_block.js asynchron nachgeladen. Fehlt sie beim
+         Rendern, verschwindet sonst ausgerechnet die einzige Zeile auf Stufe "kausal
+         belegt" - und die Tafel behauptet unausgesprochen, es gaebe keine. */
+      rows.push({sort:2, name:'Websuche im Antwortkanal',
+        was:'Ob das Modell bei der Antwort im Netz nachschlägt oder aus dem Gedächtnis antwortet',
+        staerke:'<span class="text-gray-400">keine Angabe</span>',
+        stufe:stufe('offen'),
+        beleg:'Experimentdaten (data/search_ab.json) beim Aufbau dieser Tafel noch nicht geladen — die vollständige Auswertung steht in Abschnitt 3.',
+        hebel:'⚪ nicht direkt steuerbar — bestimmt aber, welcher Kanal überhaupt zitiert'});
+    }
+    // 3) Groesse - fester Naeherungswert, kein geschaetzter Treiber
+    if(gd&&gd.contrib_pp&&gd.contrib_pp.size!=null){
+      rows.push({sort:3, name:'Bekanntheit und Größe',
+        was:'Marktanteil und Markenbekanntheit',
+        staerke:_kpp(gd.contrib_pp.size,1)+' am Rückstand'
+          +(gd.actual_gap_pp?('<div class="text-xs text-gray-500">rund '+Math.round(100*Math.abs(gd.contrib_pp.size)/Math.max(Math.abs(gd.actual_gap_pp),1e-9))+' % des Rückstands</div>'):''),
+        stufe:stufe('nah'),
+        beleg:'fester Näherungswert in der Zerlegung, nicht aus den Daten geschätzt',
+        hebel:'⚪ kein Hebel'});
+    }
+    // 4) Preisniveau - Richtung ja, Nachweis nein
+    /* Der Within-Schnitt auf dem grounded-Kanal ist der aussagekraeftigste: eine Marke
+       mit sich selbst ueber Themen verglichen, im Kanal mit Websuche - dort, wo Preise
+       ueberhaupt sichtbar werden. Er ist zugleich der einzige, der die unkorrigierte
+       Schwelle reisst und nach FDR knapp scheitert. */
+    var pw=null, pq=null, pe=null;
+    (function(){
+      var g=((pl.price_to_sov||{}).grounded||{});
+      var rp=((g.drivers_eff||{}).relprice||{}).within;
+      if(rp){ pe=(rp.effect_std_pp!=null?rp.effect_std_pp:rp.coef); pw=rp.wild_cluster_p; pq=rp.wild_cluster_p_fdr; }
+    })();
+    if(pe!=null){
+      rows.push({sort:4, name:'Preisniveau gegenüber dem Wettbewerb',
+        was:'Nicht das Ereignis „Preis geändert“, sondern die Lage im Markt',
+        staerke:_kpp(pe,2)+' je +1 SD',
+        stufe:(pq!=null&&pq<0.05)?stufe('zus'):stufe('nein'),
+        beleg:'Wild-p '+_kp(pw)+(pq!=null?(', q '+_kp(pq)):'')+' — Richtung stabil, Nachweis nach Korrektur nicht',
+        hebel:'🟢 direkt steuerbar'});
+    }
+    // 5) Einzelereignisse - gesammelt in EINER Zeile, mit der Nachweisgrenze als Grund
+    var est=Object.keys(imp).filter(function(k){ return imp[k] && imp[k].significance_basis==='cluster'; });
+    var sig=est.filter(function(k){ return imp[k].significant===true; });
+    if(est.length){
+      var effs=est.map(function(k){ return Math.abs(imp[k].avg_sov_effect_pp||0); }).filter(function(v){return v>0;});
+      var ses=est.map(function(k){ return imp[k].effect_se_cluster_pp; }).filter(function(v){ return v!=null; });
+      var mnE=effs.length?Math.min.apply(null,effs):null, mxE=effs.length?Math.max.apply(null,effs):null;
+      rows.push({sort:5, name:'Einzelne Ereignisse ('+est.length+' Typen)',
+        was:'Pressemitteilung, neue Seite, Bewertung, Seitenänderung, Portal-Rang …',
+        staerke:(mnE!=null?('zwischen '+_kv(mnE,2)+' und '+_kv(mxE,2)+' pp'):'keine Angabe')
+          +'<div class="text-xs text-gray-500">'+sig.length+' von '+est.length+' gesichert</div>',
+        stufe:sig.length?stufe('zus'):stufe('nein'),
+        beleg:'jeder gemessene Effekt liegt <b>unter</b> seiner Nachweisgrenze — die Messung könnte ihn bei dieser Datenlage gar nicht finden (Abschnitt 5)',
+        hebel:'🟢 direkt steuerbar — aber einzeln zu klein, um messbar zu werden'});
+    }
+    if(!rows.length) return '';
+    rows.sort(function(a,b){ return a.sort-b.sort; });
+
+    return '<div class="bg-white rounded-xl p-5 shadow mb-5 border-t-4" style="border-color:#dc0028">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">Die Antwort in einer Tafel: was treibt die Sichtbarkeit — und wie stark?</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Zusammenfassung der sechs Abschnitte unten, aus denselben Feldern gerechnet. '
+      +'Sortiert nach Tragweite, nicht nach Sicherheit — die Belastbarkeit steht in der eigenen Spalte.</p>'
+      +'<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-ergo-dark text-white">'
+      +'<th class="text-left px-3 py-2">Treiber</th><th class="text-left px-3 py-2">Stärke</th>'
+      +'<th class="text-left px-3 py-2">Belastbarkeit</th><th class="text-left px-3 py-2">Hebel</th></tr></thead><tbody>'
+      +rows.map(function(r){
+        return '<tr class="border-b align-top">'
+          +'<td class="px-3 py-2"><div class="font-semibold">'+r.name+'</div><div class="text-xs text-gray-400">'+r.was+'</div></td>'
+          +'<td class="px-3 py-2 font-semibold">'+r.staerke+'</td>'
+          +'<td class="px-3 py-2">'+r.stufe+'<div class="text-xs text-gray-500 mt-1">'+r.beleg+'</div></td>'
+          +'<td class="px-3 py-2 text-xs text-gray-600">'+r.hebel+'</td></tr>';
+        }).join('')
+      +'</tbody></table></div>'
+      +'<div class="text-xs text-gray-600 mt-3 leading-relaxed bg-gray-50 rounded p-3">'
+      +'<b>In zwei Sätzen:</b> Ein einziger Treiber trägt fast alles, und er heißt Quellpräsenz — nicht die Zahl der eigenen Seiten, sondern wie oft die Marke in dem vorkommt, was LLMs zitieren. '
+      +'Alle operativen Einzelmaßnahmen sind zu klein, um in dieser Messung sichtbar zu werden; das heißt nicht, dass sie nicht wirken, sondern dass eine einzelne Maßnahme diese Messung rechnerisch nicht bewegen kann.'
+      +'</div>'
+      /* Der Widerspruch gehoert sichtbar gemacht, nicht durch Modellwahl versteckt. */
+      +((gd&&fjGd&&fjGd.contrib_pp&&gd.contrib_pp&&gd.contrib_pp.size!=null&&fjGd.contrib_pp.size!=null
+         &&Math.abs(gd.contrib_pp.size-fjGd.contrib_pp.size)>0.3)
+        ? ('<div class="text-xs text-gray-500 mt-2 leading-relaxed">'
+           +'<b>Zwei Zerlegungen, ein Abstand.</b> Diese Tafel folgt <code>gap_explorer</code> — derselben Rechnung wie die Wasserfall-Grafik in Abschnitt 6 (Preis-Modell, '+nfmt((ge.brands||[]).length)+' Marken). '
+           +'Ein zweites Modell im selben Nightly (<code>full_joint</code>) teilt denselben Rückstand anders auf und schreibt der Größe nur '+_kpp(fjGd.contrib_pp.size,1)+' statt '+_kpp(gd.contrib_pp.size,1)+' zu. '
+           +'Beide sind für sich gerechnet, aber sie widersprechen sich genau dort, wo es zählt: wie viel des Rückstands auf etwas entfällt, das sich nicht beeinflussen lässt. '
+           +'Bis das geklärt ist, gilt der Anteil der Größe als Spanne zwischen '+_kv(Math.min(Math.abs(gd.contrib_pp.size),Math.abs(fjGd.contrib_pp.size)),1)+' und '+_kv(Math.max(Math.abs(gd.contrib_pp.size),Math.abs(fjGd.contrib_pp.size)),1)+' pp, nicht als Punktwert. '
+           +'Auf die Kernaussage wirkt sich das nicht aus — die Quellpräsenz trägt in beiden Modellen den weitaus größten Teil.</div>')
+        : '')
+      +'</div>';
+  }
+
+  /* ---------- Hebel-Rechnung (11.08.2026) ----------
+     Die Steigung Quellpraesenz -> Sichtbarkeit lag bisher nur als Fussnote unter dem
+     Scatter ("Steigung +0,63 pp je pp Footprint") und wurde nie in eine Zielzahl
+     uebersetzt. "Quellpraesenz ausbauen" ist keine Groesse, an der man in sechs
+     Monaten messen kann, ob etwas passiert ist - "von 2,1 % auf 9,9 %" schon. */
+  function kHebel(ci){
+    var f=(typeof window.geoCiteSlope==='function')?window.geoCiteSlope():null;
+    if(!f||!(f.slope>0)||f.ergoCite==null||f.ergoSov==null){
+      return '<div class="bg-white rounded-xl p-5 shadow mb-5"><h3 class="text-base font-bold text-ergo-dark mb-1">Was müsste sich bewegen?</h3>'
+        +'<div class="text-sm text-gray-400">Keine Angabe — die Steigung Quellpräsenz→Sichtbarkeit ist aus dem aktuellen GEO-Snapshot nicht ableitbar. Es wird bewusst kein Ersatzwert gezeigt.</div></div>';
+    }
+    /* Zielgroesse ist der Abstand aus derselben Zerlegung, die die Tafel darueber
+       zeigt - sonst stuenden zwei verschiedene "Rueckstaende" untereinander. */
+    var ge=(((ci||{}).price_level_pooled||{}).gap_explorer||{}).grounded||{};
+    var bm=ge.brand_means||{}, ld=ge.leader||'Allianz';
+    var abstand=(bm[ld]&&bm.ERGO&&bm[ld].sov!=null&&bm.ERGO.sov!=null)?(bm[ld].sov-bm.ERGO.sov):null;
+    if(abstand==null||abstand<=0) return '';
+    var haelfte=abstand/2;
+    var ziel=f.ergoCite+haelfte/f.slope;
+    var voll=f.ergoCite+abstand/f.slope;
+    return '<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">Was müsste sich bewegen? Die Hebel-Rechnung</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">„Quellpräsenz ausbauen“ ist keine Größe, an der sich in sechs Monaten ablesen lässt, ob etwas passiert ist — eine Zielzahl schon. '
+      +'Gerechnet auf den Zellen des GEO-Snapshots: je Thema und Marke der Anteil an den zitierten Quellen gegen den dort gemessenen Share of Voice.</p>'
+      +'<div class="grid md:grid-cols-3 gap-3">'
+      +_kcard('Der Hebel',_kv(f.slope,2)+' pp','Sichtbarkeit je Prozentpunkt Zitatanteil — deskriptive OLS über '+nfmt(f.n)+' Marken-Thema-Zellen'+(f.r!=null?(', r = '+_kv(f.r,2)):''),'','grau')
+      +_kcard('Heute',_kv(f.ergoCite,1)+' %','ERGO-Anteil an den zitierten Quellen, Mittel über die Themen','','grau')
+      +_kcard('Halber Abstand',_kv(ziel,1)+' %','Dorthin müsste der Zitatanteil, um '+_kv(haelfte,1)+' pp der '+_kv(abstand,1)+' pp Sichtbarkeitslücke zu '+_esc(ld)+' zu schließen','Zielgröße','gruen')
+      +'</div>'
+      +'<div class="text-xs text-gray-600 mt-3 leading-relaxed">'
+      +'Für den <b>ganzen</b> Abstand von '+_kv(abstand,1)+' pp wären rund '+_kv(voll,1)+' % Zitatanteil nötig'
+      +((bm[ld]&&bm[ld].cite_share!=null)?(' — deutlich mehr, als '+_esc(ld)+' im selben Modell heute selbst hat. Das ist kein Rechenfehler: ERGO liegt im Scatter unter der Linie, macht aus der vorhandenen Quellpräsenz also unterdurchschnittlich viel Sichtbarkeit. Über diesen Hebel allein ist der Abstand nicht zu schließen.'):'.')
+      +'<br><b>Zur Einheit:</b> Dieser Prozentsatz ist der Zitatanteil aus <code>cited_sources</code> des eigenen Crawls. Peec misst dieselbe Sache als <code>footprint_pct</code> auf anderer Skala — die Zahl aus dem Scatter in Abschnitt 1 ist deshalb nicht dieselbe und darf nicht gegen diese gerechnet werden.'
+      +'<br><b>Was diese Zahl nicht ist:</b> ein Versprechen. Die Steigung stammt aus dem Querschnitt über Marken und Themen, nicht aus einem Eingriff — sie sagt, wie viel Sichtbarkeit Marken mit diesem Zitatanteil im Schnitt haben, nicht was passiert, wenn ERGO seinen erhöht. Belastbar wäre das erst über ein Feld-Experiment (Abschnitt 3 zeigt die Bauart).'
+      +'</div></div>';
+  }
+
   /* ---------- Kernaussage: muss zu allen Blöcken passen ---------- */
   function kKern(ci){
     var lm=ci.level_model||{}, P=lm.peec26_model||{};
@@ -5996,6 +6283,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     if(!ci){ host.innerHTML='<div class="text-sm text-gray-400">Korrelationsdaten (data/correlation_impact.json) nicht geladen — es werden bewusst keine Ersatzwerte gezeigt.</div>'; return; }
     var h='';
     try { h+=kKern(ci); } catch(e){ console.warn('kKern:', e.message); }
+    try { h+=kAntwort(ci); } catch(e){ console.warn('kAntwort:', e.message); }
+    try { h+=kHebel(ci); } catch(e){ console.warn('kHebel:', e.message); }
     try { h+=kBlock1(ci); } catch(e){ console.warn('kBlock1:', e.message); }
     try { h+=kBlock2(ci, fanCsv); } catch(e){ console.warn('kBlock2:', e.message); }
     try { h+=kBlock3(ci, cc); } catch(e){ console.warn('kBlock3:', e.message); }
@@ -6294,26 +6583,59 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       comp.forEach(function(b){sum+=c[b];if(best===null||c[b]>c[best])best=b;});
       var avg=comp.length?sum/comp.length:0;
       var imp=impact[t]||null;
-      return {label:TYPES[t][0],hint:TYPES[t][1],ergo:ergo,best:best,bestN:best!==null?c[best]:0,nComp:comp.length,avg:avg,gap:ergo-avg,eff:(imp&&imp.avg_sov_effect_pp!=null)?imp.avg_sov_effect_pp:null};
+      return {label:TYPES[t][0],hint:TYPES[t][1],ergo:ergo,best:best,bestN:best!==null?c[best]:0,nComp:comp.length,avg:avg,gap:ergo-avg,imp:imp};
     }).filter(function(r){return r.ergo>0||r.nComp>0;});
     rows.sort(function(a,b){return a.gap-b.gap;});
     if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="px-3 py-3 text-sm text-gray-500">Noch keine Treiber-Events im Zeitfenster.</td></tr>'; return; }
     tb.innerHTML=rows.map(function(r){
       var prio=(r.gap<0&&Math.abs(r.gap)>=Math.max(2,r.avg*0.3))?['HOCH','#dc2626']:(r.gap<0?['MITTEL','#d97706']:['OK','#16a34a']);
       var gapTxt=(r.gap>0?'+':'')+r.gap.toFixed(1);
-      var effTxt=(r.eff!=null)?((r.eff>0?'+':'')+r.eff.toFixed(2)+' Pp'):'–';
+      /* 11.08.2026: Hier stand der nackte Punktschaetzer aus correlation_impact.json,
+         ohne jede Pruefung auf Signifikanz - daneben die Fussnote "Konfidenz: belastbar"
+         (ein globales Feld ueber die Datendichte, kein Urteil ueber den einzelnen
+         Treiber). Zwei Klicks weiter sagt der Korrelations-Reiter fuer dieselben
+         Treiber: keiner von neun ist gesichert, jedes Intervall enthaelt die Null,
+         jeder gemessene Effekt liegt UNTER seiner Nachweisgrenze. Die Spalte hat also
+         gemessene Wirkung behauptet, wo keine nachweisbar ist. Jetzt steht das Urteil
+         in der Zelle und der Punktschaetzer im Tooltip - nicht umgekehrt. */
+      var effTxt, effTip='', effCol='#9ca3af';
+      var im=r.imp;
+      var _z=function(v,n){return (v>0?'+':'')+v.toFixed(n||2).replace('.',',');};
+      if(!im || im.avg_sov_effect_pp==null){
+        effTxt='nicht schätzbar';
+        effTip=(im&&im.type_confidence_grund)?im.type_confidence_grund:'Für diesen Treiber liegt keine Schätzung vor.';
+      } else if(im.significant===true){
+        effTxt=_z(im.avg_sov_effect_pp)+' pp'; effCol='#16a34a';
+        effTip='Cluster-robustes 95-%-Intervall '+_z(im.ci95_low_cluster_pp)+' … '+_z(im.ci95_high_cluster_pp)+' pp — schließt die Null aus.';
+      } else {
+        effTxt='nicht nachweisbar';
+        effTip='Punktschätzer '+_z(im.avg_sov_effect_pp)+' pp'
+             +(im.ci95_low_cluster_pp!=null?(', 95-%-Intervall '+_z(im.ci95_low_cluster_pp)+' … '+_z(im.ci95_high_cluster_pp)+' pp'):'')
+             +' — das Intervall enthält die Null. Der Effekt liegt unter der Nachweisgrenze; das heißt „mit dieser Datenlage nicht auffindbar“, nicht „wirkt nicht“.';
+      }
       return '<tr class="border-b">'
         +'<td class="px-3 py-2"><div class="font-semibold">'+esc(r.label)+'</div><div class="text-xs text-gray-400">'+esc(r.hint)+'</div></td>'
         +'<td class="text-right px-3 py-2 font-bold">'+r.ergo+'</td>'
         +'<td class="text-right px-3 py-2">'+(r.best!==null?(r.bestN+' <span class="text-xs text-gray-500">('+esc(r.best)+')</span>'):'–')+'</td>'
         +'<td class="text-right px-3 py-2">'+r.avg.toFixed(1)+'</td>'
         +'<td class="text-right px-3 py-2 font-semibold" style="color:'+(r.gap<0?'#dc2626':'#16a34a')+'">'+gapTxt+'</td>'
-        +'<td class="text-right px-3 py-2">'+effTxt+'</td>'
+        +'<td class="text-right px-3 py-2" style="color:'+effCol+'" title="'+esc(effTip)+'">'+esc(effTxt)+'</td>'
         +'<td class="text-center px-3 py-2"><span class="px-2 py-0.5 rounded text-xs text-white" style="background:'+prio[1]+'">'+prio[0]+'</span></td>'
         +'</tr>';
     }).join('');
     var note=document.getElementById('driverGapNote');
-    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Bewertungs-Volumen" zählt neue Einzelbewertungen aus dem Bewertungs-Archiv (Quellenabdeckung variiert je Marke). „Impact (SoV)" = Ø SoV-Effekt je Intervall mit Event aus der validierten Impact-Analyse'+(conf?' — Konfidenz: '+conf:'')+'. '+(function(){
+    /* 11.08.2026: Die Fussnote hing das globale confidence-Feld ("belastbar") an die
+       Impact-Spalte. Das Feld beschreibt die Datendichte des Modells, nicht den
+       einzelnen Treiber - direkt neben unbewiesenen Punktschaetzern gelesen sagte es
+       das Gegenteil des Gemeinten. Ausserdem stand nirgends, dass die Prioritaet
+       allein aus dem Aktivitaetsrueckstand entsteht und mit der Wirkungsspalte nichts
+       zu tun hat (Zeile "Bewertungs-Aenderungen": negativer Effekt neben Prio HOCH). */
+    var _nSig=Object.keys(TYPES).filter(function(t){var i=impact[t];return i&&i.significant===true;}).length;
+    var _nEst=Object.keys(TYPES).filter(function(t){var i=impact[t];return i&&i.avg_sov_effect_pp!=null;}).length;
+    if(note) note.textContent='Zeitfenster: letzte '+DAYS+' Tage (Event-Pipeline, '+evs.length+' Events insgesamt). „Bewertungs-Volumen" zählt neue Einzelbewertungen aus dem Bewertungs-Archiv (Quellenabdeckung variiert je Marke). '
+      +'„Wirkung auf SoV" kommt aus der cluster-robusten Event-Study im Korrelations-Reiter: '+_nSig+' von '+_nEst+' geschätzten Treibern sind dort gesichert — bei allen übrigen enthält das Konfidenzintervall die Null, der Punktschätzer steht im Tooltip. '
+      +'„Rückstands-Prio" misst ausschließlich, wie weit ERGO beim Aktivitätsvolumen hinter dem Wettbewerbsschnitt liegt; sie sagt nichts über die Wirkung und ist deshalb nicht aus der Spalte daneben abgeleitet.'
+      +(conf?' Datendichte des Modells insgesamt: '+conf+'.':'')+' '+(function(){
         /* 10.08.2026: Hier stand eine feste Liste von fuenf Marken. Im 30-Tage-Fenster
            liegen Seiten-Events fuer deutlich mehr - die Tabelle darueber nennt selbst
            ADAC und LV 1871, die in der Liste fehlten. Jetzt aus den Events gezaehlt. */

@@ -88,6 +88,33 @@
     Object.keys(fp).forEach(function(b){ if(sv[b]==null) return; out.push({brand:b, foot:fp[b], sov:sv[b]}); });
     return out.length>=3?out:null;
   }
+  /* 11.08.2026: Die Steigung der OLS-Geraden lag bisher als lokale Variable in
+     renderScatter() und war damit nur sichtbar, wenn der Korrelations-Reiter gerendert
+     wurde. Der Empfehlungs-Reiter braucht sie fuer die Hebel-Rechnung ("wie viel
+     Sichtbarkeit bringt ein Prozentpunkt mehr Quellpraesenz"). Ausgelagert, damit
+     beide Reiter DIESELBE Zahl zeigen, statt zwei eigene zu rechnen, die
+     auseinanderlaufen koennen. Immer auf der branding-neutralen Ansicht - das ist
+     das faire Marktbild und die Basis, auf der auch der Scatter startet. */
+  window.footprintSlope=function(){
+    var P=window.PEEC_DATA; if(!P) return null;
+    var neu=peecNeutralAvail();
+    var fp=meansOf(neu?P.footprint_pct_neutral:P.footprint_pct);
+    var sv=meansOf(neu?P.peec_sov_pct_neutral:P.peec_sov_pct);
+    if(!fp||!sv) return null;
+    var pts=[];
+    Object.keys(fp).forEach(function(b){ if(sv[b]!=null) pts.push({brand:b,foot:fp[b],sov:sv[b]}); });
+    if(pts.length<3) return null;
+    var n=pts.length,sx=0,sy=0,sxx=0,sxy=0;
+    pts.forEach(function(p){ sx+=p.foot; sy+=p.sov; sxx+=p.foot*p.foot; sxy+=p.foot*p.sov; });
+    var den=n*sxx-sx*sx; if(Math.abs(den)<1e-9) return null;
+    var b=(n*sxy-sx*sy)/den;
+    var er=pts.filter(function(p){return p.brand==="ERGO";})[0]||null;
+    var al=pts.filter(function(p){return p.brand==="Allianz";})[0]||null;
+    return {slope:b, intercept:(sy-b*sx)/n, n:n, neutral:neu,
+            ergoFoot:er?er.foot:null, ergoSov:er?er.sov:null,
+            leaderFoot:al?al.foot:null, leaderSov:al?al.sov:null};
+  };
+
   function scatterBlock(){
     var avail=peecNeutralAvail(), neu=scatterNeutral&&avail;
     var pts=peecBrandMeans();

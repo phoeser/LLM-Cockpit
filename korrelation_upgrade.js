@@ -25,147 +25,182 @@
   function num(v,d){ if(v==null||isNaN(v)) return "—"; d=(d==null?1:d); return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toFixed(d).replace(".",","); }
   function signed(v,d){ return (v==null||isNaN(v))?"—":((v>0?"+":"")+num(v,d)); }
 
-  var FOOTDEF="Zitations-Footprint = Anteil der markeneigenen Domain an allen zitierten URLs je Thema. Peec misst ihn als footprint_pct, der eigene Crawl als cite_share.";
+  /* 12.08.2026 korrigiert: Der alte Text setzte Peecs footprint_pct mit dem
+     cite_share des eigenen Crawls gleich ("misst ihn als ... bzw. als ..."). Sie
+     messen NICHT dasselbe: cite_share ist der Anteil der markeneigenen Domain an
+     den zitierten Quellen, footprint_pct der zitatgewichtete Anteil der Quellen
+     MIT MARKENERWAEHNUNG (deshalb summierte sich footprint_pct ueber die Marken
+     auf 302 %). Diese Grafik nutzt nur noch den eigenen Crawl. */
+  var FOOTDEF="Quellpräsenz = Anteil der markeneigenen Domain an den von den Sprachmodellen zitierten Quellen (eigener Crawl, Feld cite_share). Nicht zu verwechseln mit Peecs footprint_pct — das zählt Quellen mit Markenerwähnung und ist eine andere Größe.";
 
-  /* ---------- Peec-Markenmittel (Basis fuer Scatter und Bias-Hinweis) ---------- */
-  function meansOf(tbl){
-    if(!tbl) return null;
-    var out={};
-    Object.keys(tbl).forEach(function(b){
-      var t=tbl[b]||{}, vs=[];
-      Object.keys(t).forEach(function(k){ if(k==="Corporate") return; if(typeof t[k]==="number") vs.push(t[k]); });
-      if(vs.length) out[b]=vs.reduce(function(a,x){return a+x;},0)/vs.length;
-    });
-    return Object.keys(out).length?out:null;
-  }
-  function rankOf(m,b){ return Object.keys(m).sort(function(x,y){return m[y]-m[x];}).indexOf(b)+1; }
-  function topOf(m,n){ return Object.keys(m).sort(function(x,y){return m[y]-m[x];}).slice(0,Math.max(n,0)); }
+  /* 12.08.2026 ENTFERNT: meansOf/rankOf/topOf - die Peec-Markenmittel. Sie waren
+     die Grundlage des alten Peec-Scatters und des Bias-Hinweises; beide sind weg,
+     damit auch diese drei. Der Peec-Reiter rechnet seine Mittel selbst. */
 
-  /* ---------- Warnhinweis: Peec-Prompt-Satz ist ERGO-zentriert ----------
-     Alle Zahlen live aus data/peec_footprint.json (neutral_meta + die beiden
-     SoV-Tabellen). Fehlt neutral_meta, bleibt der Hinweis qualitativ. */
-  function peecBiasWarn(){
-    var P=window.PEEC_DATA;
-    var nm=(P&&P.neutral_meta)||null;
-    var mb=meansOf(P&&P.peec_sov_pct), mn=meansOf(P&&P.peec_sov_pct_neutral);
-    var s='<div style="background:#fff4f4;border:1px solid #f3c6c6;border-left:4px solid #dc0028;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11.5px;color:#7a1420;line-height:1.5">'+
-      '<b>⚠ Der Peec-SoV mit Branding-Prompts ist kein neutrales Marktranking.</b> Das Peec-Projekt „ERGO Germany“ ist ERGOs eigenes Monitoring: ein Teil der Prompts nennt ERGO ausdrücklich, kein einziger einen Wettbewerber. ';
-    if(nm && nm.n_prompts_branded!=null && nm.n_prompts_neutral!=null){
-      var tot=nm.n_prompts_branded+nm.n_prompts_neutral;
-      s+='<b>'+nm.n_prompts_branded+' von '+tot+' Prompts ('+num(100*nm.n_prompts_branded/tot,0)+' %)</b> nennen ERGO im Prompt. ';
-    } else {
-      s+='<span style="color:#9ca3af">Zahl der Branding-Prompts: keine Angabe — Feld <code>neutral_meta</code> fehlt im Peec-Export.</span> ';
-    }
-    if(mb && mn && mb.ERGO!=null && mn.ERGO!=null){
-      var rb=rankOf(mb,"ERGO"), rn=rankOf(mn,"ERGO");
-      var vor=topOf(mn,rn-1).filter(function(b){ return b!=="ERGO"; });
-      s+='Dadurch liegt ERGOs Peec-SoV mit Branding-Prompts bei <b>'+num(mb.ERGO,1)+' %</b> (Platz '+rb+'); <b>neutral</b> (nur markenfreie Prompts) bei <b>'+num(mn.ERGO,1)+' %</b> — Platz '+rn+
-        (vor.length?(' hinter '+vor.map(function(b){ return b+' ('+num(mn[b],1)+' %)'; }).join(' und ')):'')+
-        ', Faktor <b>'+num(mb.ERGO/Math.max(mn.ERGO,1e-9),1)+'×</b>. ';
-    } else {
-      s+='<span style="color:#9ca3af">Branded gegen neutral: keine Angabe — die neutrale SoV-Tabelle fehlt im Peec-Export.</span> ';
-    }
-    s+='Als Marktranking gilt die neutrale Ansicht bzw. der eigene Crawl. Peec-branded heißt hier „Sichtbarkeit, wenn gezielt über ERGO gefragt wird“.</div>';
-    return s;
-  }
+  /* 12.08.2026 ENTFERNT: peecBiasWarn() - der Warnhinweis, dass Peecs Prompt-Satz
+     ERGO-zentriert ist. Er hing am alten Peec-Scatter; seit dieser Block auf den
+     eigenen Crawl umgestellt ist, wurde die Funktion nirgends mehr aufgerufen.
+     Der Hinweis selbst geht NICHT verloren - er steht unveraendert im Peec-Reiter
+     (dashboard_v3.html, ueber der Kennzahlentafel und noch einmal ueber der
+     ERGO-fokussierten Ansicht), also dort, wo die Peec-Zahlen auch stehen.
+     Bewusst geloescht statt "fuer spaeter" behalten: eine Funktion, die niemand
+     aufruft, deren Kommentar aber behauptet, sie werde gebraucht, kostet beim
+     naechsten Lesen genau die Zeit, die dieser Umbau gerade gespart hat. */
 
-  /* ---------- Ueber-/Unterperformer-Scatter ---------- */
+  /* ---------- Ueber-/Unterperformer-Scatter ----------
+     12.08.2026 GRUNDLEGEND UMGEBAUT (Befund Paul: "das sieht falsch aus" - er hatte
+     recht). Vorher lag hier Peecs footprint_pct auf der x-Achse, beschriftet als
+     "Anteil der markeneigenen Domain an allen zitierten URLs". Peec rechnet unter
+     diesem Feld aber etwas anderes, und zwar laut der eigenen Quellenangabe in
+     peec_footprint.json: "zitatgewichteter Anteil der Quellen-URLs MIT
+     MARKENERWAEHNUNG". Beweis ohne Interpretation: die 28 Markenwerte summierten
+     sich auf 301,7 % - ein Anteil an einem gemeinsamen Topf kann das nicht.
+
+     Damit stand auf der x-Achse "wie oft wird die Marke in zitierten Quellen
+     erwaehnt" und auf der y-Achse "wie oft wird die Marke in Antworten erwaehnt".
+     Zweimal im Kern dieselbe Groesse. Das r von 0,90 war zu einem grossen Teil
+     Selbstkorrelation, und die versprochene Aussage - "sorge dafuer, dass deine
+     Seiten zitiert werden" - stand nirgends in den Daten.
+
+     Jetzt: cite_share aus dem EIGENEN Crawl (Anteil der markeneigenen Domain an
+     den zitierten Quellen, grounded, ueber alle sauberen Messtage gemittelt) -
+     dieselbe Groesse, aus der auch die Abstands-Zerlegung rechnet.
+
+     Zweiter Befund, unabhaengig davon: Die Gerade hing an drei Punkten. Ueber alle
+     28 Peec-Marken war die Steigung 0,618 (r=0,90); ohne Allianz, HUK und ERGO nur
+     noch 0,188 (r=0,41). ERGO war einer dieser drei - die Aussage "ERGO liegt X pp
+     unter der Erwartung" mass ERGO also gegen eine Linie, die ERGO mitdefiniert.
+     Deshalb hier: Hebelpunkte werden ausgewiesen, eine zweite Gerade OHNE sie
+     gezeichnet, und ERGOs Abweichung gegen eine Gerade gerechnet, in die ERGO
+     selbst NICHT eingeht (Leave-one-out). ---------- */
   var scatterChart=null;
-  var scatterNeutral=true;   // Default: branding-neutrale Ansicht
-  function peecNeutralAvail(){ var P=window.PEEC_DATA; return !!(P && P.footprint_pct_neutral && P.peec_sov_pct_neutral); }
-  window.__scatterToggle=function(n){
-    scatterNeutral=!!n;
-    var el=document.getElementById("korrScatterBlock");
-    if(el){ el.outerHTML=scatterBlock(); renderScatter(); }
-  };
-  function peecBrandMeans(){
-    var P=window.PEEC_DATA; if(!P) return null;
-    var useNeu=scatterNeutral && peecNeutralAvail();
-    var fp=meansOf(useNeu?P.footprint_pct_neutral:P.footprint_pct);
-    var sv=meansOf(useNeu?P.peec_sov_pct_neutral:P.peec_sov_pct);
-    if(!fp||!sv) return null;
+
+  /* Markenmittel aus dem eigenen Crawl. Quelle: gap_explorer.brand_means im
+     Nightly - dort liegen sov und cite_share je Marke bereits gemittelt und
+     engine-konsistent nebeneinander. Keine zweite Rechnung, damit diese Grafik
+     und die Zerlegung nicht auseinanderlaufen koennen. */
+  function crawlBrandMeans(){
+    var ci=window.CORRELATION_IMPACT; if(!ci) return null;
+    var sb=(((ci.price_level_pooled||{}).streubild||{}).grounded)||{};
+    var bm=sb.available?sb.brand_means:null; if(!bm) return null;
     var out=[];
-    Object.keys(fp).forEach(function(b){ if(sv[b]==null) return; out.push({brand:b, foot:fp[b], sov:sv[b]}); });
-    return out.length>=3?out:null;
+    Object.keys(bm).forEach(function(b){
+      var v=bm[b]||{};
+      if(typeof v.cite_share==="number" && typeof v.sov==="number") out.push({brand:b, foot:v.cite_share, sov:v.sov});
+    });
+    return out.length>=5?{pts:out, tage:sb.n_tage||null, von:sb.tage_von||null, bis:sb.tage_bis||null,
+                          nCells:sb.n_cells||null, nTopics:sb.n_topics||null}:null;
   }
-  /* 11.08.2026: Die Steigung der OLS-Geraden lag bisher als lokale Variable in
-     renderScatter() und war damit nur sichtbar, wenn der Korrelations-Reiter gerendert
-     wurde. Der Empfehlungs-Reiter braucht sie fuer die Hebel-Rechnung ("wie viel
-     Sichtbarkeit bringt ein Prozentpunkt mehr Quellpraesenz"). Ausgelagert, damit
-     beide Reiter DIESELBE Zahl zeigen, statt zwei eigene zu rechnen, die
-     auseinanderlaufen koennen. Immer auf der branding-neutralen Ansicht - das ist
-     das faire Marktbild und die Basis, auf der auch der Scatter startet. */
-  window.footprintSlope=function(){
-    var P=window.PEEC_DATA; if(!P) return null;
-    var neu=peecNeutralAvail();
-    var fp=meansOf(neu?P.footprint_pct_neutral:P.footprint_pct);
-    var sv=meansOf(neu?P.peec_sov_pct_neutral:P.peec_sov_pct);
-    if(!fp||!sv) return null;
-    var pts=[];
-    Object.keys(fp).forEach(function(b){ if(sv[b]!=null) pts.push({brand:b,foot:fp[b],sov:sv[b]}); });
-    if(pts.length<3) return null;
-    var n=pts.length,sx=0,sy=0,sxx=0,sxy=0;
-    pts.forEach(function(p){ sx+=p.foot; sy+=p.sov; sxx+=p.foot*p.foot; sxy+=p.foot*p.sov; });
+
+  function ols(pts){
+    var n=pts.length; if(n<3) return null;
+    var sx=0,sy=0,sxx=0,sxy=0,syy=0;
+    pts.forEach(function(p){ sx+=p.foot; sy+=p.sov; sxx+=p.foot*p.foot; sxy+=p.foot*p.sov; syy+=p.sov*p.sov; });
     var den=n*sxx-sx*sx; if(Math.abs(den)<1e-9) return null;
-    var b=(n*sxy-sx*sy)/den;
-    var er=pts.filter(function(p){return p.brand==="ERGO";})[0]||null;
-    var al=pts.filter(function(p){return p.brand==="Allianz";})[0]||null;
-    return {slope:b, intercept:(sy-b*sx)/n, n:n, neutral:neu,
-            ergoFoot:er?er.foot:null, ergoSov:er?er.sov:null,
-            leaderFoot:al?al.foot:null, leaderSov:al?al.sov:null};
-  };
+    var b=(n*sxy-sx*sy)/den, a=(sy-b*sx)/n;
+    var rden=Math.sqrt(den*(n*syy-sy*sy));
+    return {slope:b, intercept:a, n:n, r:(rden>1e-9?((n*sxy-sx*sy)/rden):null),
+            xbar:sx/n, sxx:sxx-sx*sx/n};
+  }
+
+  /* Hebelpunkte nach der ueblichen Faustregel h_i > 3p/n (p = 2 Parameter). */
+  function hebelpunkte(pts, f){
+    if(!f||f.sxx<=1e-9) return [];
+    var n=pts.length, grenze=3*2/n;
+    return pts.filter(function(p){
+      var h=1/n+Math.pow(p.foot-f.xbar,2)/f.sxx;
+      return h>grenze;
+    }).map(function(p){ return p.brand; });
+  }
 
   function scatterBlock(){
-    var avail=peecNeutralAvail(), neu=scatterNeutral&&avail;
-    var pts=peecBrandMeans();
-    var nBr=pts?pts.length:null;
-    function tb(n,label){ var on=(scatterNeutral===!!n); return '<button onclick="window.__scatterToggle('+n+')" style="font-size:10.5px;padding:2px 9px;border-radius:7px;border:1px solid '+(on?"#067d3a":"#ccc")+';background:'+(on?"#067d3a":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+label+'</button>'; }
-    var toggle='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+
-      '<span style="font-size:10.5px;color:#9ca3af">Prompts:</span>'+tb(1,"Neutral (ohne Branding)")+tb(0,"inkl. Branding (ERGO-fokussiert)")+
-      (avail?'':'<span style="font-size:10px;color:#b45309">— neutrale Ansicht erst mit dem naechsten Peec-Export</span>')+'</div>';
-    var note=neu
-      ? '<div style="background:#e6f5ec;border:1px solid #bfe3cd;border-left:4px solid #067d3a;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:11.5px;color:#14532d;line-height:1.5"><b>Branding-neutrale Ansicht.</b> Nur Prompts <b>ohne</b> Markennamen (Peec-System-Tag <code>non-branded</code>) — das faire Marktbild.</div>'
-      : peecBiasWarn();
+    var D=crawlBrandMeans();
+    var nBr=D?D.pts.length:null;
     return '<div id="korrScatterBlock" style="border:1px solid #eee;border-radius:11px;padding:14px 16px;margin-bottom:14px">'+
-      '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Über-/Unterperformer — Quellpräsenz gegen Sichtbarkeit (Peec)</div>'+
-      '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Jeder Punkt = eine Peec-Marke'+(nBr?(" ("+nBr+" Marken im aktuellen Export)"):"")+', Markenmittel über die Themen. Linie = erwartete Sichtbarkeit bei gegebenem Footprint (deskriptive OLS). Über der Linie = macht aus dem Footprint überdurchschnittlich viel Sichtbarkeit.</div>'+
-      toggle + note +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Über-/Unterperformer — Quellpräsenz gegen Sichtbarkeit (eigener Crawl)</div>'+
+      '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Jeder Punkt = eine Marke'+(nBr?(" ("+nBr+" Marken)"):"")+', Mittel über die Themen und über alle sauberen Messtage. '+
+        'Durchgezogen = Ausgleichsgerade über alle Marken. Gestrichelt = dieselbe Gerade ohne die Marken, die sie am stärksten bestimmen. Liegen beide weit auseinander, trägt der Zusammenhang nur wenige Punkte.</div>'+
       '<div style="position:relative;height:270px"><canvas id="korrScatterCv"></canvas></div>'+
       '<div style="font-size:11px;color:#6b7280;margin-top:6px" id="korrScatterNote"></div>'+
       '<div style="font-size:10.5px;color:#9ca3af;margin-top:4px">'+FOOTDEF+' Deskriptiver Zusammenhang, kein Kausalnachweis.</div>'+
     '</div>';
   }
+
   function renderScatter(){
     var cv=document.getElementById("korrScatterCv"), noteEl=document.getElementById("korrScatterNote");
     if(!cv) return;
-    var pts=peecBrandMeans();
-    if(!pts){ if(noteEl) noteEl.textContent="Peec-Markenmittel (data/peec_footprint.json) noch nicht geladen — der Scatter erscheint nach dem nächsten Peec-Export bzw. Reload. Keine Ersatz-Nullen."; return; }
+    var D=crawlBrandMeans();
+    if(!D){ if(noteEl) noteEl.textContent="Markenmittel aus dem eigenen Crawl (correlation_impact.json → price_level_pooled.streubild) noch nicht geladen — der Scatter erscheint nach dem nächsten Nightly bzw. Reload. Keine Ersatz-Nullen."; return; }
+    var pts=D.pts;
     if(!window.Chart){ if(noteEl) noteEl.textContent="Diagrammbibliothek nicht geladen — die Zahlen stehen unverändert in den Karten oben."; return; }
-    var n=pts.length, sx=0,sy=0,sxx=0,sxy=0;
-    pts.forEach(function(p){ sx+=p.foot; sy+=p.sov; sxx+=p.foot*p.foot; sxy+=p.foot*p.sov; });
-    var b=(n*sxy-sx*sy)/Math.max(n*sxx-sx*sx,1e-9), a=(sy-b*sx)/n;
-    var xmin=Math.min.apply(null,pts.map(function(p){return p.foot;})), xmax=Math.max.apply(null,pts.map(function(p){return p.foot;}));
+    var fAll=ols(pts); if(!fAll){ if(noteEl) noteEl.textContent="Zu wenig Streuung in der Quellpräsenz für eine Ausgleichsgerade."; return; }
+    var heb=hebelpunkte(pts,fAll);
+    var rest=pts.filter(function(p){ return heb.indexOf(p.brand)<0; });
+    var fRest=(rest.length>=3)?ols(rest):null;
+
+    var xs=pts.map(function(p){return p.foot;});
+    var xmin=Math.min.apply(null,xs), xmax=Math.max.apply(null,xs);
     var pad=(xmax-xmin)*0.08||1; xmin-=pad; xmax+=pad;
-    function colOf(br){ return br==="ERGO"?"#dc0028":(br==="Allianz"?"#003781":"#9ca3af"); }
-    var data={ datasets:[
+    function colOf(br){ return br==="ERGO"?"#dc0028":(br==="Allianz"?"#003781":(heb.indexOf(br)>=0?"#b45309":"#9ca3af")); }
+    var ds=[
       {type:"scatter",label:"Marken",data:pts.map(function(p){return {x:p.foot,y:p.sov,brand:p.brand};}),
-       pointRadius:pts.map(function(p){return (p.brand==="ERGO"||p.brand==="Allianz")?7:4;}),
+       pointRadius:pts.map(function(p){return (p.brand==="ERGO"||p.brand==="Allianz")?7:(heb.indexOf(p.brand)>=0?6:4);}),
        pointBackgroundColor:pts.map(function(p){return colOf(p.brand);}), pointBorderColor:"#fff", pointBorderWidth:1},
-      {type:"line",label:"OLS",data:[{x:xmin,y:a+b*xmin},{x:xmax,y:a+b*xmax}],borderColor:"#c8ccd2",borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false}
-    ]};
+      {type:"line",label:"alle",data:[{x:xmin,y:fAll.intercept+fAll.slope*xmin},{x:xmax,y:fAll.intercept+fAll.slope*xmax}],
+       borderColor:"#6b7280",borderWidth:2,pointRadius:0,fill:false}
+    ];
+    if(fRest) ds.push({type:"line",label:"ohne Hebelpunkte",
+       data:[{x:xmin,y:fRest.intercept+fRest.slope*xmin},{x:xmax,y:fRest.intercept+fRest.slope*xmax}],
+       borderColor:"#c8ccd2",borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false});
+
     if(scatterChart){ try{scatterChart.destroy();}catch(e){} scatterChart=null; }
     try{
-      scatterChart=new Chart(cv,{data:data,options:{responsive:true,maintainAspectRatio:false,animation:false,
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ var r=ctx.raw||{}; if(r.brand==null) return null; var res=r.y-(a+b*r.x); return r.brand+": "+num(r.y,1)+"% SoV bei "+num(r.x,1)+"% Footprint ("+(res>=0?"+":"")+num(res,1)+" pp vs. erwartet)"; }}}},
-        scales:{x:{title:{display:true,text:"Zitations-Footprint % (Peec) — Anteil eigener Domain an zitierten URLs"}},y:{title:{display:true,text:"Peec Share of Voice %"},beginAtZero:true}}}});
+      scatterChart=new Chart(cv,{data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ var r=ctx.raw||{}; if(r.brand==null) return null;
+          var res=r.y-(fAll.intercept+fAll.slope*r.x);
+          return r.brand+": "+num(r.y,1)+"% SoV bei "+num(r.x,1)+"% Quellpräsenz ("+(res>=0?"+":"")+num(res,1)+" pp vs. Gerade)"+(heb.indexOf(r.brand)>=0?" — Hebelpunkt":""); }}}},
+        scales:{x:{title:{display:true,text:"Quellpräsenz % (eigener Crawl) — Anteil der markeneigenen Domain an den zitierten Quellen"}},
+                y:{title:{display:true,text:"Share of Voice %  (grounded)"},beginAtZero:true}}}});
     }catch(e){}
-    if(noteEl){
-      var er=pts.filter(function(p){return p.brand==="ERGO";})[0];
-      if(er){ var res=er.sov-(a+b*er.foot);
-        noteEl.innerHTML="<b>ERGO:</b> "+(res>=0?("+"+num(res,1)+" pp über"):(num(res,1)+" pp unter"))+" der erwarteten Sichtbarkeit. "+
-          "<span style='color:#9ca3af'>Steigung "+signed(b,2)+" pp SoV je pp Footprint (deskriptive OLS über "+n+" Peec-Marken). ERGO rot, Allianz blau.</span>";
-      } else noteEl.textContent="ERGO ist im aktuellen Peec-Export nicht enthalten.";
+
+    if(!noteEl) return;
+    var s="";
+    /* ERGOs Abweichung gegen eine Gerade OHNE ERGO - sonst misst sich ERGO an
+       einer Linie, die es selbst mitzieht. */
+    var ohneErgo=pts.filter(function(p){ return p.brand!=="ERGO"; });
+    var fOE=(ohneErgo.length>=3)?ols(ohneErgo):null;
+    var er=pts.filter(function(p){ return p.brand==="ERGO"; })[0];
+    if(er&&fOE){
+      var resE=er.sov-(fOE.intercept+fOE.slope*er.foot);
+      s+="<b>ERGO:</b> "+(resE>=0?("+"+num(resE,1)+" pp über"):(num(resE,1)+" pp unter"))+" der Erwartung. "+
+         "<span style='color:#9ca3af'>Gegen eine Gerade gerechnet, in die ERGO selbst nicht eingeht — sonst misst sich ERGO an einer Linie, die es mitzieht.</span> ";
+    } else if(er){ s+="<b>ERGO:</b> keine Angabe — zu wenige andere Marken für eine Vergleichsgerade. "; }
+    else { s+="ERGO ist in dieser Auswertung nicht enthalten. "; }
+
+    s+="<div style='margin-top:5px;color:#9ca3af'>Steigung "+signed(fAll.slope,2)+" pp SoV je pp Quellpräsenz über "+fAll.n+" Marken"+
+       (fAll.r!=null?(", r = "+num(fAll.r,2)):"")+". ";
+    if(fRest&&heb.length){
+      s+="Ohne "+heb.join(", ")+" (Hebelpunkte): "+signed(fRest.slope,2)+
+         (fRest.r!=null?(", r = "+num(fRest.r,2)):"")+". ";
+      var faktor=(Math.abs(fRest.slope)>1e-9)?Math.abs(fAll.slope/fRest.slope):null;
+      if(faktor!=null&&faktor>1.5) s+="<b style='color:#b45309'>Die beiden Geraden unterscheiden sich um Faktor "+num(faktor,1)+" — der Zusammenhang wird von wenigen Marken getragen und ist entsprechend unsicher.</b> ";
+    } else if(!heb.length){
+      s+="Keine Marke überschreitet die übliche Hebelgrenze (h &gt; 3p/n) — die Gerade hängt an keinem Einzelpunkt. ";
     }
+    if(D.tage) s+="Grundlage: "+D.tage+" Messtage"+((D.von&&D.bis)?(" ("+D.von+" bis "+D.bis+")"):"")+", "+(D.nTopics||"?")+" Themen. ";
+    s+="ERGO rot, Allianz blau, Hebelpunkte bernstein.</div>";
+    /* Der wichtigste Vorbehalt gehoert an die Grafik, nicht in eine Fussnote weiter
+       unten: Zitate und Nennungen stammen zu einem Teil aus DENSELBEN Antworten.
+       Ein Teil des Zusammenhangs ist deshalb Messkonstruktion, nicht Wirkung. Die
+       Zahl dazu rechnet der Nightly bereits (level_model.full_joint.circularity). */
+    var circ=(((((window.CORRELATION_IMPACT||{}).level_model||{}).full_joint||{}).grounded||{}).circularity)||null;
+    if(circ&&circ.share_same_engine!=null){
+      s+="<div style='margin-top:6px;padding:7px 10px;background:#fff8ed;border:1px solid #f0dcc0;border-left:3px solid #b45309;border-radius:7px;color:#7a4a12'>"+
+         "<b>Warum dieser Zusammenhang so eng aussieht.</b> "+num(100*circ.share_same_engine,0)+" % der Zitate stammen aus derselben Engine, die hier auch die Sichtbarkeit misst. "+
+         "Beide Achsen lesen damit teilweise dieselben Antworten — ein Teil der Enge ist Messkonstruktion und keine Wirkung. "+
+         "Die Grafik zeigt, wo eine Marke im Vergleich zu den anderen steht, nicht wie viel Sichtbarkeit eine zusätzlich zitierte Seite bringt.</div>";
+    }
+    noteEl.innerHTML=s;
   }
 
   /* ============================================================
@@ -325,6 +360,6 @@
 
   // Test-Hook (headless): erlaubt gezieltes Ansteuern ohne Chart.js
   if(typeof module!=="undefined" && module.exports){
-    module.exports={ peecBiasWarn:peecBiasWarn, scatterBlock:scatterBlock, block3Skeleton:block3Skeleton, meansOf:meansOf, mount:mount };
+    module.exports={ scatterBlock:scatterBlock, block3Skeleton:block3Skeleton, mount:mount };
   }
 })();

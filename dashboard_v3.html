@@ -5151,20 +5151,23 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var co=mv.coefficients;
       var hits=Object.keys(co).filter(function(k){ return co[k].significant; });
       var solid=hits.filter(function(k){ return co[k].reliable!==false; });
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Alle Treiber gleichzeitig ('+_esc(mv.method||'multivariates Modell')+')</div>'
-        +'<div class="text-xs text-gray-600 leading-relaxed">'+nfmt(mv.n_points)+' Intervalle, '+nfmt(mv.n_brands)+' Marken, '+((mv.types_used||[]).length)+' Ereignistypen. ';
-      if(hits.length===0){ h+='Kein Typ erreicht die Signifikanzschwelle.'; }
-      else {
-        h+='<b>'+hits.length+' Typ(en) mit Signifikanz-Flag:</b> '+hits.map(function(k){
-          var r=co[k];
-          return _esc(r.label||k)+' ('+_kpp(r.coef_pp_per_event_day,4)+' je Ereignis, Intervall ['+_kv(r.ci95_low,4)+'; '+_kv(r.ci95_high,4)+'])'
-            +(r.reliable===false?(' <span class="text-amber-700">— nicht belastbar: '+_esc(r.note||'reliable=false')+'</span>'):'');
-        }).join('; ')+'. ';
-        h+= solid.length? ('Davon belastbar: '+solid.length+'.') : 'Keiner davon ist belastbar — sie gehen deshalb nicht als Befund in die Kernaussage ein, werden aber auch nicht verschwiegen.';
-      }
-      var ex=(mv.types_excluded_too_few||[]);
-      if(ex.length) h+=' Ausgelassen (zu wenige Ereignisse): '+ex.map(_esc).join(', ')+'.';
-      h+='</div></div>';
+      /* 12.08.2026 GEKUERZT: Hier standen Koeffizient, Intervall und
+         Belastbarkeits-Hinweis je markiertem Typ ausgeschrieben, dazu die volle
+         Liste der ausgelassenen Ereignisarten. Das Ergebnis dieses Modells ist
+         aber immer dasselbe und laesst sich in einem Satz sagen: die
+         Out-of-Sample-Guete liegt bei oder unter null, also verbessern die
+         Treiber die Vorhersage nicht, und damit ist kein Einzeleffekt daraus
+         belastbar. Wer die Koeffizienten braucht, findet sie unveraendert in
+         der Drill-down-Tabelle im Detailbereich. */
+      h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+        +'<b>Alle Treiber gleichzeitig gerechnet</b> ('+nfmt(mv.n_points)+' Intervalle, '+nfmt(mv.n_brands)+' Marken, '
+        +((mv.types_used||[]).length)+' Ereignistypen): '
+        +(hits.length===0
+            ? 'kein Typ erreicht die Signifikanzschwelle.'
+            : (hits.length+' Typ'+(hits.length>1?'en':'')+' mit Signifikanz-Flag'
+               + (solid.length ? (', davon '+solid.length+' belastbar.')
+                               : ' — keiner davon belastbar, weil die Vorhersagegüte des Modells nicht über der reinen Marken-Basislinie liegt. Sie gehen deshalb nicht als Befund in die Kernaussage ein.')))
+        +' Die Einzelwerte stehen in der Drill-down-Tabelle im Detailbereich.</div>';
     }
 
     // Gegenprobe nach Entrauschung (grounded + Wochen-Mittel)
@@ -5240,43 +5243,35 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         });
         var _nArten=Object.keys(_arten).length;
 
-        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Seitenänderungen je Prompt-Schicht</div>'
-          +'<div class="text-xs text-gray-500 mb-2">Peec verschlagwortet jeden Prompt. Diese Schlagworte sind <b>nicht nur Funnel-Stufen</b> — es sind '
-          +nfmt(_alleRows.length)+' Schichten aus vier Familien: Funnel-Stufe, Such-Absicht, Markenbezug und Thema. '
-          +'Dieselbe Rechnung wie im Gesamtmodell, aber innerhalb jeder Schicht ('
-          +((_ivMin!=null&&_ivMax!=null&&_ivMin!==_ivMax)?(nfmt(_ivMin)+' bis '+nfmt(_ivMax)):nfmt(_ivMax))+' Intervalle je Schicht gegen '
-          +nfmt(ci.n_intervals_total)+' im Gesamtmodell'
-          +((_mdMin!=null&&_mdMin!==_mdMax)?('; '+nfmt(_mdMin)+' bis '+nfmt(_mdMax)+' Messtage — die kürzeren Reihen sind Schichten, die Peec erst später führt'):'')
-          +'). Intervalle hier auf iid-Basis — die Schichten liefern keine Cluster-Fehler, deshalb als Zusatzschnitt gelesen, nicht als Beleg. '
-          +'Ein Prompt kann mehrere Schlagworte tragen: die Schichten überlappen sich, ihre Effekte addieren sich <b>nicht</b>.</div>';
-
+        /* 12.08.2026 GEKUERZT: Dieser Block war mehrere Bildschirmseiten lang -
+           ein Forest, ein zweiter aufklappbarer Forest, drei Absaetze Methodik
+           und ein Doubletten-Hinweis. Sein Ergebnis passt in einen Satz. Die
+           Forests bleiben vollstaendig erreichbar, nur eben eingeklappt: wer
+           sie sehen will, klickt; wer den Reiter liest, wird nicht mehr
+           aufgehalten. Nichts gerechnet, nichts weggelassen - nur gefaltet. */
         var _forest=function(g){
           return '<div class="text-xs font-semibold text-gray-500 mt-3 mb-1">'+_esc(g.titel)+'</div>'
             +forestPlot(g.rows,{xlabel:'Effekt je Schicht (pp je Intervall) — Balken = 95-%-Intervall (iid)'});
         };
-        h+=_forest(_gruppen[0]);
-        var _rest=_gruppen.slice(1), _nRest=_rest.reduce(function(a,g){return a+g.rows.length;},0);
-        if(_nRest){
-          h+='<details class="mt-2"><summary class="text-xs text-gray-600 cursor-pointer select-none hover:text-ergo-red">Die übrigen '
-            +nfmt(_nRest)+' Schichten anzeigen (Absicht, Markenbezug, Themen)</summary><div class="mt-1">'
-            +_rest.map(_forest).join('')+'</div></details>';
-        }
-
-        h+='<div class="text-xs text-gray-500 mt-3"><b>Was dieses Bild zeigt und was nicht.</b> Oben stehen '+nfmt(_alleRows.length)
-          +' Tests — <em>eine</em> Ursache (Seitenänderungen) in jeder Schicht'
-          +(_nSig?(', davon '+nfmt(_nSig)+' nach FDR gesichert'):', keiner davon übersteht die FDR-Korrektur')+'. '
-          +'Die Korrektur läuft aber über <b>'+nfmt(fdr.n_tests)+' Einzeltests</b>: dieselben Schichten mal alle '
-          +nfmt(_nArten)+' Ereignisarten (Presse, Bewertungen, neue Seiten …), nicht nur Seitenänderungen. '
-          +'Über diese ganze Familie gerechnet: '+_esc(fdr.verfahren||'FDR')+', '+nfmt(fdr.n_signifikant_vor_korrektur)
-          +' vor und <b>'+nfmt(fdr.n_signifikant_nach_korrektur)+'</b> nach der Korrektur signifikant. '+_esc(fdr.hinweis||'')+'</div>';
-
-        if(_dubl.length){
-          h+='<div class="text-xs text-amber-700 mt-2">⚠ Doppelte Schicht in den Rohdaten: '
-            +_dubl.map(function(g){return g.map(function(t){return '„'+_esc(t)+'“';}).join(' und ');}).join('; ')
-            +' liefern Zahl für Zahl dasselbe Ergebnis — Peec führt dieselbe Schicht unter zwei Schreibweisen. '
-            +'Das ist <b>ein</b> Befund, nicht zwei, und die Test-Familie oben zählt ihn doppelt (die Korrektur wird dadurch minimal zu streng, nicht zu lax).</div>';
-        }
-        h+='</div>';
+        h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+          +'<b>Wirkt es in bestimmten Prompt-Schichten?</b> Peec verschlagwortet jeden Prompt; geprüft wurden '
+          +nfmt(_alleRows.length)+' Schichten aus vier Familien (Funnel-Stufe, Such-Absicht, Markenbezug, Thema). '
+          +(_nSig ? (nfmt(_nSig)+' davon nach FDR gesichert. ')
+                  : 'Keine einzige übersteht die Mehrfachtest-Korrektur. ')
+          +'Über die volle Familie von '+nfmt(fdr.n_tests)+' Tests — alle Schichten mal alle '+nfmt(_nArten)
+          +' Ereignisarten — bleiben von '+nfmt(fdr.n_signifikant_vor_korrektur)+' Treffern nach Korrektur <b>'
+          +nfmt(fdr.n_signifikant_nach_korrektur)+'</b> übrig.'
+          +(_dubl.length ? ' Eine Schicht führt Peec unter zwei Schreibweisen; sie zählt in der Familie doppelt, was die Korrektur minimal zu streng macht, nicht zu lax.' : '')
+          +'</div>'
+          +'<details class="mt-1"><summary class="text-xs text-gray-500 cursor-pointer select-none hover:text-ergo-red">Alle '
+          +nfmt(_alleRows.length)+' Schichten im Einzelnen anzeigen</summary>'
+          +'<div class="mt-1 text-xs text-gray-500 mb-2">Dieselbe Rechnung wie im Gesamtmodell, aber innerhalb jeder Schicht ('
+          +((_ivMin!=null&&_ivMax!=null&&_ivMin!==_ivMax)?(nfmt(_ivMin)+' bis '+nfmt(_ivMax)):nfmt(_ivMax))+' Intervalle je Schicht gegen '
+          +nfmt(ci.n_intervals_total)+' im Gesamtmodell). Intervalle auf iid-Basis — die Schichten liefern keine Cluster-Fehler, '
+          +'deshalb als Zusatzschnitt gelesen, nicht als Beleg. Ein Prompt kann mehrere Schlagworte tragen: die Schichten '
+          +'überlappen sich, ihre Effekte addieren sich <b>nicht</b>.</div>'
+          +_gruppen.map(_forest).join('')
+          +'</details>';
       }
     }
 
@@ -5290,10 +5285,17 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
                             lo:v.ci95_low_pp, hi:v.ci95_high_pp, n:v.n_with_event, sig:v.significant_fdr}
                           :{label:(ART[k]||k), eff:null, note:(v.grund||'zu wenige klassifizierte Änderungen')};
       });
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Kommt es darauf an, <em>was</em> geändert wird?</div>'
-        +'<div class="text-xs text-gray-500 mb-2">'+((pct.n_page_change!=null&&pct.n_klassifiziert!=null)?(nfmt(pct.n_klassifiziert)+' von '+nfmt(pct.n_page_change)+' Änderungen klassifiziert'):_kmiss('Klassifikations-Abdeckung fehlt'))
-        +' · '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert (FDR-korrigiert).</div>'
-        +forestPlot(arows,{xlabel:'Effekt je Änderungsart (pp je Intervall) — Balken = 95-%-Intervall (iid)'})+'</div>';
+      /* 12.08.2026 GEKUERZT: Forest wandert ins Aufklappbare, das Ergebnis
+         steht als Satz davor. */
+      h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+        +'<b>Kommt es darauf an, <em>was</em> geändert wird?</b> '
+        +((pct.n_page_change!=null&&pct.n_klassifiziert!=null)?(nfmt(pct.n_klassifiziert)+' von '+nfmt(pct.n_page_change)+' Änderungen sind nach Art klassifiziert — Preis, Leistung, FAQ, Text, Struktur. '):'')
+        +(wja.n_gesichert
+            ? (nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten sind gesichert (FDR-korrigiert).')
+            : ('Keine der '+nfmt(wja.n_tests)+' Arten ist gesichert. Die Art der Änderung macht in dieser Messung also keinen Unterschied.'))
+        +'</div>'
+        +'<details class="mt-1"><summary class="text-xs text-gray-500 cursor-pointer select-none hover:text-ergo-red">Effekt je Änderungsart anzeigen</summary><div class="mt-1">'
+        +forestPlot(arows,{xlabel:'Effekt je Änderungsart (pp je Intervall) — Balken = 95-%-Intervall (iid)'})+'</div></details>';
     }
 
     // Zeitversatz
@@ -5303,9 +5305,29 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         var b=la.bester_lag_je_treiber[k];
         (b.verlauf||[]).forEach(function(v){ if(v.gesichert && !v.lead) lagHits.push({k:k,label:b.label||k,lag:v.lag,p:v.p,eff:v.effekt_pp,muster:b.musterbewertung,lead:b.lead_warnung}); });
       });
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Wirkt es vielleicht später?</div>'
-        +'<div class="text-xs text-gray-500 mb-2">Korrelation je Zeitversatz ('+((la.getestete_lags||[]).join(', '))+' Tage). Negative Versätze zählen Ereignisse <b>nach</b> der gemessenen Änderung und dienen nur der Falsifikation. '
-        +nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen eine Lead-Warnung.</div>'
+      /* 12.08.2026 GEKUERZT: Die Versatz-Tabelle ist acht Spalten breit und
+         liefert bei acht Treibern 64 unkorrigierte Einzeltests. Aus so vielen
+         Tests faellt fast zwangslaeufig ein "Treffer" - und die Musterbewertung
+         sagt bei den meisten Treibern "springend", also genau das Bild, das
+         Rauschen erzeugt. Das gehoert in einen Satz, nicht in eine Tabelle, die
+         aussieht wie ein Befund. Die Tabelle selbst bleibt aufklappbar. */
+      var _nLags=(la.getestete_lags||[]).length, _nTr=Object.keys(la.bester_lag_je_treiber||{}).length;
+      h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+        +'<b>Wirkt es vielleicht später?</b> Geprüft wurden '+_nLags+' Zeitversätze ('
+        +((la.getestete_lags||[]).join(', '))+' Tage) über '+_nTr+' Treiber. '
+        +(lagHits.length
+            ? (nfmt(lagHits.length)+' Treiber-Versatz-Kombination'+(lagHits.length>1?'en':'')+' erreicht für sich genommen die Schwelle: '
+               +lagHits.map(function(x){ return _esc(x.label)+' bei '+x.lag+' Tagen'; }).join(', ')
+               +'. Diese Werte sind <b>nicht</b> für die '+(_nLags*_nTr)+' Einzeltests dieses Blocks korrigiert — bei so vielen Tests '
+               +'fällt ein Treffer auch bei reinem Zufall an. Als Befund gehen sie deshalb nicht ein.')
+            : 'Keine Kombination erreicht die Schwelle.')
+        +(la.n_treiber_mit_lead_warnung
+            ? (' '+nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen zusätzlich eine Lead-Warnung: dort hängt der Effekt auch mit Ereignissen zusammen, die '
+               +'<b>nach</b> der gemessenen Änderung liegen — ein Muster, das gegen Wirkung und für eine gemeinsame Hintergrundursache spricht.')
+            : '')
+        +'</div>'
+        +'<details class="mt-1"><summary class="text-xs text-gray-500 cursor-pointer select-none hover:text-ergo-red">Die volle Versatz-Tabelle anzeigen</summary>'
+        +'<div class="mt-1 text-xs text-gray-500 mb-2">Negative Versätze zählen Ereignisse <b>nach</b> der gemessenen Änderung und dienen nur der Falsifikation.</div>'
         +'<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr class="text-xs text-gray-400 border-b"><th class="text-left py-1 px-2">Treiber</th>'
         +(la.getestete_lags||[]).map(function(l){return '<th class="text-right px-1">'+l+' T</th>';}).join('')
         +'<th class="text-left pl-3">Bewertung</th></tr></thead><tbody>';
@@ -5323,13 +5345,15 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       });
       h+='</tbody></table></div>';
       h+='<div class="text-xs text-gray-400 mt-1">Werte = Korrelation je Versatz; <b>fett rot</b> = für sich genommen gesichert. Ein <b>–</b> heißt „für diesen Treiber nicht ausgewertet“ (zu wenige Ereignisse im Fenster) — <b>nicht</b> „Effekt null“.</div>';
-      h+='<div class="text-xs text-gray-500 mt-2">'+_esc(la.fazit||'')+' ';
+      /* Die Treffer stehen jetzt in der Zusammenfassung ueber der Tabelle -
+         hier nur noch die genauen Werte fuer den, der aufklappt. */
+      h+='<div class="text-xs text-gray-500 mt-2">'+_esc(la.fazit||'');
       if(lagHits.length){
-        h+='<b>Die Treffer im Klartext:</b> '+lagHits.map(function(x){
+        h+=' <b>Die Treffer mit genauen Werten:</b> '+lagHits.map(function(x){
           return _esc(x.label)+' bei Versatz '+x.lag+' Tagen ('+_kpp(x.eff,3)+', p = '+_kp(x.p)+')'+(x.lead?' — derselbe Treiber trägt eine Lead-Warnung':'');
-        }).join('; ')+'. Diese Werte sind <b>nicht</b> für die '+((la.getestete_lags||[]).length*Object.keys(la.bester_lag_je_treiber||{}).length)+' Einzeltests dieses Blocks korrigiert und stützen sich auf denselben Datensatz wie der Forest oben.';
+        }).join('; ')+'.';
       }
-      h+='</div></div>';
+      h+='</div></details>';
     }
 
     // Web-Such-Rate

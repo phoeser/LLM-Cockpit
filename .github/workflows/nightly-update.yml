@@ -143,6 +143,16 @@ jobs:
       - name: Faktenblatt fuer GEOrg erzeugen
         run: python scripts/geo_faktenblatt.py
 
+      # Muss VOR dem Commit laufen: der Sync schreibt den neuen Stand nach
+      # data/georg.json, und der soll im selben Commit landen. Ohne gesetzte
+      # Secrets tut der Schritt nichts und endet gruen.
+      - name: GEOrg-Wissensbasis aktualisieren (still, wenn nicht eingerichtet)
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          GEORG_AGENT_ID: ${{ secrets.GEORG_AGENT_ID }}
+        run: python scripts/georg_sync.py
+        continue-on-error: true
+
       - name: Daten-Dateien zurueck in main committen
         run: |
           git config user.name "github-actions[bot]"
@@ -178,6 +188,7 @@ jobs:
           git add data/intervention_results.json 2>/dev/null || true
           git add data/interventions.json 2>/dev/null || true
           git add data/geo_faktenblatt.md 2>/dev/null || true
+          git add data/georg.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
           git commit -m "data: nightly update (alle Daten + Events)"
           for i in 1 2 3; do
@@ -186,16 +197,6 @@ jobs:
             echo "Push fehlgeschlagen, Versuch $i"; sleep 10
           done
           echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1
-
-      # Nach dem Commit: GEOrg bekommt das Faktenblatt von heute Nacht. Ohne
-      # gesetzte Secrets tut der Schritt nichts und endet gruen - so laeuft der
-      # Nightly unveraendert weiter, bis der Agent tatsaechlich eingerichtet ist.
-      - name: GEOrg-Wissensbasis aktualisieren (still, wenn nicht eingerichtet)
-        env:
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          GEORG_AGENT_ID: ${{ secrets.GEORG_AGENT_ID }}
-        run: python scripts/georg_sync.py
-        continue-on-error: true
 
       - name: Build und Deploy
         uses: ./.github/actions/build-and-deploy

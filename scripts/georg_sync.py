@@ -122,6 +122,24 @@ def main():
     print(f"GEOrg: Agent zeigt jetzt auf das neue Faktenblatt "
           f"({len(behalten)} fremde Dokumente unveraendert).")
 
+    # Das Dashboard zeigt neben dem Widget, von wann GEOrgs Wissen stammt. Stuende
+    # dort ein festes Datum, waere die Angabe nach dem ersten Nightly falsch - und
+    # zwar unauffaellig falsch, was schlimmer ist als gar keine Angabe.
+    cfg_pfad = os.path.join(BASIS, "data", "georg.json")
+    try:
+        with open(cfg_pfad, encoding="utf-8") as f:
+            cfg = json.load(f)
+        cfg["stand"] = stempel[:10]
+        cfg["agent_id"] = agent
+        cfg["aktiv"] = True
+        with open(cfg_pfad, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"GEOrg: data/georg.json auf Stand {stempel[:10]} gesetzt.")
+    except Exception as e:
+        print(f"GEOrg: data/georg.json nicht aktualisiert ({e}). "
+              "Der Agent ist trotzdem aktuell; nur die Datumsangabe am Widget nicht.")
+
     for d in alt_eigene:
         try:
             ruf(f"/v1/convai/knowledge-base/{d.get('id')}?force=true", key, "DELETE")

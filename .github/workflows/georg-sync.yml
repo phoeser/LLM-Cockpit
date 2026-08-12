@@ -1,0 +1,82 @@
+name: GEOrg-Wissensbasis jetzt aktualisieren
+
+# Warum es diesen Workflow gibt (12.08.2026):
+#
+# Der Abgleich laeuft ohnehin jede Nacht im Nightly mit. Dieser Workflow macht
+# nichts anderes - nur auf Knopfdruck. Zweck: Nach dem Eintragen des Secrets
+# soll sich in einer halben Minute pruefen lassen, ob es funktioniert, statt
+# bis zum naechsten Morgen zu warten. Und wenn am Faktenblatt etwas geaendert
+# wird, laesst sich GEOrg sofort nachziehen, ohne den vollen Nightly (rund eine
+# Stunde Crawls und Modellrechnung) nur dafuer laufen zu lassen.
+#
+# Er rechnet NICHTS neu. Er nimmt data/geo_faktenblatt.md so, wie der letzte
+# Nightly es hinterlassen hat, und laedt es zu ElevenLabs hoch.
+#
+# Benoetigt genau ein Secret: ELEVENLABS_API_KEY.
+# Die Agenten-ID kommt aus data/georg.json und ist kein Geheimnis.
+
+on:
+  workflow_dispatch:
+
+# Gleiche Gruppe wie Nightly und Deploy: der Schritt schreibt data/georg.json
+# zurueck und darf sich mit den anderen nicht den Push wegschiessen.
+concurrency:
+  group: repo-writes
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Vorpruefung — ist alles da?
+        run: |
+          fehlt=0
+          if [ ! -f data/geo_faktenblatt.md ]; then
+            echo "FEHLER: data/geo_faktenblatt.md fehlt. Erst den Nightly laufen lassen."
+            fehlt=1
+          else
+            echo "Faktenblatt: $(wc -c < data/geo_faktenblatt.md) Zeichen"
+          fi
+          if [ -z "${{ secrets.ELEVENLABS_API_KEY }}" ]; then
+            echo "FEHLER: Secret ELEVENLABS_API_KEY ist nicht gesetzt."
+            echo "Anlegen unter: Settings > Secrets and variables > Actions > New repository secret"
+            echo "Name exakt: ELEVENLABS_API_KEY"
+            fehlt=1
+          else
+            echo "Secret ELEVENLABS_API_KEY: gesetzt"
+          fi
+          exit $fehlt
+
+      # Hier bewusst OHNE continue-on-error: Wer diesen Workflow von Hand
+      # startet, will wissen, ob es geklappt hat. Ein gruener Lauf, der in
+      # Wahrheit nichts getan hat, waere hier genau das Falsche.
+      - name: Wissensbasis hochladen und anhaengen
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: python scripts/georg_sync.py
+
+      - name: Neuen Stand zurueck in main committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/georg.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "Kein neuer Stand zu committen."; exit 0; fi
+          git commit -m "data: GEOrg-Wissensbasis aktualisiert (manueller Lauf)"
+          for i in 1 2 3; do
+            git pull --rebase origin main || git rebase --abort 2>/dev/null || true
+            if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
+            echo "Push fehlgeschlagen, Versuch $i"; sleep 10
+          done
+          echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1

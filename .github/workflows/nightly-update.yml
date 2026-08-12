@@ -144,12 +144,15 @@ jobs:
         run: python scripts/geo_faktenblatt.py
 
       # Muss VOR dem Commit laufen: der Sync schreibt den neuen Stand nach
-      # data/georg.json, und der soll im selben Commit landen. Ohne gesetzte
-      # Secrets tut der Schritt nichts und endet gruen.
-      - name: GEOrg-Wissensbasis aktualisieren (still, wenn nicht eingerichtet)
+      # data/georg.json, und der soll im selben Commit landen.
+      #
+      # Es braucht genau EIN Secret: ELEVENLABS_API_KEY. Die Agenten-ID kommt
+      # aus data/georg.json - sie ist kein Geheimnis, sie steht ohnehin im
+      # ausgelieferten HTML. Fehlt das Secret, sagt der Schritt im Protokoll
+      # was fehlt und endet gruen, statt den Nightly rot zu faerben.
+      - name: GEOrg-Wissensbasis aktualisieren
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          GEORG_AGENT_ID: ${{ secrets.GEORG_AGENT_ID }}
         run: python scripts/georg_sync.py
         continue-on-error: true
 

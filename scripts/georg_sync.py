@@ -60,13 +60,47 @@ def ruf(pfad, key, methode="GET", koerper=None):
     return json.loads(roh) if roh.strip() else {}
 
 
+def agent_id_ermitteln():
+    """Die Agenten-ID ist KEIN Geheimnis - sie steht ohnehin im ausgelieferten
+    HTML, damit das Widget sie benutzen kann. Sie als GitHub-Secret zu fuehren
+    haette nur bedeutet, dass Paul zwei Dinge eintragen muss statt einem, und
+    dass die ID an zwei Stellen gepflegt werden will. Quelle ist deshalb
+    data/georg.json - dieselbe Datei, aus der auch das Dashboard sie liest.
+    Eine Umgebungsvariable ueberschreibt sie weiterhin, falls doch einmal ein
+    anderer Agent angesprochen werden soll."""
+    aus_umgebung = (os.environ.get("GEORG_AGENT_ID") or "").strip()
+    if aus_umgebung:
+        return aus_umgebung, "Umgebungsvariable GEORG_AGENT_ID"
+    try:
+        with open(os.path.join(BASIS, "data", "georg.json"), encoding="utf-8") as f:
+            cfg = json.load(f)
+        return (cfg.get("agent_id") or "").strip(), "data/georg.json"
+    except Exception as e:
+        print(f"GEOrg: data/georg.json nicht lesbar ({e}).", file=sys.stderr)
+        return "", "data/georg.json (nicht lesbar)"
+
+
 def main():
     key = (os.environ.get("ELEVENLABS_API_KEY") or "").strip()
-    agent = (os.environ.get("GEORG_AGENT_ID") or "").strip()
-    if not key or not agent:
-        print("GEOrg: keine Zugangsdaten gesetzt — Schritt uebersprungen. "
-              "Das ist kein Fehler; der Agent ist noch nicht eingerichtet.")
+    agent, quelle = agent_id_ermitteln()
+
+    if not agent:
+        print("GEOrg: keine Agenten-ID gefunden — Schritt uebersprungen. "
+              f"Erwartet in {quelle}.")
         return 0
+    if not key:
+        # Bewusst gruen: solange das Secret fehlt, soll der Nightly nicht rot
+        # werden. Aber die Meldung muss sagen, was genau fehlt und was die
+        # Folge ist - sonst faellt es niemandem auf.
+        print("GEOrg: Secret ELEVENLABS_API_KEY ist nicht gesetzt — Wissensbasis "
+              "wird NICHT aktualisiert. GEOrg antwortet weiter mit dem zuletzt "
+              "hochgeladenen Faktenblatt und veraltet damit von Tag zu Tag.")
+        print("Zum Beheben: im Repository unter Settings > Secrets and variables "
+              "> Actions ein Secret ELEVENLABS_API_KEY mit dem ElevenLabs-"
+              "Schluessel anlegen. Mehr ist nicht noetig.")
+        return 0
+
+    print(f"GEOrg: Agent {agent} (Quelle: {quelle})")
 
     if not os.path.exists(FAKTEN):
         print("FEHLER: data/geo_faktenblatt.md fehlt — erst geo_faktenblatt.py laufen lassen.",

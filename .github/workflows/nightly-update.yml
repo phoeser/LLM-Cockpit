@@ -128,7 +128,21 @@ jobs:
       # braucht beide: die Presse-Historie fuer die Domain und die
       # Zitat-Auswertung fuer die Frage, ob diese Domain zitiert wird.
       # Reihenfolge deshalb: content_citations, dann anreichern, dann rechnen.
+      # 12.08.2026: GITHUB_TOKEN/GEO_REPO hier ergaenzt. Der Schritt lief zuvor
+      # ohne Umgebung und funktionierte trotzdem - content_citations.py faellt
+      # dann auf die UNAUTHENTIFIZIERTE GitHub-Contents-API zurueck, und die
+      # greift auf einem Actions-Runner fuer ein oeffentliches Repo. Nur eben
+      # mit 60 Anfragen pro Stunde je Runner-IP, die sich alle GitHub-Nutzer
+      # dieser IP teilen. Faellt das um, meldet content_citations.py
+      # "eigener_crawl available=false", rechnet stillschweigend ohne den
+      # halben Datenbestand weiter - die Zitat-Trefferquote halbiert sich dann
+      # (ERGO 5,0 % -> 2,1 %) - und continue-on-error faerbt den Lauf trotzdem
+      # gruen. Mit Token sind es 1.000 Anfragen pro Stunde und der Ausfall
+      # kann so nicht entstehen.
       - name: SoV-Historie aufzeichnen + Korrelations-/Impact-Analyse
+        env:
+          GITHUB_TOKEN: ${{ secrets.GEO_REPRO_TOKEN }}
+          GEO_REPO: phoeser/geo-visibility-tool
         run: |
           python scripts/sov_history.py
           python scripts/content_citations.py

@@ -124,12 +124,17 @@ jobs:
         run: python scripts/track_drivers.py
         continue-on-error: true
 
+      # Muss VOR correlation_impact laufen und NACH content_citations - es
+      # braucht beide: die Presse-Historie fuer die Domain und die
+      # Zitat-Auswertung fuer die Frage, ob diese Domain zitiert wird.
+      # Reihenfolge deshalb: content_citations, dann anreichern, dann rechnen.
       - name: SoV-Historie aufzeichnen + Korrelations-/Impact-Analyse
         run: |
           python scripts/sov_history.py
+          python scripts/content_citations.py
+          python scripts/enrich_press_events.py
           python scripts/correlation_impact.py
           python scripts/intervention_analysis.py
-          python scripts/content_citations.py
         continue-on-error: true
 
       - name: Pipeline-Health schreiben (Frische je Daten-Element)

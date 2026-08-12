@@ -3437,6 +3437,158 @@ def funnel_stratified_analysis(events, mv_prior=None):
     return base
 
 
+def press_by_citation_class(events):
+    """Presse-Wirkung getrennt nach dem Medium, in dem der Artikel erschien.
+
+    WARUM DIESER BLOCK EXISTIERT (12.08.2026):
+    Bis heute war "Presse" EIN Topf. Darin lagen Artikel auf Domains, die die
+    Sprachmodelle taeglich zitieren (finanztip.de: 28.306 Zitate im
+    30-Tage-Fenster), zusammen mit Artikeln auf Domains, die in keiner einzigen
+    Antwort vorkommen (ad-hoc-news.de: 132 Artikel im Bestand, null Zitate).
+    Ein Effekt, den es nur in der ersten Gruppe gibt, mittelt sich gegen die
+    zweite zu genau der Null heraus, die das Modell fuer press_mention und
+    news_mention ausweist.
+
+    Die Klasse steht seit scripts/enrich_press_events.py in
+    detail.zitat_klasse. Sie wird NICHT hier vergeben - dieser Block liest nur.
+
+    Zwei Vorbehalte, die zur Auslegung gehoeren:
+    1. Beobachtung, kein Eingriff. Wer in zitierten Medien vorkommt, ist
+       vermutlich ohnehin die groessere oder aktivere Marke. Ein Unterschied
+       zwischen den Klassen belegt keine Wirkung der Platzierung.
+    2. Die Klasse "unbekannt" ist keine dritte Sorte Medium, sondern eine
+       fehlende Zuordnung. Sie wird ausgewiesen, aber nicht geschaetzt.
+    """
+    KLASSEN = {
+        "zitiert_redaktionell": "Presse in zitierten Redaktionsmedien",
+        "nicht_zitiert": "Presse in nicht zitierten Medien",
+        "zitiert_marke": "Beitraege auf zitierten Markenseiten (Newsrooms)",
+    }
+    n_gesamt = 0
+    zaehler = {}
+    domains = {}
+    for e in events:
+        if e.get("event_type") not in ("press_mention", "news_mention"):
+            continue
+        n_gesamt += 1
+        d = e.get("detail") or {}
+        k = d.get("zitat_klasse") or "unbekannt"
+        zaehler[k] = zaehler.get(k, 0) + 1
+        dom = d.get("domain")
+        if dom and k == "zitiert_redaktionell":
+            domains.setdefault(dom, {"n": 0, "zitate": d.get("domain_zitate") or 0})
+            domains[dom]["n"] += 1
+
+    out = {
+        "n_presse_events": n_gesamt,
+        "je_klasse": zaehler,
+        "klassen_label": KLASSEN,
+        "methode": ("Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der "
+                    "Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle "
+                    "der Einordnung: data/content_citations.json, gesetzt von "
+                    "scripts/enrich_press_events.py als detail.zitat_klasse."),
+        "grenzen": ("Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, "
+                    "unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein "
+                    "Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der "
+                    "Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht "
+                    "zuordnen liess - nicht, dass es nicht zitiert wird."),
+    }
+    if not n_gesamt:
+        out["available"] = False
+        out["grund"] = "Keine Presse-/News-Ereignisse vorhanden."
+        return out
+
+    zuordenbar = n_gesamt - zaehler.get("unbekannt", 0)
+    out["abdeckung"] = round(zuordenbar / n_gesamt, 4)
+    if zuordenbar < 50:
+        out["available"] = False
+        out["grund"] = (f"Nur {zuordenbar} von {n_gesamt} Presse-Ereignissen liessen sich einem "
+                        "Medium zuordnen. Fuer eine Trennung nach Zitierbarkeit zu wenig.")
+        return out
+
+    sov = build_sov_series_from_history()
+    if not sov:
+        out["available"] = False
+        out["grund"] = "Keine SoV-Historie verfuegbar."
+        return out
+
+    bydays = {}
+    for e in dedup_impact_events(events):
+        if e.get("event_type") not in ("press_mention", "news_mention"):
+            continue
+        b, day = e.get("brand"), _day(e.get("timestamp"))
+        k = (e.get("detail") or {}).get("zitat_klasse")
+        if not (b and day and k) or k == "unbekannt":
+            continue
+        bydays.setdefault(b, {}).setdefault(day, {})
+        bydays[b][day][k] = bydays[b][day].get(k, 0) + 1
+
+    schluessel = [k for k in KLASSEN if zaehler.get(k)]
+    points, _skip = build_intervals(sov, bydays, schluessel)
+    ys = [pt["y"] for pt in points]
+    res = {}
+    for k in schluessel:
+        xs = [pt["x"].get(k, 0.0) for pt in points]
+        n_with = sum(1 for x in xs if x > 0)
+        if n_with < 8:
+            res[k] = {"available": False, "label": KLASSEN[k], "n_with_event": n_with,
+                      "n_events": zaehler.get(k, 0),
+                      "grund": f"nur {n_with} Intervalle mit dieser Klasse, noetig sind 8"}
+            continue
+        eff, se_iid, lo_i, hi_i, sig_i, pv_i = _effect_ci(xs, ys)
+        cl = _cluster_effect(points, xs, eff, se_iid)
+        eintrag = {
+            "available": True, "label": KLASSEN[k],
+            "avg_sov_effect_pp": eff,
+            "n_intervals": len(points), "n_with_event": n_with,
+            "n_events": zaehler.get(k, 0),
+            "significant_iid": sig_i, "p_iid": pv_i,
+        }
+        if cl:
+            eintrag.update({
+                "effect_se_cluster_pp": cl["se"],
+                "ci95_low_cluster_pp": cl["ci_low"],
+                "ci95_high_cluster_pp": cl["ci_high"],
+                "p_cluster": cl["p"],
+                "n_clusters": cl["n_clusters"],
+                "cluster_df": cl["df"],
+                "significance_basis": "cluster",
+                "significant": (cl["ci_low"] is not None and cl["ci_high"] is not None
+                                and (cl["ci_low"] > 0 or cl["ci_high"] < 0)),
+            })
+        else:
+            eintrag.update({
+                "significance_basis": "nicht_schaetzbar",
+                "significant": None,
+                "grund_cluster": ("Cluster-robuste Schaetzung nicht moeglich - zu wenige Marken "
+                                  "mit oder ohne Ereignis dieser Klasse."),
+            })
+        res[k] = eintrag
+
+    out["available"] = True
+    out["wirkung_je_klasse"] = res
+    out["top_domains"] = sorted(
+        [{"domain": d, "n_artikel": v["n"], "zitate": v["zitate"]} for d, v in domains.items()],
+        key=lambda x: -x["zitate"])[:12]
+
+    # Der eigentliche Vergleich: unterscheiden sich die beiden Klassen?
+    a = res.get("zitiert_redaktionell") or {}
+    b = res.get("nicht_zitiert") or {}
+    if a.get("available") and b.get("available") and a.get("avg_sov_effect_pp") is not None \
+       and b.get("avg_sov_effect_pp") is not None:
+        diff = a["avg_sov_effect_pp"] - b["avg_sov_effect_pp"]
+        # Bewusst OHNE Signifikanztest auf die Differenz: die beiden Schaetzer
+        # stammen aus demselben Intervall-Datensatz und sind nicht unabhaengig.
+        # Ein naiver Zweistichprobentest waere hier schlicht falsch.
+        out["vergleich"] = {
+            "differenz_pp": round(diff, 3),
+            "hinweis": ("Differenz der beiden Punktschaetzer. Bewusst ohne Test: die Schaetzer "
+                        "stammen aus demselben Intervall-Datensatz und sind nicht unabhaengig - "
+                        "ein Zweistichprobentest waere hier falsch. Die Zahl zeigt die Richtung, "
+                        "nicht mehr."),
+        }
+    return out
+
 def page_change_by_type(events):
     """page_change nach Aenderungsart aufgeschluesselt (Preis/Leistung/FAQ/Copy/Struktur).
 
@@ -4835,6 +4987,7 @@ def main():
         print("WARN lag_analysis:", str(_e)[:120])
     try:
         res["page_change_types"] = page_change_by_type(events)
+        res["press_by_citation"] = press_by_citation_class(events)
     except Exception as _e:
         print("WARN page_change_types:", str(_e)[:120])
     _prior = {t: c.get('coef_pp_per_event_day', 0.0)

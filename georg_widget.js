@@ -27,26 +27,14 @@
     if (GELADEN || !cfg || !cfg.agent_id || cfg.aktiv === false) return;
     GELADEN = true;
 
-    // Hinweiszeile ueber dem Widget: GEOrg antwortet aus dem Faktenblatt vom
-    // letzten Nightly, nicht aus den Live-Daten dieser Seite. Wer das nicht
-    // weiss, haelt eine Abweichung fuer einen Fehler.
-    var hinweis = document.createElement("div");
-    hinweis.id = "georgHinweis";
-    hinweis.style.cssText =
-      "position:fixed;right:16px;bottom:96px;max-width:250px;z-index:2147483000;" +
-      "background:#fff;border:1px solid #e5e7eb;border-left:3px solid #dc0028;" +
-      "border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.45;color:#4b5563;" +
-      "box-shadow:0 2px 10px rgba(0,0,0,.08)";
-    hinweis.innerHTML =
-      '<b style="color:#1a1a2e">GEOrg</b> beantwortet Fragen zu diesen Daten. ' +
-      "Er kennt den Stand des letzten Nightly" +
-      (cfg.stand ? " (" + String(cfg.stand).slice(0, 10) + ")" : "") +
-      " — nicht mehr und nicht weniger. " +
-      '<span style="color:#9ca3af">Antworten sind maschinell erzeugt; bei Zahlen gilt das Dashboard.</span>' +
-      '<button onclick="document.getElementById(\'georgHinweis\').remove()" ' +
-      'style="display:block;margin-top:5px;font-size:10px;color:#9ca3af;background:none;' +
-      'border:none;padding:0;cursor:pointer">ausblenden</button>';
-
+    /* 12.08.2026 ENTFERNT (Wunsch Paul): Hier stand eine kleine Hinweiskarte
+       ueber dem Widget - "GEOrg kennt den Stand des letzten Nightly ...".
+       Sie stand dauerhaft im Bild und wiederholte, was GEOrg im Gespraech
+       ohnehin sagt: sein Systemprompt weist ihn an, den Stand zu nennen, wenn
+       jemand nach Aktualitaet fragt oder eine Zahl abweicht. Der Vorbehalt
+       geht also nicht verloren, er steht nur nicht mehr staendig da.
+       Derselbe Text liegt zusaetzlich im Zustimmungshinweis des Widgets
+       (platform_settings.widget.terms_text). */
     var widget = document.createElement("elevenlabs-convai");
     widget.setAttribute("agent-id", cfg.agent_id);
 
@@ -57,14 +45,11 @@
     // Laedt der Anbieter nicht, bleibt die Seite unveraendert - der Hinweis
     // waere dann eine Schaltflaeche ohne Funktion und verschwindet mit.
     s.onerror = function () {
-      var h = document.getElementById("georgHinweis");
-      if (h) h.remove();
       try { widget.remove(); } catch (e) {}
       console.warn("GEOrg: Widget-Skript nicht erreichbar — Dashboard laeuft unveraendert weiter.");
     };
 
     document.body.appendChild(widget);
-    document.body.appendChild(hinweis);
     document.body.appendChild(s);
   }
 

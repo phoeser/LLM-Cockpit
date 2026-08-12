@@ -5636,6 +5636,87 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     return h+'</div>';
   }
 
+  /* ---------- Presse nach Zitierbarkeit des Mediums (12.08.2026) ----------
+     Der Reiter fuehrte "Presse" bisher als einen Treiber. Darin lagen Artikel
+     auf Domains, die die Modelle taeglich zitieren, zusammen mit Artikeln auf
+     Domains, die in keiner Antwort vorkommen. Ein Effekt, den es nur in der
+     ersten Gruppe gibt, mittelt sich gegen die zweite zur Null heraus. Dieser
+     Block trennt die beiden. */
+  function kPresse(ci){
+    var p=ci.press_by_citation||{};
+    if(!p.n_presse_events) return '';
+    var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
+      +'<h3 class="text-base font-bold text-ergo-dark mb-1">Wirkt Presse anders, wenn sie dort erscheint, wo die Modelle zitieren?</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Bis zum 12.08.2026 war „Presse" ein einziger Treiber. Ein Artikel auf einer Domain, '
+      +'die im Messfenster zehntausende Zitate auf sich zieht, zählte genauso wie einer auf einer Domain, die in keiner '
+      +'Antwort vorkommt. Hier stehen beide getrennt.</p>';
+
+    if(p.available===false){
+      return h+'<div class="text-sm text-gray-400">Keine Angabe — '+_esc(p.grund||'')+'</div></div>';
+    }
+    var jk=p.je_klasse||{}, L=p.klassen_label||{};
+    var rows=[];
+    Object.keys(p.wirkung_je_klasse||{}).forEach(function(k){
+      var v=p.wirkung_je_klasse[k];
+      if(v.available===false){
+        rows.push({label:(v.label||L[k]||k), eff:null, note:(v.grund||'nicht schätzbar')});
+      } else {
+        rows.push({label:(v.label||L[k]||k),
+          sub:nfmt(v.n_events)+' Ereignisse · '+nfmt(v.n_with_event)+' Intervalle · '+nfmt(v.n_clusters)+' Marken'
+              +(v.p_cluster!=null?(' · p '+_kp(v.p_cluster)):''),
+          eff:v.avg_sov_effect_pp, lo:v.ci95_low_cluster_pp, hi:v.ci95_high_cluster_pp,
+          sig:(v.significant===true), n:v.n_with_event});
+      }
+    });
+    h+=forestPlot(rows,{xlabel:'Effekt auf Share of Voice (pp je Intervall) — Balken = 95-%-Intervall, cluster-robust je Marke'});
+
+    var gesichert=Object.keys(p.wirkung_je_klasse||{}).filter(function(k){ return p.wirkung_je_klasse[k].significant===true; });
+    h+='<div class="text-xs text-gray-600 mt-3 leading-relaxed">';
+    if(gesichert.length){
+      h+='<b>'+gesichert.length+' Klasse'+(gesichert.length>1?'n':'')+' gesichert.</b> ';
+    } else {
+      h+='<b>Keine der Klassen ist gesichert</b> — die Intervalle überspannen die Null. ';
+    }
+    if(p.vergleich && p.vergleich.differenz_pp!=null){
+      h+='Die Richtung stimmt allerdings mit der Erwartung überein: Artikel in zitierten Redaktionsmedien liegen '
+        +'um '+_kv(Math.abs(p.vergleich.differenz_pp),2)+' Prozentpunkte '+(p.vergleich.differenz_pp>0?'höher':'niedriger')
+        +' als Artikel in nicht zitierten Medien. '
+        +'<span class="text-gray-500">Das ist die Differenz zweier Punktschätzer, deren Intervalle sich weit überlappen — '
+        +'und bewusst ohne Test, weil beide aus demselben Datensatz stammen und nicht unabhängig sind. Richtung, nicht Nachweis.</span> ';
+    }
+    h+='</div>';
+
+    // Warum es (noch) nicht reicht - mit der Zahl, die das erklaert
+    var zr=(p.wirkung_je_klasse||{}).zitiert_redaktionell||{};
+    if(zr.n_with_event!=null){
+      h+='<div class="text-xs text-gray-600 mt-3 bg-amber-50 border-l-4 border-amber-400 rounded p-3 leading-relaxed">'
+        +'<b>Woran es liegt, und was daraus folgt.</b> Nur '+nfmt(zr.n_with_event)+' Intervalle enthalten überhaupt einen '
+        +'Artikel in einem zitierten Redaktionsmedium. Das ist zu wenig, um einen Effekt dieser Größe zu sichern — '
+        +'und der Grund dafür ist keine schwache Presse-Arbeit, sondern eine Beobachtungslücke: '
+        +'Die beiden größten Zitatquellen überhaupt werden von unserem Presse-Feed gar nicht erfasst, weil ihre Inhalte '
+        +'keine Nachrichten sind, sondern Ratgeber. Solange das so bleibt, misst dieser Block die Fachpresse und nicht '
+        +'die Medien, aus denen die Modelle tatsächlich schöpfen.</div>';
+    }
+
+    if((p.top_domains||[]).length){
+      h+='<details class="mt-3"><summary class="text-xs text-gray-500 cursor-pointer select-none hover:text-ergo-red">'
+        +'Welche zitierten Redaktionsmedien wir erfassen</summary>'
+        +'<div class="overflow-x-auto mt-2"><table class="w-full text-xs"><thead><tr class="text-gray-400 border-b">'
+        +'<th class="text-left py-1">Medium</th><th class="text-right px-2">erfasste Artikel</th><th class="text-right px-2">Zitate im Fenster</th></tr></thead><tbody>'
+        + p.top_domains.map(function(d){
+            return '<tr class="border-b"><td class="py-1">'+_esc(d.domain)+'</td>'
+              +'<td class="text-right px-2">'+nfmt(d.n_artikel)+'</td>'
+              +'<td class="text-right px-2">'+nfmt(d.zitate)+'</td></tr>'; }).join('')
+        +'</tbody></table></div></details>';
+    }
+
+    h+='<div class="text-xs text-gray-400 mt-3 leading-relaxed">'
+      +'Zuordenbar waren '+_kv(100*(p.abdeckung||0),0)+' % der '+nfmt(p.n_presse_events)+' Presse-Ereignisse; die übrigen tragen '
+      +'kein zuordenbares Medium und gehen in keine der Klassen ein — „unbekannt" heißt hier nicht „nicht zitiert". '
+      +_esc(p.grenzen||'')+'</div>';
+    return h+'</div>';
+  }
+
   /* ---------- Block 4: Wie gut ist die Messung? (inkl. Nachweisgrenze) ---------- */
   function kBlock4(ci){
     var v=ci.validation||{}, oos=(v.out_of_sample||{}).r2_oos_vs_baseline, fp=v.placebo_false_positive_rate;
@@ -6075,6 +6156,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     try { h+=kBlock1(ci); } catch(e){ console.warn('kBlock1:', e.message); }
     try { h+=kBlock2(ci, fanCsv); } catch(e){ console.warn('kBlock2:', e.message); }
     try { h+=kBlock3(ci, cc); } catch(e){ console.warn('kBlock3:', e.message); }
+    try { h+=kPresse(ci); } catch(e){ console.warn('kPresse:', e.message); }
     try { h+=kBlock4(ci); } catch(e){ console.warn('kBlock4:', e.message); }
     h+='<div class="text-xs text-gray-400 mb-4">Stand der Auswertung: '+_esc(String(ci.generated_at||'').slice(0,10))+' · Quelle: data/correlation_impact.json'+(cc&&cc.meta?(' · data/content_citations.json ('+_esc(String(cc.meta.erzeugt_am||'').slice(0,10))+')'):'')+'</div>';
     host.innerHTML=h;

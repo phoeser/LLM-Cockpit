@@ -72,7 +72,22 @@
   /* ---------- Inline-SVG-Bausteine ---------- */
 
   // Sparkline ueber die Peec-Staende. Fehlende Staende sind Luecken
-  // (URL war nicht im Top-150) und werden NICHT als 0 gezeichnet.
+  /* 12.08.2026: Hier stand ueberall fest "Top-150". Der Peec-Export liefert
+     laengst 500 URLs - die Anzeige behauptete also eine Kappung, die es nicht
+     mehr gab, und hat die eigene Abdeckung untertrieben (zwei Drittel der
+     ERGO-URLs liegen jenseits von Platz 150). Die Zahl kommt jetzt aus
+     meta.peec_url_kappung, das content_citations.py zur Laufzeit setzt.
+     Eine fest eingetragene Grenze veraltet zwangslaeufig wieder. */
+  function kapp(d){
+    var n = d && d.meta && d.meta.peec_url_kappung;
+    return n ? ("Top-" + n) : "der Peec-Auswahl";
+  }
+  function kappN(d){
+    var n = d && d.meta && d.meta.peec_url_kappung;
+    return n ? String(n) : "den meistzitierten";
+  }
+
+  // (URL war nicht in der Peec-Auswahl) und werden NICHT als 0 gezeichnet.
   function sparkline(verlauf, alleStaende, w, h) {
     w = w || 88; h = h || 22;
     var pts = [];
@@ -151,7 +166,7 @@
     var nurPplx = eigenZit.filter(function (r) { return r.peec_cit == null && r.own_cit_perplexity; });
 
     /* KORREKTUR 10.08.2026: Der Satz lautete "Von 1.099 getrackten Seiten sind 45
-       zitiert — davon 50 im Peec-Top-150". Das ist arithmetisch unmoeglich. Ursache:
+       zitiert — davon 50 in der Peec-Auswahl". Das ist arithmetisch unmoeglich. Ursache:
        das "davon" bezog sich auf die 45 GETRACKTEN, gezaehlt wurden aber peecZit und
        nurPplx ueber ALLE eigenen zitierten Seiten (50 + 48 = 98) — zwei
        Grundgesamtheiten in einem Satz. Jetzt wird die Zerlegung der 45 aus den
@@ -166,14 +181,14 @@
       kern = "Von " + num(ergo.getrackt) + " getrackten ERGO-Seiten sind " + num(ergo.zitiert) + " (" +
         pct(ergo.quote_pct) + ") überhaupt als zitierte Quelle nachweisbar";
       if (getracktZit.length) {
-        kern += " — davon " + num(gtPeec.length) + " im Peec-Top-150 und " + num(gtPplx.length) +
+        kern += " — davon " + num(gtPeec.length) + " im Peec-" + kapp(d) + " und " + num(gtPplx.length) +
           " nur im eigenen Perplexity-Lauf";
       }
       kern += ". Über die getrackte Menge hinaus sind insgesamt " + num(eigenZit.length) +
-        " eigene URLs zitiert (" + num(peecZit.length) + " im Peec-Top-150, " + num(nurPplx.length) +
+        " eigene URLs zitiert (" + num(peecZit.length) + " im Peec-" + kapp(d) + ", " + num(nurPplx.length) +
         " nur im eigenen Lauf) — diese Zahl ist größer, weil sie auch eigene Seiten enthält, die gar nicht getrackt werden.";
     } else {
-      kern = num(peecZit.length) + " eigene Seiten stehen im Peec-Top-150. Eine Trefferquote ist nicht berechenbar: " +
+      kern = num(peecZit.length) + " eigene Seiten stehen im Peec-" + kapp(d) + ". Eine Trefferquote ist nicht berechenbar: " +
         (tq.grund || "kein Nenner verfuegbar.");
     }
     var q = (d.meta && d.meta.quellen) || {};
@@ -194,7 +209,7 @@
     var rows = (d.seiten || []).filter(function (r) { return r.ist_eigene_seite && r.zitiert; });
     var html = h3("Zitierte eigene Seiten (" + rows.length + ") — sortiert nach Zitaten");
     if (!rows.length) {
-      return html + missing("Keine eigene Seite in Peec-Top-150 oder im belastbaren Teil des eigenen Crawls.");
+      return html + missing("Keine eigene Seite in der Peec-Auswahl oder im belastbaren Teil des eigenen Crawls.");
     }
     rows.sort(function (a, b) {
       return (b.peec_cit || 0) - (a.peec_cit || 0) || (b.own_cit_perplexity || 0) - (a.own_cit_perplexity || 0);
@@ -220,13 +235,13 @@
         esc(shortUrl(r.url_norm)) + "</a>" +
         (r.peec_title ? '<div style="color:#9ca3af;font-size:10px">' + esc(r.peec_title) + "</div>" : "") + "</td>" +
         '<td style="padding:6px">' + typ + "</td>" +
-        '<td style="padding:6px;text-align:right;font-weight:700">' + (r.peec_cit == null ? '<span style="color:#b0b4bb" title="nicht im Top-150 — Zitatzahl unbekannt, nicht 0">n. i. Top-150</span>' : num(r.peec_cit)) + "</td>" +
+        '<td style="padding:6px;text-align:right;font-weight:700">' + (r.peec_cit == null ? '<span style="color:#b0b4bb" title="nicht in der Peec-Auswahl — Zitatzahl unbekannt, nicht 0">nicht in Auswahl</span>' : num(r.peec_cit)) + "</td>" +
         '<td style="padding:6px">' + sparkline(r.peec_cit_verlauf, staende) + "</td>" +
         '<td style="padding:6px;text-align:right">' + (r.own_cit_perplexity == null ? '<span style="color:#b0b4bb">—</span>' : num(r.own_cit_perplexity)) + "</td>" +
         '<td style="padding:6px;color:#6b7280">' + letzte + "</td></tr>";
     });
     html += "</tbody></table></div>";
-    html += note("Peec zeigt nur die Top-150-URLs des rollierenden 30-Tage-Fensters — eine Lücke in der Sparkline heisst " +
+    html += note("Peec zeigt die " + kappN(d) + " meistzitierten URLs des rollierenden 30-Tage-Fensters — eine Lücke in der Sparkline heisst " +
       "»in diesem Stand unter der Kappung, Zitatzahl unbekannt«, nicht »0 Zitate«. Die Spalte »eigener Lauf« zählt " +
       "Quellenangaben eines einzelnen Perplexity-Laufs (" + esc(((d.kennzahlen || {}).engine_abdeckung || {}).run_id || "Lauf unbekannt") + ").");
     return html;
@@ -243,7 +258,7 @@
 
   function blockSeitentypMarkt(d) {
     var kz = (d.kennzahlen || {}).zitatanteil_je_seitentyp || {};
-    var html = h3("Woraus die Engines insgesamt zitieren (Seitentyp-Mix aller Top-150-Quellen)");
+    var html = h3("Woraus die Engines insgesamt zitieren (Seitentyp-Mix aller gelieferten Quellen)");
     if (!kz.available) return html + missing(kz.grund) + note(kz.vorbehalt);
     var max = 0;
     (kz.typen || []).forEach(function (t) { max = Math.max(max, t.zitate || 0); });
@@ -270,9 +285,9 @@
   }
 
   function blockVerlauf(d) {
-    var kz = (d.kennzahlen || {}).ergo_top150_verlauf || {};
+    var kz = (d.kennzahlen || {}).ergo_auswahl_verlauf || {};
     var med = (d.kennzahlen || {}).median_tage_bis_erstes_zitat || {};
-    var html = h3("ERGO-Seiten im Peec-Top-150 über die archivierten Stände");
+    var html = h3("ERGO-Seiten in der Peec-Auswahl über die archivierten Stände");
     if (!kz.available) return html + missing(kz.grund) + note(kz.vorbehalt);
     var max = 0;
     (kz.staende || []).forEach(function (s) { max = Math.max(max, s.zitate || 0); });
@@ -282,7 +297,7 @@
       html += '<div style="text-align:center;flex:1">' +
         '<div style="font-size:10.5px;color:#6b7280">' + num(s.zitate) + " Zitate</div>" +
         '<div style="height:' + hgt + 'px;background:' + COL.ergo + ';border-radius:3px 3px 0 0;margin:3px 0"></div>' +
-        '<div style="font-size:11px;font-weight:700">' + s.urls_im_top150 + " URLs</div>" +
+        '<div style="font-size:11px;font-weight:700">' + s.urls_in_auswahl + " URLs</div>" +
         '<div style="font-size:10px;color:#9ca3af">' + datum(s.datum) + "</div></div>";
     });
     html += "</div>";

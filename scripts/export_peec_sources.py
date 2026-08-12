@@ -37,7 +37,13 @@ MCP_URL = "https://api.peec.ai/mcp"
 PROJECT_ID = os.environ.get("PEEC_PROJECT_ID", "or_9e1c1c57-28de-4714-bfc0-363bfa6a0757")  # ERGO Germany
 OUT_FILE = Path("data/peec_sources.json")
 TOP_DOMAINS = int(os.environ.get("PEEC_TOP_DOMAINS", "100"))
-TOP_URLS = int(os.environ.get("PEEC_TOP_URLS", "500"))
+# 12.08.2026 von 500 auf 1500 angehoben. Grund aus den Daten: Im Export vom
+# 11.08. traegt die 500. URL immer noch 140 Zitate - der Rand war nicht
+# annaehernd erreicht. Die Plaetze 151 bis 500 machen 40 % aller Zitate aus,
+# und zwei Drittel der ERGO-URLs liegen dort. Die Paginierung bricht ab,
+# sobald Peec weniger liefert als angefordert; wo der echte Deckel liegt,
+# steht danach im Feld "abruf" der Ausgabedatei.
+TOP_URLS = int(os.environ.get("PEEC_TOP_URLS", "1500"))
 
 _session = {}
 _seq = [0]

@@ -9,7 +9,7 @@ Frage, die der Datensatz beantwortet:
     — URL-genau, mit Seitentyp, Zitatverlauf und Aenderungshistorie.
 
 Datenquellen (alle lokal, KEIN Zugriff auf Peec-/LLM-APIs):
-  1. data/peec_sources.json          Top-40 Domains + Top-150 URLs nach Zitaten,
+  1. data/peec_sources.json          Top-Domains + Top-URLs nach Zitaten (Zahl aus dem Export, derzeit 500),
                                      rollierendes 30-Tage-Fenster (Peec AI MCP-Export).
   2. data/peec_snapshots/*_sources.json  4 archivierte Staende -> Zitatverlauf je URL.
   3. shared/events.jsonl             page_new / page_change des GEO-Page-Trackers
@@ -121,9 +121,30 @@ PFADREGELN = [
     (r"versicherung$", "Produktseite"),
 ]
 
-VORBEHALT_PEEC = ("Peec liefert nur die Top-150-URLs nach Zitaten im rollierenden "
-                  "30-Tage-Fenster — der Long Tail fehlt, seltener zitierte Seiten "
-                  "erscheinen als 'nicht zitiert'.")
+# 12.08.2026: Hier stand ueberall fest "Top-150". Der Exporter holt laengst 500
+# URLs (export_peec_sources.py, PEEC_TOP_URLS, mit Paginierung) - die Texte
+# behaupteten also eine Kappung, die es so nicht mehr gab, und das Cockpit
+# hat seine eigene Abdeckung untertrieben. Zwei Drittel der ERGO-URLs im
+# aktuellen Export liegen jenseits von Platz 150.
+# Die Zahl kommt jetzt zur Laufzeit aus der Datei. Eine fest eingetragene
+# Grenze veraltet zwangslaeufig beim naechsten Mal wieder.
+PEEC_URL_KAPPUNG = None          # wird in main() aus data/peec_sources.json gesetzt
+
+
+def _kappung():
+    return f"Top-{PEEC_URL_KAPPUNG}" if PEEC_URL_KAPPUNG else "der begrenzten URL-Auswahl"
+
+
+def vorbehalt_peec():
+    if not PEEC_URL_KAPPUNG:
+        return ("Peec liefert nur eine nach Zitaten begrenzte URL-Auswahl im rollierenden "
+                "30-Tage-Fenster — der Long Tail fehlt, seltener zitierte Seiten erscheinen "
+                "als 'nicht zitiert'.")
+    return (f"Peec liefert die {PEEC_URL_KAPPUNG} meistzitierten URLs im rollierenden "
+            "30-Tage-Fenster. Der Long Tail darunter fehlt, seltener zitierte Seiten "
+            "erscheinen deshalb als 'nicht zitiert' — die Quote ist eine Untergrenze. "
+            "Der Rand ist derzeit NICHT erreicht: auch die letzte gelieferte URL traegt "
+            "noch dreistellige Zitatzahlen, es gaebe also mehr zu holen.")
 VORBEHALT_KOVOR = ("Zitat einer URL und Nennung einer Marke in derselben Antwort sind "
                    "ein Ko-Vorkommen, kein Kausalnachweis.")
 VORBEHALT_NENNER = ("Nenner ist die vom GEO-Crawl getrackte Seitenmenge (Sitemap-Auswahl "
@@ -406,7 +427,7 @@ def build():
 
     # -- Zeilen-Universum -------------------------------------------------
     # Bewusst NICHT alle 6.487 getrackten Seiten: Zeilen bekommen URLs, die
-    # (a) im Peec-Top-150 stehen, (b) im eigenen Crawl als Quelle auftauchen UND
+    # (a) in der Peec-URL-Auswahl stehen, (b) im eigenen Crawl als Quelle auftauchen UND
     # zu einer getrackten Seite gehoeren, oder (c) eigene (ERGO/DKV-)Seiten sind.
     # Reine Wettbewerber-Seiten ohne Zitat zaehlen nur in den Kennzahlen mit.
     keys = set(peec_urls)
@@ -465,7 +486,7 @@ def build():
             obergrenze_q = pdv.get("published_obergrenze_quelle") or "sitemap_lastmod"
 
         # Zitatverlauf aus den Snapshots. Fehlt die URL in einem Stand, ist ihre
-        # Zitatzahl UNBEKANNT (sie lag unter der Top-150-Kappung) — der Stand wird
+        # Zitatzahl UNBEKANNT (sie lag unter der Peec-Kappung) — der Stand wird
         # dann weggelassen, nicht als 0 gefuehrt.
         verlauf = {}
         erstes_zitat_datum = None
@@ -601,7 +622,7 @@ def build():
         "normalisierung": ("Host klein + 'www.' entfernt + Trailing Slash entfernt + Fragment "
                            "entfernt; Join zusaetzlich case-insensitiv im Pfad (Peec schreibt "
                            "/de/Produkte/, der Crawl /de/produkte/). Query bleibt erhalten."),
-        "zeilen_auswahl": ("Zeilen bekommen URLs, die im Peec-Top-150 stehen, im eigenen "
+        "zeilen_auswahl": ("Zeilen bekommen URLs, die in der Peec-URL-Auswahl stehen, im eigenen "
                            "Crawl als belastbare Quelle auftauchen oder zu einer eigenen "
                            "(ERGO/DKV-)Domain gehoeren. Getrackte Wettbewerber-Seiten ohne "
                            "Zitat gehen nur in die Kennzahlen ein, nicht in die Zeilen."),
@@ -628,11 +649,11 @@ def build():
                                         "neu), aber nie belegen (Obergrenze jung => nur "
                                         "Kandidat). Siehe kennzahlen.neuheit_ausschluss_je_marke."),
         "engines": {e: {"belastbar": b, "grund": ENGINE_GRUND[e]} for e, b in ENGINE_BELASTBAR.items()},
-        "peec_cit_verlauf_lesart": ("Nur Staende, in denen die URL im Top-150 stand. Ein "
+        "peec_cit_verlauf_lesart": ("Nur Staende, in denen die URL in der Peec-Auswahl stand. Ein "
                                     "fehlender Stand heisst 'unter der Kappung, Zitatzahl "
                                     "unbekannt' — NICHT 0."),
         "grund_codes": {
-            "kein_zitat_in_snapshots": "URL stand in keinem archivierten Peec-Stand im Top-150.",
+            "kein_zitat_in_snapshots": "URL stand in keinem archivierten Peec-Stand in der Auswahl.",
             "kein_datum": "Weder schema.org-Publikationsdatum noch Erstsichtungs-Proxy vorhanden.",
             "proxy_nicht_vor_erstem_snapshot": ("Nur Erstsichtungs-Proxy, der nicht vor dem "
                                                 "ersten Snapshot liegt — die Reihenfolge "
@@ -774,17 +795,17 @@ def build_kennzahlen(rows, peec, peec_urls, pd_idx, brand_getrackt, snaps,
                            "eigen": b in OWN_BRANDS})
         k["trefferquote_je_marke"] = {
             "available": True, "marken": marken,
-            "definition": ("zitiert = URL steht im Peec-Top-150 und/oder wurde im eigenen "
+            "definition": ("zitiert = URL steht in der Peec-URL-Auswahl und/oder wurde im eigenen "
                            "Perplexity-Crawl als Quelle gefuehrt; getrackt = Seiten der Marke "
                            "in data/page_dates.json."),
-            "vorbehalt": VORBEHALT_PEEC + " " + VORBEHALT_NENNER +
+            "vorbehalt": vorbehalt_peec() + " " + VORBEHALT_NENNER +
                          " Die Quote ist deshalb eine Untergrenze, kein Anteil an allen Zitaten."}
 
     # 2. Zitatanteil je Seitentyp -----------------------------------------
     if not peec_urls:
         k["zitatanteil_je_seitentyp"] = {"available": False,
                                          "grund": "Keine Peec-URL-Daten.",
-                                         "vorbehalt": VORBEHALT_PEEC}
+                                         "vorbehalt": vorbehalt_peec()}
     else:
         typ_cit = Counter()
         typ_n = Counter()
@@ -798,14 +819,14 @@ def build_kennzahlen(rows, peec, peec_urls, pd_idx, brand_getrackt, snaps,
             "typen": [{"seitentyp": t, "zitate": c, "urls": typ_n[t],
                        "anteil_pct": round(100.0 * c / tot, 2) if tot else None}
                       for t, c in typ_cit.most_common()],
-            "vorbehalt": VORBEHALT_PEEC + " Seitentyp-Klassifikation stammt aus einer "
+            "vorbehalt": vorbehalt_peec() + " Seitentyp-Klassifikation stammt aus einer "
                          "Peec-Heuristik, nicht aus einer geprueften Taxonomie."}
 
     # 3. ERGO vs. Allianz je Seitentyp ------------------------------------
     if not peec_urls:
         k["ergo_vs_allianz_je_seitentyp"] = {"available": False,
                                              "grund": "Keine Peec-URL-Daten.",
-                                             "vorbehalt": VORBEHALT_PEEC}
+                                             "vorbehalt": vorbehalt_peec()}
     else:
         vgl = {}
         gruppen = {"ERGO": lambda h: h in OWN_DOMAINS,
@@ -822,26 +843,26 @@ def build_kennzahlen(rows, peec, peec_urls, pd_idx, brand_getrackt, snaps,
                 row[label + "_urls"] += 1
         k["ergo_vs_allianz_je_seitentyp"] = {
             "available": bool(vgl),
-            "grund": None if vgl else "Keine ERGO-/Allianz-URLs im Top-150.",
+            "grund": None if vgl else "Keine ERGO-/Allianz-URLs in der Peec-Auswahl.",
             "typen": sorted(vgl.values(), key=lambda r: -(r["ERGO"] + r["Allianz"])),
-            "vorbehalt": VORBEHALT_PEEC + " Verglichen werden nur URLs, die es in die "
-                         "Top-150 geschafft haben; beide Marken sind damit gleich hart "
+            "vorbehalt": vorbehalt_peec() + " Verglichen werden nur URLs, die es in die "
+                         "Peec-Auswahl geschafft haben; beide Marken sind damit gleich hart "
                          "gekappt, aber der jeweilige Long Tail fehlt."}
 
-    # 4. Verlauf der ERGO-URLs im Peec-Top-150 -----------------------------
+    # 4. Verlauf der ERGO-URLs in der Peec-Auswahl -----------------------------
     if not snaps:
-        k["ergo_top150_verlauf"] = {"available": False,
+        k["ergo_auswahl_verlauf"] = {"available": False,
                                     "grund": "Keine archivierten Peec-Snapshots.",
-                                    "vorbehalt": VORBEHALT_PEEC}
+                                    "vorbehalt": vorbehalt_peec()}
     else:
         verlauf = []
         for datum, idx in snaps:
             urls = [u for kk, u in idx.items() if host_of(kk) in OWN_DOMAINS]
-            verlauf.append({"datum": datum, "urls_im_top150": len(urls),
+            verlauf.append({"datum": datum, "urls_in_auswahl": len(urls),
                             "zitate": sum(int(u.get("cit") or 0) for u in urls)})
-        k["ergo_top150_verlauf"] = {
+        k["ergo_auswahl_verlauf"] = {
             "available": True, "staende": verlauf,
-            "vorbehalt": VORBEHALT_PEEC + " Jeder Stand ist ein eigenes rollierendes "
+            "vorbehalt": vorbehalt_peec() + " Jeder Stand ist ein eigenes rollierendes "
                          "30-Tage-Fenster; die Faenster ueberlappen sich stark, die Punkte "
                          "sind daher nicht unabhaengig."}
 
@@ -1015,7 +1036,7 @@ def build_presse(peec, peec_domains, peec_urls=None, snaps=None):
     seit der Aufloesung der Google-News-Redirects, artikelgenau."""
     if not peec_domains:
         return {"available": False, "grund": "Keine Peec-Domaindaten.",
-                "vorbehalt": VORBEHALT_PEEC}
+                "vorbehalt": vorbehalt_peec()}
 
     fenster = (peec or {}).get("window") or {}
     f_start, f_end = fenster.get("start"), fenster.get("end")
@@ -1029,7 +1050,7 @@ def build_presse(peec, peec_domains, peec_urls=None, snaps=None):
     ohne_domain = Counter()
     treffer = []
 
-    # Peec-URL-Menge (Top-150 + alle Snapshot-Staende)
+    # Peec-URL-Menge (aktuelle Auswahl + alle Snapshot-Staende)
     peec_url_idx = dict(peec_urls or {})
     for eintrag in (snaps or []):
         idx = eintrag[1] if isinstance(eintrag, (tuple, list)) and len(eintrag) > 1 else None
@@ -1131,17 +1152,28 @@ def build_presse(peec, peec_domains, peec_urls=None, snaps=None):
         "vorbehalt": ("Domainzuordnung auf der registrierbaren Domain (Content-"
                       "Subdomains wie wissenswert.hannoversche.de zaehlen auf "
                       "hannoversche.de). Der artikelgenaue Abgleich ist durch die "
-                      "Peec-Top-150-Kappung nach unten begrenzt: ein Artikel ohne "
+                      "Peec-URL-Kappung nach unten begrenzt: ein Artikel ohne "
                       "Treffer kann trotzdem zitiert worden sein, nur nicht haeufig "
-                      "genug fuer die Top-150. 'ERGO genannt' heisst nur, dass ERGO in "
+                      "genug fuer die Auswahl. 'ERGO genannt' heisst nur, dass ERGO in "
                       "Antworten vorkam, in denen diese Domain zitiert wurde "
-                      "(Ko-Vorkommen, kein Kausalnachweis). " + VORBEHALT_PEEC),
+                      "(Ko-Vorkommen, kein Kausalnachweis). " + vorbehalt_peec()),
     }
 
 
 # ---------------------------------------------------------------------------
 def main():
+    # Die tatsaechliche Zahl gelieferter URLs bestimmt, was in den Vorbehalten
+    # steht. Sie wird VOR build() gesetzt, weil die Texte dort entstehen.
+    global PEEC_URL_KAPPUNG
+    try:
+        _ps = json.loads(PEEC_SOURCES.read_text(encoding="utf-8"))
+        PEEC_URL_KAPPUNG = len(_ps.get("urls") or []) or None
+    except Exception:
+        PEEC_URL_KAPPUNG = None
+
     out = build()
+    if PEEC_URL_KAPPUNG:
+        out.setdefault("meta", {})["peec_url_kappung"] = PEEC_URL_KAPPUNG
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")),
                         encoding="utf-8")

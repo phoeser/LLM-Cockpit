@@ -6,3 +6,11 @@ __pycache__/
 # Review-Fix 2026-06-12: berater_data.json entfernt — die Datei wird von
 # Workflows committet und vom v3-Dashboard gefetcht; der Ignore-Eintrag
 # funktionierte nur, weil sie bereits getrackt war (Foot-Gun).
+
+# 12.08.2026: Erzeugte Auto-Deploy-Seiten gehoeren nicht ins Repo. Sie tragen
+# ihren Gegenstand base64-kodiert in sich und sind damit eine Momentaufnahme -
+# im Repository sieht so etwas dauerhaft aus, ohne es zu sein. Die im Repo
+# liegende Fassung war vier Monate alt und haette bei einem Klick
+# dashboard_template.html von 13,3 MB auf 94 KB zurueckgesetzt.
+# Erzeugt wird die Seite bei Bedarf mit: python3 scripts/build_auto_deploy.py
+Auto-Deploy*.html

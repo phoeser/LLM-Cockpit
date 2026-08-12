@@ -4,12 +4,21 @@
 Exportiert den Peec-Quellen-Report (Domains + URLs) nach data/peec_sources.json
 fuer den Dashboard-Reiter "Quellen & Zitate".
 
-WICHTIG — laeuft NICHT im Nightly:
-Peec bietet fuer persoenliche Keys nur den MCP-Server (die REST-API ist auf
-Enterprise-Keys beschraenkt: "Personal API keys are not supported on this API yet").
-Der Token ist an Pauls Peec-Nutzer gebunden und darf nicht als GitHub-Secret
-liegen. Darum laeuft dieser Export — wie der bestehende peec-weekly-export —
-als Cowork-Task auf Pauls Rechner und pusht das Ergebnis per Contents-API.
+Wo das laeuft (Stand 12.08.2026):
+In GitHub Actions, taeglich um 04:00 UTC — .github/workflows/peec-daily-sources.yml,
+mit dem Repository-Secret PEEC_TOKEN. Der Lauf liegt bewusst VOR dem Nightly
+(05:30 UTC), damit dieser die frischen Quellen schon sieht, und teilt sich mit
+ihm die concurrency-group "repo-writes".
+
+Hier stand bis 12.08.2026 das Gegenteil ("laeuft NICHT im Nightly ... als
+Cowork-Task auf Pauls Rechner"). Das galt, solange es kein Secret gab, und war
+seit Einrichtung des Tages-Workflows falsch. Wer sich darauf verlassen hat,
+suchte den Export an der falschen Stelle.
+
+Peec bietet fuer persoenliche Keys nur den MCP-Server; die REST-API ist auf
+Enterprise-Keys beschraenkt ("Personal API keys are not supported on this API
+yet"). Deshalb spricht dieses Skript JSON-RPC gegen api.peec.ai/mcp und braucht
+keinen laufenden lokalen MCP-Server — nur den Token.
 
 Aufruf:  PEEC_TOKEN=<pat> python3 scripts/export_peec_sources.py [--days 30]
 
@@ -44,6 +53,10 @@ TOP_DOMAINS = int(os.environ.get("PEEC_TOP_DOMAINS", "100"))
 # sobald Peec weniger liefert als angefordert; wo der echte Deckel liegt,
 # steht danach im Feld "abruf" der Ausgabedatei.
 TOP_URLS = int(os.environ.get("PEEC_TOP_URLS", "1500"))
+# Serverseitige Obergrenze je EINZELNER Anfrage (Peec: "expected number to be
+# <=1000 at limit"). Mehr als das geht nur ueber Paginierung, nicht ueber ein
+# groesseres limit.
+MAX_LIMIT_PRO_ANFRAGE = 1000
 
 _session = {}
 _seq = [0]
@@ -121,7 +134,12 @@ def _fetch_ranked(tool, base_args, want, label):
     schluessel = "domain" if tool == "get_domain_report" else "url"
     while len(rows) < want:
         args = dict(base_args)
-        args["limit"] = want - len(rows)
+        # 12.08.2026: Hier stand nur "want - len(rows)". Bei want=1500 ging damit
+        # schon die ERSTE Anfrage mit limit=1500 raus, und Peec lehnt sie ab:
+        # "Too big: expected number to be <=1000 at limit". Das Skript ist dann
+        # abgestuerzt, statt in zwei Seiten zu holen - obwohl die Paginierung
+        # darunter genau dafuer gebaut ist. Jetzt wird je Anfrage gedeckelt.
+        args["limit"] = min(want - len(rows), MAX_LIMIT_PRO_ANFRAGE)
         args["order_by"] = order
         if offset:
             args["offset"] = offset

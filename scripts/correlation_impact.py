@@ -2787,19 +2787,57 @@ def level_model_mundlak():
     # Groesse + Footprint + Preis GEMEINSAM (kontrollieren einander). Achtung
     # Kollinearitaet Groesse<->Footprint bei n eff.=6-7 Marken — die interne
     # Aufteilung dieser beiden ist nur als Tendenz zu lesen (im UI kenntlich machen).
+    # 12.08.2026 UMGESTELLT auf die gemittelte, engine-konsistente Zellgrundlage
+    # (level_panel_zellen) — dieselbe, aus der auch gap_explorer rechnet.
+    #
+    # Vorher lief full_joint auf den Snapshot-Zellen oben. Deren cite_share kommt
+    # aus cited_sources.overall, also aus ALLEN Engines — auch im Segment
+    # "grounded", das seine Zielgroesse nur aus Gemini/Perplexity bildet. Das
+    # Modell erklaerte damit grounded-Sichtbarkeit mit Zitaten, die zur Haelfte
+    # aus ChatGPT stammen. Zusaetzlich rechnete es auf EINEM Tag, waehrend
+    # gap_explorer ueber alle sauberen Messtage mittelt.
+    #
+    # Folge im Dashboard: zwei Zerlegungen desselben 9,9-pp-Rueckstands, beide
+    # unter dem Namen "Quellpraesenz", die der Groesse einmal 1,05 pp und einmal
+    # 0,24 pp zuschrieben. Fuer LV 1871 unterschied sich der Treiber um Faktor
+    # 5,2. Der Reiter hat den Widerspruch ehrlich ausgewiesen, statt ihn zu
+    # verstecken - aber ausweisen ersetzt nicht aufloesen.
+    #
+    # Faellt die Historie aus, wird NICHT stillschweigend auf die alte Grundlage
+    # zurueckgefallen: dann stuende wieder etwas anderes unter demselben Namen.
+    # Stattdessen available=false mit Grund.
+    _lp_rows, _lp_days = level_panel_tage()
     full_joint = {}
-    for _en, _cs in (("grounded", cells_g), ("ungrounded", cells_u), ("combined", cells_c)):
+    for _en, _seg in (("grounded", "g"), ("ungrounded", "u"), ("combined", "c")):
         if not _seg_ok[_en]:
             full_joint[_en] = {"available": False, "note": _GUARD_NOTE}
             continue
-        _fc = [c for c in _cs if ("relprice" in c and c["brand"] in BRAND_SIZE)]
-        for c in _fc:
-            c["size"] = BRAND_SIZE[c["brand"]]
-        full_joint[_en] = (
-            _mundlak_multi(_fc, ["cite_share", "size", "relprice"], "sov", leader_override=_full_leader[_en])
-            if len(_fc) >= 12 else
-            {"available": False, "n_cells": len(_fc),
-             "note": "Zu wenige Zellen mit Preis+Groesse+Footprint."})
+        if not _lp_rows or len(_lp_days) < 3:
+            full_joint[_en] = {"available": False, "basis": "fehlt",
+                               "note": ("Level-Zellen-Historie fehlt oder ist zu kurz "
+                                        "(%d saubere Messtage, mindestens 3 noetig). Die "
+                                        "Voll-Zerlegung braucht dieselbe gemittelte, "
+                                        "engine-konsistente Grundlage wie gap_explorer; "
+                                        "die alte Snapshot-Grundlage wird bewusst nicht "
+                                        "mehr ersatzweise genutzt." % len(_lp_days))}
+            continue
+        _fc = [c for c in level_panel_zellen(_lp_rows, set(_lp_days), _seg, _rp)
+               if ("relprice" in c and "size" in c)]
+        if len(_fc) < 12:
+            full_joint[_en] = {"available": False, "n_cells": len(_fc),
+                               "basis": "level_panel_gemittelt",
+                               "note": "Zu wenige Zellen mit Preis+Groesse+Footprint."}
+            continue
+        _fit = _mundlak_multi(_fc, ["cite_share", "size", "relprice"], "sov",
+                              leader_override=_full_leader[_en])
+        if isinstance(_fit, dict):
+            _fit["basis"] = "level_panel_gemittelt"
+            _fit["basis_note"] = (
+                "cite_share aus derselben Engine-Gruppe wie die Zielgroesse, gemittelt "
+                "ueber %d saubere Messtage (%s..%s). Identische Grundlage wie "
+                "gap_explorer - die beiden Zerlegungen koennen sich nicht mehr "
+                "widersprechen." % (len(_lp_days), _lp_days[0], _lp_days[-1]))
+        full_joint[_en] = _fit
 
     # #16 2. Treiber: Groesse/Bekanntheit gemeinsam mit Footprint (Effekte kontrollieren einander)
     for c in cells_c:
@@ -4237,6 +4275,77 @@ def _load_level_cells():
     return rows
 
 
+def level_panel_tage(max_days=45):
+    """(rows, days) — saubere Messtage der Level-Zellen-Historie nach dem letzten
+    markenweiten Strukturbruch, hoechstens die letzten `max_days`.
+    Gibt (None, []) zurueck, wenn keine Historie da ist."""
+    rows = _load_level_cells()
+    if not rows:
+        return None, []
+    days_all = sorted({r.get("date") for r in rows if r.get("date")})
+    _breaks = [b["date"] for b in STRUCTURAL_BREAKS if b.get("brand") == "*" and b.get("date")]
+    _last_break = max(_breaks) if _breaks else None
+    days = [d for d in days_all if (not _last_break or d >= _last_break)]
+    if max_days and len(days) > max_days:
+        days = days[-max_days:]
+    return rows, days
+
+
+def level_panel_zellen(rows, dsub, seg, rp=None):
+    """Marke x Thema, ueber die Tage in `dsub` GEMITTELT.
+
+    12.08.2026 aus price_level_pooled._denoise herausgeloest und zur einzigen
+    Quelle gemacht. Vorher gab es dieselbe Rechnung ZWEIMAL im Skript, und die
+    beiden Fassungen waren nicht gleich:
+
+      gap_explorer  (hier)  cite_share = cite_<seg> / ctot_<seg>  — Zitate
+                            AUS DERSELBEN Engine-Gruppe wie die Zielgroesse,
+                            gemittelt ueber alle sauberen Messtage
+      full_joint    (alt)   cite_share = cited_sources.overall / .total  —
+                            Zitate aus ALLEN Engines, auch aus den nicht
+                            grounded arbeitenden, aus EINEM Snapshot
+
+    Beide hiessen im Dashboard "Quellpraesenz". Fuer LV 1871 unterschieden sie
+    sich um den Faktor 5,2, fuer Allianz um 1,33. Und weil Groesse und
+    Quellpraesenz stark zusammenhaengen, schlug das auf den Groessen-Effekt
+    durch: derselbe 9,9-pp-Rueckstand ERGO->Allianz wurde einmal mit 1,05 pp
+    und einmal mit 0,24 pp Groesse erklaert. Gegenprobe (dieselbe
+    Schaetzfunktion, nur die Zellen getauscht) hat gezeigt, dass es
+    ausschliesslich an den Zellen lag - nicht an Reihenfolge, Leader oder
+    Schaetzverfahren.
+
+    Richtig ist diese Fassung: grounded-Sichtbarkeit gehoert mit
+    grounded-Zitaten erklaert, und ein NIVEAU-Modell gehoert ueber mehrere
+    Tage gemittelt, weil die Tageswerte der Sprachmodelle rauschen."""
+    if rp is None:
+        rp = _relprice_map()
+    acc = {}
+    for r in rows:
+        if r.get("date") not in dsub:
+            continue
+        sov = r.get("sov_%s" % seg)
+        if sov is None:
+            continue
+        cite = r.get("cite_%s" % seg) or 0
+        tot = r.get("ctot_%s" % seg) or 0
+        cs = (100.0 * cite / tot) if tot else 0.0
+        a = acc.setdefault((r.get("brand"), r.get("topic")), {"sov": [], "cs": []})
+        a["sov"].append(sov)
+        a["cs"].append(cs)
+    cells = []
+    for (b, t), v in acc.items():
+        c = {"brand": b, "topic": t,
+             "sov": sum(v["sov"]) / len(v["sov"]),
+             "cite_share": sum(v["cs"]) / len(v["cs"])}
+        pr = rp.get(t, {}).get(b)
+        if pr is not None:
+            c["relprice"] = pr
+        if b in BRAND_SIZE:
+            c["size"] = BRAND_SIZE[b]
+        cells.append(c)
+    return cells
+
+
 def price_level_pooled(max_days=45):
     """Gepooltes Preis-LEVEL-Modell (Panel Marke x Thema x Tag).
 
@@ -4272,32 +4381,10 @@ def price_level_pooled(max_days=45):
                           "Reift mit jedem Nightly." % _last_break)}
     rp = _relprice_map()
 
+    # Seit 12.08.2026 dieselbe Funktion, die auch full_joint benutzt — damit die
+    # beiden Zerlegungen nicht wieder auseinanderlaufen koennen.
     def _denoise(seg, dsub):
-        acc = {}
-        for r in rows:
-            if r.get("date") not in dsub:
-                continue
-            sov = r.get("sov_%s" % seg)
-            if sov is None:
-                continue
-            cite = r.get("cite_%s" % seg) or 0
-            tot = r.get("ctot_%s" % seg) or 0
-            cs = (100.0 * cite / tot) if tot else 0.0
-            a = acc.setdefault((r.get("brand"), r.get("topic")), {"sov": [], "cs": []})
-            a["sov"].append(sov)
-            a["cs"].append(cs)
-        cells = []
-        for (b, t), v in acc.items():
-            c = {"brand": b, "topic": t,
-                 "sov": sum(v["sov"]) / len(v["sov"]),
-                 "cite_share": sum(v["cs"]) / len(v["cs"])}
-            pr = rp.get(t, {}).get(b)
-            if pr is not None:
-                c["relprice"] = pr
-            if b in BRAND_SIZE:
-                c["size"] = BRAND_SIZE[b]
-            cells.append(c)
-        return cells
+        return level_panel_zellen(rows, dsub, seg, rp)
 
     price_to_sov = {}
     price_to_citations = {}
@@ -4388,10 +4475,53 @@ def price_level_pooled(max_days=45):
                      "die Trennung Groesse/Quellpraesenz ist eine Tendenz, kein Kausalnachweis."),
         }
 
+    # ── Streubild: Quellpraesenz gegen Sichtbarkeit, je Marke ─────────────────
+    # Eigener Block statt gap_explorer.brand_means, weil der Scatter die
+    # Preis-Einschraenkung NICHT braucht: gap_explorer verlangt Preis UND Groesse
+    # je Zelle (fuer die Drei-Treiber-Zerlegung noetig), und daran fallen Marken
+    # raus, die in die Grafik sehr wohl gehoeren. Hier zaehlt nur, dass Marke und
+    # Thema eine Sichtbarkeit und eine Quellpraesenz haben.
+    #
+    # 12.08.2026 neu. Ersetzt im Dashboard Peecs footprint_pct als x-Achse. Peec
+    # rechnet unter diesem Namen den zitatgewichteten Anteil der Quellen MIT
+    # MARKENERWAEHNUNG - die Werte summierten sich ueber die Marken auf 302 %,
+    # was fuer einen Anteil an einem gemeinsamen Topf unmoeglich ist. Damit
+    # standen auf beiden Achsen Markennennungen, und das r von 0,90 war zu einem
+    # grossen Teil Selbstkorrelation.
+    streubild = {}
+    for seg, lab in (("g", "grounded"), ("u", "ungrounded"), ("c", "combined")):
+        scells = _denoise(seg, dayset)
+        if len(scells) < 10:
+            streubild[lab] = {"available": False, "n_cells": len(scells),
+                              "note": "Zu wenige Zellen fuer ein Streubild (min. 10)."}
+            continue
+        _s = {}; _n = {}
+        for c in scells:
+            b = c["brand"]
+            d = _s.setdefault(b, {"sov": 0.0, "cite_share": 0.0})
+            d["sov"] += c["sov"]; d["cite_share"] += c["cite_share"]
+            _n[b] = _n.get(b, 0) + 1
+        _t = sorted({c.get("topic") for c in scells if c.get("topic")})
+        streubild[lab] = {
+            "available": True, "n_cells": len(scells), "n_tage": len(days),
+            "tage_von": days[0], "tage_bis": days[-1],
+            "n_topics": (len(_t) or None),
+            "brand_means": {b: {"sov": round(_s[b]["sov"] / _n[b], 3),
+                                "cite_share": round(_s[b]["cite_share"] / _n[b], 3),
+                                "n_zellen": _n[b]} for b in _s},
+            "labels": {"x": "Quellpraesenz % (Anteil der markeneigenen Domain an den zitierten Quellen)",
+                       "y": "Share of Voice %"},
+            "note": ("Markenmittel ueber Themen und ueber %d saubere Messtage. Beide Achsen "
+                     "aus dem eigenen Crawl und aus derselben Engine-Gruppe - anders als bei "
+                     "Peecs footprint_pct, das Quellen mit Markenerwaehnung zaehlt und deshalb "
+                     "auf beiden Achsen im Kern dasselbe misst." % len(days)),
+        }
+
     return {"available": True, "n_days": len(days), "days_range": [days[0], days[-1]],
             "since_break": _last_break, "max_days_window": max_days,
             "price_to_sov": price_to_sov, "price_to_citations": price_to_citations,
             "gap_explorer": gap_explorer,
+            "streubild": streubild,
             "stability": stability,
             "interpretation": (
                 "Gepoolt ueber %d saubere Tage. BEFUND: Der Within-Preis-Effekt (Marke mit "

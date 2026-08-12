@@ -795,7 +795,7 @@ def _t_two_sided_p(t, df):
         return None
 
 
-def _cluster_effect(points, xs, eff, se_iid):
+def _cluster_effect(points, xs, eff, se_iid, binaer=True):
     """Cluster-robuste Unsicherheit je Treiber. Cluster = MARKE.
 
     Warum ueberhaupt: analyze() behandelte die 586 Intervalle als 586 unabhaengige
@@ -834,10 +834,14 @@ def _cluster_effect(points, xs, eff, se_iid):
     if n < 3 or len(points) != n or eff is None:
         return None
     brands = [p["brand"] for p in points]
-    d = [1.0 if x > 0 else 0.0 for x in xs]
+    # 12.08.2026: binaer=False rechnet mit der TATSAECHLICHEN Ereignisdichte statt
+    # mit einem Ja/Nein-Schalter. Der Sandwich-Teil darunter ist davon unberuehrt -
+    # er behandelt d ohnehin als beliebigen Regressor. Voreinstellung bleibt
+    # binaer=True, damit alle bestehenden Aufrufer exakt dasselbe rechnen wie zuvor.
+    d = [(1.0 if x > 0 else 0.0) if binaer else float(x) for x in xs]
     y = [p["y"] for p in points]          # ROH — das Demeaning macht der Within-Transform
-    marken_mit = {brands[i] for i in range(n) if d[i] > 0}
-    marken_ohne = {brands[i] for i in range(n) if d[i] == 0}
+    marken_mit = {brands[i] for i in range(n) if xs[i] > 0}
+    marken_ohne = {brands[i] for i in range(n) if xs[i] <= 0}
     if len(marken_mit) < 2 or len(marken_ohne) < 2:
         return None
     sy, sd_, cnt = {}, {}, {}
@@ -3589,6 +3593,163 @@ def press_by_citation_class(events):
         }
     return out
 
+def dose_response(events):
+    """Dosis statt Anwesenheit: wirkt MEHR davon auch mehr?
+
+    WARUM DIESER BLOCK EXISTIERT (12.08.2026):
+    Das gesamte bisherige Modell fragt binaer - unterscheidet sich ein Intervall
+    MIT Ereignis von einem OHNE. Bei Seitenaenderungen tragen 287 von 661
+    Intervallen ein Ereignis; die Variable ist damit fast ein Muenzwurf und
+    trennt kaum noch etwas. Schlimmer: Ein Intervall mit einer einzigen
+    Pressemitteilung zaehlt exakt wie eines mit zwanzig. Die Information ueber
+    die Menge liegt in den Daten (build_intervals rechnet Ereignisse je Tag),
+    sie wurde bisher an jeder Stelle mit "x > 0" weggeworfen.
+
+    Dieser Block nutzt sie. Geschaetzt wird die Steigung: wie viel Sichtbarkeit
+    kommt je zusaetzlichem Ereignis pro Tag hinzu - mit Marken-Fixed-Effects und
+    cluster-robusten Fehlern, also derselben Absicherung wie im Hauptmodell.
+
+    Der Block ERSETZT die binaere Rechnung nicht, er stellt sich daneben. Beide
+    beantworten verschiedene Fragen:
+      binaer  - macht es einen Unterschied, ob ueberhaupt etwas passiert?
+      Dosis   - macht es einen Unterschied, WIE VIEL passiert?
+    Ein Treiber kann in der einen Rechnung auffallen und in der anderen nicht.
+    Genau dieser Vergleich ist der Ertrag.
+
+    Was der Block NICHT kann: Er unterstellt einen linearen Zusammenhang. Wenn
+    die ersten drei Pressemitteilungen wirken und die naechsten siebzehn nichts
+    mehr, findet er das nicht - er mittelt darueber hinweg. Ein Saettigungsmodell
+    waere der naechste Schritt, braucht aber mehr Messtage als heute vorliegen.
+    """
+    sov = build_sov_series_from_history()
+    if not sov:
+        return {"available": False, "grund": "Keine SoV-Historie verfuegbar."}
+
+    typen = [t for t in IMPACT_TYPES]
+    bydays = count_events_by_brand_day(events, type_filter=set(typen))
+    points, _skip = build_intervals(sov, bydays, typen)
+    if len(points) < 30:
+        return {"available": False,
+                "grund": f"Nur {len(points)} Intervalle - fuer eine Dosis-Schaetzung zu wenige."}
+
+    ys = [pt["y"] for pt in points]
+    res = {}
+    for t in typen:
+        xs = [pt["x"].get(t, 0.0) for pt in points]
+        n_with = sum(1 for x in xs if x > 0)
+        werte = [x for x in xs if x > 0]
+        if n_with < 8 or len(set(werte)) < 3:
+            res[t] = {"available": False, "label": TYPE_LABEL.get(t, t),
+                      "n_with_event": n_with,
+                      "grund": ("zu wenige Intervalle mit Ereignis" if n_with < 8 else
+                                "die Ereigniszahl variiert kaum - eine Dosis-Steigung "
+                                "waere nicht von der Ja/Nein-Rechnung zu unterscheiden")}
+            continue
+
+        # Steigung ohne Fixed Effects als Startwert; die belastbare Zahl liefert
+        # danach der Within-FE-Schaetzer aus _cluster_effect.
+        mx = sum(xs) / len(xs)
+        my = sum(ys) / len(ys)
+        sxx = sum((x - mx) ** 2 for x in xs)
+        if sxx <= 1e-12:
+            res[t] = {"available": False, "label": TYPE_LABEL.get(t, t),
+                      "grund": "keine Streuung in der Ereignisdichte"}
+            continue
+        beta = sum((xs[i] - mx) * (ys[i] - my) for i in range(len(xs))) / sxx
+        resid = [ys[i] - (my + beta * (xs[i] - mx)) for i in range(len(xs))]
+        s2 = sum(r * r for r in resid) / max(len(xs) - 2, 1)
+        se_iid = math.sqrt(s2 / sxx) if sxx > 0 else None
+
+        cl = _cluster_effect(points, xs, round(beta, 4), se_iid, binaer=False)
+        eintrag = {
+            "available": True,
+            "label": TYPE_LABEL.get(t, t),
+            "steigung_pp_je_ereignis_tag": round(beta, 4),
+            "n_intervals": len(points),
+            "n_with_event": n_with,
+            "dosis_min": round(min(werte), 4),
+            "dosis_max": round(max(werte), 4),
+            "dosis_median": round(sorted(werte)[len(werte) // 2], 4),
+        }
+        if cl:
+            eintrag.update({
+                "steigung_within_fe": cl["effect_within_fe"],
+                "se_cluster": cl["se"],
+                "ci95_low": cl["ci_low"],
+                "ci95_high": cl["ci_high"],
+                "p_cluster": cl["p"],
+                "n_clusters": cl["n_clusters"],
+                "significant": (cl["ci_low"] is not None and cl["ci_high"] is not None
+                                and (cl["ci_low"] > 0 or cl["ci_high"] < 0)),
+                "significance_basis": "cluster",
+            })
+            # Die eigentlich interessante Groesse fuer die Praxis: was brachte die
+            # Spanne zwischen der schwaechsten und der staerksten beobachteten
+            # Dosis? Bewusst NUR im beobachteten Bereich - eine Hochrechnung auf
+            # Dosen, die nie vorkamen, waere Erfindung.
+            spanne = max(werte) - min(werte)
+            if cl["effect_within_fe"] is not None and spanne > 0:
+                eintrag["wirkung_ueber_beobachtete_spanne_pp"] = round(
+                    cl["effect_within_fe"] * spanne, 3)
+        else:
+            eintrag.update({"significance_basis": "nicht_schaetzbar", "significant": None,
+                            "grund_cluster": "Cluster-robuste Schaetzung nicht moeglich."})
+        res[t] = eintrag
+
+    # Mehrfachtest-Korrektur ueber die geschaetzten Treiber (Benjamini-Hochberg).
+    # OHNE sie waere dieser Block gefaehrlicher als die binaere Rechnung: er testet
+    # dieselben Daten ein zweites Mal, mit einer anderen Modellannahme. Wer zwei
+    # Rechnungen ausprobiert und die meldet, die einen Treffer liefert, hat nichts
+    # gefunden ausser einem Freiheitsgrad. Die Korrektur laeuft deshalb ueber alle
+    # hier geschaetzten Treiber, und "gesichert" wird an q gebunden, nicht an p.
+    tests = sorted([(t, v) for t, v in res.items()
+                    if v.get("available") and isinstance(v.get("p_cluster"), (int, float))],
+                   key=lambda kv: kv[1]["p_cluster"])
+    m = len(tests)
+    prev = 1.0
+    for i in range(m - 1, -1, -1):
+        t, v = tests[i]
+        q = min(prev, v["p_cluster"] * m / (i + 1))
+        v["p_fdr"] = round(min(q, 1.0), 5)
+        prev = q
+        v["significant_unkorrigiert"] = v.get("significant")
+        v["significant"] = bool(v["p_fdr"] < 0.05)
+    if m:
+        res.setdefault("_fdr_hinweis", None)
+        del res["_fdr_hinweis"]
+
+    gesichert = [t for t, v in res.items() if v.get("significant") is True]
+    roh = [t for t, v in res.items() if v.get("significant_unkorrigiert") is True]
+    geschaetzt = [t for t, v in res.items() if v.get("available")]
+    return {
+        "available": True,
+        "n_intervalle": len(points),
+        "je_treiber": res,
+        "n_geschaetzt": len(geschaetzt),
+        "n_gesichert": len(gesichert),
+        "n_gesichert_unkorrigiert": len(roh),
+        "gesicherte": [res[t]["label"] for t in gesichert],
+        "gesicherte_unkorrigiert": [res[t]["label"] for t in roh],
+        "fdr": {"verfahren": "Benjamini-Hochberg",
+                "n_tests": len([1 for v in res.values() if isinstance(v, dict)
+                                and isinstance(v.get("p_fdr"), (int, float))]),
+                "hinweis": ("Korrigiert wird ueber die hier geschaetzten Treiber. Der Block "
+                            "testet dieselben Daten ein zweites Mal mit anderer "
+                            "Modellannahme - ohne Korrektur waere ein Treffer schlicht der "
+                            "Preis dafuer, zwei Rechnungen ausprobiert zu haben.")},
+        "methode": ("Steigung von Sichtbarkeitsaenderung auf Ereignisdichte (Ereignisse je Tag "
+                    "im Intervall), mit Marken-Fixed-Effects und cluster-robusten Fehlern auf "
+                    "Markenebene - dieselbe Absicherung wie im Hauptmodell. Die bisherige "
+                    "Rechnung fragt binaer (Intervall mit gegen Intervall ohne Ereignis) und "
+                    "verwirft damit die Information ueber die Menge."),
+        "grenzen": ("Unterstellt einen linearen Zusammenhang: dass die zwanzigste "
+                    "Pressemitteilung so viel bringt wie die erste. Saettigung wuerde dieser "
+                    "Block nicht finden, sondern wegmitteln. Ausserdem bleibt es Beobachtung - "
+                    "Marken mit hoher Ereignisdichte unterscheiden sich auch sonst. Die "
+                    "Wirkung ueber die beobachtete Spanne ist ausdruecklich keine Hochrechnung "
+                    "auf Dosen, die in den Daten nie vorkamen."),
+    }
+
 def page_change_by_type(events):
     """page_change nach Aenderungsart aufgeschluesselt (Preis/Leistung/FAQ/Copy/Struktur).
 
@@ -4988,6 +5149,7 @@ def main():
     try:
         res["page_change_types"] = page_change_by_type(events)
         res["press_by_citation"] = press_by_citation_class(events)
+        res["dose_response"] = dose_response(events)
     except Exception as _e:
         print("WARN page_change_types:", str(_e)[:120])
     _prior = {t: c.get('coef_pp_per_event_day', 0.0)

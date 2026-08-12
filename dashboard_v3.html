@@ -5304,6 +5304,47 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
                             lo:v.ci95_low_pp, hi:v.ci95_high_pp, n:v.n_with_event, sig:v.significant_fdr}
                           :{label:(ART[k]||k), eff:null, note:(v.grund||'zu wenige klassifizierte Änderungen')};
       });
+      /* ---------- Dosis statt Anwesenheit (12.08.2026) ----------
+         Das ganze uebrige Modell fragt binaer: Intervall mit Ereignis gegen
+         Intervall ohne. Bei Seitenaenderungen tragen 287 von 661 Intervallen
+         eines - die Variable ist fast ein Muenzwurf. Und ein Intervall mit
+         einer Pressemitteilung zaehlt wie eines mit zwanzig. Dieser Block
+         nutzt die Menge, die in den Daten ohnehin steckt. */
+      var dr=ci.dose_response||{};
+      if(dr.available){
+        var drRows=Object.keys(dr.je_treiber||{}).filter(function(k){
+          return dr.je_treiber[k] && dr.je_treiber[k].available; }).map(function(k){
+          var v=dr.je_treiber[k];
+          return {label:v.label||k,
+                  sub:nfmt(v.n_with_event)+' Intervalle mit Ereignis · '+nfmt(v.n_clusters)+' Marken'
+                      +(v.p_fdr!=null?(' · q '+_kp(v.p_fdr)):''),
+                  eff:v.steigung_within_fe, lo:v.ci95_low, hi:v.ci95_high,
+                  sig:(v.significant===true), n:v.n_with_event};
+        });
+        h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+          +'<b>Wirkt <em>mehr</em> davon auch mehr?</b> Bis heute fragte jede Rechnung in diesem Reiter nur, '
+          +'<em>ob</em> in einem Zeitraum etwas passiert ist — nicht, wie viel. Ein Intervall mit einer '
+          +'Pressemitteilung zählte wie eines mit zwanzig. Diese Rechnung nutzt die Menge: geschätzt wird die '
+          +'Steigung je zusätzlichem Ereignis pro Tag, mit denselben cluster-robusten Fehlern wie oben. '
+          +'Geschätzt für '+nfmt(dr.n_geschaetzt)+' Treiber, '
+          +(dr.n_gesichert
+              ? ('<b>'+nfmt(dr.n_gesichert)+' davon nach Mehrfachtest-Korrektur gesichert: '+(dr.gesicherte||[]).map(_esc).join(', ')+'.</b>')
+              : 'keiner davon nach Mehrfachtest-Korrektur gesichert.')
+          +(dr.n_gesichert_unkorrigiert && !dr.n_gesichert
+              ? ' Ohne Korrektur wäre einer aufgefallen ('+(dr.gesicherte_unkorrigiert||[]).map(_esc).join(', ')
+                +') — bei '+nfmt((dr.fdr||{}).n_tests)+' Tests ist genau das der erwartete Zufallstreffer, '
+                +'und die Korrektur räumt ihn ab. Zwei Rechnungen auszuprobieren und die zu melden, die einen '
+                +'Treffer liefert, wäre kein Befund, sondern ein Freiheitsgrad.'
+              : '')
+          +'</div>'
+          +'<details class="mt-1"><summary class="text-xs text-gray-500 cursor-pointer select-none hover:text-ergo-red">Dosis-Steigung je Treiber anzeigen</summary>'
+          +'<div class="mt-1 text-xs text-gray-500 mb-2">Effekt = Prozentpunkte Sichtbarkeit je zusätzlichem Ereignis pro Tag, '
+          +'Within-Marke gerechnet. Die Balken sind cluster-robust, das Urteil hängt am FDR-korrigierten q.</div>'
+          +forestPlot(drRows,{xlabel:'Steigung (pp je Ereignis und Tag) — Balken = 95-%-Intervall, cluster-robust'})
+          +'<div class="text-xs text-gray-500 mt-2 leading-relaxed">'+_esc(dr.grenzen||'')+'</div>'
+          +'</details>';
+      }
+
       /* 12.08.2026 GEKUERZT: Forest wandert ins Aufklappbare, das Ergebnis
          steht als Satz davor. */
       h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'

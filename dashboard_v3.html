@@ -25,6 +25,7 @@
 <script src="search_ab_block.js"></script>
 <!-- GEOrg: laedt nur, wenn in data/georg.json eine Agenten-ID steht. Sonst
      passiert nichts - kein externes Skript, keine Verbindung nach aussen. -->
+<script src="massnahmen_liste.js"></script>
 <script src="georg_widget.js"></script>
 <style>
   :root {
@@ -1528,6 +1529,12 @@ const ACTIONS = [
     why:"LLMs bevorzugen aktuelle Inhalte. Sichtbares 'Aktualisiert am'-Datum und Versionierung erhöhen Trust.",
     how:"Template-Anpassung: 'Veröffentlicht', 'Aktualisiert', sichtbares Stand-Datum auf jeder Ratgeber-Seite", horizon:"Q2 2026" }
 ];
+/* 12.08.2026: PROVIDERS und ACTIONS liegen im Skript-Bereich dieser Datei.
+   massnahmen_liste.js baut daraus die gebündelte Maßnahmenliste und braucht
+   beide - deshalb hier nach aussen gereicht statt sie zu duplizieren. */
+window.PROVIDERS = PROVIDERS;
+window.ACTIONS = ACTIONS;
+
 
 // ============= TEMPLATES =============
 function providerTemplate(key) {
@@ -4480,7 +4487,19 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         +'<span class="px-2 py-0.5 rounded text-xs '+(GRP_CLS[x.group]||'bg-gray-100 text-gray-600')+'">'+esc(x.group_de||x.group)+'</span>'
         +'<span class="text-xs text-gray-500">'+esc(x.key_de||x.key||'')+'</span>'
         +'<span class="px-2 py-0.5 rounded-full text-xs '+(TIER_CLS[x.tier]||'bg-gray-100')+'">Priorität '+esc(TIER_LBL[x.tier]||'–')+'</span>'
-        +'</div><div class="text-sm text-gray-700 leading-relaxed">'+mdLinks(x.text)+'</div></div>';
+        /* 12.08.2026: Hier stand x.text - der englische Originaltext von Peec,
+           mitten in einem sonst durchgaengig deutschen Cockpit und in einer
+           Form, in der man ihn keinem Fachbereich weiterreichen kann.
+           scripts/translate_peec_actions.py schreibt jetzt text_de dazu.
+           Faellt die Uebersetzung aus, wird das englische Original gezeigt und
+           als solches gekennzeichnet - lieber sichtbar unuebersetzt als
+           stillschweigend leer. */
+        +'</div><div class="text-sm text-gray-700 leading-relaxed">'+mdLinks(x.text_de||x.text)+'</div>'
+        +(x.text_de
+            ? '<details class="mt-2"><summary class="text-xs text-gray-400 cursor-pointer select-none hover:text-ergo-red">Originaltext von Peec (englisch)</summary>'
+              +'<div class="text-xs text-gray-500 mt-1 leading-relaxed">'+mdLinks(x.text)+'</div></details>'
+            : '<div class="text-xs text-amber-700 mt-1">Noch nicht übersetzt — oben steht Peecs englisches Original.</div>')
+        +'</div>';
     });
     h+='<div class="bg-gray-50 border rounded-xl p-4 text-xs text-gray-600 leading-relaxed mt-4">'
       +'<div class="font-semibold text-gray-700 mb-1">Methodik &amp; Grenzen</div>'
@@ -6355,6 +6374,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     }).filter(function(r){return r.ergo>0||r.nComp>0;});
     rows.sort(function(a,b){return a.gap-b.gap;});
     if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="px-3 py-3 text-sm text-gray-500">Noch keine Treiber-Events im Zeitfenster.</td></tr>'; return; }
+    window.__DRIVER_GAP = rows;   // fuer massnahmen_liste.js
     tb.innerHTML=rows.map(function(r){
       var prio=(r.gap<0&&Math.abs(r.gap)>=Math.max(2,r.avg*0.3))?['HOCH','#dc2626']:(r.gap<0?['MITTEL','#d97706']:['OK','#16a34a']);
       var gapTxt=(r.gap>0?'+':'')+r.gap.toFixed(1);

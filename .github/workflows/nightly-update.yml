@@ -136,6 +136,17 @@ jobs:
         run: python scripts/pipeline_health.py --write
         continue-on-error: true
 
+      # Peecs Empfehlungen kommen auf Englisch. Der Peec-Export selbst laeuft
+      # NICHT hier (persoenlicher Token, siehe export_peec_actions.py) - die
+      # Uebersetzung haengt trotzdem am Nightly, damit sie sich selbst
+      # repariert, egal wann und von wem der Export erneuert wurde. Dank Cache
+      # kostet ein Lauf ohne neue Empfehlungen nichts.
+      - name: Peec-Empfehlungen uebersetzen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/translate_peec_actions.py
+        continue-on-error: true
+
       # Muss NACH der Korrelationsanalyse und dem Pipeline-Health laufen: das
       # Faktenblatt liest deren Ergebnisse. Kein continue-on-error - wenn das
       # Faktenblatt nicht entsteht, soll das auffallen, statt still zu einer
@@ -192,6 +203,8 @@ jobs:
           git add data/interventions.json 2>/dev/null || true
           git add data/geo_faktenblatt.md 2>/dev/null || true
           git add data/georg.json 2>/dev/null || true
+          git add data/peec_actions.json 2>/dev/null || true
+          git add data/peec_actions_de.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
           git commit -m "data: nightly update (alle Daten + Events)"
           for i in 1 2 3; do

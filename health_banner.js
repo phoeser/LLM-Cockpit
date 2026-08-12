@@ -10,7 +10,17 @@
 (function () {
   "use strict";
 
-  var MAX_AGE_DAYS = 2;               // Crawl laeuft TAEGLICH (seit 19.07. wieder; ChatGPT/Perplexity intern 2-taegig alternierend)
+  // 12.08.2026 von 2 auf 8 Tage: Der GEO-Crawl laeuft seit der Umstellung nur
+  // noch WOECHENTLICH (analyze.yml, cron "10 23 * * 0" = sonntags 23:10 UTC).
+  // Mit der alten 2-Tage-Grenze stand das Banner ab jedem Mittwoch bis
+  // Sonntagnacht im Bild - fuenf von sieben Tagen Alarm ohne Anlass. Genau so
+  // gewoehnt man sich ab hinzusehen, und dann faellt der echte Ausfall nicht
+  // mehr auf. 8 = 7 Tage Takt + 1 Tag Luft, weil GitHub geplante Laeufe im
+  // Free-Tier um Stunden verzoegert. Aeltere Daten heissen: ein Lauf ist
+  // ausgefallen. ACHTUNG: Aendert sich der Crawl-Takt wieder, gehoert diese
+  // Zahl mitgeaendert - sie ist eine Kopie einer Annahme, die woanders steht.
+  var MAX_AGE_DAYS = 8;
+  var CRAWL_TAKT = "woechentlich (sonntagnachts)";
   var SNAP_URL = "data/geo_snapshot.json";
   var LLM_NAMES = { chatgpt: "ChatGPT", gemini: "Gemini", perplexity: "Perplexity", claude: "Claude", grok: "Grok" };
   var LLM_HINT = {
@@ -105,7 +115,8 @@
     }
     if (a.stale && !a.allZero) {
       msgs.push("Die LLM-Daten sind " + (a.ageDays !== null ? a.ageDays + " Tage" : "sehr") +
-        " alt (Snapshot vom " + fmtDate(a.snapDate) + "). Der naechtliche Lauf hat evtl. nicht aktualisiert.");
+        " alt (Snapshot vom " + fmtDate(a.snapDate) + "). Der GEO-Crawl laeuft " + CRAWL_TAKT +
+        " — bei diesem Alter ist mindestens ein Lauf ausgefallen. Bitte den GitHub-Actions-Lauf im GEO-Repo pruefen.");
     }
 
     var bar = document.createElement("div");

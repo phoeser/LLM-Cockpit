@@ -203,9 +203,22 @@
     function tile(v,l,accent){ return '<div style="flex:1;min-width:150px;background:#f6f7f9;border-radius:8px;padding:9px 12px">'+
       '<div style="font-size:19px;font-weight:800;color:'+(accent||"#282d37")+';line-height:1.1">'+v+'</div>'+
       '<div style="font-size:10.5px;color:#6b7280;margin-top:2px;line-height:1.4">'+l+'</div></div>'; }
-    var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">Ein externer 16-Branchen-Benchmark zeigt qualitativ: <b>LLM-Sichtbarkeit folgt der Marktgr\u00f6\u00dfe nur unterproportional</b> \u2014 gro\u00dfe Anbieter werden gestaucht, Testsieger-/Ratgeber-Marken verst\u00e4rkt (Pearson r '+fx(r.pearson,2)+' \u00fcber '+(B.n_marken||"?")+' Marken in '+(B.n_branchen||"?")+' Branchen). \u00dcbertragen auf ERGO: der R\u00fcckstand zu Allianz ist <b>kein reiner Gr\u00f6\u00dfeneffekt</b> \u2014 er entsteht aus Autorit\u00e4t/Quellpr\u00e4senz (vgl. Kernbefund K1/K3). Chancen-Seite derselben Regel: weil LLMs Gr\u00f6\u00dfe stauchen, ist Sichtbarkeit f\u00fcr Herausforderer \u201ebilliger\u201c zu holen als Marktanteil.</div>';
-    var disc='<div style="font-size:10.5px;color:#9ca3af;margin-top:6px;line-height:1.5">Externer Benchmark (Cowork-Analyse, Stand '+(B.stand||"?")+'): '+(B.methode_kurz||"")+' \u2014 <b>anderer Messweg (ein Modell OHNE Websuche, positionsgewichtet, normiert \u00fcber nur '+(((B.versicherungen_set||{}).core_real||[]).length||"wenige")+' Versicherer).</b> Nur <b>qualitativ</b> als Quercheck \u00fcber '+(B.n_branchen!=null?B.n_branchen:"mehrere")+' Branchen lesbar; absolute Niveaus und Verh\u00e4ltnisse sind <b>nicht</b> mit dem Dashboard-SoV vergleichbar (der Benchmark \u00fcberzeichnet gro\u00dfe Marken). Details: data/benchmark_branchen.json.</div>';
-    return head+txt+disc+'</div>';
+    /* 12.08.2026 GEKUERZT (Entscheidung Paul): Hier standen zwei lange Absaetze
+       plus Kacheln mit Spotlight-Werten. Der Benchmark misst mit einem anderen
+       Verfahren, ueber andere Marken, und wird nicht aktualisiert - er ist laut
+       eigenem Hinweis nur qualitativ lesbar. Was davon wirklich traegt, sind
+       zwei Saetze. Der Methodenapparat und die nicht vergleichbaren Niveaus
+       sind raus; die Datei data/benchmark_branchen.json bleibt fuer den, der
+       nachschauen will. */
+    var txt='<div style="font-size:11.5px;color:#4b5563;line-height:1.55">'
+      +'LLM-Sichtbarkeit folgt der Marktgr\u00f6\u00dfe nur <b>unterproportional</b> \u2014 gro\u00dfe Anbieter werden gestaucht, '
+      +'Testsieger- und Ratgeber-Marken verst\u00e4rkt (r '+fx(r.pearson,2)+' \u00fcber '+(B.n_marken||"?")+' Marken in '
+      +(B.n_branchen||"?")+' Branchen). Das hei\u00dft f\u00fcr ERGO beides: der R\u00fcckstand zu Allianz ist kein reiner '
+      +'Gr\u00f6\u00dfeneffekt \u2014 und Sichtbarkeit ist f\u00fcr Herausforderer billiger zu holen als Marktanteil.</div>'
+      +'<div style="font-size:10.5px;color:#9ca3af;margin-top:5px">Externer Quercheck (Stand '+(B.stand||"?")+'), '
+      +'anderes Messverfahren \u2014 nur qualitativ lesbar, nicht mit den Zahlen dieses Reiters vergleichbar. '
+      +'Details: data/benchmark_branchen.json.</div>';
+    return head+txt+'</div>';
   }
 
   function render(host, lm, brand){

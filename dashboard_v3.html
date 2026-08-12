@@ -736,7 +736,7 @@
     <button onclick="window.__korrDetails()" class="w-full text-left px-5 py-3 flex items-center gap-2 hover:bg-gray-50">
       <span id="korrDetArrow" class="text-gray-400 text-sm">▶</span>
       <span class="font-semibold text-ergo-dark text-sm">Detailauswertungen und Rohdaten</span>
-      <span class="text-xs text-gray-400">— Event-Überblick, Drill-down je Anbieter/LLM, Maßnahmen-Wirkung (DiD), Tagesübersicht, SoV-Verlauf, Mentions, Event-Stream</span>
+      <span class="text-xs text-gray-400">— Event-Überblick, Drill-down je Anbieter/LLM, multivariates Modell, Tagesübersicht, SoV-Verlauf</span>
     </button>
   </div>
   <div id="korrDetails" class="hidden">
@@ -755,12 +755,16 @@
     <div id="corrImpactStudy"></div>
   </div>
 
-  <!-- Maßnahmen-Wirkung (DiD) -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
-    <h3 class="text-lg font-bold text-ergo-dark mb-2">🎯 Maßnahmen-Wirkung (Difference-in-Differences — Tendenz, kein Kausalbeleg)</h3>
-    <p class="text-xs text-gray-500 mb-3">Vergleicht die SoV-Änderung einer Marke rund um ein Datum mit der Änderung der übrigen Marken im selben Zeitraum. Eigene Maßnahmen in <code>data/interventions.json</code> taggen; „auto" = erkannte Aktivitäts-Spitzen, also <b>keine</b> belegte Maßnahme. Der Block ist der am dünnsten abgesicherte des Reiters — die Vorbehalte stehen unter der Tabelle und sind ernst gemeint.</p>
-    <div id="corrInterventions"></div>
-  </div>
+  <!-- 12.08.2026 ENTFERNT: Massnahmen-Wirkung (Difference-in-Differences).
+       Der Block hat nie eine echte ERGO-Massnahme gezeigt: alle Zeilen waren
+       automatisch erkannte Aktivitaets-Spitzen aus dem Ereignis-Log, keine
+       getaggte Kampagne. Keine einzige Zeile war je gesichert, und die
+       Rechnung liefert weder ein Konfidenzintervall noch eine Pruefung der
+       Parallel-Trends-Annahme. Uebrig blieben sechs Zufallszahlen mit vier
+       Absaetzen Warnhinweisen darunter - das ist kein Befund, das ist Ballast.
+       Wiedereinbau, sobald in data/interventions.json echte Massnahmen
+       getaggt sind; die Rechnung selbst (scripts/correlation_impact.py,
+       intervention_results.json) bleibt unangetastet und laeuft weiter. -->
 
   <!-- Tages-Heatmap -->
   <div class="bg-white rounded-xl p-6 shadow mb-6">
@@ -780,20 +784,16 @@
   </div>
 
 
-  <!-- Mention-Tracking -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-2">📈 Mention-Tracking</h3>
-    <p class="text-xs text-gray-500 mb-4">LLM-Erwähnungen pro Brand – ein Frühindikator für Sichtbarkeitsveränderungen.</p>
-    <div id="corrMentions" style="min-height:320px;"></div>
-    <div id="corrMentionSummary" class="mt-3"></div>
-  </div>
-
-  <!-- Event-Stream -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-4">🕐 Event-Stream</h3>
-    <div id="corrFilters" class="flex flex-wrap gap-2 mb-4"></div>
-    <div id="corrStream" style="max-height:600px;overflow-y:auto;"></div>
-  </div>
+  <!-- 12.08.2026 ENTFERNT: Mention-Tracking und Event-Stream.
+       Mention-Tracking war eine nackte Zahlenreihe je Marke ohne Bezugsgroesse
+       und ohne Zeitbezug ("Allianz: 9666, HUK-Coburg: 8082, ..."). Als
+       "Fruehindikator" bezeichnet, aber nie als solcher ausgewertet - der
+       Share of Voice sagt dasselbe besser und steht direkt darueber.
+       Der Event-Stream listete die neuesten 100 von rund 1.450 Rohereignissen.
+       Ein Logbuch, kein Befund: es beantwortet keine Frage, die dieser Reiter
+       stellt. Die Ereignisse selbst bleiben vollstaendig in shared/events.jsonl
+       und fliessen unveraendert in alle Rechnungen ein - nur die Anzeige der
+       Rohzeilen entfaellt. -->
 
   <!-- Status -->
   <div class="bg-blue-50 rounded-xl p-4 shadow mb-6">
@@ -3537,106 +3537,14 @@ function buildGeoTab() {
       el.innerHTML = html;
     }
 
-    function buildInterventions(){
-      var host=document.getElementById('corrInterventions'); if(!host) return;
-      var d=window.INTERVENTIONS;
-      if(!d || !d.results || !d.results.length){
-        host.innerHTML='<div class="text-sm text-gray-400 py-2">Noch keine auswertbaren Maßnahmen. Trage datierte Maßnahmen in <code>data/interventions.json</code> ein — der nächste Nightly-Lauf misst ihre Wirkung.</div>';
-        return;
-      }
-      // WARUM DIE SPALTEN SO AUSSEHEN (10.08.2026):
-      // Vorher stand hier nur did_pp und ein gruen/gelbes Placebo-Badge. Zwei
-      // Dinge fehlten und haben den Block staerker aussehen lassen, als er ist:
-      //   1. did_pp ist eine DIFFERENZ. Ob +13,9 aus einem Sprung der Marke oder
-      //      aus einem Einbruch der Kontrollgruppe kommt, entschied ueber die
-      //      Lesart - stand aber nicht da. Jetzt beide Haelften sichtbar.
-      //   2. p_placebo = (Treffer+1)/(Kontrollen+1). Bei 5 Kontrollen ist der
-      //      KLEINSTMOEGLICHE Wert 1/6 = 0,17 - die 0,1-Schwelle des Badges kann
-      //      dort rechnerisch nie erreicht werden. Ein gelbes "unsicher" bedeutet
-      //      dann nicht "geprueft und schwach", sondern "gar nicht pruefbar".
-      //      Diese beiden Faelle werden jetzt unterschieden.
-      var SCHWELLE=0.1;
-      // Eigene esc-Kopie: _esc lebt im spaeteren <script>-Block, nicht in diesem.
-      var _esc=function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
-      var _z=function(v,dz){ return (v==null||isNaN(v))?'–':((v>0?'+':'')+Number(v).toFixed(dz==null?2:dz)); };
-      var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
-        +'<th style="padding:6px 8px">Datum</th><th style="padding:6px 8px">Marke</th><th style="padding:6px 8px">Anlass</th>'
-        +'<th style="padding:6px 8px;text-align:right">Marke</th><th style="padding:6px 8px;text-align:right">Kontrollen</th>'
-        +'<th style="padding:6px 8px;text-align:right">Differenz</th><th style="padding:6px 8px;text-align:center">Datenbasis</th>'
-        +'<th style="padding:6px 8px;text-align:center">Placebo-Test</th><th style="padding:6px 8px">Quelle</th></tr></thead><tbody>';
-      var nPruefbar=0, nDeutlich=0, nAuto=0;
-      d.results.forEach(function(r){
-        var pos=(r.did_pp||0)>=0;
-        var nC=(r.n_controls!=null?r.n_controls:0);
-        var pMin=nC>0?(1/(nC+1)):null;                 // kleinstmoeglicher p-Wert
-        var pruefbar=(pMin!=null && pMin<SCHWELLE);
-        var strong=(pruefbar && r.p_placebo!=null && r.p_placebo<SCHWELLE);
-        if(pruefbar) nPruefbar++;
-        if(strong) nDeutlich++;
-        if(r.source==='auto') nAuto++;
-        var sig;
-        if(strong){
-          sig='<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#dcfce7;color:#15803d;font-weight:600">deutlich (p='+r.p_placebo.toFixed(2)+')</span>';
-        } else if(pruefbar){
-          sig='<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">unsicher (p='+(r.p_placebo!=null?r.p_placebo.toFixed(2):'?')+')</span>';
-        } else {
-          sig='<span title="p = (Treffer+1)/(Kontrollen+1). Mit '+nC+' Kontrollen ist der kleinstmögliche Wert '+(pMin!=null?pMin.toFixed(2):'?')+' — die 0,10-Schwelle liegt darunter und ist hier nicht erreichbar."'
-             +' style="font-size:10px;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#64748b">nicht prüfbar (p≥'+(pMin!=null?pMin.toFixed(2):'?')+' möglich)</span>';
-        }
-        var basis=(r.n_pre!=null?r.n_pre:'?')+'/'+(r.n_post!=null?r.n_post:'?')+' Tage · '+nC+' Kontr.';
-        var duenn=(r.n_pre!=null && r.n_pre<5);
-        h+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:#475569">'+_esc(r.date||'')+'</td>'
-          +'<td style="padding:6px 8px;font-weight:600">'+_esc(r.brand||'')+'</td>'
-          +'<td style="padding:6px 8px;color:#1e293b">'+_esc(r.label||'')+'</td>'
-          +'<td style="padding:6px 8px;text-align:right;color:#475569">'+_z(r.treated_delta_pp)+'</td>'
-          +'<td style="padding:6px 8px;text-align:right;color:#475569">'+_z(r.control_delta_pp)+'</td>'
-          +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+(pos?'#15803d':'#b91c1c')+'">'+_z(r.did_pp)+'</td>'
-          +'<td style="padding:6px 8px;text-align:center;font-size:11px;color:'+(duenn?'#b45309':'#94a3b8')+'">'+(duenn?'⚠ ':'')+basis+'</td>'
-          +'<td style="padding:6px 8px;text-align:center">'+sig+'</td>'
-          +'<td style="padding:6px 8px;color:#94a3b8;font-size:11px">'+_esc(r.source||'')+'</td></tr>';
-      });
-      h+='</tbody></table></div>';
-      h+='<div style="margin-top:8px;font-size:11.5px;color:#475569;line-height:1.55">'
-        +'<b>Wie die Zeilen zu lesen sind.</b> „Marke" ist die SoV-Änderung der Marke selbst (Nachher-Mittel minus Vorher-Mittel), '
-        +'„Kontrollen" dieselbe Änderung gemittelt über die übrigen Marken, „Differenz" der Abstand beider — das ist die DiD-Zahl. '
-        +'Eine große Differenz kann also ebenso aus einem Einbruch der Kontrollgruppe stammen wie aus einem Anstieg der Marke; '
-        +'die beiden linken Spalten sagen, welches von beidem es war.</div>';
-      h+='<div style="margin-top:8px;font-size:11.5px;color:#475569;line-height:1.55">'
-        +'<b>Was dieser Block nicht leistet.</b> '
-        +'<u>Parallele Entwicklung</u>: DiD unterstellt, dass Marke und Kontrollgruppe sich ohne die Maßnahme gleich entwickelt hätten. '
-        +'Das ist eine Annahme, die hier <b>nicht geprüft</b> wird — bei '+(d.window_days||7)+' Vortagen ist ein Vortrend auch kaum sichtbar. '
-        +'<u>Kein Konfidenzintervall</u>: die Rechnung liefert keins, die Differenz steht ohne Streubereich da. '
-        +'<u>Schwelle</u>: das Badge greift bei p&nbsp;&lt;&nbsp;0,10 — <b>lockerer</b> als die 0,05 im Rest des Reiters — und ist '
-        +'<b>nicht</b> für Mehrfachtests korrigiert, anders als die Forest-Blöcke oben. '
-        +'<u>Anlass</u>: '+(nAuto===d.results.length?'alle '+d.results.length+' Zeilen sind automatisch erkannte Aktivitäts-Spitzen'
-                                                    :nAuto+' von '+d.results.length+' Zeilen sind automatisch erkannte Aktivitäts-Spitzen')
-        +' — eine Häufung von Ereignissen, keine belegte Kampagne. Was dort wirklich passiert ist, weiß nur, wer es getaggt hat.</div>';
-      var _fazit;
-      if(!nPruefbar){
-        _fazit='<b>Aussagekraft aktuell: keine.</b> Bei den vorhandenen Kontrollgruppen liegt der kleinstmögliche Placebo-Wert über der 0,10-Schwelle — '
-              +'keine einzige Zeile könnte sie erreichen, egal wie stark der Effekt wäre. Die Zahlen sind Beschreibung, nicht Nachweis. '
-              +'Belastbarer wird das erst mit mehr Marken in der Kontrollgruppe oder längeren Reihen.';
-      } else if(!nDeutlich){
-        _fazit='<b>Aussagekraft aktuell: keine gesicherte Zeile.</b> '+(nPruefbar===1?'Nur eine':nPruefbar+' ')+' von '+d.results.length+' Zeilen '
-              +(nPruefbar===1?'ist':'sind')+' überhaupt prüfbar (genug Kontrollen in der Vergleichsgruppe), und keine davon unterschreitet die 0,10-Schwelle. '
-              +'Die Zahlen sind Beschreibung, nicht Nachweis.';
-      } else {
-        _fazit='<b>'+nDeutlich+' von '+nPruefbar+' prüfbaren Zeilen</b> unterschreiten die 0,10-Schwelle. Auch diese bleiben Tendenz: '
-              +'ohne Prüfung der parallelen Entwicklung und ohne Mehrfachtest-Korrektur trägt der Block keinen Kausalbefund.';
-      }
-      h+='<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#f8fafc;border-left:3px solid #cbd5e1;font-size:11.5px;color:#334155;line-height:1.55">'+_fazit+'</div>';
-      // d.note bewusst NICHT ausgeben: der Text aus intervention_results.json nennt
-      // did_pp "kausalen Effekt" und widerspraeche allem, was daruebersteht. Das
-      // Skript ist mitkorrigiert; bis der naechste Nightly durch ist, stammt die
-      // Einordnung ausschliesslich aus den Absaetzen oben.
-      h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">Fenster: ±'+(d.window_days||7)+' Tage vor und nach dem Datum · '
-        +(d.measure_days||0)+' Messtage gesamt · Stand '+_esc((d.generated_at||'').slice(0,10))+'.</div>';
-      host.innerHTML=h;
-    }
+    /* 12.08.2026 ENTFERNT: buildInterventions() - die Renderfunktion des
+       DiD-Blocks. Der Block ist oben aus dem Markup genommen; die Funktion
+       haette hier als toter Code weitergelebt. Die Rechnung dahinter laeuft
+       unveraendert weiter und schreibt data/intervention_results.json - fuer
+       den Tag, an dem echte Massnahmen getaggt sind. */
 
     function renderCorrelationTab() {
     try { renderImpactStudy(); } catch(e){ console.warn('impactStudy:', e.message); }
-    try { buildInterventions(); } catch(e){ console.warn('interventions:', e.message); }
     const EI = { review_change:'⭐', press_mention:'📰', news_mention:'🗞️', page_change:'🌐', page_new:'🆕', domain_change:'🔗', sov_change:'📈', berater_shift:'👥', review_volume:'📊', rating_update:'🏆', wikipedia_change:'📚', portal_rank_change:'🛒', rating_status_change:'🏅', price_announcement:'📣' };
     const EC = { review_change:'#f59e0b', press_mention:'#3b82f6', news_mention:'#6366f1', page_change:'#8b5cf6', page_new:'#06b6d4', domain_change:'#14b8a6', sov_change:'#ef4444', berater_shift:'#ec4899', review_volume:'#f59e0b', rating_update:'#10b981', wikipedia_change:'#0ea5e9', portal_rank_change:'#f97316', rating_status_change:'#eab308', price_announcement:'#e11d48' };
     /* 11.08.2026: price_change und page_removed fehlten in dieser Tabelle - Tagesuebersicht
@@ -3647,7 +3555,7 @@ function buildGeoTab() {
     const defC = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6'];
 
     if (!CORRELATION_EVENTS || CORRELATION_EVENTS.length === 0) {
-      ['corrKPIs','corrHeatmap','corrSovChart','corrMentions','corrStream'].forEach(id => {
+      ['corrKPIs','corrHeatmap','corrSovChart'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">🔍 Noch keine Daten</p><p class="text-sm">Die Korrelations-Engine sammelt Events bei jedem Nightly-Run.</p></div>';
       });
@@ -3782,83 +3690,14 @@ function buildGeoTab() {
       }
     }
 
-    // ── 5. Mention-Tracking ──
-    const menEl = document.getElementById('corrMentions');
-    const menSumEl = document.getElementById('corrMentionSummary');
-    if (menEl) {
-      if (mentions.length > 0) {
-        const mByBD = {};
-        mentions.forEach(e => {
-          const d = (e.timestamp||'').substring(0,10);
-          if (!mByBD[e.brand]) mByBD[e.brand] = {};
-          mByBD[e.brand][d] = (mByBD[e.brand][d]||0) + (e.detail.new_mentions||0);
-        });
-        const mDates = [...new Set(mentions.map(e => (e.timestamp||'').substring(0,10)))].sort();
-        const mDS = Object.entries(mByBD).map(([brand, dm], idx) => {
-          const c = BC[brand] || defC[idx % defC.length];
-          return { label: brand, data: mDates.map(d => dm[d]||0), backgroundColor: brand==='ERGO'?c:c+'88', borderColor: c, borderWidth: brand==='ERGO'?3:1, borderRadius: 4, barPercentage: 0.85, categoryPercentage: 0.9 };
-        }).sort((a,b) => a.label==='ERGO'?-1:b.label==='ERGO'?1:a.label.localeCompare(b.label));
-
-        const canvas = document.createElement('canvas');
-        canvas.height = 300;
-        menEl.innerHTML = '';
-        menEl.appendChild(canvas);
-        try {
-          new Chart(canvas, {
-            type: 'bar',
-            data: { labels: mDates, datasets: mDS },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
-                tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' Mentions' } }
-              },
-              scales: {
-                y: { title: { display: true, text: 'Mentions' }, beginAtZero: true },
-                x: { title: { display: true, text: 'Datum' }, ticks: { maxRotation: 45 } }
-              },
-              interaction: { mode: 'index', intersect: false }
-            }
-          });
-        } catch(e) {}
-
-        // Zusammenfassung
-        if (menSumEl) {
-          const totals = Object.entries(mByBD).map(([brand, dm]) => ({ brand, total: Object.values(dm).reduce((s,v)=>s+v,0) })).sort((a,b)=>b.total-a.total);
-          let mh = '<div class="p-3 bg-gray-50 rounded-lg flex flex-wrap gap-2">';
-          totals.forEach(b => {
-            const c = BC[b.brand] || '#666';
-            mh += '<span class="px-2 py-1 rounded text-xs font-medium" style="background:'+c+'15;color:'+c+'">' + b.brand + ': ' + b.total + '</span>';
-          });
-          mh += '</div>';
-          menSumEl.innerHTML = mh;
-        }
-      } else {
-        menEl.innerHTML = '<div class="text-center py-6 text-gray-400"><p>Noch keine Mention-Tracking-Daten.</p></div>';
-      }
-    }
-
-    // ── 6. Event-Stream mit Filtern ──
-    const filterEl = document.getElementById('corrFilters');
-    const streamEl = document.getElementById('corrStream');
-    if (filterEl && streamEl && nonSov.length > 0) {
-      // Filter-Buttons
-      let fh = '<button onclick="filterCorrelationStream(\'all\')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-800 text-white hover:bg-gray-700 transition-colors" data-corr-filter="all">Alle (' + nonSov.length + ')</button>';
-      activeTypes.forEach(t => {
-        const icon = EI[t] || '📌';
-        const count = nonSov.filter(e => e.event_type === t).length;
-        fh += '<button onclick="filterCorrelationStream(\'' + t + '\')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-corr-filter="' + t + '">' + icon + ' ' + (EN[t]||t) + ' (' + count + ')</button>';
-      });
-      filterEl.innerHTML = fh;
-
-      // Stream: nach Tag gruppiert
-      window._corrNonSov = nonSov; // for filter function
-      window._corrEI = EI;
-      window._corrEC = EC;
-      window._corrEN = EN;
-      renderCorrelationStream('all');
-    }
-
+    /* 12.08.2026 ENTFERNT: Abschnitt 5 (Mention-Tracking) und 6 (Event-Stream).
+       Mention-Tracking war ein Balkendiagramm der Roh-Nennungen je Marke ohne
+       Bezugsgroesse - als "Fruehindikator" bezeichnet, aber nie als solcher
+       ausgewertet; der SoV-Verlauf direkt darueber sagt dasselbe belastbarer.
+       Der Event-Stream listete die neuesten 100 von rund 1.450 Rohereignissen:
+       ein Logbuch, das keine Frage dieses Reiters beantwortet.
+       Beide Datenquellen bleiben unangetastet und fliessen weiter in die
+       Modelle - entfernt ist nur ihre Anzeige. */
     // ── Status ──
     const statEl = document.getElementById('correlationDataStatus');
     if (statEl) {
@@ -3942,108 +3781,10 @@ function buildGeoTab() {
     hmEl.innerHTML = h;
   };
 
-  function renderCorrelationStream(filter) {
-    const streamEl = document.getElementById('corrStream');
-    if (!streamEl || !window._corrNonSov) return;
-    const EI = window._corrEI, EC = window._corrEC, EN = window._corrEN;
-    const events = filter === 'all' ? window._corrNonSov : window._corrNonSov.filter(e => e.event_type === filter);
+  /* 12.08.2026 ENTFERNT: renderCorrelationStream() - fuellte den Event-Stream
+     mit den neuesten 100 Rohereignissen. Anzeige ist raus, Funktion damit tot.
+     shared/events.jsonl bleibt vollstaendig und speist alle Rechnungen. */
 
-    // Update filter button styles
-    document.querySelectorAll('[data-corr-filter]').forEach(btn => {
-      if (btn.getAttribute('data-corr-filter') === filter) {
-        btn.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-gray-800 text-white hover:bg-gray-700 transition-colors';
-      } else {
-        btn.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors';
-      }
-    });
-
-    // Limit events for performance (max 100, with "load more" button)
-    const MAX_STREAM = 100;
-    const sorted = events.slice().sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
-    const limited = sorted.slice(0, MAX_STREAM);
-    const hasMore = events.length > MAX_STREAM;
-
-    // Group by day
-    const byDay = {};
-    limited.forEach(e => {
-      const d = (e.timestamp||'').substring(0,10);
-      if (!byDay[d]) byDay[d] = [];
-      byDay[d].push(e);
-    });
-    const days = Object.keys(byDay).sort().reverse();
-
-    let sh = '';
-    if (hasMore) {
-      sh += '<div class="text-xs text-gray-500 mb-3 px-1">Zeige die neuesten ' + MAX_STREAM + ' von ' + events.length + ' Events</div>';
-    }
-    days.forEach(day => {
-      const wd = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date(day+'T12:00:00').getDay()];
-      const evts = byDay[day];
-      sh += '<div class="mb-4">';
-      sh += '<div class="flex items-center gap-2 mb-2 sticky top-0 bg-white py-1 z-10 border-b border-gray-100">';
-      sh += '<span class="text-xs font-bold text-gray-500 uppercase">' + wd + ', ' + day + '</span>';
-      sh += '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">' + evts.length + ' Events</span>';
-      sh += '</div>';
-      sh += '<div class="space-y-1.5">';
-      evts.forEach((ev, _ei) => {
-        const eid = 'csv_' + day.replace(/-/g,'') + '_' + _ei;
-        const icon = EI[ev.event_type] || '📌';
-        const color = EC[ev.event_type] || '#999';
-        const time = (ev.timestamp||'').substring(11,16);
-        const d = ev.detail || {};
-        var srcUrl = d.url || ev.url || '';
-        var srcLink = srcUrl ? (/^https?:\/\//.test(srcUrl) ? srcUrl : ('https://'+srcUrl)) : '';
-        let desc = '';
-        if (d.title) desc = d.title;
-        else if (srcUrl) desc = srcUrl.replace(/https?:\/\/(www\.)?/, '').substring(0,70);
-        else if (d.metric === 'total_subdomains') desc = 'Subdomains: ' + (d.old_count||0) + ' → ' + (d.new_count||0);
-        else if (d.metric === 'average_rating') desc = 'Rating: ' + (d.old_value||0) + ' → ' + (d.new_value||0);
-        else if (d.similarity !== undefined) desc = 'Similarity: ' + ((d.similarity||0)*100).toFixed(1) + '% | +' + (d.added_lines||0) + '/-' + (d.removed_lines||0) + ' Zeilen';
-
-        var det = '';
-        if (srcLink) det += '<div class="mb-1"><a href="' + srcLink + '" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all" onclick="event.stopPropagation()">\ud83d\udd17 ' + srcLink + '</a></div>';
-        var al = d.added_lines, rl = d.removed_lines;
-        if (Array.isArray(al) || Array.isArray(rl)) {
-          det += '<div class="text-xs font-mono bg-gray-50 rounded p-2 max-h-56 overflow-auto">';
-          (rl||[]).slice(0,30).forEach(function(l){ det += '<div class="text-red-700">- ' + (''+l).replace(/[<>&]/g,'') + '</div>'; });
-          (al||[]).slice(0,30).forEach(function(l){ det += '<div class="text-emerald-700">+ ' + (''+l).replace(/[<>&]/g,'') + '</div>'; });
-          det += '</div>';
-        }
-        var skip = {added_lines:1, removed_lines:1, url:1};
-        var fields = Object.keys(d).filter(function(k){ return !skip[k] && d[k]!=null && typeof d[k]!=='object'; });
-        if (fields.length) {
-          det += '<div class="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-600">';
-          fields.forEach(function(k){ det += '<span><b>' + k + ':</b> ' + (''+d[k]).replace(/[<>&]/g,'').slice(0,60) + '</span>'; });
-          det += '</div>';
-        }
-        if (ev.source) det += '<div class="mt-1 text-xs text-gray-400">Quelle: ' + ev.source + (ev.crawler?(' · '+ev.crawler):'') + '</div>';
-        if (!det) det = '<div class="text-xs text-gray-400">Keine weiteren Details gespeichert.</div>';
-        sh += '<div style="border-left:3px solid ' + color + '">';
-        sh += '<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="(function(el){var x=document.getElementById(\''+eid+'\');var a=el.querySelector(\'.cs-arr\');if(x){var h=x.classList.toggle(\'hidden\');if(a)a.textContent=h?\'▸\':\'▾\';}})(this)">';
-        sh += '<span class="cs-arr text-gray-400 flex-shrink-0 mt-0.5 text-xs">▸</span>';
-        sh += '<span class="text-base flex-shrink-0 mt-0.5">' + icon + '</span>';
-        sh += '<div class="flex-1 min-w-0">';
-        sh += '<div class="flex items-center gap-2 flex-wrap">';
-        sh += '<span class="font-semibold text-sm">' + ev.brand + '</span>';
-        sh += '<span class="text-xs px-1.5 py-0.5 rounded" style="background:' + color + '15;color:' + color + '">' + (EN[ev.event_type]||ev.event_type) + '</span>';
-        if (ev.product) sh += '<span class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">' + ev.product + '</span>';
-        sh += '</div>';
-        if (desc) sh += '<p class="text-xs text-gray-500 truncate mt-0.5">' + desc + '</p>';
-        sh += '</div>';
-        if (srcLink) sh += '<a href="' + srcLink + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-blue-600 hover:underline flex-shrink-0 mt-0.5" title="Quelle \u00f6ffnen">\u2197 Quelle</a>';
-        sh += '<span class="text-xs text-gray-400 flex-shrink-0">' + time + '</span>';
-        sh += '</div>';
-        sh += '<div id="' + eid + '" class="hidden px-8 pb-2">' + det + '</div>';
-        sh += '</div>';
-      });
-      sh += '</div></div>';
-    });
-
-    if (events.length === 0) sh = '<div class="text-center py-6 text-gray-400"><p class="text-sm">Keine Events für diesen Filter.</p></div>';
-    streamEl.innerHTML = sh;
-  }
-
-  window.filterCorrelationStream = function(filter) { renderCorrelationStream(filter); };
 
   // ===== Tab-Click-Handler =====
   // Pro Tab: welche Build-Funktion erneut aufrufen (wegen Chart-Render in vorher hidden Containers)

@@ -280,7 +280,18 @@ function bauGruppen() {
     });
     h += '</fieldset>';
   });
-  document.getElementById("gruppen").innerHTML = h || '<p class="help">Nichts eingebettet — der Arbeitsstand war bei der Erzeugung deckungsgleich mit origin/main.</p>';
+  if (h) { document.getElementById("gruppen").innerHTML = h; return; }
+  /* Leerer Zustand ist der NORMALFALL, sobald alles draussen ist - er darf nicht
+     wie ein Fehler aussehen. Die Seite bleibt trotzdem nuetzlich: Workflows
+     anstossen und Status beobachten braucht keine eingebetteten Dateien. */
+  document.getElementById("gruppen").innerHTML =
+    '<div class="ok-banner"><b>Nichts zu pushen.</b> Beim Erzeugen dieser Seite (' + STAND + ') war der '
+    + 'Arbeitsstand deckungsgleich mit <code>origin/main</code> — alles ist bereits im Repo. '
+    + 'Die Seite bleibt für Abschnitt 3 und 4 nutzbar: Workflow anstoßen und Status beobachten.</div>';
+  var b = document.querySelectorAll('#gruppen ~ div button, .card button');
+  Array.prototype.forEach.call(document.querySelectorAll('button'), function (x) {
+    if (/Push starten|Erst prüfen/.test(x.textContent)) { x.disabled = true; x.title = "Keine Dateien eingebettet"; }
+  });
 }
 function bauWorkflows() {
   document.getElementById("wfBtns").innerHTML = WORKFLOWS.map(function (w) {

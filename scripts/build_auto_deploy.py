@@ -54,6 +54,7 @@ Nightly ins Steuer zu greifen.
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import subprocess
@@ -63,11 +64,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REPO = "phoeser/LLM-Cockpit"
-STANDARD_OUT = ROOT / "Auto-Deploy_v3.html"
+
+# 13.08.2026: Der Dateiname war fest "Auto-Deploy_v3.html". Im Download-Ordner
+# lagen dadurch heute Abend Auto-Deploy_v3.html, _v3_1 bis _v3_6 - der Browser
+# haengt bei gleichem Namen eine Nummer an. Welche davon die neueste ist, sieht
+# man dem Namen nicht an; die Zaehlung sagt nur, in welcher Reihenfolge geladen
+# wurde, nicht wann gebaut. Paul hat folgerichtig _v3_5 geoeffnet, waehrend _v3_6
+# die aktuelle war, und bekam eine Fehlermeldung - zu Recht, denn _v3_5 trug
+# einen aelteren Stand von build_auto_deploy.py als der, der laengst im Repo lag.
+# Ein Push haette die Datei zurueckgedreht.
+# Der Bauzeitpunkt gehoert deshalb in den Dateinamen. Dann sortiert der Ordner
+# von selbst richtig und die juengste Datei ist die unterste.
+STANDARD_OUT_MUSTER = "Auto-Deploy_%s.html"   # %s = 2026-08-13_1408
 
 # Vom Nightly geschrieben - gehoert nicht ueber diese Seite gepusht.
 AUSGENOMMEN_PREFIX = ("data/", "shared/")
-AUSGENOMMEN_DATEI = ("index.html", "data.enc", "Auto-Deploy_v3.html")
+AUSGENOMMEN_DATEI = ("index.html", "data.enc")
+# Die erzeugte Seite selbst - unabhaengig davon, wie sie gerade heisst.
+AUSGENOMMEN_MUSTER = ("Auto-Deploy_", "auto_deploy_")
 
 WORKFLOWS = [
     ("nightly-update.yml", "Nightly", "~25 Min"),
@@ -119,6 +133,8 @@ def erlaubt(pfad):
         return False
     if pfad in AUSGENOMMEN_DATEI:
         return False
+    if os.path.basename(pfad).startswith(AUSGENOMMEN_MUSTER):
+        return False
     return True
 
 
@@ -126,6 +142,24 @@ def basis_sha(pfad):
     """Blob-SHA des Standes auf origin/main. None = Datei dort noch nicht."""
     r = git("rev-parse", "origin/main:%s" % pfad)
     return r.stdout.strip() if r.returncode == 0 else None
+
+
+def inhalt_sha(roh):
+    """Blob-SHA des Inhalts, den DIESE Seite traegt - nach Git-Formel, damit er
+    direkt mit dem vergleichbar ist, was die GitHub-API zurueckmeldet.
+
+    13.08.2026 ergaenzt. Bis hierher kannte die Seite nur zwei SHAs: den Stand,
+    gegen den sie gebaut wurde (base_sha), und den, der gerade im Repo liegt.
+    Weichen die voneinander ab, meldete sie "im Repo geaendert - Push wuerde das
+    ueberschreiben". Das stimmt - ausser im haeufigsten Fall ueberhaupt: die
+    Seite hat ihre Dateien selbst gepusht, danach ist der Repo-Stand
+    zwangslaeufig ein anderer als die Basis, und beim naechsten Oeffnen warnt sie
+    vor sich selbst. Genau das ist Paul heute zweimal passiert.
+    Mit dem dritten SHA laesst sich der Fall sauber unterscheiden: Ist der Stand
+    im Repo identisch mit dem, was die Seite traegt, ist nichts zu tun und nichts
+    zu warnen. Eine Warnung, die immer kommt, wird nicht mehr gelesen - und dann
+    fehlt sie an dem Tag, an dem sie zutrifft."""
+    return hashlib.sha1(b"blob %d\0" % len(roh) + roh).hexdigest()
 
 
 def gruppe_von(pfad):
@@ -154,6 +188,7 @@ def sammeln(pfade):
             "size": len(roh),
             "b64": base64.b64encode(roh).decode("ascii"),
             "base_sha": basis_sha(p),
+            "inhalt_sha": inhalt_sha(roh),
             "gruppe": gid,
             "gruppe_label": glabel,
         })
@@ -340,6 +375,11 @@ async function repoSha(remote, token) {
    gewesen und ein Push wuerde dessen Arbeit ueberschreiben. */
 async function pruefeEine(f, token) {
   var sha = await repoSha(f.remote, token);
+  /* Zuerst die Frage, die alles andere erledigt: liegt im Repo bereits genau
+     das, was diese Seite trägt? Dann ist nichts zu tun — egal, ob die Basis
+     noch stimmt. Diese Prüfung stand hier bis zum 13.08.2026 nicht, und genau
+     deshalb warnte die Seite nach jedem erfolgreichen Push vor sich selbst. */
+  if (sha !== null && sha === f.inhalt_sha) return {stand: "deployt", sha: sha};
   if (f.base_sha === null && sha === null) return {stand: "neu", sha: null};
   if (f.base_sha === null && sha !== null) return {stand: "fremd", sha: sha};
   if (sha === null) return {stand: "geloescht", sha: null};
@@ -377,13 +417,14 @@ async function pruefen() {
      Warnung, die aussieht wie ein Fehler, ist ein Fehler im Werkzeug, nicht im
      Verstaendnis des Lesers. Jetzt: Bernstein mit Warndreieck fuer "muss
      bestaetigt werden", Rot ausschliesslich fuer "hat nicht funktioniert". */
-  var fremd = 0, fehlerhaft = 0;
+  var fremd = 0, fehlerhaft = 0, deployt = 0;
   for (var i = 0; i < todo.length; i++) {
     var f = todo[i];
     zeileSetzen(f.remote, "prüfe…", "running");
     try {
       var p = await pruefeEine(f, token);
-      if (p.stand === "unveraendert") zeileSetzen(f.remote, "im Repo unverändert seit " + STAND + " — sicher", "ok");
+      if (p.stand === "deployt") { zeileSetzen(f.remote, "✓ bereits im Repo — identisch, nichts zu tun", "ok"); deployt++; }
+      else if (p.stand === "unveraendert") zeileSetzen(f.remote, "im Repo unverändert seit " + STAND + " — sicher", "ok");
       else if (p.stand === "neu") zeileSetzen(f.remote, "wird neu angelegt", "ok");
       else if (p.stand === "geloescht") { zeileSetzen(f.remote, "im Repo gelöscht — wird wieder angelegt", "warn"); fremd++; }
       else { zeileSetzen(f.remote, "⚠ Achtung: im Repo geändert — Push würde das überschreiben", "warn"); fremd++; }
@@ -399,7 +440,14 @@ async function pruefen() {
        + '<b>kein Fehler</b>, sondern die Sicherung, die anschlägt. Ein Push würde diese Änderungen überschreiben. '
        + 'Entweder die Seite neu erzeugen (<code>python3 scripts/build_auto_deploy.py</code>) oder beim Push einzeln bestätigen.</div>';
   }
-  if (!fremd && !fehlerhaft) {
+  if (deployt === todo.length && !fehlerhaft) {
+    s = '<div class="ok-banner"><b>Diese Seite ist erledigt.</b> Alle ' + deployt + ' Datei(en) liegen bereits '
+      + 'unverändert im Repo — sie wurden von dieser Seite gepusht. Es gibt nichts mehr zu tun; '
+      + 'du kannst sie löschen. Workflows in Abschnitt 3 funktionieren weiterhin.</div>';
+  } else if (deployt) {
+    s = '<div class="ok-banner"><b>' + deployt + ' Datei(en) liegen bereits im Repo</b> und werden übersprungen.</div>' + s;
+  }
+  if (!fremd && !fehlerhaft && !deployt) {
     s = '<div class="ok-banner"><b>Alles unverändert.</b> Push ist gefahrlos.</div>';
   }
   document.getElementById("finalStatus").innerHTML = s;
@@ -419,13 +467,18 @@ async function startDeploy() {
   var todo = gewaehlt();
   if (!todo.length) { alert("Keine Datei ausgewählt."); return; }
   listeAufbauen(todo);
-  var ok = 0, err = 0, uebersprungen = 0;
+  var ok = 0, err = 0, uebersprungen = 0, deployt = 0;
   for (var i = 0; i < todo.length; i++) {
     var f = todo[i];
     zeileSetzen(f.remote, "prüfe…", "running");
     var p;
     try { p = await pruefeEine(f, token); }
     catch (e) { zeileSetzen(f.remote, "Prüfung fehlgeschlagen: " + e.message, "err"); err++; continue; }
+
+    /* Schon identisch im Repo: nicht schreiben. Ein Commit, der nichts aendert,
+       ist kein harmloser Leerlauf - er laesst die Datei frisch angefasst
+       aussehen und macht spaeter die Frage "wer war da zuletzt dran" unbrauchbar. */
+    if (p.stand === "deployt") { zeileSetzen(f.remote, "✓ bereits im Repo — übersprungen", "ok"); deployt++; continue; }
 
     if (p.stand === "fremd" || p.stand === "geloescht") {
       if (!FREIGABE.has(f.remote)) {
@@ -442,12 +495,14 @@ async function startDeploy() {
     catch (e) { zeileSetzen(f.remote, "FEHLER: " + e.message.substring(0, 90), "err"); err++; }
   }
   var s = "<b>" + ok + " gepusht</b>";
+  if (deployt) s += ", " + deployt + " lagen bereits identisch im Repo";
   if (uebersprungen) s += ", " + uebersprungen + " auf deinen Wunsch übersprungen";
   if (err) s += ", " + err + " fehlgeschlagen";
   document.getElementById("finalStatus").innerHTML = (err === 0)
     ? '<div class="' + (uebersprungen ? 'warn-banner' : 'ok-banner') + '">' + s + '. '
       + (uebersprungen ? 'Übersprungen heißt: nichts kaputt, nur nicht geschrieben. ' : '')
-      + 'Workflow in Abschnitt 3 anstoßen.</div>'
+      + (ok === 0 && !uebersprungen ? 'Diese Seite hat ihre Arbeit hinter sich — du kannst sie löschen. ' : 'Workflow in Abschnitt 3 anstoßen.')
+      + '</div>'
     : '<div class="err-banner">' + s + '.</div>';
 }
 
@@ -533,8 +588,9 @@ function pollLoop() {
 
 
 def main():
+    jetzt = datetime.now(timezone.utc)
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(STANDARD_OUT))
+    ap.add_argument("--out", default=str(ROOT / (STANDARD_OUT_MUSTER % jetzt.strftime("%Y-%m-%d_%H%M"))))
     ap.add_argument("--datei", action="append", default=None,
                     help="Einzelne Datei einbetten (mehrfach moeglich). Ohne Angabe: "
                          "alles, was sich gegenueber origin/main unterscheidet.")
@@ -549,10 +605,18 @@ def main():
             print("Nicht eingebettet (schreibt der Nightly selbst): %s" % ", ".join(raus))
 
     if not pfade:
+        # 13.08.2026: Bis hierher wurde auch dann eine Seite geschrieben, die
+        # nichts enthielt. Im Download-Ordner ist die von einer echten nicht zu
+        # unterscheiden - man klickt sie an, es passiert nichts, und man sucht
+        # den Fehler bei sich. Eine leere Seite ist kein Ergebnis, sondern ein
+        # Missverstaendnis in Dateiform.
         print("Nichts einzubetten - Arbeitsstand und origin/main sind deckungsgleich.")
+        print("Es wird KEINE Seite geschrieben: eine leere Auto-Deploy waere nicht")
+        print("von einer gefuellten zu unterscheiden und wuerde nur Verwirrung stiften.")
+        return 0
     dateien = sammeln(pfade)
 
-    stand = datetime.now(timezone.utc).strftime("%d.%m.%Y %H:%M UTC")
+    stand = jetzt.strftime("%d.%m.%Y %H:%M UTC")
     html = (HTML
             .replace("__REPO__", REPO)
             .replace("__FILES__", json.dumps(dateien, ensure_ascii=False))

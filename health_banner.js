@@ -174,3 +174,9 @@
 /* Loader (15.07.2026): Navigations-Redesign nachladen — health_banner.js ist
    auf allen Dashboard-Varianten eingebunden, so braucht es keinen Template-Edit. */
 (function(){ try{ var s=document.createElement("script"); s.src="nav_redesign.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();
+
+/* Loader (13.08.2026): SOHO-Reiter (kleine Gewerbe) nachladen. Gleicher Weg und
+   aus demselben Grund — dashboard_template.html hat 13,3 MB und laesst sich
+   ueber den Konnektor nicht schreiben; ein Runtime-Modul haengt sich den Reiter
+   selbst an und kommt ohne Template-Edit aus. */
+(function(){ try{ var s=document.createElement("script"); s.src="soho_tab.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();

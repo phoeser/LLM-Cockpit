@@ -46,6 +46,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -228,23 +229,101 @@ def seitentyp_aus_pfad(url_norm):
 # GEO-Dateizugriff — gleiche Reihenfolge wie merge_geo_page_events.py
 # ---------------------------------------------------------------------------
 def _gh_contents(path):
-    """GEO-Datei ueber die GitHub-Contents-API (wie merge_geo_page_events.fetch_page_dates).
-    Wirft bei jedem Fehler — der Aufrufer faengt ab und meldet available=false."""
+    """GEO-Datei holen — raw.githubusercontent zuerst, Contents-API als Rueckfall.
+
+    13.08.2026. Der Abruf von data/runs/latest.json lief mit HTTP 403 ins Leere,
+    die Quelle "eigener_crawl" fiel still aus, und die Zitat-Trefferquote
+    halbierte sich (ERGO 5,0 % -> 2,1 %). Ich hatte das zweimal dem fehlenden
+    GEO-Token zugeschrieben. Beide Male falsch. Der Token war da.
+
+    Die Datei ist 30,5 MB gross. Die Contents-API gibt Blobs nur bis 1 MB
+    heraus und antwortet darueber 403, ohne das im Fehlertext zu sagen; urllib
+    meldet bloss "HTTP Error 403: Forbidden". Der eingebaute Rueckfall ueber
+    download_url konnte nicht greifen, weil schon die ERSTE Anfrage abgewiesen
+    wird und die Antwort damit nie ausgelesen werden kann.
+
+    Das Aergerliche: Im selben Repo war das laengst bekannt und geloest.
+    merge_geo_page_events.fetch_page_dates dokumentiert es woertlich —
+    "Contents-API (schnell, aber hartes 1-MB-Limit)" — und faellt in drei
+    Stufen zurueck; fetch_search_ab.py zieht so eine 2,8-MB-Datei. Diese
+    Funktion hier war eine Kopie des Standes VOR jener Reparatur (der Docstring
+    verwies sogar auf fetch_page_dates als Vorbild) und hat die Korrektur nie
+    mitbekommen. Wissen, das an drei Stellen kopiert liegt, wird nur an einer
+    repariert.
+
+    Gewaehlte Reihenfolge, mit Absicht andersherum als beim Vorbild:
+      1. raw.githubusercontent OHNE Token. Das GEO-Repo ist oeffentlich, es
+         gibt kein Groessenlimit, und der Weg ueberlebt einen abgelaufenen
+         Token. Fuer eine 30-MB-Datei ist die Contents-API ohnehin nie der
+         richtige Weg - sie zuerst zu fragen hiesse, planmaessig in ein 403 zu
+         laufen.
+      2. Contents-API mit raw-Medientyp (bis 100 MB), fuer den Fall, dass
+         raw.githubusercontent nicht erreichbar ist oder das Repo eines Tages
+         nicht mehr oeffentlich ist - dann traegt der Token.
+
+    NICHT gemacht, bewusst: die Logik aus merge_geo_page_events importieren,
+    statt sie ein drittes Mal zu schreiben. Das waere der eigentlich richtige
+    Schritt gegen genau dieses Problem. Aus dieser Umgebung ist api.github.com
+    gesperrt, ich kann einen Modulimport quer ueber die Skripte hier nicht
+    gegen den Runner pruefen - und heute sind schon zwei ungepruefte Diagnosen
+    von mir falsch gewesen. Eine kleine, nachvollziehbar richtige Aenderung ist
+    einer eleganten ungetesteten vorzuziehen. Das Zusammenlegen der drei Kopien
+    gehoert auf die Liste, nicht in diesen Commit.
+    """
+    fehler = []
+    raw_url = "https://raw.githubusercontent.com/%s/main/%s" % (GEO_REPO, path)
+    # Drei Versuche, weil die Datei 30 MB gross ist. Beim Testen kam genau das
+    # vor: IncompleteRead(29.991.360 bytes read, 506.711 more expected) - der
+    # Download brach kurz vor Schluss ab. Ein einziger Aussetzer haette damit
+    # die halbe Datengrundlage gekostet, und zwar still: available=false, der
+    # Lauf bleibt gruen, die Trefferquote halbiert sich. Genau das Muster,
+    # das dieses Skript heute schon zweimal hatte.
+    for versuch in (1, 2, 3):
+        try:
+            req = urllib.request.Request(raw_url, headers={"User-Agent": "llm-cockpit-content-citations"})
+            with urllib.request.urlopen(req, timeout=300) as r:
+                roh = r.read()
+            # r.read() kann bei abgeschnittener Verbindung weniger liefern, ohne
+            # zu werfen. Deshalb gegen die angekuendigte Laenge pruefen, statt
+            # dem Ergebnis zu vertrauen.
+            erwartet = r.headers.get("Content-Length")
+            if erwartet and len(roh) != int(erwartet):
+                raise IOError("unvollstaendig: %d von %s Bytes" % (len(roh), erwartet))
+            return json.loads(roh.decode("utf-8")), "raw.githubusercontent (ohne Token)"
+        except Exception as ex:
+            fehler.append("raw.githubusercontent Versuch %d: %s" % (versuch, str(ex)[:90]))
+            if versuch < 3:
+                time.sleep(3 * versuch)
+
     url = "https://api.github.com/repos/%s/contents/%s?ref=main" % (GEO_REPO, path)
-    headers = {"Accept": "application/vnd.github.v3+json",
+    headers = {"Accept": "application/vnd.github.v3.raw",
+               "X-GitHub-Api-Version": "2022-11-28",
                "User-Agent": "llm-cockpit-content-citations"}
     if GITHUB_TOKEN:
         headers["Authorization"] = "Bearer " + GITHUB_TOKEN
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=60) as r:
-        meta = json.loads(r.read().decode("utf-8"))
-    if meta.get("content"):
-        return json.loads(base64.b64decode(meta["content"]).decode("utf-8"))
-    dl = meta.get("download_url")
-    if not dl:
-        raise RuntimeError("Contents-API ohne content/download_url")
-    with urllib.request.urlopen(urllib.request.Request(dl, headers=headers), timeout=120) as r:
-        return json.loads(r.read().decode("utf-8"))
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=180) as r:
+            daten = json.loads(r.read().decode("utf-8"))
+        # Mit dem raw-Medientyp ist das bereits der Dateiinhalt. Antwortet
+        # GitHub wider Erwarten mit dem Metadaten-Objekt, sind dessen typische
+        # Felder da - dann den download_url-Weg gehen, statt Metadaten als
+        # Nutzdaten durchzureichen. Das waere formal gueltiges JSON mit voellig
+        # falschem Inhalt, also ein stiller Fehler der uebelsten Sorte.
+        if isinstance(daten, dict) and "download_url" in daten and "sha" in daten and "size" in daten:
+            if daten.get("content"):
+                return (json.loads(base64.b64decode(daten["content"]).decode("utf-8")),
+                        "Contents-API (base64)")
+            dl = daten.get("download_url")
+            if not dl:
+                raise RuntimeError("Contents-API ohne content/download_url")
+            with urllib.request.urlopen(urllib.request.Request(dl, headers=headers), timeout=180) as r:
+                return json.loads(r.read().decode("utf-8")), "Contents-API (ueber download_url)"
+        return daten, "Contents-API (raw-Medientyp)"
+    except Exception as ex:
+        fehler.append("Contents-API: %s" % str(ex)[:120])
+
+    raise RuntimeError(" / ".join(fehler))
 
 
 def load_geo(rel_path, local_cache=None):
@@ -266,7 +345,13 @@ def load_geo(rel_path, local_cache=None):
             except Exception as ex:
                 return (None, None, "GEO-Datei %s nicht lesbar: %s" % (p, str(ex)[:120]))
     try:
-        return (_gh_contents(rel_path), "GitHub-Contents-API %s/%s" % (GEO_REPO, rel_path), None)
+        # 13.08.2026: Hier stand pauschal "GitHub-Contents-API". Das war schon
+        # vorher nur meistens wahr und ist es jetzt gar nicht mehr - der erste
+        # Weg ist raw.githubusercontent. Eine Quellenangabe, die den falschen
+        # Weg nennt, schickt die naechste Fehlersuche in die Irre; genau daran
+        # habe ich heute zweimal Zeit verloren.
+        _daten, _weg = _gh_contents(rel_path)
+        return (_daten, "%s: %s/%s" % (_weg, GEO_REPO, rel_path), None)
     except Exception as ex:
         return (None, None, ("GEO-Datei %s weder lokal (data/, $GEO_LOCAL_DIR, "
                              "../geo-visibility-tool) noch ueber die GitHub-API "

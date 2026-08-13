@@ -371,7 +371,13 @@ async function pruefen() {
   var todo = gewaehlt();
   if (!todo.length) { alert("Keine Datei ausgewählt."); return; }
   listeAufbauen(todo);
-  var fremd = 0;
+  /* 13.08.2026: Warnung und Fehler standen beide in Rot. Paul hat die Meldung
+     "IM REPO GEÄNDERT" folgerichtig als "2 Fehler" gelesen und eine Stunde nach
+     einem Fehler gesucht, den es nicht gab - der Push war laengst durch. Eine
+     Warnung, die aussieht wie ein Fehler, ist ein Fehler im Werkzeug, nicht im
+     Verstaendnis des Lesers. Jetzt: Bernstein mit Warndreieck fuer "muss
+     bestaetigt werden", Rot ausschliesslich fuer "hat nicht funktioniert". */
+  var fremd = 0, fehlerhaft = 0;
   for (var i = 0; i < todo.length; i++) {
     var f = todo[i];
     zeileSetzen(f.remote, "prüfe…", "running");
@@ -380,14 +386,23 @@ async function pruefen() {
       if (p.stand === "unveraendert") zeileSetzen(f.remote, "im Repo unverändert seit " + STAND + " — sicher", "ok");
       else if (p.stand === "neu") zeileSetzen(f.remote, "wird neu angelegt", "ok");
       else if (p.stand === "geloescht") { zeileSetzen(f.remote, "im Repo gelöscht — wird wieder angelegt", "warn"); fremd++; }
-      else { zeileSetzen(f.remote, "IM REPO GEÄNDERT — Push würde das überschreiben", "err"); fremd++; }
-    } catch (e) { zeileSetzen(f.remote, "Prüfung fehlgeschlagen: " + e.message, "err"); fremd++; }
+      else { zeileSetzen(f.remote, "⚠ Achtung: im Repo geändert — Push würde das überschreiben", "warn"); fremd++; }
+    } catch (e) { zeileSetzen(f.remote, "FEHLER — Prüfung fehlgeschlagen: " + e.message, "err"); fehlerhaft++; }
   }
-  document.getElementById("finalStatus").innerHTML = fremd === 0
-    ? '<div class="ok-banner"><b>Alles unverändert.</b> Push ist gefahrlos.</div>'
-    : '<div class="warn-banner"><b>' + fremd + ' Datei(en) haben sich im Repo geändert</b>, seit diese Seite erzeugt wurde. '
-      + 'Ein Push überschreibt diese Änderungen. Entweder die Seite neu erzeugen (<code>python3 scripts/build_auto_deploy.py</code>) '
-      + 'oder beim Push einzeln bestätigen.</div>';
+  var s = "";
+  if (fehlerhaft) {
+    s += '<div class="err-banner"><b>' + fehlerhaft + ' Prüfung(en) fehlgeschlagen.</b> Das ist ein echter Fehler — '
+       + 'Token, Berechtigung oder Netz. Details in der Liste oben.</div>';
+  }
+  if (fremd) {
+    s += '<div class="warn-banner"><b>⚠ ' + fremd + ' Datei(en) haben sich im Repo geändert</b>, seit diese Seite erzeugt wurde — '
+       + '<b>kein Fehler</b>, sondern die Sicherung, die anschlägt. Ein Push würde diese Änderungen überschreiben. '
+       + 'Entweder die Seite neu erzeugen (<code>python3 scripts/build_auto_deploy.py</code>) oder beim Push einzeln bestätigen.</div>';
+  }
+  if (!fremd && !fehlerhaft) {
+    s = '<div class="ok-banner"><b>Alles unverändert.</b> Push ist gefahrlos.</div>';
+  }
+  document.getElementById("finalStatus").innerHTML = s;
 }
 
 async function pushOne(f, token, sha) {
@@ -427,10 +442,12 @@ async function startDeploy() {
     catch (e) { zeileSetzen(f.remote, "FEHLER: " + e.message.substring(0, 90), "err"); err++; }
   }
   var s = "<b>" + ok + " gepusht</b>";
-  if (uebersprungen) s += ", " + uebersprungen + " übersprungen";
-  if (err) s += ", " + err + " Fehler";
+  if (uebersprungen) s += ", " + uebersprungen + " auf deinen Wunsch übersprungen";
+  if (err) s += ", " + err + " fehlgeschlagen";
   document.getElementById("finalStatus").innerHTML = (err === 0)
-    ? '<div class="ok-banner">' + s + '. Workflow in Abschnitt 3 anstoßen.</div>'
+    ? '<div class="' + (uebersprungen ? 'warn-banner' : 'ok-banner') + '">' + s + '. '
+      + (uebersprungen ? 'Übersprungen heißt: nichts kaputt, nur nicht geschrieben. ' : '')
+      + 'Workflow in Abschnitt 3 anstoßen.</div>'
     : '<div class="err-banner">' + s + '.</div>';
 }
 

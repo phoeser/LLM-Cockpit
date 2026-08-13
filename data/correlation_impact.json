@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T13:18:57Z",
+  "generated_at": "2026-08-13T00:14:19Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -84,7 +84,7 @@
       "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors"
     },
     "presse_datierung": {
-      "umdatiert": 2616,
+      "umdatiert": 2622,
       "bereits_gleich": 94,
       "fallback_timestamp": 0,
       "hinweis": "Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, zukuenftigem oder nach dem Crawl liegendem Datum."
@@ -130,11 +130,11 @@
     "coefficients": {
       "media_negative": {
         "label": "Presse/News: Schaden/Leistung",
-        "coef_pp_per_event_day": 0.5592,
-        "ci95_low": -0.298,
-        "ci95_high": 1.4164,
-        "prob_positive": 0.899,
-        "prob_direction": 0.899,
+        "coef_pp_per_event_day": 0.5564,
+        "ci95_low": -0.3015,
+        "ci95_high": 1.4143,
+        "prob_positive": 0.898,
+        "prob_direction": 0.898,
         "significant": false,
         "n_with_event": 14,
         "reliable": false,
@@ -142,9 +142,9 @@
       },
       "media_positive": {
         "label": "Presse/News: Produkt/Strategie",
-        "coef_pp_per_event_day": -0.2824,
-        "ci95_low": -1.0024,
-        "ci95_high": 0.4375,
+        "coef_pp_per_event_day": -0.2818,
+        "ci95_low": -1.0018,
+        "ci95_high": 0.4381,
         "prob_positive": 0.221,
         "prob_direction": 0.779,
         "significant": false,
@@ -154,11 +154,11 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "coef_pp_per_event_day": 0.1461,
-        "ci95_low": -0.1011,
-        "ci95_high": 0.3933,
-        "prob_positive": 0.877,
-        "prob_direction": 0.877,
+        "coef_pp_per_event_day": 0.1484,
+        "ci95_low": -0.0975,
+        "ci95_high": 0.3942,
+        "prob_positive": 0.882,
+        "prob_direction": 0.882,
         "significant": false,
         "n_with_event": 45,
         "reliable": false,
@@ -166,13 +166,13 @@
       },
       "review_negative": {
         "label": "Negative Bewertungen",
-        "coef_pp_per_event_day": -0.0226,
-        "ci95_low": -0.1551,
-        "ci95_high": 0.11,
-        "prob_positive": 0.369,
-        "prob_direction": 0.631,
+        "coef_pp_per_event_day": -0.0205,
+        "ci95_low": -0.1681,
+        "ci95_high": 0.1271,
+        "prob_positive": 0.393,
+        "prob_direction": 0.607,
         "significant": false,
-        "n_with_event": 70,
+        "n_with_event": 64,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
@@ -190,13 +190,13 @@
       },
       "review_positive": {
         "label": "Positive Bewertungen",
-        "coef_pp_per_event_day": 0.0039,
-        "ci95_low": -0.0292,
-        "ci95_high": 0.037,
-        "prob_positive": 0.59,
-        "prob_direction": 0.59,
+        "coef_pp_per_event_day": 0.0045,
+        "ci95_low": -0.0301,
+        "ci95_high": 0.0391,
+        "prob_positive": 0.601,
+        "prob_direction": 0.601,
         "significant": false,
-        "n_with_event": 71,
+        "n_with_event": 66,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
@@ -216,7 +216,7 @@
     "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
   },
   "validation": {
-    "placebo_false_positive_rate": 0.02,
+    "placebo_false_positive_rate": 0.0207,
     "out_of_sample": {
       "r2_oos_vs_baseline": -0.026,
       "n_test": 661
@@ -4854,56 +4854,56 @@
         "drivers_eff": {
           "cite_share": {
             "within": {
-              "coef": 1.652,
+              "coef": 1.382,
               "prob_direction": 1.0,
-              "effect_std_pp": 2.6,
-              "se_iid": 0.2663,
-              "se_cluster": 0.3512,
-              "se_inflation": 1.32,
+              "effect_std_pp": 3.08,
+              "se_iid": 0.1649,
+              "se_cluster": 0.1974,
+              "se_inflation": 1.2,
               "n_clusters": 18,
-              "wild_cluster_p": 0.0,
-              "wild_cluster_t": 4.705,
+              "wild_cluster_p": 0.0002,
+              "wild_cluster_t": 7.002,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.0,
+              "wild_cluster_p_fdr": 0.0006,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             },
             "between": {
-              "coef": 1.736,
+              "coef": 1.242,
               "prob_direction": 1.0,
-              "effect_std_pp": 3.68,
-              "se_iid": 0.3094,
-              "se_cluster": 0.1895,
-              "se_inflation": 0.61,
+              "effect_std_pp": 3.58,
+              "se_iid": 0.1543,
+              "se_cluster": 0.1346,
+              "se_inflation": 0.87,
               "n_clusters": 18,
               "wild_cluster_p": 0.0,
-              "wild_cluster_t": 9.159,
+              "wild_cluster_t": 9.231,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 1.584,
-                "max": 2.074,
+                "min": 1.136,
+                "max": 1.563,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": 1.753,
-                  "ARAG": 1.65,
-                  "AXA": 1.686,
-                  "Allianz": 2.074,
-                  "Barmenia": 1.714,
-                  "CosmosDirekt": 1.738,
-                  "DA Direkt": 1.764,
-                  "DEVK": 1.738,
-                  "Die Bayerische": 1.729,
-                  "ERGO": 1.681,
-                  "Generali": 1.709,
-                  "HUK-Coburg": 1.584,
-                  "HanseMerkur": 1.743,
-                  "LV 1871": 1.695,
-                  "R+V": 1.731,
-                  "Signal Iduna": 1.718,
-                  "VHV": 1.774,
-                  "Württembergische": 1.755
+                  "ADAC": 1.304,
+                  "ARAG": 1.186,
+                  "AXA": 1.288,
+                  "Allianz": 1.563,
+                  "Barmenia": 1.228,
+                  "CosmosDirekt": 1.25,
+                  "DA Direkt": 1.261,
+                  "DEVK": 1.238,
+                  "Die Bayerische": 1.236,
+                  "ERGO": 1.243,
+                  "Generali": 1.233,
+                  "HUK-Coburg": 1.166,
+                  "HanseMerkur": 1.246,
+                  "LV 1871": 1.136,
+                  "R+V": 1.242,
+                  "Signal Iduna": 1.215,
+                  "VHV": 1.254,
+                  "Württembergische": 1.214
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
@@ -4918,50 +4918,50 @@
               "coef": 0.0,
               "prob_direction": 0.5,
               "effect_std_pp": 0.0,
-              "se_iid": 1.3143,
+              "se_iid": 1.0705,
               "se_cluster": null,
               "se_inflation": null,
               "n_clusters": 18
             },
             "between": {
-              "coef": 0.007,
-              "prob_direction": 0.659,
-              "effect_std_pp": 0.19,
-              "se_iid": 0.0243,
-              "se_cluster": 0.0176,
-              "se_inflation": 0.73,
+              "coef": 0.03,
+              "prob_direction": 0.977,
+              "effect_std_pp": 0.78,
+              "se_iid": 0.0161,
+              "se_cluster": 0.0152,
+              "se_inflation": 0.94,
               "n_clusters": 18,
-              "wild_cluster_p": 0.8686,
-              "wild_cluster_t": 0.41,
+              "wild_cluster_p": 0.1482,
+              "wild_cluster_t": 1.987,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -0.017,
-                "max": 0.021,
-                "sign_stable": false,
+                "min": 0.024,
+                "max": 0.045,
+                "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": 0.005,
-                  "ARAG": 0.021,
-                  "AXA": 0.008,
-                  "Allianz": -0.017,
-                  "Barmenia": 0.008,
-                  "CosmosDirekt": 0.008,
-                  "DA Direkt": 0.004,
-                  "DEVK": 0.006,
-                  "Die Bayerische": 0.001,
-                  "ERGO": 0.012,
-                  "Generali": 0.009,
-                  "HUK-Coburg": 0.016,
-                  "HanseMerkur": 0.008,
-                  "LV 1871": 0.021,
-                  "R+V": 0.008,
-                  "Signal Iduna": 0.005,
-                  "VHV": 0.006,
-                  "Württembergische": 0.007
+                  "ADAC": 0.024,
+                  "ARAG": 0.041,
+                  "AXA": 0.025,
+                  "Allianz": 0.039,
+                  "Barmenia": 0.03,
+                  "CosmosDirekt": 0.028,
+                  "DA Direkt": 0.027,
+                  "DEVK": 0.03,
+                  "Die Bayerische": 0.027,
+                  "ERGO": 0.03,
+                  "Generali": 0.031,
+                  "HUK-Coburg": 0.034,
+                  "HanseMerkur": 0.031,
+                  "LV 1871": 0.045,
+                  "R+V": 0.031,
+                  "Signal Iduna": 0.028,
+                  "VHV": 0.03,
+                  "Württembergische": 0.031
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.8686,
+              "wild_cluster_p_fdr": 0.247,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
@@ -4969,60 +4969,60 @@
           },
           "relprice": {
             "within": {
-              "coef": -1.409,
-              "prob_direction": 0.992,
-              "effect_std_pp": -1.06,
-              "se_iid": 0.6254,
-              "se_cluster": 0.5895,
-              "se_inflation": 0.94,
+              "coef": -1.125,
+              "prob_direction": 0.996,
+              "effect_std_pp": -0.84,
+              "se_iid": 0.514,
+              "se_cluster": 0.4228,
+              "se_inflation": 0.82,
               "n_clusters": 18,
-              "wild_cluster_p": 0.0652,
-              "wild_cluster_t": -2.391,
+              "wild_cluster_p": 0.0335,
+              "wild_cluster_t": -2.661,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.1222,
+              "wild_cluster_p_fdr": 0.0628,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             },
             "between": {
-              "coef": -1.344,
-              "prob_direction": 0.801,
-              "effect_std_pp": -0.57,
-              "se_iid": 1.0267,
-              "se_cluster": 1.5907,
-              "se_inflation": 1.55,
+              "coef": -1.144,
+              "prob_direction": 0.816,
+              "effect_std_pp": -0.49,
+              "se_iid": 0.8505,
+              "se_cluster": 1.2722,
+              "se_inflation": 1.5,
               "n_clusters": 18,
-              "wild_cluster_p": 0.4891,
-              "wild_cluster_t": -0.845,
+              "wild_cluster_p": 0.4728,
+              "wild_cluster_t": -0.9,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -3.941,
-                "max": -0.659,
+                "min": -3.314,
+                "max": -0.56,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": -1.442,
-                  "ARAG": -3.941,
-                  "AXA": -1.427,
-                  "Allianz": -0.977,
-                  "Barmenia": -1.455,
-                  "CosmosDirekt": -1.352,
-                  "DA Direkt": -1.369,
-                  "DEVK": -1.355,
-                  "Die Bayerische": -1.576,
-                  "ERGO": -1.178,
-                  "Generali": -1.205,
-                  "HUK-Coburg": -1.092,
-                  "HanseMerkur": -1.39,
-                  "LV 1871": -0.659,
-                  "R+V": -1.282,
-                  "Signal Iduna": -0.873,
-                  "VHV": -1.238,
-                  "Württembergische": -1.194
+                  "ADAC": -1.293,
+                  "ARAG": -3.314,
+                  "AXA": -0.95,
+                  "Allianz": -0.56,
+                  "Barmenia": -1.264,
+                  "CosmosDirekt": -1.1,
+                  "DA Direkt": -1.179,
+                  "DEVK": -1.159,
+                  "Die Bayerische": -1.288,
+                  "ERGO": -0.987,
+                  "Generali": -0.986,
+                  "HUK-Coburg": -0.828,
+                  "HanseMerkur": -1.173,
+                  "LV 1871": -0.839,
+                  "R+V": -0.902,
+                  "Signal Iduna": -0.863,
+                  "VHV": -1.087,
+                  "Württembergische": -1.332
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.6114,
+              "wild_cluster_p_fdr": 0.5463,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
@@ -5033,176 +5033,178 @@
         "gap_decomposition": {
           "ADAC": {
             "vs": "Allianz",
-            "actual_gap_pp": 6.04,
+            "actual_gap_pp": 4.29,
             "contrib_pp": {
-              "cite_share": 6.12,
-              "size": 0.53,
-              "relprice": -0.74
+              "cite_share": 1.97,
+              "size": 2.25,
+              "relprice": -0.63
             },
-            "explained_pp": 5.91
+            "explained_pp": 3.59
           },
           "ARAG": {
             "vs": "Allianz",
-            "actual_gap_pp": 8.99,
+            "actual_gap_pp": 9.75,
             "contrib_pp": {
-              "cite_share": 10.38,
-              "size": 0.5,
-              "relprice": 1.4
+              "cite_share": 9.97,
+              "size": 2.16,
+              "relprice": 1.19
             },
-            "explained_pp": 12.28
+            "explained_pp": 13.32
           },
           "AXA": {
             "vs": "Allianz",
-            "actual_gap_pp": 10.25,
+            "actual_gap_pp": 10.28,
             "contrib_pp": {
-              "cite_share": 8.75,
-              "size": 0.32,
-              "relprice": -0.15
+              "cite_share": 9.98,
+              "size": 1.35,
+              "relprice": -0.13
             },
-            "explained_pp": 8.92
+            "explained_pp": 11.2
           },
           "Barmenia": {
             "vs": "Allianz",
-            "actual_gap_pp": 16.11,
+            "actual_gap_pp": 16.1,
             "contrib_pp": {
-              "cite_share": 12.13,
-              "size": 0.5,
-              "relprice": -0.57
+              "cite_share": 11.52,
+              "size": 2.16,
+              "relprice": -0.48
             },
-            "explained_pp": 12.06
+            "explained_pp": 13.2
           },
           "CosmosDirekt": {
             "vs": "Allianz",
-            "actual_gap_pp": 10.23,
+            "actual_gap_pp": 10.11,
             "contrib_pp": {
-              "cite_share": 9.64,
-              "size": 0.49,
-              "relprice": 0.24
+              "cite_share": 7.09,
+              "size": 2.1,
+              "relprice": 0.2
             },
-            "explained_pp": 10.37
+            "explained_pp": 9.39
           },
           "DA Direkt": {
             "vs": "Allianz",
-            "actual_gap_pp": 12.35,
+            "actual_gap_pp": 11.83,
             "contrib_pp": {
-              "cite_share": 9.86,
-              "size": 0.62,
-              "relprice": 0.13
+              "cite_share": 8.38,
+              "size": 2.64,
+              "relprice": 0.11
             },
-            "explained_pp": 10.61
+            "explained_pp": 11.13
           },
           "DEVK": {
             "vs": "Allianz",
-            "actual_gap_pp": 11.82,
+            "actual_gap_pp": 11.6,
             "contrib_pp": {
-              "cite_share": 8.67,
-              "size": 0.46,
+              "cite_share": 8.63,
+              "size": 1.95,
               "relprice": -0.01
             },
-            "explained_pp": 9.12
+            "explained_pp": 10.57
           },
           "Die Bayerische": {
             "vs": "Allianz",
-            "actual_gap_pp": 14.72,
+            "actual_gap_pp": 14.49,
             "contrib_pp": {
-              "cite_share": 11.62,
-              "size": 0.59,
-              "relprice": -0.05
+              "cite_share": 10.83,
+              "size": 2.55,
+              "relprice": -0.04
             },
-            "explained_pp": 12.16
+            "explained_pp": 13.34
           },
           "ERGO": {
             "vs": "Allianz",
-            "actual_gap_pp": 9.91,
+            "actual_gap_pp": 9.93,
             "contrib_pp": {
-              "cite_share": 8.65,
-              "size": 0.24,
-              "relprice": 0.29
+              "cite_share": 8.72,
+              "size": 1.05,
+              "relprice": 0.25
             },
-            "explained_pp": 9.18
+            "explained_pp": 10.02
           },
           "Generali": {
             "vs": "Allianz",
-            "actual_gap_pp": 17.1,
+            "actual_gap_pp": 16.88,
             "contrib_pp": {
-              "cite_share": 12.13,
-              "size": 0.35,
-              "relprice": 1.53
+              "cite_share": 11.52,
+              "size": 1.5,
+              "relprice": 1.3
             },
-            "explained_pp": 14.01
+            "explained_pp": 14.32
           },
           "HUK-Coburg": {
             "vs": "Allianz",
-            "actual_gap_pp": 1.58,
+            "actual_gap_pp": 1.63,
             "contrib_pp": {
-              "cite_share": 3.03,
-              "size": 0.28,
-              "relprice": -0.43
+              "cite_share": 3.63,
+              "size": 1.2,
+              "relprice": -0.37
             },
-            "explained_pp": 2.88
+            "explained_pp": 4.46
           },
           "HanseMerkur": {
             "vs": "Allianz",
-            "actual_gap_pp": 9.82,
+            "actual_gap_pp": 10.28,
             "contrib_pp": {
-              "cite_share": 9.11,
-              "size": 0.53,
-              "relprice": 0.56
+              "cite_share": 8.18,
+              "size": 2.25,
+              "relprice": 0.47
             },
-            "explained_pp": 10.2
+            "explained_pp": 10.9
           },
           "LV 1871": {
             "vs": "Allianz",
-            "actual_gap_pp": 4.9,
+            "actual_gap_pp": 4.4,
             "contrib_pp": {
-              "cite_share": 10.42,
-              "size": 0.62,
-              "relprice": -0.57
+              "cite_share": 5.13,
+              "size": 2.64,
+              "relprice": -0.48
             },
-            "explained_pp": 10.47
+            "explained_pp": 7.29
           },
           "R+V": {
             "vs": "Allianz",
-            "actual_gap_pp": 15.62,
+            "actual_gap_pp": 15.92,
             "contrib_pp": {
-              "cite_share": 12.13,
-              "size": 0.28,
-              "relprice": 2.82
+              "cite_share": 11.52,
+              "size": 1.2,
+              "relprice": 2.4
             },
-            "explained_pp": 15.23
+            "explained_pp": 15.12
           },
           "Signal Iduna": {
             "vs": "Allianz",
-            "actual_gap_pp": 14.3,
+            "actual_gap_pp": 14.12,
             "contrib_pp": {
-              "cite_share": 9.86,
-              "size": 0.46,
-              "relprice": 0.51
+              "cite_share": 10.16,
+              "size": 1.95,
+              "relprice": 0.44
             },
-            "explained_pp": 10.83
+            "explained_pp": 12.55
           },
           "VHV": {
             "vs": "Allianz",
-            "actual_gap_pp": 10.4,
+            "actual_gap_pp": 11.9,
             "contrib_pp": {
-              "cite_share": 12.13,
-              "size": 0.49,
-              "relprice": -0.28
+              "cite_share": 11.52,
+              "size": 2.1,
+              "relprice": -0.24
             },
-            "explained_pp": 12.34
+            "explained_pp": 13.38
           },
           "Württembergische": {
             "vs": "Allianz",
-            "actual_gap_pp": 12.86,
+            "actual_gap_pp": 13.07,
             "contrib_pp": {
-              "cite_share": 12.13,
-              "size": 0.46,
-              "relprice": -0.32
+              "cite_share": 10.58,
+              "size": 1.95,
+              "relprice": -0.27
             },
-            "explained_pp": 12.27
+            "explained_pp": 12.26
           }
         },
         "note": "Gemeinsames Mundlak-Modell; Between-Effekte kontrollieren einander (Groesse vs. Footprint sauber getrennt).",
+        "basis": "level_panel_gemittelt",
+        "basis_note": "cite_share aus derselben Engine-Gruppe wie die Zielgroesse, gemittelt ueber 18 saubere Messtage (2026-07-21..2026-08-10). Identische Grundlage wie gap_explorer - die beiden Zerlegungen koennen sich nicht mehr widersprechen.",
         "circularity": {
           "share_same_engine": 0.5631,
           "level": "high",
@@ -5229,60 +5231,60 @@
         "drivers_eff": {
           "cite_share": {
             "within": {
-              "coef": 2.313,
+              "coef": 1.045,
               "prob_direction": 1.0,
-              "effect_std_pp": 3.64,
-              "se_iid": 0.2039,
-              "se_cluster": 0.2406,
-              "se_inflation": 1.18,
+              "effect_std_pp": 5.01,
+              "se_iid": 0.0271,
+              "se_cluster": 0.0423,
+              "se_inflation": 1.56,
               "n_clusters": 18,
-              "wild_cluster_p": 0.0022,
-              "wild_cluster_t": 9.615,
+              "wild_cluster_p": 0.0017,
+              "wild_cluster_t": 24.732,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.0066,
+              "wild_cluster_p_fdr": 0.0042,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             },
             "between": {
-              "coef": 1.755,
+              "coef": 0.867,
               "prob_direction": 1.0,
-              "effect_std_pp": 3.72,
-              "se_iid": 0.2369,
-              "se_cluster": 0.2972,
-              "se_inflation": 1.25,
+              "effect_std_pp": 5.12,
+              "se_iid": 0.0382,
+              "se_cluster": 0.0703,
+              "se_inflation": 1.84,
               "n_clusters": 18,
-              "wild_cluster_p": 0.0083,
-              "wild_cluster_t": 5.905,
+              "wild_cluster_p": 0.0,
+              "wild_cluster_t": 12.339,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 1.514,
-                "max": 2.001,
+                "min": 0.803,
+                "max": 0.963,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": 1.778,
-                  "ARAG": 1.699,
-                  "AXA": 2.001,
-                  "Allianz": 1.986,
-                  "Barmenia": 1.75,
-                  "CosmosDirekt": 1.755,
-                  "DA Direkt": 1.792,
-                  "DEVK": 1.75,
-                  "Die Bayerische": 1.748,
-                  "ERGO": 1.514,
-                  "Generali": 1.732,
-                  "HUK-Coburg": 1.685,
-                  "HanseMerkur": 1.768,
-                  "LV 1871": 1.742,
-                  "R+V": 1.735,
-                  "Signal Iduna": 1.769,
-                  "VHV": 1.751,
-                  "Württembergische": 1.645
+                  "ADAC": 0.864,
+                  "ARAG": 0.865,
+                  "AXA": 0.866,
+                  "Allianz": 0.963,
+                  "Barmenia": 0.866,
+                  "CosmosDirekt": 0.869,
+                  "DA Direkt": 0.87,
+                  "DEVK": 0.868,
+                  "Die Bayerische": 0.876,
+                  "ERGO": 0.803,
+                  "Generali": 0.86,
+                  "HUK-Coburg": 0.88,
+                  "HanseMerkur": 0.861,
+                  "LV 1871": 0.873,
+                  "R+V": 0.86,
+                  "Signal Iduna": 0.839,
+                  "VHV": 0.868,
+                  "Württembergische": 0.851
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.0208,
+              "wild_cluster_p_fdr": 0.0,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
@@ -5293,111 +5295,111 @@
               "coef": 0.0,
               "prob_direction": 0.5,
               "effect_std_pp": 0.0,
-              "se_iid": 1.0062,
+              "se_iid": 0.419,
               "se_cluster": null,
               "se_inflation": null,
               "n_clusters": 18
             },
             "between": {
-              "coef": 0.084,
+              "coef": 0.057,
               "prob_direction": 1.0,
-              "effect_std_pp": 2.17,
-              "se_iid": 0.0186,
-              "se_cluster": 0.0242,
-              "se_inflation": 1.3,
+              "effect_std_pp": 1.47,
+              "se_iid": 0.0084,
+              "se_cluster": 0.0151,
+              "se_inflation": 1.8,
               "n_clusters": 18,
-              "wild_cluster_p": 0.0212,
-              "wild_cluster_t": 3.463,
+              "wild_cluster_p": 0.4735,
+              "wild_cluster_t": 3.739,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 0.065,
-                "max": 0.106,
+                "min": 0.02,
+                "max": 0.074,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": 0.081,
-                  "ARAG": 0.093,
-                  "AXA": 0.065,
-                  "Allianz": 0.075,
-                  "Barmenia": 0.084,
-                  "CosmosDirekt": 0.077,
-                  "DA Direkt": 0.079,
-                  "DEVK": 0.083,
-                  "Die Bayerische": 0.083,
-                  "ERGO": 0.106,
-                  "Generali": 0.086,
-                  "HUK-Coburg": 0.088,
-                  "HanseMerkur": 0.084,
-                  "LV 1871": 0.088,
-                  "R+V": 0.086,
-                  "Signal Iduna": 0.084,
-                  "VHV": 0.084,
-                  "Württembergische": 0.089
+                  "ADAC": 0.058,
+                  "ARAG": 0.059,
+                  "AXA": 0.057,
+                  "Allianz": 0.02,
+                  "Barmenia": 0.057,
+                  "CosmosDirekt": 0.054,
+                  "DA Direkt": 0.056,
+                  "DEVK": 0.057,
+                  "Die Bayerische": 0.056,
+                  "ERGO": 0.074,
+                  "Generali": 0.058,
+                  "HUK-Coburg": 0.054,
+                  "HanseMerkur": 0.059,
+                  "LV 1871": 0.056,
+                  "R+V": 0.059,
+                  "Signal Iduna": 0.063,
+                  "VHV": 0.056,
+                  "Württembergische": 0.059
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.0454,
-              "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "wild_cluster_p_fdr": 0.5463,
+              "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             }
           },
           "relprice": {
             "within": {
-              "coef": -0.585,
-              "prob_direction": 0.88,
-              "effect_std_pp": -0.44,
-              "se_iid": 0.4788,
-              "se_cluster": 0.4987,
-              "se_inflation": 1.04,
+              "coef": -0.112,
+              "prob_direction": 0.766,
+              "effect_std_pp": -0.08,
+              "se_iid": 0.1986,
+              "se_cluster": 0.1534,
+              "se_inflation": 0.77,
               "n_clusters": 18,
-              "wild_cluster_p": 0.315,
-              "wild_cluster_t": -1.173,
+              "wild_cluster_p": 0.5512,
+              "wild_cluster_t": -0.727,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.4295,
+              "wild_cluster_p_fdr": 0.5512,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             },
             "between": {
-              "coef": -0.396,
-              "prob_direction": 0.638,
-              "effect_std_pp": -0.17,
-              "se_iid": 0.786,
-              "se_cluster": 1.1185,
-              "se_inflation": 1.42,
+              "coef": -0.7,
+              "prob_direction": 0.958,
+              "effect_std_pp": -0.3,
+              "se_iid": 0.3232,
+              "se_cluster": 0.4051,
+              "se_inflation": 1.25,
               "n_clusters": 18,
-              "wild_cluster_p": 0.7358,
-              "wild_cluster_t": -0.354,
+              "wild_cluster_p": 0.1685,
+              "wild_cluster_t": -1.727,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -1.942,
-                "max": 0.315,
-                "sign_stable": false,
+                "min": -1.17,
+                "max": -0.334,
+                "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": -0.521,
-                  "ARAG": -1.942,
-                  "AXA": 0.315,
-                  "Allianz": -0.085,
-                  "Barmenia": -0.429,
-                  "CosmosDirekt": -0.308,
-                  "DA Direkt": -0.477,
-                  "DEVK": -0.403,
-                  "Die Bayerische": -0.45,
-                  "ERGO": -0.38,
-                  "Generali": -0.274,
-                  "HUK-Coburg": -0.308,
-                  "HanseMerkur": -0.333,
-                  "LV 1871": -0.246,
-                  "R+V": -0.028,
-                  "Signal Iduna": -0.52,
-                  "VHV": -0.416,
-                  "Württembergische": -0.751
+                  "ADAC": -0.626,
+                  "ARAG": -1.17,
+                  "AXA": -0.762,
+                  "Allianz": -0.334,
+                  "Barmenia": -0.734,
+                  "CosmosDirekt": -0.667,
+                  "DA Direkt": -0.716,
+                  "DEVK": -0.698,
+                  "Die Bayerische": -0.701,
+                  "ERGO": -0.688,
+                  "Generali": -0.614,
+                  "HUK-Coburg": -0.606,
+                  "HanseMerkur": -0.768,
+                  "LV 1871": -0.688,
+                  "R+V": -0.48,
+                  "Signal Iduna": -0.847,
+                  "VHV": -0.709,
+                  "Württembergische": -0.915
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.7884,
+              "wild_cluster_p_fdr": 0.2528,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
@@ -5408,176 +5410,178 @@
         "gap_decomposition": {
           "ADAC": {
             "vs": "Allianz",
-            "actual_gap_pp": 12.58,
+            "actual_gap_pp": 13.95,
             "contrib_pp": {
-              "cite_share": 6.19,
-              "size": 6.3,
-              "relprice": -0.22
+              "cite_share": 10.27,
+              "size": 4.28,
+              "relprice": -0.39
             },
-            "explained_pp": 12.27
+            "explained_pp": 14.16
           },
           "ARAG": {
             "vs": "Allianz",
-            "actual_gap_pp": 14.71,
+            "actual_gap_pp": 18.6,
             "contrib_pp": {
-              "cite_share": 10.49,
-              "size": 6.05,
-              "relprice": 0.41
+              "cite_share": 13.39,
+              "size": 4.1,
+              "relprice": 0.73
             },
-            "explained_pp": 16.95
+            "explained_pp": 18.22
           },
           "AXA": {
             "vs": "Allianz",
-            "actual_gap_pp": 9.97,
+            "actual_gap_pp": 13.18,
             "contrib_pp": {
-              "cite_share": 8.84,
-              "size": 3.78,
-              "relprice": -0.04
+              "cite_share": 9.39,
+              "size": 2.56,
+              "relprice": -0.08
             },
-            "explained_pp": 12.58
+            "explained_pp": 11.87
           },
           "Barmenia": {
             "vs": "Allianz",
-            "actual_gap_pp": 19.71,
+            "actual_gap_pp": 22.12,
             "contrib_pp": {
-              "cite_share": 12.27,
-              "size": 6.05,
-              "relprice": -0.17
+              "cite_share": 16.0,
+              "size": 4.1,
+              "relprice": -0.3
             },
-            "explained_pp": 18.15
+            "explained_pp": 19.8
           },
           "CosmosDirekt": {
             "vs": "Allianz",
-            "actual_gap_pp": 19.03,
+            "actual_gap_pp": 21.54,
             "contrib_pp": {
-              "cite_share": 9.74,
-              "size": 5.88,
-              "relprice": 0.07
+              "cite_share": 15.34,
+              "size": 3.99,
+              "relprice": 0.13
             },
-            "explained_pp": 15.69
+            "explained_pp": 19.46
           },
           "DA Direkt": {
             "vs": "Allianz",
-            "actual_gap_pp": 19.69,
+            "actual_gap_pp": 22.37,
             "contrib_pp": {
-              "cite_share": 9.97,
-              "size": 7.39,
-              "relprice": 0.04
+              "cite_share": 15.92,
+              "size": 5.02,
+              "relprice": 0.07
             },
-            "explained_pp": 17.4
+            "explained_pp": 21.01
           },
           "DEVK": {
             "vs": "Allianz",
-            "actual_gap_pp": 15.06,
+            "actual_gap_pp": 16.31,
             "contrib_pp": {
-              "cite_share": 8.77,
-              "size": 5.46,
-              "relprice": -0.0
+              "cite_share": 11.52,
+              "size": 3.71,
+              "relprice": -0.01
             },
-            "explained_pp": 14.23
+            "explained_pp": 15.22
           },
           "Die Bayerische": {
             "vs": "Allianz",
-            "actual_gap_pp": 20.15,
+            "actual_gap_pp": 21.63,
             "contrib_pp": {
-              "cite_share": 11.74,
-              "size": 7.14,
-              "relprice": -0.01
+              "cite_share": 15.52,
+              "size": 4.84,
+              "relprice": -0.02
             },
-            "explained_pp": 18.87
+            "explained_pp": 20.34
           },
           "ERGO": {
             "vs": "Allianz",
-            "actual_gap_pp": 14.06,
+            "actual_gap_pp": 15.22,
             "contrib_pp": {
-              "cite_share": 8.75,
-              "size": 2.94,
-              "relprice": 0.09
+              "cite_share": 10.68,
+              "size": 2.0,
+              "relprice": 0.15
             },
-            "explained_pp": 11.78
+            "explained_pp": 12.83
           },
           "Generali": {
             "vs": "Allianz",
-            "actual_gap_pp": 20.52,
+            "actual_gap_pp": 22.41,
             "contrib_pp": {
-              "cite_share": 12.27,
-              "size": 4.2,
-              "relprice": 0.45
+              "cite_share": 16.04,
+              "size": 2.85,
+              "relprice": 0.8
             },
-            "explained_pp": 16.92
+            "explained_pp": 19.69
           },
           "HUK-Coburg": {
             "vs": "Allianz",
-            "actual_gap_pp": 5.58,
+            "actual_gap_pp": 5.74,
             "contrib_pp": {
-              "cite_share": 3.06,
-              "size": 3.36,
-              "relprice": -0.13
+              "cite_share": 3.22,
+              "size": 2.28,
+              "relprice": -0.23
             },
-            "explained_pp": 6.29
+            "explained_pp": 5.27
           },
           "HanseMerkur": {
             "vs": "Allianz",
-            "actual_gap_pp": 16.2,
+            "actual_gap_pp": 18.15,
             "contrib_pp": {
-              "cite_share": 9.21,
-              "size": 6.3,
-              "relprice": 0.16
+              "cite_share": 13.02,
+              "size": 4.28,
+              "relprice": 0.29
             },
-            "explained_pp": 15.67
+            "explained_pp": 17.59
           },
           "LV 1871": {
             "vs": "Allianz",
-            "actual_gap_pp": 17.66,
+            "actual_gap_pp": 22.05,
             "contrib_pp": {
-              "cite_share": 10.53,
-              "size": 7.39,
-              "relprice": -0.17
+              "cite_share": 16.0,
+              "size": 5.02,
+              "relprice": -0.29
             },
-            "explained_pp": 17.75
+            "explained_pp": 20.73
           },
           "R+V": {
             "vs": "Allianz",
-            "actual_gap_pp": 19.85,
+            "actual_gap_pp": 22.17,
             "contrib_pp": {
-              "cite_share": 12.27,
-              "size": 3.36,
-              "relprice": 0.83
+              "cite_share": 16.04,
+              "size": 2.28,
+              "relprice": 1.47
             },
-            "explained_pp": 16.46
+            "explained_pp": 19.79
           },
           "Signal Iduna": {
             "vs": "Allianz",
-            "actual_gap_pp": 15.08,
+            "actual_gap_pp": 14.99,
             "contrib_pp": {
-              "cite_share": 9.97,
-              "size": 5.46,
-              "relprice": 0.15
+              "cite_share": 10.76,
+              "size": 3.71,
+              "relprice": 0.27
             },
-            "explained_pp": 15.58
+            "explained_pp": 14.74
           },
           "VHV": {
             "vs": "Allianz",
-            "actual_gap_pp": 19.64,
+            "actual_gap_pp": 21.46,
             "contrib_pp": {
-              "cite_share": 12.27,
-              "size": 5.88,
-              "relprice": -0.08
+              "cite_share": 15.7,
+              "size": 3.99,
+              "relprice": -0.14
             },
-            "explained_pp": 18.07
+            "explained_pp": 19.55
           },
           "Württembergische": {
             "vs": "Allianz",
-            "actual_gap_pp": 19.93,
+            "actual_gap_pp": 21.78,
             "contrib_pp": {
-              "cite_share": 12.27,
-              "size": 5.46,
-              "relprice": -0.09
+              "cite_share": 15.74,
+              "size": 3.71,
+              "relprice": -0.17
             },
-            "explained_pp": 17.64
+            "explained_pp": 19.28
           }
         },
         "note": "Gemeinsames Mundlak-Modell; Between-Effekte kontrollieren einander (Groesse vs. Footprint sauber getrennt).",
+        "basis": "level_panel_gemittelt",
+        "basis_note": "cite_share aus derselben Engine-Gruppe wie die Zielgroesse, gemittelt ueber 18 saubere Messtage (2026-07-21..2026-08-10). Identische Grundlage wie gap_explorer - die beiden Zerlegungen koennen sich nicht mehr widersprechen.",
         "circularity": {
           "share_same_engine": 0.4369,
           "level": "partial",
@@ -5604,56 +5608,56 @@
         "drivers_eff": {
           "cite_share": {
             "within": {
-              "coef": 1.983,
+              "coef": 1.103,
               "prob_direction": 1.0,
-              "effect_std_pp": 3.12,
-              "se_iid": 0.1942,
-              "se_cluster": 0.2497,
-              "se_inflation": 1.29,
+              "effect_std_pp": 3.36,
+              "se_iid": 0.077,
+              "se_cluster": 0.0921,
+              "se_inflation": 1.2,
               "n_clusters": 18,
               "wild_cluster_p": 0.0002,
-              "wild_cluster_t": 7.94,
+              "wild_cluster_t": 11.976,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.0008,
+              "wild_cluster_p_fdr": 0.0006,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: ja (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             },
             "between": {
-              "coef": 1.745,
+              "coef": 0.941,
               "prob_direction": 1.0,
-              "effect_std_pp": 3.7,
-              "se_iid": 0.2256,
-              "se_cluster": 0.199,
-              "se_inflation": 0.88,
+              "effect_std_pp": 4.12,
+              "se_iid": 0.0864,
+              "se_cluster": 0.0772,
+              "se_inflation": 0.89,
               "n_clusters": 18,
               "wild_cluster_p": 0.0,
-              "wild_cluster_t": 8.771,
+              "wild_cluster_t": 12.189,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 1.597,
-                "max": 2.03,
+                "min": 0.903,
+                "max": 1.093,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": 1.766,
-                  "ARAG": 1.675,
-                  "AXA": 1.844,
-                  "Allianz": 2.03,
-                  "Barmenia": 1.732,
-                  "CosmosDirekt": 1.746,
-                  "DA Direkt": 1.778,
-                  "DEVK": 1.744,
-                  "Die Bayerische": 1.739,
-                  "ERGO": 1.597,
-                  "Generali": 1.72,
-                  "HUK-Coburg": 1.634,
-                  "HanseMerkur": 1.756,
-                  "LV 1871": 1.719,
-                  "R+V": 1.733,
-                  "Signal Iduna": 1.743,
-                  "VHV": 1.762,
-                  "Württembergische": 1.7
+                  "ADAC": 0.946,
+                  "ARAG": 0.912,
+                  "AXA": 0.928,
+                  "Allianz": 1.093,
+                  "Barmenia": 0.933,
+                  "CosmosDirekt": 0.947,
+                  "DA Direkt": 0.946,
+                  "DEVK": 0.94,
+                  "Die Bayerische": 0.945,
+                  "ERGO": 0.903,
+                  "Generali": 0.929,
+                  "HUK-Coburg": 0.906,
+                  "HanseMerkur": 0.939,
+                  "LV 1871": 0.915,
+                  "R+V": 0.936,
+                  "Signal Iduna": 0.949,
+                  "VHV": 0.949,
+                  "Württembergische": 0.919
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
@@ -5668,50 +5672,50 @@
               "coef": 0.0,
               "prob_direction": 0.5,
               "effect_std_pp": 0.0,
-              "se_iid": 0.9585,
+              "se_iid": 0.7374,
               "se_cluster": null,
               "se_inflation": null,
               "n_clusters": 18
             },
             "between": {
-              "coef": 0.045,
-              "prob_direction": 0.995,
-              "effect_std_pp": 1.18,
-              "se_iid": 0.0177,
-              "se_cluster": 0.0176,
-              "se_inflation": 0.99,
+              "coef": 0.03,
+              "prob_direction": 0.993,
+              "effect_std_pp": 0.78,
+              "se_iid": 0.0139,
+              "se_cluster": 0.0124,
+              "se_inflation": 0.9,
               "n_clusters": 18,
-              "wild_cluster_p": 0.1805,
-              "wild_cluster_t": 2.583,
+              "wild_cluster_p": 0.5241,
+              "wild_cluster_t": 2.438,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 0.029,
-                "max": 0.059,
+                "min": 0.007,
+                "max": 0.039,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": 0.043,
-                  "ARAG": 0.057,
-                  "AXA": 0.037,
-                  "Allianz": 0.029,
-                  "Barmenia": 0.046,
-                  "CosmosDirekt": 0.042,
-                  "DA Direkt": 0.041,
-                  "DEVK": 0.045,
-                  "Die Bayerische": 0.042,
-                  "ERGO": 0.059,
-                  "Generali": 0.048,
-                  "HUK-Coburg": 0.052,
-                  "HanseMerkur": 0.046,
-                  "LV 1871": 0.055,
-                  "R+V": 0.047,
-                  "Signal Iduna": 0.045,
-                  "VHV": 0.045,
-                  "Württembergische": 0.048
+                  "ADAC": 0.029,
+                  "ARAG": 0.039,
+                  "AXA": 0.031,
+                  "Allianz": 0.007,
+                  "Barmenia": 0.031,
+                  "CosmosDirekt": 0.029,
+                  "DA Direkt": 0.029,
+                  "DEVK": 0.03,
+                  "Die Bayerische": 0.027,
+                  "ERGO": 0.038,
+                  "Generali": 0.032,
+                  "HUK-Coburg": 0.034,
+                  "HanseMerkur": 0.032,
+                  "LV 1871": 0.039,
+                  "R+V": 0.032,
+                  "Signal Iduna": 0.027,
+                  "VHV": 0.03,
+                  "Württembergische": 0.032
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.2707,
+              "wild_cluster_p_fdr": 0.5512,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
@@ -5719,60 +5723,60 @@
           },
           "relprice": {
             "within": {
-              "coef": -0.997,
-              "prob_direction": 0.979,
-              "effect_std_pp": -0.75,
-              "se_iid": 0.4561,
-              "se_cluster": 0.4893,
-              "se_inflation": 1.07,
+              "coef": -0.807,
+              "prob_direction": 0.994,
+              "effect_std_pp": -0.6,
+              "se_iid": 0.3517,
+              "se_cluster": 0.3207,
+              "se_inflation": 0.91,
               "n_clusters": 18,
-              "wild_cluster_p": 0.1284,
-              "wild_cluster_t": -2.038,
+              "wild_cluster_p": 0.0305,
+              "wild_cluster_t": -2.515,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.214,
+              "wild_cluster_p_fdr": 0.0628,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
             },
             "between": {
-              "coef": -0.87,
-              "prob_direction": 0.759,
-              "effect_std_pp": -0.37,
-              "se_iid": 0.7487,
-              "se_cluster": 1.2355,
-              "se_inflation": 1.65,
+              "coef": -1.047,
+              "prob_direction": 0.867,
+              "effect_std_pp": -0.45,
+              "se_iid": 0.5845,
+              "se_cluster": 0.9392,
+              "se_inflation": 1.61,
               "n_clusters": 18,
-              "wild_cluster_p": 0.5958,
-              "wild_cluster_t": -0.704,
+              "wild_cluster_p": 0.4103,
+              "wild_cluster_t": -1.115,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=18 Marken > 12: vollstaendige Enumeration von 2^18 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -2.942,
-                "max": -0.453,
+                "min": -2.604,
+                "max": -0.591,
                 "sign_stable": true,
                 "n_refits": 18,
                 "per_brand": {
-                  "ADAC": -0.981,
-                  "ARAG": -2.942,
-                  "AXA": -0.556,
-                  "Allianz": -0.531,
-                  "Barmenia": -0.942,
-                  "CosmosDirekt": -0.83,
-                  "DA Direkt": -0.923,
-                  "DEVK": -0.879,
-                  "Die Bayerische": -1.013,
-                  "ERGO": -0.779,
-                  "Generali": -0.739,
-                  "HUK-Coburg": -0.7,
-                  "HanseMerkur": -0.861,
-                  "LV 1871": -0.453,
-                  "R+V": -0.655,
-                  "Signal Iduna": -0.696,
-                  "VHV": -0.827,
-                  "Württembergische": -0.973
+                  "ADAC": -1.099,
+                  "ARAG": -2.604,
+                  "AXA": -1.113,
+                  "Allianz": -0.591,
+                  "Barmenia": -1.13,
+                  "CosmosDirekt": -1.025,
+                  "DA Direkt": -1.076,
+                  "DEVK": -1.048,
+                  "Die Bayerische": -1.135,
+                  "ERGO": -0.977,
+                  "Generali": -0.923,
+                  "HUK-Coburg": -0.887,
+                  "HanseMerkur": -1.078,
+                  "LV 1871": -0.745,
+                  "R+V": -0.839,
+                  "Signal Iduna": -0.817,
+                  "VHV": -1.009,
+                  "Württembergische": -1.225
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.6875,
+              "wild_cluster_p_fdr": 0.5463,
               "fdr_note": "Benjamini-Hochberg ueber die 15 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 15,
               "fdr_family": "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
@@ -5783,176 +5787,178 @@
         "gap_decomposition": {
           "ADAC": {
             "vs": "Allianz",
-            "actual_gap_pp": 9.31,
+            "actual_gap_pp": 7.88,
             "contrib_pp": {
-              "cite_share": 6.15,
-              "size": 3.38,
-              "relprice": -0.48
+              "cite_share": 6.34,
+              "size": 2.25,
+              "relprice": -0.58
             },
-            "explained_pp": 9.05
+            "explained_pp": 8.01
           },
           "ARAG": {
             "vs": "Allianz",
-            "actual_gap_pp": 11.85,
+            "actual_gap_pp": 13.08,
             "contrib_pp": {
-              "cite_share": 10.43,
-              "size": 3.24,
-              "relprice": 0.91
+              "cite_share": 11.64,
+              "size": 2.16,
+              "relprice": 1.09
             },
-            "explained_pp": 14.58
+            "explained_pp": 14.89
           },
           "AXA": {
             "vs": "Allianz",
-            "actual_gap_pp": 10.11,
+            "actual_gap_pp": 11.32,
             "contrib_pp": {
-              "cite_share": 8.79,
-              "size": 2.02,
-              "relprice": -0.1
+              "cite_share": 9.21,
+              "size": 1.35,
+              "relprice": -0.12
             },
-            "explained_pp": 10.71
+            "explained_pp": 10.44
           },
           "Barmenia": {
             "vs": "Allianz",
-            "actual_gap_pp": 17.91,
+            "actual_gap_pp": 18.37,
             "contrib_pp": {
-              "cite_share": 12.2,
-              "size": 3.24,
-              "relprice": -0.37
+              "cite_share": 13.6,
+              "size": 2.16,
+              "relprice": -0.44
             },
-            "explained_pp": 15.07
+            "explained_pp": 15.32
           },
           "CosmosDirekt": {
             "vs": "Allianz",
-            "actual_gap_pp": 14.63,
+            "actual_gap_pp": 14.44,
             "contrib_pp": {
-              "cite_share": 9.69,
-              "size": 3.15,
-              "relprice": 0.16
+              "cite_share": 11.19,
+              "size": 2.1,
+              "relprice": 0.19
             },
-            "explained_pp": 13.0
+            "explained_pp": 13.48
           },
           "DA Direkt": {
             "vs": "Allianz",
-            "actual_gap_pp": 16.02,
+            "actual_gap_pp": 15.78,
             "contrib_pp": {
-              "cite_share": 9.92,
-              "size": 3.96,
-              "relprice": 0.08
+              "cite_share": 11.99,
+              "size": 2.64,
+              "relprice": 0.1
             },
-            "explained_pp": 13.96
+            "explained_pp": 14.73
           },
           "DEVK": {
             "vs": "Allianz",
             "actual_gap_pp": 13.44,
             "contrib_pp": {
-              "cite_share": 8.72,
-              "size": 2.92,
+              "cite_share": 10.11,
+              "size": 1.95,
               "relprice": -0.01
             },
-            "explained_pp": 11.63
+            "explained_pp": 12.05
           },
           "Die Bayerische": {
             "vs": "Allianz",
-            "actual_gap_pp": 17.43,
+            "actual_gap_pp": 17.2,
             "contrib_pp": {
-              "cite_share": 11.68,
-              "size": 3.82,
-              "relprice": -0.03
+              "cite_share": 13.09,
+              "size": 2.55,
+              "relprice": -0.04
             },
-            "explained_pp": 15.47
+            "explained_pp": 15.6
           },
           "ERGO": {
             "vs": "Allianz",
-            "actual_gap_pp": 11.99,
+            "actual_gap_pp": 11.93,
             "contrib_pp": {
-              "cite_share": 8.7,
-              "size": 1.57,
-              "relprice": 0.19
+              "cite_share": 9.54,
+              "size": 1.05,
+              "relprice": 0.23
             },
-            "explained_pp": 10.46
+            "explained_pp": 10.82
           },
           "Generali": {
             "vs": "Allianz",
-            "actual_gap_pp": 18.81,
+            "actual_gap_pp": 18.97,
             "contrib_pp": {
-              "cite_share": 12.2,
-              "size": 2.25,
-              "relprice": 0.99
+              "cite_share": 13.61,
+              "size": 1.5,
+              "relprice": 1.19
             },
-            "explained_pp": 15.44
+            "explained_pp": 16.3
           },
           "HUK-Coburg": {
             "vs": "Allianz",
-            "actual_gap_pp": 3.58,
+            "actual_gap_pp": 3.17,
             "contrib_pp": {
-              "cite_share": 3.04,
-              "size": 1.8,
-              "relprice": -0.28
+              "cite_share": 2.97,
+              "size": 1.2,
+              "relprice": -0.34
             },
-            "explained_pp": 4.56
+            "explained_pp": 3.83
           },
           "HanseMerkur": {
             "vs": "Allianz",
-            "actual_gap_pp": 13.01,
+            "actual_gap_pp": 13.26,
             "contrib_pp": {
-              "cite_share": 9.16,
-              "size": 3.38,
-              "relprice": 0.36
+              "cite_share": 10.54,
+              "size": 2.25,
+              "relprice": 0.43
             },
-            "explained_pp": 12.9
+            "explained_pp": 13.22
           },
           "LV 1871": {
             "vs": "Allianz",
-            "actual_gap_pp": 11.28,
+            "actual_gap_pp": 10.93,
             "contrib_pp": {
-              "cite_share": 10.47,
-              "size": 3.96,
-              "relprice": -0.37
+              "cite_share": 10.58,
+              "size": 2.64,
+              "relprice": -0.44
             },
-            "explained_pp": 14.06
+            "explained_pp": 12.78
           },
           "R+V": {
             "vs": "Allianz",
-            "actual_gap_pp": 17.73,
+            "actual_gap_pp": 18.26,
             "contrib_pp": {
-              "cite_share": 12.2,
-              "size": 1.8,
-              "relprice": 1.83
+              "cite_share": 13.61,
+              "size": 1.2,
+              "relprice": 2.2
             },
-            "explained_pp": 15.83
+            "explained_pp": 17.01
           },
           "Signal Iduna": {
             "vs": "Allianz",
-            "actual_gap_pp": 14.69,
+            "actual_gap_pp": 14.47,
             "contrib_pp": {
-              "cite_share": 9.91,
-              "size": 2.92,
-              "relprice": 0.33
+              "cite_share": 10.34,
+              "size": 1.95,
+              "relprice": 0.4
             },
-            "explained_pp": 13.16
+            "explained_pp": 12.69
           },
           "VHV": {
             "vs": "Allianz",
-            "actual_gap_pp": 15.02,
+            "actual_gap_pp": 15.51,
             "contrib_pp": {
-              "cite_share": 12.2,
-              "size": 3.15,
-              "relprice": -0.18
+              "cite_share": 13.43,
+              "size": 2.1,
+              "relprice": -0.22
             },
-            "explained_pp": 15.17
+            "explained_pp": 15.31
           },
           "Württembergische": {
             "vs": "Allianz",
-            "actual_gap_pp": 16.39,
+            "actual_gap_pp": 16.34,
             "contrib_pp": {
-              "cite_share": 12.2,
-              "size": 2.92,
-              "relprice": -0.21
+              "cite_share": 12.98,
+              "size": 1.95,
+              "relprice": -0.25
             },
-            "explained_pp": 14.91
+            "explained_pp": 14.68
           }
         },
         "note": "Gemeinsames Mundlak-Modell; Between-Effekte kontrollieren einander (Groesse vs. Footprint sauber getrennt).",
+        "basis": "level_panel_gemittelt",
+        "basis_note": "cite_share aus derselben Engine-Gruppe wie die Zielgroesse, gemittelt ueber 18 saubere Messtage (2026-07-21..2026-08-10). Identische Grundlage wie gap_explorer - die beiden Zerlegungen koennen sich nicht mehr widersprechen.",
         "circularity": {
           "share_same_engine": 1.0,
           "level": "high",
@@ -8078,6 +8084,428 @@
         "note": "Zerlegung des Abstands zwischen zwei Marken in Bekanntheit/Groesse, Quellpraesenz und Preis. Beitrag je Treiber = Between-Koeffizient x Differenz der Markenmittel. Groesse ist eine feste Naeherung (BRAND_SIZE); die Trennung Groesse/Quellpraesenz ist eine Tendenz, kein Kausalnachweis."
       }
     },
+    "streubild": {
+      "grounded": {
+        "available": true,
+        "n_cells": 275,
+        "n_tage": 18,
+        "tage_von": "2026-07-21",
+        "tage_bis": "2026-08-10",
+        "n_topics": 11,
+        "brand_means": {
+          "DA Direkt": {
+            "sov": 2.239,
+            "cite_share": 0.903,
+            "n_zellen": 11
+          },
+          "ARAG": {
+            "sov": 4.181,
+            "cite_share": 0.68,
+            "n_zellen": 11
+          },
+          "Debeka": {
+            "sov": 1.354,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "HanseMerkur": {
+            "sov": 5.392,
+            "cite_share": 1.977,
+            "n_zellen": 11
+          },
+          "Allianz": {
+            "sov": 17.148,
+            "cite_share": 9.276,
+            "n_zellen": 11
+          },
+          "CosmosDirekt": {
+            "sov": 5.092,
+            "cite_share": 2.27,
+            "n_zellen": 11
+          },
+          "VHV": {
+            "sov": 1.64,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "HUK-Coburg": {
+            "sov": 13.01,
+            "cite_share": 4.898,
+            "n_zellen": 11
+          },
+          "Hannoversche": {
+            "sov": 2.561,
+            "cite_share": 0.467,
+            "n_zellen": 11
+          },
+          "WGV": {
+            "sov": 1.668,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "Generali": {
+            "sov": 0.866,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "Württembergische": {
+            "sov": 2.703,
+            "cite_share": 0.875,
+            "n_zellen": 11
+          },
+          "Signal Iduna": {
+            "sov": 2.806,
+            "cite_share": 0.996,
+            "n_zellen": 11
+          },
+          "Alte Leipziger": {
+            "sov": 1.182,
+            "cite_share": 0.106,
+            "n_zellen": 11
+          },
+          "Gothaer": {
+            "sov": 1.199,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "HDI": {
+            "sov": 1.299,
+            "cite_share": 0.033,
+            "n_zellen": 11
+          },
+          "Zurich": {
+            "sov": 3.334,
+            "cite_share": 1.284,
+            "n_zellen": 11
+          },
+          "ERGO": {
+            "sov": 7.764,
+            "cite_share": 2.447,
+            "n_zellen": 11
+          },
+          "DEVK": {
+            "sov": 3.243,
+            "cite_share": 1.064,
+            "n_zellen": 11
+          },
+          "LV 1871": {
+            "sov": 3.562,
+            "cite_share": 1.403,
+            "n_zellen": 11
+          },
+          "ADAC": {
+            "sov": 4.556,
+            "cite_share": 2.86,
+            "n_zellen": 11
+          },
+          "Barmenia": {
+            "sov": 2.306,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "R+V": {
+            "sov": 3.2,
+            "cite_share": 0.654,
+            "n_zellen": 11
+          },
+          "Die Bayerische": {
+            "sov": 1.765,
+            "cite_share": 0.301,
+            "n_zellen": 11
+          },
+          "AXA": {
+            "sov": 5.927,
+            "cite_share": 1.014,
+            "n_zellen": 11
+          }
+        },
+        "labels": {
+          "x": "Quellpraesenz % (Anteil der markeneigenen Domain an den zitierten Quellen)",
+          "y": "Share of Voice %"
+        },
+        "note": "Markenmittel ueber Themen und ueber 18 saubere Messtage. Beide Achsen aus dem eigenen Crawl und aus derselben Engine-Gruppe - anders als bei Peecs footprint_pct, das Quellen mit Markenerwaehnung zaehlt und deshalb auf beiden Achsen im Kern dasselbe misst."
+      },
+      "ungrounded": {
+        "available": true,
+        "n_cells": 275,
+        "n_tage": 18,
+        "tage_von": "2026-07-21",
+        "tage_bis": "2026-08-10",
+        "n_topics": 11,
+        "brand_means": {
+          "DA Direkt": {
+            "sov": 0.063,
+            "cite_share": 0.053,
+            "n_zellen": 11
+          },
+          "ARAG": {
+            "sov": 2.16,
+            "cite_share": 1.665,
+            "n_zellen": 11
+          },
+          "Debeka": {
+            "sov": 7.589,
+            "cite_share": 6.777,
+            "n_zellen": 11
+          },
+          "HanseMerkur": {
+            "sov": 2.828,
+            "cite_share": 2.241,
+            "n_zellen": 11
+          },
+          "Allianz": {
+            "sov": 22.512,
+            "cite_share": 18.501,
+            "n_zellen": 11
+          },
+          "CosmosDirekt": {
+            "sov": 0.708,
+            "cite_share": 0.575,
+            "n_zellen": 11
+          },
+          "VHV": {
+            "sov": 0.697,
+            "cite_share": 0.388,
+            "n_zellen": 11
+          },
+          "HUK-Coburg": {
+            "sov": 17.386,
+            "cite_share": 15.518,
+            "n_zellen": 11
+          },
+          "Hannoversche": {
+            "sov": 0.489,
+            "cite_share": 0.328,
+            "n_zellen": 11
+          },
+          "WGV": {
+            "sov": 0.074,
+            "cite_share": 0.052,
+            "n_zellen": 11
+          },
+          "Generali": {
+            "sov": 1.836,
+            "cite_share": 1.473,
+            "n_zellen": 11
+          },
+          "Württembergische": {
+            "sov": 1.213,
+            "cite_share": 0.832,
+            "n_zellen": 11
+          },
+          "Signal Iduna": {
+            "sov": 6.876,
+            "cite_share": 5.541,
+            "n_zellen": 11
+          },
+          "Alte Leipziger": {
+            "sov": 0.064,
+            "cite_share": 0.0,
+            "n_zellen": 11
+          },
+          "Gothaer": {
+            "sov": 3.715,
+            "cite_share": 3.042,
+            "n_zellen": 11
+          },
+          "HDI": {
+            "sov": 0.307,
+            "cite_share": 0.05,
+            "n_zellen": 11
+          },
+          "Zurich": {
+            "sov": 0.183,
+            "cite_share": 0.022,
+            "n_zellen": 11
+          },
+          "ERGO": {
+            "sov": 6.833,
+            "cite_share": 5.763,
+            "n_zellen": 11
+          },
+          "DEVK": {
+            "sov": 4.114,
+            "cite_share": 3.352,
+            "n_zellen": 11
+          },
+          "LV 1871": {
+            "sov": 0.125,
+            "cite_share": 0.012,
+            "n_zellen": 11
+          },
+          "ADAC": {
+            "sov": 1.714,
+            "cite_share": 1.305,
+            "n_zellen": 11
+          },
+          "Barmenia": {
+            "sov": 7.463,
+            "cite_share": 6.062,
+            "n_zellen": 11
+          },
+          "R+V": {
+            "sov": 2.003,
+            "cite_share": 1.31,
+            "n_zellen": 11
+          },
+          "Die Bayerische": {
+            "sov": 0.492,
+            "cite_share": 0.326,
+            "n_zellen": 11
+          },
+          "AXA": {
+            "sov": 8.557,
+            "cite_share": 7.166,
+            "n_zellen": 11
+          }
+        },
+        "labels": {
+          "x": "Quellpraesenz % (Anteil der markeneigenen Domain an den zitierten Quellen)",
+          "y": "Share of Voice %"
+        },
+        "note": "Markenmittel ueber Themen und ueber 18 saubere Messtage. Beide Achsen aus dem eigenen Crawl und aus derselben Engine-Gruppe - anders als bei Peecs footprint_pct, das Quellen mit Markenerwaehnung zaehlt und deshalb auf beiden Achsen im Kern dasselbe misst."
+      },
+      "combined": {
+        "available": true,
+        "n_cells": 275,
+        "n_tage": 18,
+        "tage_von": "2026-07-21",
+        "tage_bis": "2026-08-10",
+        "n_topics": 11,
+        "brand_means": {
+          "DA Direkt": {
+            "sov": 1.414,
+            "cite_share": 0.593,
+            "n_zellen": 11
+          },
+          "ARAG": {
+            "sov": 3.429,
+            "cite_share": 1.142,
+            "n_zellen": 11
+          },
+          "Debeka": {
+            "sov": 3.686,
+            "cite_share": 3.335,
+            "n_zellen": 11
+          },
+          "HanseMerkur": {
+            "sov": 4.405,
+            "cite_share": 2.244,
+            "n_zellen": 11
+          },
+          "Allianz": {
+            "sov": 19.171,
+            "cite_share": 14.462,
+            "n_zellen": 11
+          },
+          "CosmosDirekt": {
+            "sov": 3.426,
+            "cite_share": 1.664,
+            "n_zellen": 11
+          },
+          "VHV": {
+            "sov": 1.282,
+            "cite_share": 0.2,
+            "n_zellen": 11
+          },
+          "HUK-Coburg": {
+            "sov": 14.604,
+            "cite_share": 10.45,
+            "n_zellen": 11
+          },
+          "Hannoversche": {
+            "sov": 1.801,
+            "cite_share": 0.431,
+            "n_zellen": 11
+          },
+          "WGV": {
+            "sov": 1.084,
+            "cite_share": 0.027,
+            "n_zellen": 11
+          },
+          "Generali": {
+            "sov": 1.23,
+            "cite_share": 0.735,
+            "n_zellen": 11
+          },
+          "Württembergische": {
+            "sov": 2.134,
+            "cite_share": 0.914,
+            "n_zellen": 11
+          },
+          "Signal Iduna": {
+            "sov": 4.323,
+            "cite_share": 3.164,
+            "n_zellen": 11
+          },
+          "Alte Leipziger": {
+            "sov": 0.773,
+            "cite_share": 0.066,
+            "n_zellen": 11
+          },
+          "Gothaer": {
+            "sov": 2.163,
+            "cite_share": 1.519,
+            "n_zellen": 11
+          },
+          "HDI": {
+            "sov": 0.952,
+            "cite_share": 0.042,
+            "n_zellen": 11
+          },
+          "Zurich": {
+            "sov": 2.144,
+            "cite_share": 0.788,
+            "n_zellen": 11
+          },
+          "ERGO": {
+            "sov": 7.412,
+            "cite_share": 4.249,
+            "n_zellen": 11
+          },
+          "DEVK": {
+            "sov": 3.569,
+            "cite_share": 2.269,
+            "n_zellen": 11
+          },
+          "LV 1871": {
+            "sov": 2.3,
+            "cite_share": 0.878,
+            "n_zellen": 11
+          },
+          "ADAC": {
+            "sov": 3.476,
+            "cite_share": 2.333,
+            "n_zellen": 11
+          },
+          "Barmenia": {
+            "sov": 4.215,
+            "cite_share": 2.823,
+            "n_zellen": 11
+          },
+          "R+V": {
+            "sov": 2.777,
+            "cite_share": 1.084,
+            "n_zellen": 11
+          },
+          "Die Bayerische": {
+            "sov": 1.271,
+            "cite_share": 0.3,
+            "n_zellen": 11
+          },
+          "AXA": {
+            "sov": 6.959,
+            "cite_share": 4.235,
+            "n_zellen": 11
+          }
+        },
+        "labels": {
+          "x": "Quellpraesenz % (Anteil der markeneigenen Domain an den zitierten Quellen)",
+          "y": "Share of Voice %"
+        },
+        "note": "Markenmittel ueber Themen und ueber 18 saubere Messtage. Beide Achsen aus dem eigenen Crawl und aus derselben Engine-Gruppe - anders als bei Peecs footprint_pct, das Quellen mit Markenerwaehnung zaehlt und deshalb auf beiden Achsen im Kern dasselbe misst."
+      }
+    },
     "stability": {
       "metric": "between_coef_grounded_bivariat_price_to_sov",
       "per_day": [
@@ -8212,7 +8640,7 @@
     "impact": {
       "page_change": {
         "label": "Seitenaenderungen (Wettbewerb)",
-        "pearson_r": 0.28070537104088766,
+        "pearson_r": 0.28070537104088683,
         "avg_citation_effect": 173.806,
         "effect_se": 45.813,
         "ci95_low": 84.013,
@@ -8226,7 +8654,7 @@
       },
       "page_new": {
         "label": "Neue Seiten",
-        "pearson_r": -0.011392570331921547,
+        "pearson_r": -0.011392570331921564,
         "avg_citation_effect": -12.046,
         "effect_se": 33.11,
         "ci95_low": -84.192,
@@ -8240,7 +8668,7 @@
       },
       "page_removed": {
         "label": "Geloeschte Seiten",
-        "pearson_r": 0.05402622291493038,
+        "pearson_r": 0.05402622291493057,
         "avg_citation_effect": 76.554,
         "effect_se": 99.174,
         "ci95_low": -350.193,
@@ -8254,7 +8682,7 @@
       },
       "press_mention": {
         "label": "Pressemitteilungen",
-        "pearson_r": 0.04894019654103808,
+        "pearson_r": 0.048940196541038074,
         "avg_citation_effect": 80.424,
         "effect_se": 163.051,
         "ci95_low": -318.561,
@@ -8268,7 +8696,7 @@
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "pearson_r": -0.0032058321423195347,
+        "pearson_r": -0.003205832142319537,
         "avg_citation_effect": 2.564,
         "effect_se": 96.649,
         "ci95_low": -216.056,
@@ -8288,7 +8716,7 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "pearson_r": -0.06470386179646692,
+        "pearson_r": -0.06470386179646707,
         "avg_citation_effect": -84.354,
         "effect_se": 28.846,
         "ci95_low": -158.516,
@@ -8302,7 +8730,7 @@
       },
       "review_volume": {
         "label": "Bewertungs-Volumen",
-        "pearson_r": -0.05997564542649438,
+        "pearson_r": -0.05997564542649441,
         "avg_citation_effect": -74.458,
         "effect_se": 39.241,
         "ci95_low": -170.48,
@@ -8468,7 +8896,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.023975405816066032,
+            "pearson_r": 0.023975405816066074,
             "avg_sov_effect_pp": 0.029,
             "effect_se_pp": 0.074,
             "ci95_low_pp": -0.116,
@@ -8484,7 +8912,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.07167694905527239,
+            "pearson_r": 0.07167694905527272,
             "avg_sov_effect_pp": 0.071,
             "effect_se_pp": 0.138,
             "ci95_low_pp": -0.199,
@@ -8500,7 +8928,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.0051555542918254125,
+            "pearson_r": 0.005155554291825492,
             "avg_sov_effect_pp": -0.769,
             "effect_se_pp": 0.414,
             "ci95_low_pp": -1.918,
@@ -8516,7 +8944,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.035829745770459075,
+            "pearson_r": 0.035829745770459005,
             "avg_sov_effect_pp": -0.008,
             "effect_se_pp": 0.148,
             "ci95_low_pp": -0.299,
@@ -8532,7 +8960,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.004282983845201658,
+            "pearson_r": -0.004282983845201681,
             "avg_sov_effect_pp": 0.004,
             "effect_se_pp": 0.153,
             "ci95_low_pp": -0.295,
@@ -8554,7 +8982,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.08686723175158224,
+            "pearson_r": -0.08686723175158315,
             "avg_sov_effect_pp": -0.477,
             "effect_se_pp": 0.23,
             "ci95_low_pp": -0.947,
@@ -8570,7 +8998,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.03487921684944454,
+            "pearson_r": -0.03487921684944461,
             "avg_sov_effect_pp": -0.195,
             "effect_se_pp": 0.268,
             "ci95_low_pp": -0.752,
@@ -8598,7 +9026,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": 0.010143150530758706,
+            "pearson_r": 0.01014315053075866,
             "avg_sov_effect_pp": 0.084,
             "effect_se_pp": 0.396,
             "ci95_low_pp": -0.83,
@@ -8653,9 +9081,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.2456,
-              "ci95_low": -0.515,
-              "ci95_high": 0.0238,
+              "coef_pp_per_event_day": -0.2448,
+              "ci95_low": -0.5142,
+              "ci95_high": 0.0246,
               "prob_positive": 0.037,
               "prob_direction": 0.963,
               "significant": false,
@@ -8671,7 +9099,7 @@
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.1221,
               "ci95_low": -0.0885,
-              "ci95_high": 0.3328,
+              "ci95_high": 0.3327,
               "prob_positive": 0.872,
               "prob_direction": 0.872,
               "significant": false,
@@ -8685,9 +9113,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0761,
-              "ci95_low": -0.4296,
-              "ci95_high": 0.2774,
+              "coef_pp_per_event_day": -0.0764,
+              "ci95_low": -0.4299,
+              "ci95_high": 0.2771,
               "prob_positive": 0.336,
               "prob_direction": 0.664,
               "significant": false,
@@ -8834,7 +9262,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.012601507901149767,
+            "pearson_r": 0.012601507901149833,
             "avg_sov_effect_pp": -0.018,
             "effect_se_pp": 0.045,
             "ci95_low_pp": -0.107,
@@ -8850,7 +9278,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.00611204027878455,
+            "pearson_r": 0.006112040278784579,
             "avg_sov_effect_pp": -0.099,
             "effect_se_pp": 0.1,
             "ci95_low_pp": -0.294,
@@ -8866,7 +9294,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.01426675291779869,
+            "pearson_r": 0.014266752917798841,
             "avg_sov_effect_pp": 0.038,
             "effect_se_pp": 0.064,
             "ci95_low_pp": -0.138,
@@ -8882,7 +9310,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.05473334425061541,
+            "pearson_r": 0.05473334425061529,
             "avg_sov_effect_pp": 0.053,
             "effect_se_pp": 0.083,
             "ci95_low_pp": -0.109,
@@ -8898,7 +9326,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.02099961473310957,
+            "pearson_r": 0.020999614733109705,
             "avg_sov_effect_pp": 0.051,
             "effect_se_pp": 0.075,
             "ci95_low_pp": -0.095,
@@ -8920,7 +9348,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.027528186742200922,
+            "pearson_r": 0.02752818674220123,
             "avg_sov_effect_pp": 0.046,
             "effect_se_pp": 0.101,
             "ci95_low_pp": -0.16,
@@ -8936,7 +9364,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.05325803071967191,
+            "pearson_r": -0.05325803071967214,
             "avg_sov_effect_pp": -0.09,
             "effect_se_pp": 0.133,
             "ci95_low_pp": -0.366,
@@ -8964,7 +9392,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.01817851153026765,
+            "pearson_r": -0.018178511530267557,
             "avg_sov_effect_pp": -0.079,
             "effect_se_pp": 0.229,
             "ci95_low_pp": -0.606,
@@ -9019,9 +9447,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1569,
-              "ci95_low": -0.3418,
-              "ci95_high": 0.0281,
+              "coef_pp_per_event_day": -0.1571,
+              "ci95_low": -0.3421,
+              "ci95_high": 0.0279,
               "prob_positive": 0.048,
               "prob_direction": 0.952,
               "significant": false,
@@ -9035,11 +9463,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1439,
-              "ci95_low": 0.003,
-              "ci95_high": 0.2849,
-              "prob_positive": 0.977,
-              "prob_direction": 0.977,
+              "coef_pp_per_event_day": 0.1447,
+              "ci95_low": 0.0038,
+              "ci95_high": 0.2857,
+              "prob_positive": 0.978,
+              "prob_direction": 0.978,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.0735,
@@ -9052,7 +9480,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0882,
-              "ci95_low": -0.022,
+              "ci95_low": -0.0221,
               "ci95_high": 0.1984,
               "prob_positive": 0.942,
               "prob_direction": 0.942,
@@ -9200,7 +9628,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.004222932778048755,
+            "pearson_r": -0.004222932778048736,
             "avg_sov_effect_pp": -0.086,
             "effect_se_pp": 0.054,
             "ci95_low_pp": -0.192,
@@ -9216,7 +9644,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.004268542811446087,
+            "pearson_r": 0.004268542811446084,
             "avg_sov_effect_pp": 0.089,
             "effect_se_pp": 0.066,
             "ci95_low_pp": -0.04,
@@ -9232,7 +9660,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.011723694670363759,
+            "pearson_r": -0.01172369467036375,
             "avg_sov_effect_pp": -0.464,
             "effect_se_pp": 0.192,
             "ci95_low_pp": -0.998,
@@ -9248,7 +9676,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.08521230989020961,
+            "pearson_r": 0.0852123098902093,
             "avg_sov_effect_pp": 0.121,
             "effect_se_pp": 0.09,
             "ci95_low_pp": -0.066,
@@ -9264,7 +9692,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.07497693184112401,
+            "pearson_r": -0.07497693184112379,
             "avg_sov_effect_pp": -0.204,
             "effect_se_pp": 0.091,
             "ci95_low_pp": -0.383,
@@ -9286,7 +9714,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.06143882428101304,
+            "pearson_r": 0.061438824281013237,
             "avg_sov_effect_pp": 0.117,
             "effect_se_pp": 0.122,
             "ci95_low_pp": -0.137,
@@ -9302,7 +9730,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.02096077298794049,
+            "pearson_r": 0.020960772987940326,
             "avg_sov_effect_pp": 0.071,
             "effect_se_pp": 0.151,
             "ci95_low_pp": -0.255,
@@ -9391,11 +9819,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1117,
-              "ci95_low": -0.111,
-              "ci95_high": 0.3345,
-              "prob_positive": 0.837,
-              "prob_direction": 0.837,
+              "coef_pp_per_event_day": 0.1125,
+              "ci95_low": -0.1103,
+              "ci95_high": 0.3353,
+              "prob_positive": 0.839,
+              "prob_direction": 0.839,
               "significant": false,
               "n_with_event": 20,
               "cluster_se": 0.1293,
@@ -9407,9 +9835,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1114,
-              "ci95_low": -0.3847,
-              "ci95_high": 0.1618,
+              "coef_pp_per_event_day": -0.1116,
+              "ci95_low": -0.3849,
+              "ci95_high": 0.1616,
               "prob_positive": 0.212,
               "prob_direction": 0.788,
               "significant": false,
@@ -9425,7 +9853,7 @@
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": -0.0805,
               "ci95_low": -0.1821,
-              "ci95_high": 0.0211,
+              "ci95_high": 0.021,
               "prob_positive": 0.06,
               "prob_direction": 0.94,
               "significant": false,
@@ -9540,7 +9968,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.024977793683218567,
+            "pearson_r": 0.024977793683218865,
             "avg_sov_effect_pp": 0.06,
             "effect_se_pp": 0.135,
             "ci95_low_pp": -0.204,
@@ -9556,7 +9984,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": -0.0338448900742554,
+            "pearson_r": -0.033844890074255424,
             "avg_sov_effect_pp": 0.038,
             "effect_se_pp": 0.244,
             "ci95_low_pp": -0.441,
@@ -9572,7 +10000,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.007751018310576121,
+            "pearson_r": 0.007751018310576265,
             "avg_sov_effect_pp": -0.597,
             "effect_se_pp": 1.437,
             "ci95_low_pp": -4.585,
@@ -9588,7 +10016,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": -0.05401944387833934,
+            "pearson_r": -0.054019443878339166,
             "avg_sov_effect_pp": -0.37,
             "effect_se_pp": 0.403,
             "ci95_low_pp": -1.16,
@@ -9604,7 +10032,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.056962065713732836,
+            "pearson_r": 0.056962065713733336,
             "avg_sov_effect_pp": 0.226,
             "effect_se_pp": 0.267,
             "ci95_low_pp": -0.296,
@@ -9626,7 +10054,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.005860807776152349,
+            "pearson_r": 0.005860807776152419,
             "avg_sov_effect_pp": -0.011,
             "effect_se_pp": 0.405,
             "ci95_low_pp": -0.837,
@@ -9642,7 +10070,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.06184309551548274,
+            "pearson_r": 0.061843095515482886,
             "avg_sov_effect_pp": 0.481,
             "effect_se_pp": 0.541,
             "ci95_low_pp": -0.645,
@@ -9670,7 +10098,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": 0.008706403275451918,
+            "pearson_r": 0.008706403275451751,
             "avg_sov_effect_pp": 0.139,
             "effect_se_pp": 0.635,
             "ci95_low_pp": -1.326,
@@ -9725,9 +10153,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.4405,
-              "ci95_low": -0.2439,
-              "ci95_high": 1.1248,
+              "coef_pp_per_event_day": 0.4402,
+              "ci95_low": -0.2442,
+              "ci95_high": 1.1246,
               "prob_positive": 0.896,
               "prob_direction": 0.896,
               "significant": false,
@@ -9773,11 +10201,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0882,
-              "ci95_low": -0.6098,
-              "ci95_high": 0.4334,
-              "prob_positive": 0.37,
-              "prob_direction": 0.63,
+              "coef_pp_per_event_day": -0.0874,
+              "ci95_low": -0.609,
+              "ci95_high": 0.4342,
+              "prob_positive": 0.371,
+              "prob_direction": 0.629,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.4039,
@@ -9906,7 +10334,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.016421033610487603,
+            "pearson_r": 0.01642103361048759,
             "avg_sov_effect_pp": -0.059,
             "effect_se_pp": 0.059,
             "ci95_low_pp": -0.175,
@@ -9922,7 +10350,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.011099991420153617,
+            "pearson_r": 0.011099991420153598,
             "avg_sov_effect_pp": 0.033,
             "effect_se_pp": 0.073,
             "ci95_low_pp": -0.11,
@@ -9938,7 +10366,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.03187382898145313,
+            "pearson_r": 0.03187382898145304,
             "avg_sov_effect_pp": 0.491,
             "effect_se_pp": 0.432,
             "ci95_low_pp": -0.71,
@@ -9954,7 +10382,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.04226297351111595,
+            "pearson_r": 0.04226297351111587,
             "avg_sov_effect_pp": 0.166,
             "effect_se_pp": 0.157,
             "ci95_low_pp": -0.161,
@@ -9970,7 +10398,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.019622907432976285,
+            "pearson_r": -0.01962290743297623,
             "avg_sov_effect_pp": -0.114,
             "effect_se_pp": 0.14,
             "ci95_low_pp": -0.388,
@@ -9992,7 +10420,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.0007669725616201477,
+            "pearson_r": 0.0007669725616201455,
             "avg_sov_effect_pp": 0.097,
             "effect_se_pp": 0.182,
             "ci95_low_pp": -0.284,
@@ -10008,7 +10436,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.07573268140627194,
+            "pearson_r": -0.07573268140627158,
             "avg_sov_effect_pp": -0.314,
             "effect_se_pp": 0.136,
             "ci95_low_pp": -0.608,
@@ -10081,9 +10509,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.4247,
-              "ci95_low": -0.7313,
-              "ci95_high": -0.118,
+              "coef_pp_per_event_day": -0.4248,
+              "ci95_low": -0.7315,
+              "ci95_high": -0.1182,
               "prob_positive": 0.003,
               "prob_direction": 0.997,
               "significant": false,
@@ -10097,7 +10525,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": 0.1137,
+              "coef_pp_per_event_day": 0.1136,
               "ci95_low": -0.0396,
               "ci95_high": 0.2669,
               "prob_positive": 0.927,
@@ -10129,11 +10557,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0052,
-              "ci95_low": -0.2449,
-              "ci95_high": 0.2552,
-              "prob_positive": 0.516,
-              "prob_direction": 0.516,
+              "coef_pp_per_event_day": 0.006,
+              "ci95_low": -0.2441,
+              "ci95_high": 0.256,
+              "prob_positive": 0.519,
+              "prob_direction": 0.519,
               "significant": false,
               "n_with_event": 20,
               "cluster_se": 0.0392,
@@ -10246,7 +10674,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.02609530522670578,
+            "pearson_r": 0.026095305226705934,
             "avg_sov_effect_pp": -0.139,
             "effect_se_pp": 0.127,
             "ci95_low_pp": -0.389,
@@ -10262,7 +10690,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.018970281650872722,
+            "pearson_r": 0.018970281650872813,
             "avg_sov_effect_pp": 0.001,
             "effect_se_pp": 0.273,
             "ci95_low_pp": -0.533,
@@ -10278,7 +10706,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.019861237998091624,
+            "pearson_r": 0.019861237998091856,
             "avg_sov_effect_pp": 1.075,
             "effect_se_pp": 1.203,
             "ci95_low_pp": -2.264,
@@ -10294,7 +10722,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": -0.01879173718629591,
+            "pearson_r": -0.01879173718629588,
             "avg_sov_effect_pp": -0.182,
             "effect_se_pp": 0.294,
             "ci95_low_pp": -0.759,
@@ -10310,7 +10738,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.003029315878714639,
+            "pearson_r": -0.0030293158787146673,
             "avg_sov_effect_pp": -0.33,
             "effect_se_pp": 0.304,
             "ci95_low_pp": -0.926,
@@ -10332,7 +10760,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.1092350360460978,
+            "pearson_r": -0.10923503604609876,
             "avg_sov_effect_pp": -0.961,
             "effect_se_pp": 0.423,
             "ci95_low_pp": -1.824,
@@ -10348,7 +10776,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.058913955918398146,
+            "pearson_r": -0.05891395591839833,
             "avg_sov_effect_pp": -0.38,
             "effect_se_pp": 0.576,
             "ci95_low_pp": -1.579,
@@ -10376,7 +10804,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": 0.019348934793151633,
+            "pearson_r": 0.019348934793151452,
             "avg_sov_effect_pp": 0.282,
             "effect_se_pp": 0.81,
             "ci95_low_pp": -1.586,
@@ -10431,9 +10859,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.6161,
-              "ci95_low": -1.0912,
-              "ci95_high": -0.1409,
+              "coef_pp_per_event_day": -0.6152,
+              "ci95_low": -1.0904,
+              "ci95_high": -0.1401,
               "prob_positive": 0.006,
               "prob_direction": 0.994,
               "significant": false,
@@ -10447,9 +10875,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.4058,
-              "ci95_low": -1.0292,
-              "ci95_high": 0.2176,
+              "coef_pp_per_event_day": -0.4061,
+              "ci95_low": -1.0294,
+              "ci95_high": 0.2173,
               "prob_positive": 0.101,
               "prob_direction": 0.899,
               "significant": false,
@@ -10465,7 +10893,7 @@
               "label": "Portal-Rang Check24 (±)",
               "coef_pp_per_event_day": 0.262,
               "ci95_low": -0.687,
-              "ci95_high": 1.211,
+              "ci95_high": 1.2111,
               "prob_positive": 0.706,
               "prob_direction": 0.706,
               "significant": false,
@@ -10495,7 +10923,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": -0.0156,
+              "coef_pp_per_event_day": -0.0157,
               "ci95_low": -0.3871,
               "ci95_high": 0.3558,
               "prob_positive": 0.467,
@@ -10612,7 +11040,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.008499819943568843,
+            "pearson_r": -0.008499819943568849,
             "avg_sov_effect_pp": -0.017,
             "effect_se_pp": 0.058,
             "ci95_low_pp": -0.13,
@@ -10628,7 +11056,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.0505433224802591,
+            "pearson_r": 0.05054332248025932,
             "avg_sov_effect_pp": 0.033,
             "effect_se_pp": 0.123,
             "ci95_low_pp": -0.208,
@@ -10644,7 +11072,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.012796225193249576,
+            "pearson_r": 0.012796225193249725,
             "avg_sov_effect_pp": 0.042,
             "effect_se_pp": 0.224,
             "ci95_low_pp": -0.581,
@@ -10660,7 +11088,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.012367111604885801,
+            "pearson_r": 0.012367111604885767,
             "avg_sov_effect_pp": -0.018,
             "effect_se_pp": 0.116,
             "ci95_low_pp": -0.246,
@@ -10676,7 +11104,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.04211670207187868,
+            "pearson_r": 0.04211670207187876,
             "avg_sov_effect_pp": 0.047,
             "effect_se_pp": 0.103,
             "ci95_low_pp": -0.155,
@@ -10698,7 +11126,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.04506289400104732,
+            "pearson_r": -0.04506289400104773,
             "avg_sov_effect_pp": -0.135,
             "effect_se_pp": 0.2,
             "ci95_low_pp": -0.544,
@@ -10714,7 +11142,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.034006244305762004,
+            "pearson_r": -0.034006244305762094,
             "avg_sov_effect_pp": -0.156,
             "effect_se_pp": 0.212,
             "ci95_low_pp": -0.596,
@@ -10742,7 +11170,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.028399331684687897,
+            "pearson_r": -0.02839933168468772,
             "avg_sov_effect_pp": -0.178,
             "effect_se_pp": 0.327,
             "ci95_low_pp": -0.933,
@@ -10814,8 +11242,8 @@
             "news_mention": {
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": 0.0766,
-              "ci95_low": -0.0401,
-              "ci95_high": 0.1934,
+              "ci95_low": -0.0402,
+              "ci95_high": 0.1933,
               "prob_positive": 0.901,
               "prob_direction": 0.901,
               "significant": false,
@@ -10829,11 +11257,11 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0742,
-              "ci95_low": -0.3436,
-              "ci95_high": 0.1953,
-              "prob_positive": 0.295,
-              "prob_direction": 0.705,
+              "coef_pp_per_event_day": -0.0744,
+              "ci95_low": -0.3438,
+              "ci95_high": 0.195,
+              "prob_positive": 0.294,
+              "prob_direction": 0.706,
               "significant": false,
               "n_with_event": 22,
               "cluster_se": 0.086,
@@ -10845,11 +11273,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0561,
-              "ci95_low": -0.2614,
-              "ci95_high": 0.1493,
-              "prob_positive": 0.296,
-              "prob_direction": 0.704,
+              "coef_pp_per_event_day": -0.0553,
+              "ci95_low": -0.2606,
+              "ci95_high": 0.1501,
+              "prob_positive": 0.299,
+              "prob_direction": 0.701,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.0574,
@@ -10862,7 +11290,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0331,
-              "ci95_low": -0.1274,
+              "ci95_low": -0.1275,
               "ci95_high": 0.1936,
               "prob_positive": 0.657,
               "prob_direction": 0.657,
@@ -10978,7 +11406,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.029523773849406854,
+            "pearson_r": -0.029523773849407006,
             "avg_sov_effect_pp": -0.061,
             "effect_se_pp": 0.187,
             "ci95_low_pp": -0.428,
@@ -10994,7 +11422,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": -0.02680494624446334,
+            "pearson_r": -0.026804946244463248,
             "avg_sov_effect_pp": -0.704,
             "effect_se_pp": 0.527,
             "ci95_low_pp": -1.737,
@@ -11010,7 +11438,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.016918214677398326,
+            "pearson_r": -0.016918214677398388,
             "avg_sov_effect_pp": -0.527,
             "effect_se_pp": 1.69,
             "ci95_low_pp": -5.22,
@@ -11026,7 +11454,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": -0.00398503044812787,
+            "pearson_r": -0.003985030448127942,
             "avg_sov_effect_pp": 0.14,
             "effect_se_pp": 0.543,
             "ci95_low_pp": -0.925,
@@ -11042,7 +11470,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.0213489697633614,
+            "pearson_r": -0.021348969763361023,
             "avg_sov_effect_pp": 0.017,
             "effect_se_pp": 0.543,
             "ci95_low_pp": -1.048,
@@ -11064,7 +11492,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.02551794716186099,
+            "pearson_r": 0.0255179471618612,
             "avg_sov_effect_pp": 0.228,
             "effect_se_pp": 0.632,
             "ci95_low_pp": -1.062,
@@ -11080,7 +11508,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.0892510634542053,
+            "pearson_r": -0.08925106345420532,
             "avg_sov_effect_pp": -1.466,
             "effect_se_pp": 0.922,
             "ci95_low_pp": -3.385,
@@ -11108,7 +11536,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.05013039952125455,
+            "pearson_r": -0.05013039952125467,
             "avg_sov_effect_pp": -0.981,
             "effect_se_pp": 0.902,
             "ci95_low_pp": -3.062,
@@ -11163,9 +11591,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -1.0475,
-              "ci95_low": -1.8846,
-              "ci95_high": -0.2104,
+              "coef_pp_per_event_day": -1.0477,
+              "ci95_low": -1.8848,
+              "ci95_high": -0.2106,
               "prob_positive": 0.007,
               "prob_direction": 0.993,
               "significant": false,
@@ -11195,9 +11623,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.5584,
-              "ci95_low": -0.0796,
-              "ci95_high": 1.1965,
+              "coef_pp_per_event_day": 0.5593,
+              "ci95_low": -0.0788,
+              "ci95_high": 1.1973,
               "prob_positive": 0.957,
               "prob_direction": 0.957,
               "significant": false,
@@ -11211,11 +11639,11 @@
             },
             "news_mention": {
               "label": "News-Erwaehnungen",
-              "coef_pp_per_event_day": -0.1159,
+              "coef_pp_per_event_day": -0.116,
               "ci95_low": -0.4787,
               "ci95_high": 0.2468,
-              "prob_positive": 0.266,
-              "prob_direction": 0.734,
+              "prob_positive": 0.265,
+              "prob_direction": 0.735,
               "significant": false,
               "n_with_event": 49,
               "cluster_se": 0.1412,
@@ -11344,7 +11772,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.0023531024176936225,
+            "pearson_r": -0.002353102417693627,
             "avg_sov_effect_pp": 0.01,
             "effect_se_pp": 0.073,
             "ci95_low_pp": -0.133,
@@ -11360,7 +11788,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": -0.029687128982034044,
+            "pearson_r": -0.02968712898203417,
             "avg_sov_effect_pp": 0.091,
             "effect_se_pp": 0.126,
             "ci95_low_pp": -0.156,
@@ -11376,7 +11804,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.0010834208382693813,
+            "pearson_r": -0.0010834208382693937,
             "avg_sov_effect_pp": 0.117,
             "effect_se_pp": 0.255,
             "ci95_low_pp": -0.591,
@@ -11392,7 +11820,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.026623597753600247,
+            "pearson_r": 0.026623597753600223,
             "avg_sov_effect_pp": 0.082,
             "effect_se_pp": 0.279,
             "ci95_low_pp": -0.465,
@@ -11408,7 +11836,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.03323397754864519,
+            "pearson_r": 0.03323397754864551,
             "avg_sov_effect_pp": 0.16,
             "effect_se_pp": 0.176,
             "ci95_low_pp": -0.184,
@@ -11430,7 +11858,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.04702021420335388,
+            "pearson_r": 0.04702021420335445,
             "avg_sov_effect_pp": 0.13,
             "effect_se_pp": 0.231,
             "ci95_low_pp": -0.342,
@@ -11446,7 +11874,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.0006902139831188802,
+            "pearson_r": -0.0006902139831188892,
             "avg_sov_effect_pp": -0.063,
             "effect_se_pp": 0.56,
             "ci95_low_pp": -1.229,
@@ -11474,7 +11902,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.1913624319461978,
+            "pearson_r": -0.1913624319461979,
             "avg_sov_effect_pp": -2.129,
             "effect_se_pp": 2.325,
             "ci95_low_pp": -7.491,
@@ -11545,9 +11973,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2667,
-              "ci95_low": -0.0754,
-              "ci95_high": 0.6087,
+              "coef_pp_per_event_day": 0.2675,
+              "ci95_low": -0.0746,
+              "ci95_high": 0.6096,
               "prob_positive": 0.937,
               "prob_direction": 0.937,
               "significant": false,
@@ -11593,11 +12021,11 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.0747,
-              "ci95_low": -0.3741,
-              "ci95_high": 0.5235,
-              "prob_positive": 0.628,
-              "prob_direction": 0.628,
+              "coef_pp_per_event_day": 0.0744,
+              "ci95_low": -0.3744,
+              "ci95_high": 0.5233,
+              "prob_positive": 0.627,
+              "prob_direction": 0.627,
               "significant": false,
               "n_with_event": 22,
               "cluster_se": 0.0692,
@@ -11710,7 +12138,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.02198101953731574,
+            "pearson_r": -0.02198101953731573,
             "avg_sov_effect_pp": -0.122,
             "effect_se_pp": 0.064,
             "ci95_low_pp": -0.247,
@@ -11726,7 +12154,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": -0.009125887693339794,
+            "pearson_r": -0.009125887693339763,
             "avg_sov_effect_pp": 0.146,
             "effect_se_pp": 0.136,
             "ci95_low_pp": -0.122,
@@ -11742,7 +12170,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.019673917336300587,
+            "pearson_r": -0.01967391733630056,
             "avg_sov_effect_pp": -0.285,
             "effect_se_pp": 0.17,
             "ci95_low_pp": -0.758,
@@ -11758,7 +12186,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.0793017272526944,
+            "pearson_r": 0.07930172725269408,
             "avg_sov_effect_pp": 0.134,
             "effect_se_pp": 0.238,
             "ci95_low_pp": -0.36,
@@ -11774,7 +12202,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.005525373141832251,
+            "pearson_r": 0.005525373141832246,
             "avg_sov_effect_pp": 0.017,
             "effect_se_pp": 0.169,
             "ci95_low_pp": -0.314,
@@ -11796,7 +12224,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.01576858713233239,
+            "pearson_r": 0.015768587132332465,
             "avg_sov_effect_pp": 0.111,
             "effect_se_pp": 0.14,
             "ci95_low_pp": -0.183,
@@ -11812,7 +12240,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.03054562882881159,
+            "pearson_r": 0.03054562882881141,
             "avg_sov_effect_pp": 0.056,
             "effect_se_pp": 0.197,
             "ci95_low_pp": -0.369,
@@ -11886,7 +12314,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.1808,
-              "ci95_low": 0.0119,
+              "ci95_low": 0.0118,
               "ci95_high": 0.3498,
               "prob_positive": 0.982,
               "prob_direction": 0.982,
@@ -11901,11 +12329,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0135,
-              "ci95_low": -0.2891,
-              "ci95_high": 0.2622,
-              "prob_positive": 0.462,
-              "prob_direction": 0.538,
+              "coef_pp_per_event_day": -0.0127,
+              "ci95_low": -0.2883,
+              "ci95_high": 0.263,
+              "prob_positive": 0.464,
+              "prob_direction": 0.536,
               "significant": false,
               "n_with_event": 20,
               "cluster_se": 0.0458,
@@ -11933,11 +12361,11 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0071,
-              "ci95_low": -0.3451,
-              "ci95_high": 0.331,
-              "prob_positive": 0.484,
-              "prob_direction": 0.516,
+              "coef_pp_per_event_day": -0.0072,
+              "ci95_low": -0.3453,
+              "ci95_high": 0.3309,
+              "prob_positive": 0.483,
+              "prob_direction": 0.517,
               "significant": false,
               "n_with_event": 14,
               "cluster_se": 0.075,
@@ -11968,8 +12396,8 @@
               "coef_pp_per_event_day": -0.001,
               "ci95_low": -0.003,
               "ci95_high": 0.001,
-              "prob_positive": 0.168,
-              "prob_direction": 0.832,
+              "prob_positive": 0.169,
+              "prob_direction": 0.831,
               "significant": false,
               "n_with_event": 204,
               "cluster_se": 0.0007,
@@ -12050,7 +12478,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.0002812346609685899,
+            "pearson_r": 0.00028123466096862467,
             "avg_sov_effect_pp": 0.254,
             "effect_se_pp": 0.181,
             "ci95_low_pp": -0.101,
@@ -12066,7 +12494,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": -0.03201589467474784,
+            "pearson_r": -0.032015894674748246,
             "avg_sov_effect_pp": 0.075,
             "effect_se_pp": 0.404,
             "ci95_low_pp": -0.717,
@@ -12082,7 +12510,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.012296031846653139,
+            "pearson_r": 0.012296031846653326,
             "avg_sov_effect_pp": 0.276,
             "effect_se_pp": 1.144,
             "ci95_low_pp": -2.9,
@@ -12098,7 +12526,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.0390940672711541,
+            "pearson_r": 0.039094067271153825,
             "avg_sov_effect_pp": 0.212,
             "effect_se_pp": 0.586,
             "ci95_low_pp": -0.936,
@@ -12114,7 +12542,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.0530365174895737,
+            "pearson_r": 0.053036517489574365,
             "avg_sov_effect_pp": 0.661,
             "effect_se_pp": 0.501,
             "ci95_low_pp": -0.321,
@@ -12136,7 +12564,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.0011931267715347361,
+            "pearson_r": -0.0011931267715347014,
             "avg_sov_effect_pp": 0.145,
             "effect_se_pp": 0.378,
             "ci95_low_pp": -0.627,
@@ -12152,7 +12580,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.027395299205861055,
+            "pearson_r": 0.02739529920586128,
             "avg_sov_effect_pp": 0.306,
             "effect_se_pp": 0.4,
             "ci95_low_pp": -0.527,
@@ -12180,7 +12608,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.014737421565875089,
+            "pearson_r": -0.014737421565875193,
             "avg_sov_effect_pp": -0.312,
             "effect_se_pp": 1.073,
             "ci95_low_pp": -2.785,
@@ -12251,9 +12679,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.3512,
-              "ci95_low": -0.5582,
-              "ci95_high": 1.2607,
+              "coef_pp_per_event_day": 0.351,
+              "ci95_low": -0.5585,
+              "ci95_high": 1.2605,
               "prob_positive": 0.775,
               "prob_direction": 0.775,
               "significant": false,
@@ -12268,8 +12696,8 @@
             "news_mention": {
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": 0.248,
-              "ci95_low": -0.1461,
-              "ci95_high": 0.6422,
+              "ci95_low": -0.1462,
+              "ci95_high": 0.6421,
               "prob_positive": 0.891,
               "prob_direction": 0.891,
               "significant": false,
@@ -12284,7 +12712,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.1738,
-              "ci95_low": -0.3681,
+              "ci95_low": -0.3682,
               "ci95_high": 0.7157,
               "prob_positive": 0.735,
               "prob_direction": 0.735,
@@ -12299,11 +12727,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0452,
-              "ci95_low": -0.7384,
-              "ci95_high": 0.648,
-              "prob_positive": 0.449,
-              "prob_direction": 0.551,
+              "coef_pp_per_event_day": -0.0444,
+              "ci95_low": -0.7375,
+              "ci95_high": 0.6488,
+              "prob_positive": 0.45,
+              "prob_direction": 0.55,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.2721,
@@ -12416,7 +12844,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.005749486450970712,
+            "pearson_r": 0.005749486450970724,
             "avg_sov_effect_pp": -0.006,
             "effect_se_pp": 0.035,
             "ci95_low_pp": -0.074,
@@ -12432,7 +12860,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.02696418993013873,
+            "pearson_r": 0.026964189930138802,
             "avg_sov_effect_pp": -0.042,
             "effect_se_pp": 0.075,
             "ci95_low_pp": -0.189,
@@ -12448,7 +12876,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.023352294125015334,
+            "pearson_r": 0.023352294125015584,
             "avg_sov_effect_pp": 0.008,
             "effect_se_pp": 0.127,
             "ci95_low_pp": -0.344,
@@ -12464,7 +12892,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.053270618612659935,
+            "pearson_r": 0.0532706186126598,
             "avg_sov_effect_pp": 0.013,
             "effect_se_pp": 0.077,
             "ci95_low_pp": -0.138,
@@ -12480,7 +12908,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.04389110583608105,
+            "pearson_r": 0.04389110583608116,
             "avg_sov_effect_pp": 0.058,
             "effect_se_pp": 0.06,
             "ci95_low_pp": -0.059,
@@ -12502,7 +12930,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.017177410220900993,
+            "pearson_r": -0.017177410220901145,
             "avg_sov_effect_pp": -0.057,
             "effect_se_pp": 0.075,
             "ci95_low_pp": -0.21,
@@ -12518,7 +12946,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.05052689699966119,
+            "pearson_r": -0.05052689699966125,
             "avg_sov_effect_pp": -0.097,
             "effect_se_pp": 0.092,
             "ci95_low_pp": -0.287,
@@ -12546,7 +12974,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.017320702668821148,
+            "pearson_r": -0.017320702668821075,
             "avg_sov_effect_pp": -0.06,
             "effect_se_pp": 0.195,
             "ci95_low_pp": -0.509,
@@ -12601,9 +13029,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1023,
-              "ci95_low": -0.2501,
-              "ci95_high": 0.0455,
+              "coef_pp_per_event_day": -0.1025,
+              "ci95_low": -0.2503,
+              "ci95_high": 0.0453,
               "prob_positive": 0.087,
               "prob_direction": 0.913,
               "significant": false,
@@ -12617,7 +13045,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": 0.0663,
+              "coef_pp_per_event_day": 0.0662,
               "ci95_low": -0.0218,
               "ci95_high": 0.1543,
               "prob_positive": 0.93,
@@ -12633,11 +13061,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0456,
-              "ci95_low": -0.067,
-              "ci95_high": 0.1583,
-              "prob_positive": 0.786,
-              "prob_direction": 0.786,
+              "coef_pp_per_event_day": 0.0465,
+              "ci95_low": -0.0662,
+              "ci95_high": 0.1591,
+              "prob_positive": 0.791,
+              "prob_direction": 0.791,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.0341,
@@ -12649,7 +13077,7 @@
             },
             "news_mention": {
               "label": "News-Erwaehnungen",
-              "coef_pp_per_event_day": 0.0408,
+              "coef_pp_per_event_day": 0.0407,
               "ci95_low": -0.0233,
               "ci95_high": 0.1048,
               "prob_positive": 0.894,
@@ -12782,7 +13210,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.013095839242349744,
+            "pearson_r": 0.013095839242349784,
             "avg_sov_effect_pp": -0.063,
             "effect_se_pp": 0.118,
             "ci95_low_pp": -0.294,
@@ -12798,7 +13226,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.019369326985492707,
+            "pearson_r": 0.019369326985492864,
             "avg_sov_effect_pp": -0.022,
             "effect_se_pp": 0.2,
             "ci95_low_pp": -0.413,
@@ -12814,7 +13242,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.004221269924199795,
+            "pearson_r": -0.004221269924199776,
             "avg_sov_effect_pp": 0.353,
             "effect_se_pp": 0.57,
             "ci95_low_pp": -1.228,
@@ -12830,7 +13258,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": -0.024454629334051164,
+            "pearson_r": -0.02445462933405106,
             "avg_sov_effect_pp": -0.094,
             "effect_se_pp": 0.364,
             "ci95_low_pp": -0.808,
@@ -12846,7 +13274,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.04211373060684458,
+            "pearson_r": -0.042113730606844674,
             "avg_sov_effect_pp": -0.046,
             "effect_se_pp": 0.353,
             "ci95_low_pp": -0.738,
@@ -12868,7 +13296,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.014614429675856596,
+            "pearson_r": 0.01461442967585679,
             "avg_sov_effect_pp": 0.082,
             "effect_se_pp": 0.399,
             "ci95_low_pp": -0.733,
@@ -12884,7 +13312,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.03324207117848799,
+            "pearson_r": -0.033242071178487854,
             "avg_sov_effect_pp": -0.313,
             "effect_se_pp": 0.58,
             "ci95_low_pp": -1.519,
@@ -12912,7 +13340,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": 0.04362383856232452,
+            "pearson_r": 0.04362383856232424,
             "avg_sov_effect_pp": 0.593,
             "effect_se_pp": 0.829,
             "ci95_low_pp": -1.319,
@@ -12983,9 +13411,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.3136,
-              "ci95_low": -0.8978,
-              "ci95_high": 0.2706,
+              "coef_pp_per_event_day": -0.3138,
+              "ci95_low": -0.8981,
+              "ci95_high": 0.2704,
               "prob_positive": 0.146,
               "prob_direction": 0.854,
               "significant": false,
@@ -12999,11 +13427,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2239,
-              "ci95_low": -0.2214,
-              "ci95_high": 0.6691,
-              "prob_positive": 0.838,
-              "prob_direction": 0.838,
+              "coef_pp_per_event_day": 0.2247,
+              "ci95_low": -0.2206,
+              "ci95_high": 0.67,
+              "prob_positive": 0.839,
+              "prob_direction": 0.839,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.2991,
@@ -13031,8 +13459,8 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": -0.0862,
-              "ci95_low": -0.4343,
+              "coef_pp_per_event_day": -0.0863,
+              "ci95_low": -0.4344,
               "ci95_high": 0.2619,
               "prob_positive": 0.314,
               "prob_direction": 0.686,
@@ -13148,7 +13576,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.021556976904293538,
+            "pearson_r": -0.021556976904293448,
             "avg_sov_effect_pp": -0.093,
             "effect_se_pp": 0.046,
             "ci95_low_pp": -0.183,
@@ -13164,7 +13592,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": -0.0047439322380562685,
+            "pearson_r": -0.004743932238056274,
             "avg_sov_effect_pp": 0.099,
             "effect_se_pp": 0.072,
             "ci95_low_pp": -0.042,
@@ -13180,7 +13608,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.008301459330560526,
+            "pearson_r": -0.00830145933056051,
             "avg_sov_effect_pp": -0.073,
             "effect_se_pp": 0.101,
             "ci95_low_pp": -0.353,
@@ -13196,7 +13624,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.06571995429715441,
+            "pearson_r": 0.06571995429715413,
             "avg_sov_effect_pp": 0.063,
             "effect_se_pp": 0.142,
             "ci95_low_pp": -0.233,
@@ -13212,7 +13640,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.03877321581560485,
+            "pearson_r": -0.03877321581560474,
             "avg_sov_effect_pp": -0.113,
             "effect_se_pp": 0.119,
             "ci95_low_pp": -0.347,
@@ -13234,7 +13662,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.03315960149416602,
+            "pearson_r": 0.03315960149416614,
             "avg_sov_effect_pp": 0.078,
             "effect_se_pp": 0.095,
             "ci95_low_pp": -0.121,
@@ -13250,7 +13678,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.01741253178896427,
+            "pearson_r": 0.01741253178896415,
             "avg_sov_effect_pp": -0.008,
             "effect_se_pp": 0.129,
             "ci95_low_pp": -0.286,
@@ -13339,11 +13767,11 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1062,
-              "ci95_low": -0.3296,
-              "ci95_high": 0.1171,
-              "prob_positive": 0.176,
-              "prob_direction": 0.824,
+              "coef_pp_per_event_day": -0.1064,
+              "ci95_low": -0.3297,
+              "ci95_high": 0.117,
+              "prob_positive": 0.175,
+              "prob_direction": 0.825,
               "significant": false,
               "n_with_event": 14,
               "cluster_se": 0.0297,
@@ -13356,7 +13784,7 @@
             "news_mention": {
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": -0.0324,
-              "ci95_low": -0.1154,
+              "ci95_low": -0.1155,
               "ci95_high": 0.0506,
               "prob_positive": 0.222,
               "prob_direction": 0.778,
@@ -13371,11 +13799,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0205,
-              "ci95_low": -0.1616,
-              "ci95_high": 0.2026,
-              "prob_positive": 0.587,
-              "prob_direction": 0.587,
+              "coef_pp_per_event_day": 0.0213,
+              "ci95_low": -0.1608,
+              "ci95_high": 0.2034,
+              "prob_positive": 0.591,
+              "prob_direction": 0.591,
               "significant": false,
               "n_with_event": 20,
               "cluster_se": 0.0365,
@@ -13488,7 +13916,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.045552373003810695,
+            "pearson_r": 0.04555237300381081,
             "avg_sov_effect_pp": 0.051,
             "effect_se_pp": 0.049,
             "ci95_low_pp": -0.045,
@@ -13504,7 +13932,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.012235371774941602,
+            "pearson_r": 0.01223537177494164,
             "avg_sov_effect_pp": 0.068,
             "effect_se_pp": 0.065,
             "ci95_low_pp": -0.06,
@@ -13520,7 +13948,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.00940464589158454,
+            "pearson_r": 0.009404645891584643,
             "avg_sov_effect_pp": -0.042,
             "effect_se_pp": 0.118,
             "ci95_low_pp": -0.37,
@@ -13536,7 +13964,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.05621203366364936,
+            "pearson_r": 0.05621203366364915,
             "avg_sov_effect_pp": 0.102,
             "effect_se_pp": 0.079,
             "ci95_low_pp": -0.053,
@@ -13552,7 +13980,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.027680768928481952,
+            "pearson_r": -0.027680768928482195,
             "avg_sov_effect_pp": -0.155,
             "effect_se_pp": 0.15,
             "ci95_low_pp": -0.448,
@@ -13574,7 +14002,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.010305425809310147,
+            "pearson_r": 0.010305425809310247,
             "avg_sov_effect_pp": 0.02,
             "effect_se_pp": 0.067,
             "ci95_low_pp": -0.117,
@@ -13590,7 +14018,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.07359872251457873,
+            "pearson_r": -0.07359872251457887,
             "avg_sov_effect_pp": -0.297,
             "effect_se_pp": 0.3,
             "ci95_low_pp": -0.92,
@@ -13618,7 +14046,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.22315997877909027,
+            "pearson_r": -0.2231599787790891,
             "avg_sov_effect_pp": -1.276,
             "effect_se_pp": 1.037,
             "ci95_low_pp": -3.669,
@@ -13689,9 +14117,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1979,
-              "ci95_low": -0.409,
-              "ci95_high": 0.0133,
+              "coef_pp_per_event_day": -0.1981,
+              "ci95_low": -0.4093,
+              "ci95_high": 0.0131,
               "prob_positive": 0.033,
               "prob_direction": 0.967,
               "significant": false,
@@ -13707,7 +14135,7 @@
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.1248,
               "ci95_low": -0.001,
-              "ci95_high": 0.2507,
+              "ci95_high": 0.2506,
               "prob_positive": 0.974,
               "prob_direction": 0.974,
               "significant": false,
@@ -13721,11 +14149,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1018,
-              "ci95_low": -0.0592,
-              "ci95_high": 0.2627,
-              "prob_positive": 0.892,
-              "prob_direction": 0.892,
+              "coef_pp_per_event_day": 0.1026,
+              "ci95_low": -0.0584,
+              "ci95_high": 0.2635,
+              "prob_positive": 0.894,
+              "prob_direction": 0.894,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.0824,
@@ -13854,7 +14282,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.006345446684505339,
+            "pearson_r": 0.006345446684505387,
             "avg_sov_effect_pp": -0.031,
             "effect_se_pp": 0.097,
             "ci95_low_pp": -0.222,
@@ -13870,7 +14298,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.012932897216441657,
+            "pearson_r": 0.012932897216441754,
             "avg_sov_effect_pp": -0.189,
             "effect_se_pp": 0.198,
             "ci95_low_pp": -0.578,
@@ -13886,7 +14314,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.012506750627375576,
+            "pearson_r": 0.012506750627375706,
             "avg_sov_effect_pp": 1.043,
             "effect_se_pp": 0.598,
             "ci95_low_pp": -0.617,
@@ -13902,7 +14330,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.005161210897047196,
+            "pearson_r": 0.005161210897047229,
             "avg_sov_effect_pp": 0.112,
             "effect_se_pp": 0.341,
             "ci95_low_pp": -0.556,
@@ -13918,7 +14346,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.022681501415908703,
+            "pearson_r": -0.022681501415908873,
             "avg_sov_effect_pp": -0.19,
             "effect_se_pp": 0.236,
             "ci95_low_pp": -0.653,
@@ -13940,7 +14368,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": 0.022000921098062547,
+            "pearson_r": 0.022000921098062887,
             "avg_sov_effect_pp": -0.07,
             "effect_se_pp": 0.279,
             "ci95_low_pp": -0.64,
@@ -13956,7 +14384,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.011516927747479498,
+            "pearson_r": 0.011516927747479528,
             "avg_sov_effect_pp": 0.228,
             "effect_se_pp": 0.326,
             "ci95_low_pp": -0.451,
@@ -13984,7 +14412,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": 0.0083466551816319,
+            "pearson_r": 0.008346655181631848,
             "avg_sov_effect_pp": 0.087,
             "effect_se_pp": 0.51,
             "ci95_low_pp": -1.09,
@@ -14039,11 +14467,11 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1518,
-              "ci95_low": -0.1896,
-              "ci95_high": 0.4933,
-              "prob_positive": 0.808,
-              "prob_direction": 0.808,
+              "coef_pp_per_event_day": 0.1526,
+              "ci95_low": -0.1888,
+              "ci95_high": 0.4941,
+              "prob_positive": 0.81,
+              "prob_direction": 0.81,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.0808,
@@ -14057,7 +14485,7 @@
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": -0.0714,
               "ci95_low": -0.2655,
-              "ci95_high": 0.1228,
+              "ci95_high": 0.1227,
               "prob_positive": 0.236,
               "prob_direction": 0.764,
               "significant": false,
@@ -14071,9 +14499,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.0409,
-              "ci95_low": -0.4071,
-              "ci95_high": 0.4888,
+              "coef_pp_per_event_day": 0.0406,
+              "ci95_low": -0.4073,
+              "ci95_high": 0.4886,
               "prob_positive": 0.571,
               "prob_direction": 0.571,
               "significant": false,
@@ -14220,7 +14648,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": 0.005749486450970712,
+            "pearson_r": 0.005749486450970724,
             "avg_sov_effect_pp": -0.006,
             "effect_se_pp": 0.035,
             "ci95_low_pp": -0.074,
@@ -14236,7 +14664,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.02696418993013873,
+            "pearson_r": 0.026964189930138802,
             "avg_sov_effect_pp": -0.042,
             "effect_se_pp": 0.075,
             "ci95_low_pp": -0.189,
@@ -14252,7 +14680,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": 0.023352294125015334,
+            "pearson_r": 0.023352294125015584,
             "avg_sov_effect_pp": 0.008,
             "effect_se_pp": 0.127,
             "ci95_low_pp": -0.344,
@@ -14268,7 +14696,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": 0.053270618612659935,
+            "pearson_r": 0.0532706186126598,
             "avg_sov_effect_pp": 0.013,
             "effect_se_pp": 0.077,
             "ci95_low_pp": -0.138,
@@ -14284,7 +14712,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": 0.04389110583608105,
+            "pearson_r": 0.04389110583608116,
             "avg_sov_effect_pp": 0.058,
             "effect_se_pp": 0.06,
             "ci95_low_pp": -0.059,
@@ -14306,7 +14734,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.017177410220900993,
+            "pearson_r": -0.017177410220901145,
             "avg_sov_effect_pp": -0.057,
             "effect_se_pp": 0.075,
             "ci95_low_pp": -0.21,
@@ -14322,7 +14750,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": -0.05052689699966119,
+            "pearson_r": -0.05052689699966125,
             "avg_sov_effect_pp": -0.097,
             "effect_se_pp": 0.092,
             "ci95_low_pp": -0.287,
@@ -14350,7 +14778,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.017320702668821148,
+            "pearson_r": -0.017320702668821075,
             "avg_sov_effect_pp": -0.06,
             "effect_se_pp": 0.195,
             "ci95_low_pp": -0.509,
@@ -14405,9 +14833,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1023,
-              "ci95_low": -0.2501,
-              "ci95_high": 0.0455,
+              "coef_pp_per_event_day": -0.1025,
+              "ci95_low": -0.2503,
+              "ci95_high": 0.0453,
               "prob_positive": 0.087,
               "prob_direction": 0.913,
               "significant": false,
@@ -14421,7 +14849,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": 0.0663,
+              "coef_pp_per_event_day": 0.0662,
               "ci95_low": -0.0218,
               "ci95_high": 0.1543,
               "prob_positive": 0.93,
@@ -14437,11 +14865,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0456,
-              "ci95_low": -0.067,
-              "ci95_high": 0.1583,
-              "prob_positive": 0.786,
-              "prob_direction": 0.786,
+              "coef_pp_per_event_day": 0.0465,
+              "ci95_low": -0.0662,
+              "ci95_high": 0.1591,
+              "prob_positive": 0.791,
+              "prob_direction": 0.791,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.0341,
@@ -14453,7 +14881,7 @@
             },
             "news_mention": {
               "label": "News-Erwaehnungen",
-              "coef_pp_per_event_day": 0.0408,
+              "coef_pp_per_event_day": 0.0407,
               "ci95_low": -0.0233,
               "ci95_high": 0.1048,
               "prob_positive": 0.894,
@@ -14586,7 +15014,7 @@
         "impact": {
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
-            "pearson_r": -0.02223256291450676,
+            "pearson_r": -0.022232562914507023,
             "avg_sov_effect_pp": 0.101,
             "effect_se_pp": 0.146,
             "ci95_low_pp": -0.185,
@@ -14602,7 +15030,7 @@
           },
           "page_new": {
             "label": "Neue Seiten",
-            "pearson_r": 0.032507545007267026,
+            "pearson_r": 0.032507545007267095,
             "avg_sov_effect_pp": 0.206,
             "effect_se_pp": 0.291,
             "ci95_low_pp": -0.364,
@@ -14618,7 +15046,7 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "pearson_r": -0.006167563537132163,
+            "pearson_r": -0.0061675635371322805,
             "avg_sov_effect_pp": -0.125,
             "effect_se_pp": 0.522,
             "ci95_low_pp": -1.574,
@@ -14634,7 +15062,7 @@
           },
           "press_mention": {
             "label": "Pressemitteilungen",
-            "pearson_r": -0.009340432016134425,
+            "pearson_r": -0.009340432016134562,
             "avg_sov_effect_pp": 0.018,
             "effect_se_pp": 0.301,
             "ci95_low_pp": -0.572,
@@ -14650,7 +15078,7 @@
           },
           "news_mention": {
             "label": "News-Erwaehnungen",
-            "pearson_r": -0.019161892440419114,
+            "pearson_r": -0.01916189244041901,
             "avg_sov_effect_pp": -0.106,
             "effect_se_pp": 0.254,
             "ci95_low_pp": -0.604,
@@ -14672,7 +15100,7 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "pearson_r": -0.010165257507079313,
+            "pearson_r": -0.010165257507079492,
             "avg_sov_effect_pp": -0.027,
             "effect_se_pp": 0.369,
             "ci95_low_pp": -0.781,
@@ -14688,7 +15116,7 @@
           },
           "review_volume": {
             "label": "Bewertungs-Volumen",
-            "pearson_r": 0.06587135006069259,
+            "pearson_r": 0.06587135006069318,
             "avg_sov_effect_pp": 0.363,
             "effect_se_pp": 0.509,
             "ci95_low_pp": -0.696,
@@ -14716,7 +15144,7 @@
           },
           "portal_rank_change": {
             "label": "Portal-Rang Check24 (±)",
-            "pearson_r": -0.02134014309139816,
+            "pearson_r": -0.021340143091397805,
             "avg_sov_effect_pp": -0.322,
             "effect_se_pp": 0.714,
             "ci95_low_pp": -1.969,
@@ -14771,9 +15199,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.6543,
-              "ci95_low": 0.0064,
-              "ci95_high": 1.3023,
+              "coef_pp_per_event_day": 0.6541,
+              "ci95_low": 0.0061,
+              "ci95_high": 1.302,
               "prob_positive": 0.976,
               "prob_direction": 0.976,
               "significant": false,
@@ -14803,11 +15231,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.1428,
-              "ci95_low": -0.6366,
-              "ci95_high": 0.351,
-              "prob_positive": 0.285,
-              "prob_direction": 0.715,
+              "coef_pp_per_event_day": -0.142,
+              "ci95_low": -0.6358,
+              "ci95_high": 0.3518,
+              "prob_positive": 0.287,
+              "prob_direction": 0.713,
               "significant": false,
               "n_with_event": 31,
               "cluster_se": 0.2826,
@@ -14819,9 +15247,9 @@
             },
             "news_mention": {
               "label": "News-Erwaehnungen",
-              "coef_pp_per_event_day": -0.0383,
-              "ci95_low": -0.3191,
-              "ci95_high": 0.2425,
+              "coef_pp_per_event_day": -0.0384,
+              "ci95_low": -0.3192,
+              "ci95_high": 0.2424,
               "prob_positive": 0.394,
               "prob_direction": 0.606,
               "significant": false,
@@ -14835,7 +15263,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": -0.0188,
+              "coef_pp_per_event_day": -0.0189,
               "ci95_low": -0.4049,
               "ci95_high": 0.3672,
               "prob_positive": 0.462,
@@ -15413,10 +15841,10 @@
       }
     ],
     "event_deckung": {
-      "n_presse_news_events": 2710,
+      "n_presse_news_events": 2716,
       "auf_zitierten_quellen": 224,
-      "anteil_auf_zitierten_quellen": 0.0827,
-      "nicht_zitiert": 2486
+      "anteil_auf_zitierten_quellen": 0.0825,
+      "nicht_zitiert": 2492
     },
     "top_autoritaetsquellen_ohne_event": [
       "ergo.de",
@@ -16115,25 +16543,25 @@
         "verlauf": [
           {
             "lag": -14,
-            "r": 0.079,
-            "effekt_pp": 0.284,
-            "p": 0.187034,
+            "r": 0.078,
+            "effekt_pp": 0.277,
+            "p": 0.190641,
             "gesichert": false,
             "lead": true
           },
           {
             "lag": -7,
             "r": 0.06,
-            "effekt_pp": 0.296,
-            "p": 0.219846,
+            "effekt_pp": 0.291,
+            "p": 0.220287,
             "gesichert": false,
             "lead": true
           },
           {
             "lag": -3,
             "r": 0.018,
-            "effekt_pp": 0.016,
-            "p": 0.963468,
+            "effekt_pp": 0.015,
+            "p": 0.964053,
             "gesichert": false,
             "lead": true
           },
@@ -16181,8 +16609,8 @@
         "vorzeichenwechsel": 1,
         "musterbewertung": "ein Vorzeichenwechsel — uneindeutig",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.079 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.162 (3 Tage).",
-        "max_abs_r_lead": 0.079,
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.078 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.162 (3 Tage).",
+        "max_abs_r_lead": 0.078,
         "max_abs_r_ab_lag0": 0.162,
         "r_bei_lag0": 0.07
       },
@@ -16195,25 +16623,25 @@
         "verlauf": [
           {
             "lag": -14,
-            "r": -0.011,
-            "effekt_pp": 0.122,
-            "p": 0.582313,
+            "r": -0.01,
+            "effekt_pp": 0.124,
+            "p": 0.563489,
             "gesichert": false,
             "lead": true
           },
           {
             "lag": -7,
-            "r": 0.038,
-            "effekt_pp": 0.285,
-            "p": 0.231754,
+            "r": 0.037,
+            "effekt_pp": 0.278,
+            "p": 0.230733,
             "gesichert": false,
             "lead": true
           },
           {
             "lag": -3,
             "r": -0.055,
-            "effekt_pp": -0.238,
-            "p": 0.273881,
+            "effekt_pp": -0.236,
+            "p": 0.270098,
             "gesichert": false,
             "lead": true
           },
@@ -16387,9 +16815,9 @@
         "verlauf": [
           {
             "lag": -14,
-            "r": 0.037,
-            "effekt_pp": 0.287,
-            "p": 0.393744,
+            "r": 0.036,
+            "effekt_pp": 0.275,
+            "p": 0.400061,
             "gesichert": false,
             "lead": true
           },
@@ -16453,8 +16881,8 @@
         "vorzeichenwechsel": 1,
         "musterbewertung": "ein Vorzeichenwechsel — uneindeutig",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.037 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.096 (7 Tage).",
-        "max_abs_r_lead": 0.037,
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.036 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.096 (7 Tage).",
+        "max_abs_r_lead": 0.036,
         "max_abs_r_ab_lag0": 0.096,
         "r_bei_lag0": -0.056
       },
@@ -16759,12 +17187,12 @@
     }
   },
   "press_by_citation": {
-    "n_presse_events": 2710,
+    "n_presse_events": 2716,
     "je_klasse": {
-      "unbekannt": 1693,
-      "zitiert_marke": 193,
-      "zitiert_redaktionell": 157,
-      "nicht_zitiert": 667
+      "unbekannt": 1697,
+      "zitiert_marke": 194,
+      "zitiert_redaktionell": 156,
+      "nicht_zitiert": 669
     },
     "klassen_label": {
       "zitiert_redaktionell": "Presse in zitierten Redaktionsmedien",
@@ -16773,7 +17201,7 @@
     },
     "methode": "Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle der Einordnung: data/content_citations.json, gesetzt von scripts/enrich_press_events.py als detail.zitat_klasse.",
     "grenzen": "Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht zuordnen liess - nicht, dass es nicht zitiert wird.",
-    "abdeckung": 0.3753,
+    "abdeckung": 0.3752,
     "available": true,
     "wirkung_je_klasse": {
       "zitiert_redaktionell": {
@@ -16782,7 +17210,7 @@
         "avg_sov_effect_pp": 0.151,
         "n_intervals": 661,
         "n_with_event": 35,
-        "n_events": 157,
+        "n_events": 156,
         "significant_iid": false,
         "p_iid": 0.79638,
         "effect_se_cluster_pp": 0.583,
@@ -16800,7 +17228,7 @@
         "avg_sov_effect_pp": -0.134,
         "n_intervals": 661,
         "n_with_event": 102,
-        "n_events": 667,
+        "n_events": 669,
         "significant_iid": false,
         "p_iid": 0.438611,
         "effect_se_cluster_pp": 0.173,
@@ -16818,7 +17246,7 @@
         "avg_sov_effect_pp": 0.49,
         "n_intervals": 661,
         "n_with_event": 46,
-        "n_events": 193,
+        "n_events": 194,
         "significant_iid": false,
         "p_iid": 0.233169,
         "effect_se_cluster_pp": 0.411,
@@ -16864,7 +17292,7 @@
       },
       {
         "domain": "pfefferminzia.de",
-        "n_artikel": 5,
+        "n_artikel": 4,
         "zitate": 1502
       },
       {
@@ -16879,7 +17307,7 @@
       },
       {
         "domain": "versicherungsmagazin.de",
-        "n_artikel": 11,
+        "n_artikel": 10,
         "zitate": 861
       },
       {
@@ -16889,7 +17317,7 @@
       },
       {
         "domain": "procontra-online.de",
-        "n_artikel": 17,
+        "n_artikel": 18,
         "zitate": 655
       }
     ],
@@ -16911,8 +17339,8 @@
         "dosis_min": 0.1818,
         "dosis_max": 339.0,
         "dosis_median": 4.0,
-        "steigung_within_fe": -0.0012153300032731434,
-        "se_cluster": 0.0018003941881260905,
+        "steigung_within_fe": -0.0012153300032731419,
+        "se_cluster": 0.0018003941881260944,
         "ci95_low": -0.004,
         "ci95_high": 0.003,
         "p_cluster": 0.826325,
@@ -16932,7 +17360,7 @@
         "dosis_min": 0.0909,
         "dosis_max": 385.0,
         "dosis_median": 2.0,
-        "steigung_within_fe": 0.006364617175042303,
+        "steigung_within_fe": 0.006364617175042364,
         "se_cluster": 0.004000271500543811,
         "ci95_low": -0.002,
         "ci95_high": 0.015,
@@ -16959,8 +17387,8 @@
         "dosis_min": 0.0909,
         "dosis_max": 4.0,
         "dosis_median": 1.0,
-        "steigung_within_fe": 0.29631022142864094,
-        "se_cluster": 0.18675798712079886,
+        "steigung_within_fe": 0.2963102214286405,
+        "se_cluster": 0.1867579871207987,
         "ci95_low": -0.136,
         "ci95_high": 0.726,
         "p_cluster": 0.152978,
@@ -16980,8 +17408,8 @@
         "dosis_min": 0.0909,
         "dosis_max": 6.0,
         "dosis_median": 1.0,
-        "steigung_within_fe": -0.061520543414882944,
-        "se_cluster": 0.18685815681220175,
+        "steigung_within_fe": -0.06152054341488323,
+        "se_cluster": 0.18685815681220266,
         "ci95_low": -0.496,
         "ci95_high": 0.387,
         "p_cluster": 0.778997,
@@ -17007,8 +17435,8 @@
         "dosis_min": 0.25,
         "dosis_max": 2.0,
         "dosis_median": 1.0,
-        "steigung_within_fe": -0.5932839558486636,
-        "se_cluster": 0.20827859834241377,
+        "steigung_within_fe": -0.5932839558486638,
+        "se_cluster": 0.20827859834241624,
         "ci95_low": -1.021,
         "ci95_high": -0.036,
         "p_cluster": 0.038807,
@@ -17028,8 +17456,8 @@
         "dosis_min": 0.0909,
         "dosis_max": 2.0,
         "dosis_median": 1.0,
-        "steigung_within_fe": -0.33150586012329175,
-        "se_cluster": 0.21933326534441633,
+        "steigung_within_fe": -0.33150586012329136,
+        "se_cluster": 0.21933326534441167,
         "ci95_low": -0.853,
         "ci95_high": 0.221,
         "p_cluster": 0.199613,
@@ -17385,9 +17813,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0246,
-            "ci95_low": 0.5012,
-            "ci95_high": 1.5481,
+            "coef_pp_per_event_day": 1.0202,
+            "ci95_low": 0.496,
+            "ci95_high": 1.5444,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17395,33 +17823,33 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1121,
-            "ci95_low": -0.374,
-            "ci95_high": 0.5981,
-            "prob_positive": 0.674,
-            "prob_direction": 0.674,
+            "coef_pp_per_event_day": 0.1126,
+            "ci95_low": -0.3737,
+            "ci95_high": 0.5988,
+            "prob_positive": 0.675,
+            "prob_direction": 0.675,
             "significant": false,
             "n_with_event": 14
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.083,
-            "ci95_low": -0.2363,
-            "ci95_high": 0.0703,
-            "prob_positive": 0.144,
-            "prob_direction": 0.856,
+            "coef_pp_per_event_day": -0.0796,
+            "ci95_low": -0.2319,
+            "ci95_high": 0.0726,
+            "prob_positive": 0.153,
+            "prob_direction": 0.847,
             "significant": false,
             "n_with_event": 41
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.03,
-            "ci95_low": -0.1101,
-            "ci95_high": 0.0501,
-            "prob_positive": 0.232,
-            "prob_direction": 0.768,
+            "coef_pp_per_event_day": -0.0254,
+            "ci95_low": -0.1143,
+            "ci95_high": 0.0635,
+            "prob_positive": 0.288,
+            "prob_direction": 0.712,
             "significant": false,
-            "n_with_event": 70
+            "n_with_event": 64
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -17435,13 +17863,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0107,
-            "ci95_low": -0.0094,
-            "ci95_high": 0.0308,
-            "prob_positive": 0.853,
-            "prob_direction": 0.853,
+            "coef_pp_per_event_day": 0.0106,
+            "ci95_low": -0.0104,
+            "ci95_high": 0.0315,
+            "prob_positive": 0.838,
+            "prob_direction": 0.838,
             "significant": false,
-            "n_with_event": 71
+            "n_with_event": 66
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -17970,57 +18398,47 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.643,
-            "ci95_low": -0.0018,
-            "ci95_high": 1.2878,
-            "prob_positive": 0.975,
-            "prob_direction": 0.975,
+            "coef_pp_per_event_day": 0.6349,
+            "ci95_low": -0.0109,
+            "ci95_high": 1.2807,
+            "prob_positive": 0.973,
+            "prob_direction": 0.973,
             "significant": false,
             "n_with_event": 11
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2597,
-            "ci95_low": -0.2892,
-            "ci95_high": 0.8086,
-            "prob_positive": 0.823,
-            "prob_direction": 0.823,
+            "coef_pp_per_event_day": 0.256,
+            "ci95_low": -0.2932,
+            "ci95_high": 0.8051,
+            "prob_positive": 0.82,
+            "prob_direction": 0.82,
             "significant": false,
             "n_with_event": 16
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1315,
-            "ci95_low": -0.0577,
-            "ci95_high": 0.3207,
-            "prob_positive": 0.913,
-            "prob_direction": 0.913,
+            "coef_pp_per_event_day": 0.1317,
+            "ci95_low": -0.0562,
+            "ci95_high": 0.3197,
+            "prob_positive": 0.915,
+            "prob_direction": 0.915,
             "significant": false,
             "n_with_event": 41
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.031,
-            "ci95_low": -0.1297,
-            "ci95_high": 0.0676,
-            "prob_positive": 0.269,
-            "prob_direction": 0.731,
+            "coef_pp_per_event_day": -0.0458,
+            "ci95_low": -0.1554,
+            "ci95_high": 0.0638,
+            "prob_positive": 0.206,
+            "prob_direction": 0.794,
             "significant": false,
-            "n_with_event": 70
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0139,
-            "ci95_low": -0.0109,
-            "ci95_high": 0.0386,
-            "prob_positive": 0.864,
-            "prob_direction": 0.864,
-            "significant": false,
-            "n_with_event": 71
+            "n_with_event": 64
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0114,
+            "coef_pp_per_event_day": 0.0113,
             "ci95_low": 0.0062,
             "ci95_high": 0.0165,
             "prob_positive": 1.0,
@@ -18028,13 +18446,23 @@
             "significant": true,
             "n_with_event": 56
           },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0103,
+            "ci95_low": -0.0155,
+            "ci95_high": 0.0361,
+            "prob_positive": 0.782,
+            "prob_direction": 0.782,
+            "significant": false,
+            "n_with_event": 66
+          },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0025,
             "ci95_low": -0.0071,
             "ci95_high": 0.0022,
-            "prob_positive": 0.149,
-            "prob_direction": 0.851,
+            "prob_positive": 0.147,
+            "prob_direction": 0.853,
             "significant": false,
             "n_with_event": 257
           }
@@ -18349,9 +18777,9 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2178,
-            "ci95_low": -0.4938,
-            "ci95_high": 0.9294,
+            "coef_pp_per_event_day": 0.2175,
+            "ci95_low": -0.4939,
+            "ci95_high": 0.929,
             "prob_positive": 0.726,
             "prob_direction": 0.726,
             "significant": false,
@@ -18359,9 +18787,9 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.0767,
-            "ci95_low": -0.1769,
-            "ci95_high": 0.3303,
+            "coef_pp_per_event_day": 0.0765,
+            "ci95_low": -0.177,
+            "ci95_high": 0.33,
             "prob_positive": 0.723,
             "prob_direction": 0.723,
             "significant": false,
@@ -18369,33 +18797,33 @@
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.0304,
-            "ci95_low": -0.8527,
-            "ci95_high": 0.9136,
-            "prob_positive": 0.527,
-            "prob_direction": 0.527,
+            "coef_pp_per_event_day": 0.0267,
+            "ci95_low": -0.8564,
+            "ci95_high": 0.9099,
+            "prob_positive": 0.524,
+            "prob_direction": 0.524,
             "significant": false,
             "n_with_event": 8
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0178,
-            "ci95_low": -0.1399,
-            "ci95_high": 0.1043,
-            "prob_positive": 0.387,
-            "prob_direction": 0.613,
+            "coef_pp_per_event_day": -0.0221,
+            "ci95_low": -0.1446,
+            "ci95_high": 0.1004,
+            "prob_positive": 0.362,
+            "prob_direction": 0.638,
             "significant": false,
-            "n_with_event": 70
+            "n_with_event": 64
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0103,
-            "ci95_low": -0.0191,
-            "ci95_high": 0.0396,
-            "prob_positive": 0.754,
-            "prob_direction": 0.754,
+            "coef_pp_per_event_day": 0.0112,
+            "ci95_low": -0.018,
+            "ci95_high": 0.0404,
+            "prob_positive": 0.774,
+            "prob_direction": 0.774,
             "significant": false,
-            "n_with_event": 71
+            "n_with_event": 66
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -18412,8 +18840,8 @@
             "coef_pp_per_event_day": -0.0003,
             "ci95_low": -0.007,
             "ci95_high": 0.0065,
-            "prob_positive": 0.467,
-            "prob_direction": 0.533,
+            "prob_positive": 0.466,
+            "prob_direction": 0.534,
             "significant": false,
             "n_with_event": 219
           }
@@ -18892,9 +19320,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.5592,
-            "ci95_low": 0.5592,
-            "ci95_high": 0.5592,
+            "coef_pp_per_event_day": 0.5564,
+            "ci95_low": 0.5564,
+            "ci95_high": 0.5564,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18902,13 +19330,13 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 9
+            "n_with_event": 8
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -19255,9 +19683,9 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.2824,
-            "ci95_low": -0.2824,
-            "ci95_high": -0.2824,
+            "coef_pp_per_event_day": -0.2818,
+            "ci95_low": -0.2818,
+            "ci95_high": -0.2818,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -19265,9 +19693,9 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -19285,13 +19713,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 11
+            "n_with_event": 10
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -19306,7 +19734,7 @@
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
             "coef_pp_per_event_day": 0.0,
-            "ci95_low": 0.0,
+            "ci95_low": -0.0,
             "ci95_high": 0.0,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
@@ -19409,7 +19837,7 @@
           "available": true,
           "pearson_r": 0.009,
           "spearman_r": -0.051,
-          "avg_sov_effect_pp": 0.013,
+          "avg_sov_effect_pp": 0.012,
           "effect_se_pp": null,
           "ci95_low_pp": null,
           "ci95_high_pp": null,
@@ -19637,13 +20065,13 @@
         "coefficients": {
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 10
+            "n_with_event": 9
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -19657,13 +20085,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 11
+            "n_with_event": 10
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -19849,19 +20277,19 @@
         "coefficients": {
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 7
+            "n_with_event": 6
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -20267,13 +20695,13 @@
         "coefficients": {
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 9
+            "n_with_event": 8
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -20287,13 +20715,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 11
+            "n_with_event": 10
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -20480,9 +20908,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1461,
-            "ci95_low": 0.1461,
-            "ci95_high": 0.1461,
+            "coef_pp_per_event_day": 0.1484,
+            "ci95_low": 0.1484,
+            "ci95_high": 0.1484,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -20490,9 +20918,9 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -20510,9 +20938,9 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -20878,9 +21306,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1461,
-            "ci95_low": 0.1461,
-            "ci95_high": 0.1461,
+            "coef_pp_per_event_day": 0.1484,
+            "ci95_low": 0.1484,
+            "ci95_high": 0.1484,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -20888,23 +21316,23 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 11
+            "n_with_event": 10
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 11
+            "n_with_event": 10
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -21038,9 +21466,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1461,
-            "ci95_low": 0.1461,
-            "ci95_high": 0.1461,
+            "coef_pp_per_event_day": 0.1484,
+            "ci95_low": 0.1484,
+            "ci95_high": 0.1484,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -21048,13 +21476,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0039,
-            "ci95_low": 0.0039,
-            "ci95_high": 0.0039,
+            "coef_pp_per_event_day": 0.0045,
+            "ci95_low": 0.0045,
+            "ci95_high": 0.0045,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 10
+            "n_with_event": 9
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -21430,13 +21858,13 @@
         "coefficients": {
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0226,
-            "ci95_low": -0.0226,
-            "ci95_high": -0.0226,
+            "coef_pp_per_event_day": -0.0205,
+            "ci95_low": -0.0205,
+            "ci95_high": -0.0205,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 7
+            "n_with_event": 6
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -22306,59 +22734,59 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.3788,
-            "ci95_low": -0.2358,
-            "ci95_high": 0.9934,
-            "prob_positive": 0.886,
-            "prob_direction": 0.886,
+            "coef_pp_per_event_day": 0.3717,
+            "ci95_low": -0.2437,
+            "ci95_high": 0.9872,
+            "prob_positive": 0.882,
+            "prob_direction": 0.882,
             "significant": false,
             "n_with_event": 11
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2209,
-            "ci95_low": -0.3023,
-            "ci95_high": 0.7441,
-            "prob_positive": 0.796,
-            "prob_direction": 0.796,
+            "coef_pp_per_event_day": 0.2203,
+            "ci95_low": -0.3031,
+            "ci95_high": 0.7437,
+            "prob_positive": 0.795,
+            "prob_direction": 0.795,
             "significant": false,
             "n_with_event": 16
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1247,
-            "ci95_low": -0.0556,
-            "ci95_high": 0.305,
-            "prob_positive": 0.912,
-            "prob_direction": 0.912,
+            "coef_pp_per_event_day": 0.128,
+            "ci95_low": -0.0511,
+            "ci95_high": 0.3071,
+            "prob_positive": 0.919,
+            "prob_direction": 0.919,
             "significant": false,
             "n_with_event": 41
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0402,
-            "ci95_low": -0.1342,
-            "ci95_high": 0.0539,
-            "prob_positive": 0.201,
-            "prob_direction": 0.799,
+            "coef_pp_per_event_day": -0.0419,
+            "ci95_low": -0.1463,
+            "ci95_high": 0.0626,
+            "prob_positive": 0.216,
+            "prob_direction": 0.784,
             "significant": false,
-            "n_with_event": 70
+            "n_with_event": 64
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0138,
-            "ci95_low": -0.0098,
-            "ci95_high": 0.0374,
-            "prob_positive": 0.874,
-            "prob_direction": 0.874,
+            "coef_pp_per_event_day": 0.0126,
+            "ci95_low": -0.012,
+            "ci95_high": 0.0372,
+            "prob_positive": 0.842,
+            "prob_direction": 0.842,
             "significant": false,
-            "n_with_event": 71
+            "n_with_event": 66
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0089,
-            "ci95_low": 0.004,
-            "ci95_high": 0.0138,
+            "coef_pp_per_event_day": 0.0088,
+            "ci95_low": 0.0039,
+            "ci95_high": 0.0137,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -22369,8 +22797,8 @@
             "coef_pp_per_event_day": -0.0008,
             "ci95_low": -0.0052,
             "ci95_high": 0.0037,
-            "prob_positive": 0.369,
-            "prob_direction": 0.631,
+            "prob_positive": 0.368,
+            "prob_direction": 0.632,
             "significant": false,
             "n_with_event": 257
           }
@@ -22715,9 +23143,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0184,
-            "ci95_low": 0.4936,
-            "ci95_high": 1.5431,
+            "coef_pp_per_event_day": 1.0141,
+            "ci95_low": 0.4886,
+            "ci95_high": 1.5397,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -22725,33 +23153,33 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1233,
-            "ci95_low": -0.3639,
-            "ci95_high": 0.6105,
-            "prob_positive": 0.69,
-            "prob_direction": 0.69,
+            "coef_pp_per_event_day": 0.1238,
+            "ci95_low": -0.3636,
+            "ci95_high": 0.6112,
+            "prob_positive": 0.691,
+            "prob_direction": 0.691,
             "significant": false,
             "n_with_event": 14
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0847,
-            "ci95_low": -0.2384,
-            "ci95_high": 0.0689,
-            "prob_positive": 0.14,
-            "prob_direction": 0.86,
+            "coef_pp_per_event_day": -0.0816,
+            "ci95_low": -0.2342,
+            "ci95_high": 0.0711,
+            "prob_positive": 0.147,
+            "prob_direction": 0.853,
             "significant": false,
             "n_with_event": 41
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0284,
-            "ci95_low": -0.1087,
-            "ci95_high": 0.0518,
-            "prob_positive": 0.244,
-            "prob_direction": 0.756,
+            "coef_pp_per_event_day": -0.0237,
+            "ci95_low": -0.1128,
+            "ci95_high": 0.0654,
+            "prob_positive": 0.301,
+            "prob_direction": 0.699,
             "significant": false,
-            "n_with_event": 70
+            "n_with_event": 64
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -22765,21 +23193,21 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0107,
-            "ci95_low": -0.0094,
-            "ci95_high": 0.0309,
-            "prob_positive": 0.852,
-            "prob_direction": 0.852,
+            "coef_pp_per_event_day": 0.0105,
+            "ci95_low": -0.0105,
+            "ci95_high": 0.0315,
+            "prob_positive": 0.836,
+            "prob_direction": 0.836,
             "significant": false,
-            "n_with_event": 71
+            "n_with_event": 66
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0014,
             "ci95_low": -0.0052,
             "ci95_high": 0.0023,
-            "prob_positive": 0.229,
-            "prob_direction": 0.771,
+            "prob_positive": 0.228,
+            "prob_direction": 0.772,
             "significant": false,
             "n_with_event": 256
           }

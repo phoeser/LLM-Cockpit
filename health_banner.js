@@ -11,16 +11,24 @@
   "use strict";
 
   // 12.08.2026 von 2 auf 8 Tage: Der GEO-Crawl laeuft seit der Umstellung nur
-  // noch WOECHENTLICH (analyze.yml, cron "10 23 * * 0" = sonntags 23:10 UTC).
-  // Mit der alten 2-Tage-Grenze stand das Banner ab jedem Mittwoch bis
-  // Sonntagnacht im Bild - fuenf von sieben Tagen Alarm ohne Anlass. Genau so
-  // gewoehnt man sich ab hinzusehen, und dann faellt der echte Ausfall nicht
-  // mehr auf. 8 = 7 Tage Takt + 1 Tag Luft, weil GitHub geplante Laeufe im
-  // Free-Tier um Stunden verzoegert. Aeltere Daten heissen: ein Lauf ist
-  // ausgefallen. ACHTUNG: Aendert sich der Crawl-Takt wieder, gehoert diese
-  // Zahl mitgeaendert - sie ist eine Kopie einer Annahme, die woanders steht.
+  // noch WOECHENTLICH. Mit der alten 2-Tage-Grenze stand das Banner ab jedem
+  // Mittwoch bis zum naechsten Lauf im Bild - fuenf von sieben Tagen Alarm ohne
+  // Anlass. Genau so gewoehnt man sich ab hinzusehen, und dann faellt der echte
+  // Ausfall nicht mehr auf. 8 = 7 Tage Takt + 1 Tag Luft, weil GitHub geplante
+  // Laeufe im Free-Tier um Stunden verzoegert. Aeltere Daten heissen: ein Lauf
+  // ist ausgefallen.
+  //
+  // 13.08.2026: Hier stand "sonntags 23:10 UTC" - und zwar richtig, als es
+  // geschrieben wurde. Keine 24 Stunden spaeter wurde der Cron im GEO-Repo auf
+  // Montag gezogen (analyze.yml, "Crawl von taeglich auf woechentlich (Mo)"),
+  // und der Satz war falsch. Ich hatte eine Zeile darueber selbst notiert, dass
+  // diese Angabe eine Kopie einer Annahme ist, die woanders steht - genau daran
+  // ist sie dann gescheitert.
+  // Konsequenz: Der Wochentag steht hier nicht mehr. Das Banner braucht ihn
+  // nicht, es braucht nur die Grenze. Was es nicht behauptet, kann nicht
+  // veralten. Der Takt selbst steht im GEO-Repo, und nur dort.
   var MAX_AGE_DAYS = 8;
-  var CRAWL_TAKT = "woechentlich (sonntagnachts)";
+  var CRAWL_TAKT = "nur einmal pro Woche";
   var SNAP_URL = "data/geo_snapshot.json";
   var LLM_NAMES = { chatgpt: "ChatGPT", gemini: "Gemini", perplexity: "Perplexity", claude: "Claude", grok: "Grok" };
   var LLM_HINT = {

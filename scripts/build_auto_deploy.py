@@ -83,11 +83,29 @@ def git(*args):
 
 
 def geaenderte_dateien():
-    r = git("diff", "--name-only", "origin/main", "HEAD")
+    # 13.08.2026: Hier stand "git diff origin/main HEAD" (zwei Punkte). Das ist
+    # der Unterschied ZWISCHEN beiden Staenden - und der zeigt in BEIDE
+    # Richtungen. Ist der lokale Stand hinter origin/main, weil dort inzwischen
+    # ein Nightly committet hat, tauchen DESSEN Aenderungen als "muss noch raus"
+    # auf. Die Seite haette dann angeboten, den frischen Stand mit dem eigenen
+    # aelteren zu ueberschreiben - genau der Fehler, gegen den dieses Werkzeug
+    # gebaut wurde, nur eine Ebene hoeher. Aufgefallen, weil auf einmal
+    # dashboard_template.html mit 13,3 MB in der Liste stand.
+    #
+    # Drei Punkte heisst: nur was auf HEAD seit dem gemeinsamen Vorfahren
+    # dazugekommen ist. Das ist die richtige Frage.
+    r = git("diff", "--name-only", "origin/main...HEAD")
     if r.returncode != 0:
         sys.exit("FEHLER: git diff gegen origin/main fehlgeschlagen. Erst "
                  "'git fetch origin' laufen lassen.\n" + r.stderr[:400])
     aus = [p for p in r.stdout.splitlines() if p.strip()]
+    # Und ausdruecklich melden, wenn der lokale Stand hinterherhinkt - dann
+    # gehoert rebased, bevor irgendetwas gepusht wird.
+    z = git("rev-list", "--count", "HEAD..origin/main")
+    if z.returncode == 0 and z.stdout.strip() not in ("", "0"):
+        print("HINWEIS: origin/main ist %s Commit(s) voraus. Vor dem Push "
+              "'git pull --rebase' - sonst pusht die Seite gegen einen "
+              "veralteten Ausgangsstand." % z.stdout.strip())
     r2 = git("status", "--porcelain")
     for line in r2.stdout.splitlines():
         p = line[3:].strip()
@@ -206,7 +224,7 @@ HTML = u"""<!DOCTYPE html>
       <input type="checkbox" id="rememberToken" style="margin-right:6px;"> Token in diesem Browser speichern (localStorage, nur dieser PC)
     </label>
   </div>
-  <p class="help">Braucht <strong>Contents: Read+Write</strong>; für Dateien unter <code>.github/</code> zusätzlich <strong>Workflows: Read+Write</strong>. <a href="https://github.com/settings/tokens?type=beta" target="_blank">Token erstellen</a></p>
+  <p class="help">Braucht <strong>Contents: Read+Write</strong>; für Dateien unter <code>.github/</code> zusätzlich <strong>Workflows: Read+Write</strong>; zum Anstoßen in Abschnitt 3 ausserdem <strong>Actions: Read+Write</strong> — ein anderes Häkchen als "Workflows". <a href="https://github.com/settings/tokens?type=beta" target="_blank">Token erstellen</a></p>
 </div>
 
 <div class="card">
@@ -222,7 +240,7 @@ HTML = u"""<!DOCTYPE html>
 <div class="card">
   <h3>3. Workflow anstoßen</h3>
   <div id="wfBtns"></div>
-  <p class="help">Stößt ohne Push an. Status unten, Auto-Refresh alle 8 Sek.</p>
+  <p class="help">Stößt ohne Push an. Status unten, Auto-Refresh alle 8 Sek. Klappt das nicht, geht es immer auch ohne Token über die <a href="https://github.com/phoeser/LLM-Cockpit/actions" target="_blank">Actions-Oberfläche</a> (Workflow wählen &rarr; <b>Run workflow</b>).</p>
 </div>
 
 <div class="card">
@@ -288,7 +306,6 @@ function bauGruppen() {
     '<div class="ok-banner"><b>Nichts zu pushen.</b> Beim Erzeugen dieser Seite (' + STAND + ') war der '
     + 'Arbeitsstand deckungsgleich mit <code>origin/main</code> — alles ist bereits im Repo. '
     + 'Die Seite bleibt für Abschnitt 3 und 4 nutzbar: Workflow anstoßen und Status beobachten.</div>';
-  var b = document.querySelectorAll('#gruppen ~ div button, .card button');
   Array.prototype.forEach.call(document.querySelectorAll('button'), function (x) {
     if (/Push starten|Erst prüfen/.test(x.textContent)) { x.disabled = true; x.title = "Keine Dateien eingebettet"; }
   });
@@ -418,23 +435,63 @@ async function startDeploy() {
 }
 
 var autoPoll = false, pollTimer = null;
+
+/* 13.08.2026: Hier stand kein try/catch. Schlaegt fetch auf NETZWERKEBENE fehl -
+   und genau das passiert, wenn die Seite per file:// geoeffnet ist, weil der
+   Browser dann ohne Herkunftsangabe anfragt -, wirft der Aufruf eine Ausnahme,
+   die nirgends aufgefangen wurde. Der Klick tat sichtbar GAR NICHTS: keine
+   Meldung, kein Fehler, nichts. Fuer den Push war die Fehlerbehandlung sorgfaeltig,
+   fuers Anstossen fehlte sie ganz - der klassische Fall, dass die Sorgfalt am
+   Hauptweg endet. Jetzt sagt jeder Fehlschlag, was los ist und was zu tun ist. */
+function wfFehler(text) {
+  document.getElementById("runDetails").innerHTML = '<div class="err-banner">' + text + '</div>';
+}
 async function triggerWf(wf) {
   var token = document.getElementById("token").value.trim();
   if (!token) { alert("Token eingeben."); return; }
   saveTokenIfWanted();
-  var r = await gh("POST", "/repos/" + REPO + "/actions/workflows/" + wf + "/dispatches", {ref: "main"}, token);
+  var r;
+  try {
+    r = await gh("POST", "/repos/" + REPO + "/actions/workflows/" + wf + "/dispatches", {ref: "main"}, token);
+  } catch (e) {
+    wfFehler('<b>Die Anfrage kam nicht bei GitHub an.</b> Meldung des Browsers: <code>' + esc(e.message) + '</code>.<br><br>'
+      + (location.protocol === "file:"
+         ? 'Diese Seite ist per <code>file://</code> geöffnet. Dabei schickt der Browser die Anfrage ohne Herkunftsangabe, und GitHub weist sie je nach Browser ab. '
+         : '')
+      + 'Sicherer Weg ohne Token: <a href="https://github.com/' + REPO + '/actions/workflows/' + esc(wf) + '" target="_blank">'
+      + 'diesen Workflow auf GitHub öffnen</a> und dort rechts auf <b>Run workflow</b> klicken.');
+    return;
+  }
   if (r.ok) {
     document.getElementById("runDetails").innerHTML = "<em>" + esc(wf) + " angestoßen. Status in 5 Sek…</em>";
     setTimeout(function () { autoPoll = true; pollLoop(); }, 5000);
+    return;
+  }
+  var txt = "";
+  try { txt = (await r.text()).substring(0, 200); } catch (e) {}
+  if (r.status === 403 || r.status === 404) {
+    /* GitHub antwortet bei fehlender Actions-Berechtigung mit 404, nicht mit 403 -
+       es gibt nicht preis, dass es die Ressource gibt. Deshalb beide Faelle
+       gemeinsam erklaeren, statt bei 404 "gibt es nicht" zu behaupten. */
+    wfFehler('<b>GitHub hat abgelehnt (HTTP ' + r.status + ').</b> Fast immer fehlt dem Token die Berechtigung '
+      + '<b>Actions: Read and write</b>. Das ist ein ANDERES Häkchen als <i>Workflows: Read and write</i> — '
+      + 'letzteres erlaubt nur, Workflow-<i>Dateien</i> zu ändern, nicht sie zu starten. Die Namen laden zum Verwechseln ein.<br><br>'
+      + 'Entweder das Häkchen unter <a href="https://github.com/settings/tokens?type=beta" target="_blank">Token-Einstellungen</a> ergänzen, '
+      + 'oder ohne Token: <a href="https://github.com/' + REPO + '/actions/workflows/' + esc(wf) + '" target="_blank">Workflow auf GitHub öffnen</a> → <b>Run workflow</b>.'
+      + (txt ? '<br><br><span class="meta">Antwort: ' + esc(txt) + '</span>' : ''));
   } else {
-    alert("Fehler: HTTP " + r.status + " — " + (await r.text()).substring(0, 200));
+    wfFehler('<b>Fehler HTTP ' + r.status + '.</b> ' + esc(txt));
   }
 }
 async function refreshStatus() {
   var token = document.getElementById("token").value.trim();
   if (!token) { alert("Token eingeben."); return; }
-  var r = await gh("GET", "/repos/" + REPO + "/actions/runs?per_page=5", null, token);
-  if (!r.ok) { document.getElementById("runDetails").innerHTML = '<div class="err-banner">HTTP ' + r.status + '</div>'; return; }
+  var r;
+  try { r = await gh("GET", "/repos/" + REPO + "/actions/runs?per_page=5", null, token); }
+  catch (e) { autoPoll = false; wfFehler('<b>Statusabfrage kam nicht bei GitHub an.</b> <code>' + esc(e.message) + '</code>. '
+      + 'Direkt nachsehen: <a href="https://github.com/' + REPO + '/actions" target="_blank">Actions-Übersicht</a>.'); return; }
+  if (!r.ok) { autoPoll = false; wfFehler('Statusabfrage fehlgeschlagen: HTTP ' + r.status
+      + (r.status === 403 || r.status === 404 ? ' — dem Token fehlt vermutlich <b>Actions: Read</b>.' : '')); return; }
   var runs = (await r.json()).workflow_runs || [];
   document.getElementById("runDetails").innerHTML = runs.map(function (x) {
     var farbe = x.status !== "completed" ? "#f5a623" : (x.conclusion === "success" ? "#2bb673" : "#DC0028");

@@ -11,6 +11,7 @@ import os
 import json
 import re
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
@@ -33,43 +34,93 @@ def _build_headers(token: str = None) -> dict:
     return h
 
 
+def _lade_json(url: str, headers: dict, timeout: int, label: str):
+    """Eine Anfrage, vollstaendig gelesen und gegen Content-Length geprueft.
+
+    Die Pruefung ist kein Luxus: r.read() liefert bei abgeschnittener Verbindung
+    auch mal weniger Bytes, OHNE zu werfen. Bei einer 30-MB-Datei ist das keine
+    Theorie - am 13.08.2026 kam beim Testen genau das vor
+    (IncompleteRead: 29.991.360 von 30.498.071 Bytes). Ohne Pruefung waere das
+    hier ein JSON-Parserfehler geworden, den der Aufrufer als "nicht ladbar"
+    verbucht - und der Nightly haette still auf dem Vortagsstand weitergerechnet.
+    """
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        roh = r.read()
+        erwartet = r.headers.get("Content-Length")
+    if erwartet and len(roh) != int(erwartet):
+        raise IOError("%s: unvollstaendig, %d von %s Bytes" % (label, len(roh), erwartet))
+    return json.loads(roh.decode("utf-8"))
+
+
 def fetch_latest_geo_snapshot(repo: str, token: str = None) -> dict:
-    """Lade die aktuellste latest.json aus dem GEO-Repo via GitHub API.
-    Token ist optional -- fuer oeffentliche Repos nicht noetig.
-    Falls Token ungueltig (401/403), wird ohne Token nochmal versucht."""
-    # 17.07.2026: Legacy-Pfad "Geo/data/runs/latest.json" ENTFERNT. Dieser tote Baum
-    # existiert im GEO-Repo noch und steht seit dem 22.04.2026 still. Bei einem 404 im
-    # Primaerpfad zog das Cockpit klaglos drei Monate alte Daten und wies sie als
-    # aktuellen Stand aus - ohne Warnung, ohne dass jemand es haette merken koennen.
-    # Ein fehlender Snapshot muss als Luecke sichtbar werden, nicht als alter Befund.
-    paths = [
-        f"https://api.github.com/repos/{repo}/contents/data/runs/latest.json",
+    """Lade die aktuellste latest.json aus dem GEO-Repo.
+
+    13.08.2026 ueberarbeitet. Zwei Schwaechen auf dem wichtigsten Datenpfad des
+    Projekts - hier entsteht geo_snapshot.json, auf dem das halbe Cockpit steht:
+
+      1. timeout=30 fuer eine Datei, die inzwischen 30,5 MB gross ist. Auf einem
+         langsamen Runner reicht das nicht, und der Abbruch landete in einem
+         nackten "except Exception: continue".
+      2. Kein Wiederholversuch und keine Laengenpruefung. Ein einziger
+         abgebrochener Download - heute beim Testen real aufgetreten - fuehrte
+         dazu, dass der Nightly GRUEN auf dem Stand von gestern weiterrechnet.
+         Genau die Sorte stiller Ausfall, die dieses Projekt schon mehrfach
+         Tage gekostet hat.
+
+    Reihenfolge jetzt:
+      1. raw.githubusercontent OHNE Token - oeffentliches Repo, kein
+         Groessenlimit, unabhaengig von Token-Ablauf und API-Kontingent.
+      2. Contents-API mit Token (raw-Medientyp, bis 100 MB).
+      3. Contents-API ohne Token.
+    Jeder Weg mit drei Versuchen und wachsender Pause.
+
+    Dieselbe Reihenfolge nutzt seit heute auch content_citations.py. Die beiden
+    Fassungen gehoeren zu einem Helfer zusammengelegt - siehe Notiz dort; das
+    ist der naechste Schritt, nicht dieser.
+
+    17.07.2026: Legacy-Pfad "Geo/data/runs/latest.json" ENTFERNT. Dieser tote Baum
+    existiert im GEO-Repo noch und steht seit dem 22.04.2026 still. Bei einem 404 im
+    Primaerpfad zog das Cockpit klaglos drei Monate alte Daten und wies sie als
+    aktuellen Stand aus - ohne Warnung, ohne dass jemand es haette merken koennen.
+    Ein fehlender Snapshot muss als Luecke sichtbar werden, nicht als alter Befund.
+    """
+    rel = "data/runs/latest.json"
+    wege = [
+        ("raw.githubusercontent (ohne Token)",
+         f"https://raw.githubusercontent.com/{repo}/main/{rel}",
+         {"User-Agent": "LLM-Cockpit-Updater"}),
+        ("Contents-API mit Token",
+         f"https://api.github.com/repos/{repo}/contents/{rel}",
+         _build_headers(token)),
+        ("Contents-API ohne Token",
+         f"https://api.github.com/repos/{repo}/contents/{rel}",
+         _build_headers(None)),
     ]
-    # Versuch 1: mit Token (falls gesetzt)
-    for url in paths:
-        try:
-            req = urllib.request.Request(url, headers=_build_headers(token))
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except urllib.error.HTTPError as he:
-            if he.code in (401, 403) and token:
-                print(f"   Token-Fehler ({he.code}) -- versuche ohne Token...")
-                break  # ohne Token nochmal
-            continue  # naechster Pfad
-        except Exception:
-            continue
+    if not token:
+        wege.pop(1)          # ohne Token ist Weg 2 identisch mit Weg 3
 
-    # Versuch 2: ohne Token (public repo)
-    for url in paths:
-        try:
-            req = urllib.request.Request(url, headers=_build_headers(None))
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except Exception as exc:
-            print(f"   Fehler bei {url}: {exc}")
-            continue
+    fehler = []
+    for label, url, headers in wege:
+        for versuch in (1, 2, 3):
+            try:
+                geo = _lade_json(url, headers, 300, label)
+                if versuch > 1 or label != wege[0][0]:
+                    print(f"   latest.json geladen ueber {label} (Versuch {versuch})")
+                return geo
+            except urllib.error.HTTPError as he:
+                # 401/403 sind Berechtigungs- oder Groessenfragen, kein Aussetzer -
+                # ein zweiter Versuch auf demselben Weg aendert daran nichts.
+                fehler.append(f"{label}: HTTP {he.code}")
+                break
+            except Exception as exc:
+                fehler.append(f"{label} Versuch {versuch}: {str(exc)[:90]}")
+                if versuch < 3:
+                    time.sleep(3 * versuch)
 
-    print("WARN: latest.json nicht ladbar (alle Pfade/Token) -- behalte letzten Stand, kein Abbruch.")
+    print("WARN: latest.json ueber keinen Weg ladbar -- behalte letzten Stand, kein Abbruch.")
+    for f in fehler:
+        print(f"   {f}")
     return None
 
 

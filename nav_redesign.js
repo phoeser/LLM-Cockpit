@@ -110,9 +110,34 @@
     try{ if(typeof window.renderPeecTab==="function") window.renderPeecTab(); }catch(e){}
     return true;
   }
+  // ---- Reihenfolge am Leistenende (14.08.2026, Wunsch Paul) ----
+  // Gewuenschte Abfolge hinten: SOHO -> Korrelationsanalyse -> Dokumentation ->
+  // Quellen & Zitate. Drei der vier Knoepfe legen ANDERE Module zu nicht
+  // vorhersagbaren Zeitpunkten an (soho_tab.js, geo_doku_tab.js); deshalb wird
+  // hier gewartet, bis alle vier da sind, und dann EINMAL umgehaengt.
+  // appendChild verschiebt bestehende Knoten, es dupliziert nichts.
+  // Faellt eines der Module aus, wird nach Ablauf der Versuche sortiert, was da
+  // ist - eine halbe Ordnung ist besser als gar keine, und es haengt nichts.
+  function endOrdnung(fertigErzwingen){
+    var bar=document.querySelector('.tab-btn[data-tab="overview"]');
+    if(!bar||!bar.parentNode) return false;
+    var reihen=[document.getElementById("sohoTabBtn"),
+                document.querySelector('.tab-btn[data-tab="korrelation"]'),
+                document.getElementById("dokuTabBtn"),
+                document.querySelector('.tab-btn[data-tab="quellen"]')];
+    if(!fertigErzwingen && reihen.some(function(b){ return !b; })) return false;
+    reihen.forEach(function(b){ if(b && b.parentNode===bar.parentNode) bar.parentNode.appendChild(b); });
+    return true;
+  }
+
   ready(function(){
     var tries=0; (function w(){ tries++; if(build()) return; if(tries<40) setTimeout(w,300); })();
     var t2=0; (function w2(){ t2++; if(mergePeec()) return; if(t2<40) setTimeout(w2,400); })();
+    var t3=0; (function w3(){ t3++;
+      if(endOrdnung(false)) return;
+      if(t3<50) setTimeout(w3,300);
+      else endOrdnung(true);
+    })();
   });
 })();
 

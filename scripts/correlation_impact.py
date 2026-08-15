@@ -4291,8 +4291,34 @@ def level_panel_tage(max_days=45):
     return rows, days
 
 
-def level_panel_zellen(rows, dsub, seg, rp=None):
+def level_panel_themen_abdeckung(rows, dsub):
+    """Thema -> Anzahl Messtage innerhalb `dsub`. Grundlage fuer den
+    Mindest-Tage-Filter in level_panel_zellen und fuer ehrliche Notes."""
+    td = {}
+    for r in rows:
+        d = r.get("date")
+        if d in dsub and r.get("topic"):
+            td.setdefault(r["topic"], set()).add(d)
+    return {t: len(s) for t, s in td.items()}
+
+
+def level_panel_zellen(rows, dsub, seg, rp=None, min_tage_topic=3):
     """Marke x Thema, ueber die Tage in `dsub` GEMITTELT.
+
+    14.08.2026, min_tage_topic: Ein Thema kommt erst ins Panel, wenn es
+    mindestens so viele Messtage hat. Anlass: Am 13.08. kamen die beiden
+    SOHO-Themen dazu — mit genau EINEM Messtag. Ihre Zellen standen damit
+    gleichberechtigt neben Zellen, die ueber 19 Tage gemittelt sind, und das
+    hat das Streubild real verschoben: Steigung 1,83 -> 2,58, ERGOs Abstand
+    zur Erwartungsgeraden +2,2 -> +4,2 pp. Nichts an der Sichtbarkeit hatte
+    sich geaendert — nur die Definition der Stichprobe, und zwar still.
+    Ein Tageswert eines Sprachmodells ist Rauschen; genau deshalb mittelt
+    dieses Panel ueberhaupt. Ein Thema mit einem Tag hat an dieser Mittelung
+    noch nicht teilgenommen und gehoert deshalb noch nicht hinein. Mit dem
+    woechentlichen Takt sind drei Messtage nach etwa drei Wochen erreicht —
+    dann waechst das Thema von selbst in alle gepoolten Auswertungen hinein.
+    Die Ein-Tages-Modelle (level_model, footprint_analysis) sind davon
+    unberuehrt: dort haben ALLE Zellen einen Tag, das ist in sich stimmig.
 
     12.08.2026 aus price_level_pooled._denoise herausgeloest und zur einzigen
     Quelle gemacht. Vorher gab es dieselbe Rechnung ZWEIMAL im Skript, und die
@@ -4319,9 +4345,13 @@ def level_panel_zellen(rows, dsub, seg, rp=None):
     Tage gemittelt, weil die Tageswerte der Sprachmodelle rauschen."""
     if rp is None:
         rp = _relprice_map()
+    abdeckung = level_panel_themen_abdeckung(rows, dsub)
+    zu_kurz = {t for t, n in abdeckung.items() if n < (min_tage_topic or 0)}
     acc = {}
     for r in rows:
         if r.get("date") not in dsub:
+            continue
+        if r.get("topic") in zu_kurz:
             continue
         sov = r.get("sov_%s" % seg)
         if sov is None:
@@ -4334,7 +4364,7 @@ def level_panel_zellen(rows, dsub, seg, rp=None):
         a["cs"].append(cs)
     cells = []
     for (b, t), v in acc.items():
-        c = {"brand": b, "topic": t,
+        c = {"brand": b, "topic": t, "n_tage": len(v["sov"]),
              "sov": sum(v["sov"]) / len(v["sov"]),
              "cite_share": sum(v["cs"]) / len(v["cs"])}
         pr = rp.get(t, {}).get(b)
@@ -4489,6 +4519,8 @@ def price_level_pooled(max_days=45):
     # standen auf beiden Achsen Markennennungen, und das r von 0,90 war zu einem
     # grossen Teil Selbstkorrelation.
     streubild = {}
+    _abdeckung = level_panel_themen_abdeckung(rows, dayset)
+    _wartend = {t: n for t, n in sorted(_abdeckung.items()) if n < 3}
     for seg, lab in (("g", "grounded"), ("u", "ungrounded"), ("c", "combined")):
         scells = _denoise(seg, dayset)
         if len(scells) < 10:
@@ -4506,6 +4538,11 @@ def price_level_pooled(max_days=45):
             "available": True, "n_cells": len(scells), "n_tage": len(days),
             "tage_von": days[0], "tage_bis": days[-1],
             "n_topics": (len(_t) or None),
+            # Themen, die schon gemessen werden, aber noch zu wenige Messtage
+            # haben, um in die gemittelten Zellen einzugehen (min. 3). Steht
+            # hier, damit "n_topics=11" nicht wie ein Datenverlust aussieht,
+            # wenn im SOHO-Reiter laengst 13 Themen stehen.
+            "themen_wartend": (_wartend or None),
             "brand_means": {b: {"sov": round(_s[b]["sov"] / _n[b], 3),
                                 "cite_share": round(_s[b]["cite_share"] / _n[b], 3),
                                 "n_zellen": _n[b]} for b in _s},
@@ -4514,7 +4551,11 @@ def price_level_pooled(max_days=45):
             "note": ("Markenmittel ueber Themen und ueber %d saubere Messtage. Beide Achsen "
                      "aus dem eigenen Crawl und aus derselben Engine-Gruppe - anders als bei "
                      "Peecs footprint_pct, das Quellen mit Markenerwaehnung zaehlt und deshalb "
-                     "auf beiden Achsen im Kern dasselbe misst." % len(days)),
+                     "auf beiden Achsen im Kern dasselbe misst.%s"
+                     % (len(days),
+                        (" Noch nicht enthalten (unter 3 Messtagen): "
+                         + ", ".join("%s (%d)" % (t, n) for t, n in _wartend.items())
+                         if _wartend else ""))),
         }
 
     return {"available": True, "n_days": len(days), "days_range": [days[0], days[-1]],

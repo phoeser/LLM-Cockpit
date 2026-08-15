@@ -402,9 +402,15 @@
           if (tries < 60) setTimeout(warte, 300);
         })();
         // Panel wird bei jedem Rendern neu geschrieben -> danach neu einhaengen
+        // 15.08.2026: begrenzt. Dies war die einzige der 17 Retry-Schleifen im
+        // Repo OHNE Abbruchbedingung - wer das Dashboard oeffnete und nie auf
+        // den Korrelationsreiter klickte, liess diesen Timer bis zum Schliessen
+        // des Tabs alle 300 ms feuern (8 h Standzeit = ~96.000 Aufrufe). Nach
+        // 100 Versuchen (30 s) uebernimmt ohnehin der Tab-Klick-Handler unten.
+        var panelTries = 0;
         var panelWatch = setInterval(function () {
           var p = document.getElementById("korrErgebnis");
-          if (!p) return;
+          if (!p) { if (++panelTries > 100) clearInterval(panelWatch); return; }
           clearInterval(panelWatch);
           try {
             new MutationObserver(function () {

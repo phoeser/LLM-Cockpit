@@ -31,7 +31,15 @@
     ["hausrat","Hausratversicherung"],
     ["kfz","Kfz-Versicherung"],
     ["unfall","Unfallversicherung"],
-    ["krankenhauszusatz","Krankenhauszusatzversicherung"]
+    ["krankenhauszusatz","Krankenhauszusatzversicherung"],
+    /* 15.08.2026: Die beiden SOHO-Themen (seit 13.08. im Crawl). Noch gibt es
+       fuer sie keine Preiserhebung - dann rendert render() fuer sie schlicht
+       nichts, wie fuer jedes Produkt ohne Preisdaten. Aber sobald Preise
+       auftauchen, erscheinen sie HIER, statt still durchzufallen: genau so
+       ist es dem Kommentar ueber dieser Liste zufolge gedacht ("alle Produkte
+       aus den LLM-Sichtbarkeits-Prompts"). */
+    ["betriebshaftpflicht","Betriebshaftpflichtversicherung"],
+    ["firmenrechtsschutz","Firmen-Rechtsschutzversicherung"]
   ];
   /* Getrackte Marken. 10.08.2026 ergaenzt: R+V, DEVK und Hannoversche standen zwar
      in BRAND_NAME, fehlten aber in ALLOWED - ihre Preise wurden also erhoben und

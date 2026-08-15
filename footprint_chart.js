@@ -11,13 +11,30 @@
 (function () {
   "use strict";
 
+  /* 15.08.2026: Von 16 auf 36 Domains erweitert. Die Tabelle stammte noch aus
+     der 7-Marken-Zeit; der Crawl kennt seit dem 18.07. 25 Marken, und diese
+     Grafik hat alles Verworfene still auf null gesetzt. Nachgezaehlt am
+     Snapshot vom 14.08.: 689 von 4.143 Zitaten (17 %) fielen durch dom2brand()
+     - ERGO wurde mit 129 statt 173 Zitaten geplottet (ergo-reiseversicherung.de
+     und dkv.com fehlten), zwoelf Marken mit echtem SoV standen faelschlich bei
+     x = 0, und das prominent gezeigte r war dadurch systematisch zu niedrig.
+     Abgeglichen mit _BRAND_DOMAINS in scripts/update_snapshot.py - Namen
+     identisch zu den Crawl-Namen, sonst zerfaellt der Join gegen summary_by_llm. */
   var BRAND_DOMAINS = {
     "ergo.de": "ERGO", "ergo.com": "ERGO", "ergodirekt.de": "ERGO",
-    "allianz.de": "Allianz", "allianzdirect.de": "Allianz",
+    "ergo-reiseversicherung.de": "ERGO", "dkv.de": "ERGO", "dkv.com": "ERGO",
+    "allianz.de": "Allianz", "allianz.com": "Allianz", "allianzdirect.de": "Allianz",
     "huk.de": "HUK-Coburg", "huk24.de": "HUK-Coburg", "huk-coburg.de": "HUK-Coburg",
-    "axa.de": "AXA", "generali.de": "Generali",
+    "axa.de": "AXA", "axa.com": "AXA",
+    "generali.de": "Generali", "generali.com": "Generali",
     "signal-iduna.de": "Signal Iduna", "cosmosdirekt.de": "CosmosDirekt", "cosmos-direkt.de": "CosmosDirekt",
-    "hannoversche.de": "Hannoversche", "ruv.de": "R+V", "devk.de": "DEVK"
+    "hannoversche.de": "Hannoversche", "ruv.de": "R+V", "devk.de": "DEVK",
+    "adac.de": "ADAC", "arag.de": "ARAG", "alte-leipziger.de": "Alte Leipziger",
+    "barmenia.de": "Barmenia", "da-direkt.de": "DA Direkt", "debeka.de": "Debeka",
+    "diebayerische.de": "Die Bayerische", "die-bayerische.de": "Die Bayerische",
+    "gothaer.de": "Gothaer", "hdi.de": "HDI", "hansemerkur.de": "HanseMerkur",
+    "lv1871.de": "LV 1871", "vhv.de": "VHV", "wgv.de": "WGV",
+    "wuerttembergische.de": "Württembergische", "zurich.de": "Zurich"
   };
   var GROUNDED = { gemini: 1, perplexity: 1 };
 

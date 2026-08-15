@@ -11,7 +11,13 @@
 (function () {
   "use strict";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded",fn); }
-  var OWN = {"ergo.de":1,"ergo.com":1,"ergodirekt.de":1,"ergo-reiseversicherung.de":1};
+  /* 15.08.2026: dkv.de/dkv.com ergaenzt. DKV gehoert zur ERGO Group und wird
+     von allen anderen Modulen (gap_waterfall, empfehlungen_dynamic, geo_wirkung)
+     als ERGO gezaehlt - nur hier stand dkv.com (13 Zitate im Snapshot vom
+     14.08.) als Fremdquelle grau in der Spalte "ausser ERGO". Zwei Wahrheiten
+     im selben Reiter. */
+  var OWN = {"ergo.de":1,"ergo.com":1,"ergodirekt.de":1,"ergo-reiseversicherung.de":1,
+             "dkv.de":1,"dkv.com":1};
   var CH = {
     eigen:       {lab:"ERGO (eigene Seiten)",        col:"#dc0028", how:"direkt: eigene Inhalte/Domains zitierfähig machen"},
     portal:      {lab:"Vergleichsportale / Ratgeber", col:"#2a78d6", how:"über Listung, Rang & Bewertungen dort (z. B. Check24, Verivox)"},

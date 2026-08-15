@@ -4432,9 +4432,19 @@ def price_level_pooled(max_days=45):
     _apply_fdr(price_to_sov)
     _apply_fdr(price_to_citations)
 
+    # 15.08.2026: Der Mindest-Tage-Filter (min_tage_topic=3) gilt hier NICHT.
+    # Diese Schleife uebergibt bewusst EINEN Tag - mit dem Filter haette kein
+    # Thema je genug Tage, die Reihe waere still leer, und stability stuende
+    # ohne Grund auf null. Aufgefallen in der Grossrevision am Tag nach dem
+    # Filter-Einbau, BEVOR ein Nightly damit lief. Ein-Tages-Schaetzungen sind
+    # hier in sich stimmig (alle Zellen ein Tag); ausgeschlossen bleiben nur
+    # die Themen, die auch im gepoolten Modell fehlen (unter 3 Messtagen
+    # insgesamt) - sonst schaetzte der 13.08. auf anderen Themen als der 12.08.
+    _zu_kurz_gesamt = {t for t, n in level_panel_themen_abdeckung(rows, dayset).items() if n < 3}
     stab = []
     for d in days:
-        dc = [c for c in _denoise("g", {d}) if "relprice" in c]
+        dc = [c for c in level_panel_zellen(rows, {d}, "g", rp, min_tage_topic=0)
+              if "relprice" in c and c.get("topic") not in _zu_kurz_gesamt]
         bc = _mundlak_between_coef(dc, "relprice", "sov")
         if bc is not None:
             stab.append({"date": d, "between_coef": round(bc, 2)})

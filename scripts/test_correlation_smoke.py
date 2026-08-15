@@ -26,7 +26,15 @@ SCRIPT = Path(__file__).resolve().parent / "correlation_impact.py"
 
 def make_data(tmp, placebo=False, seed=7):
     random.seed(seed)
-    brands = ["ERGO", "Allianz", "AXA"]
+    # 15.08.2026: 3 -> 6 Marken. Am 04.08. wurde die Signifikanz im Hauptmodell
+    # zu Recht an mindestens 5 Marken-Cluster gebunden - eine Fixture mit 3
+    # Marken KANN seitdem nie "significant" werden, der Test war seit elf Tagen
+    # dauerhaft rot, und mit ihm lief auch die Placebo-Gegenprobe ins Leere
+    # (assert not significant ist trivial wahr, wenn significant nie erreichbar
+    # ist). Der Fehler lag in der Fixture, nicht in der Engine: Die Engine sagt
+    # ehrlich "unter 5 Clustern nicht schaetzbar", also braucht der Test eine
+    # Welt mit genug Clustern. Sechs Marken erfuellen die Regel mit Luft.
+    brands = ["ERGO", "Allianz", "AXA", "HUK-Coburg", "Generali", "Debeka"]
     days = ["2026-05-%02d" % d for d in range(10, 32)] + \
            ["2026-06-%02d" % d for d in range(1, 12)]
     hist, evts = [], []

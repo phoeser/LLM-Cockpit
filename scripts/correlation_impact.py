@@ -878,9 +878,17 @@ def _cluster_effect(points, xs, eff, se_iid, binaer=True):
     df = max(min(len(marken_mit), len(marken_ohne)) - 1, 1)
     tc = t_critical(df)
     lo = hi = None
+    # 15.08.2026: Intervall und p-Wert gehoeren um beta_fe (den Within-Schaetzer),
+    # nicht um eff (die rohe Gruppen-Differenz). se_used ist die Streuung VON
+    # beta_fe - ein Intervall "eff +/- t*se(beta_fe)" mischt zwei Schaetzer und
+    # ist um deren Differenz verschoben. Am Stand vom 14.08. lagen eff und
+    # beta_fe bei review_volume um 87 % auseinander (-0,194 vs. -0,363); das
+    # Intervall stand also spuerbar neben dem Schaetzer, dessen Unsicherheit es
+    # angeblich beziffert. eff bleibt als deskriptive Differenz in der Ausgabe
+    # (avg_sov_effect_pp) - aber Inferenz und Punkt gehoeren zusammen.
     if tc is not None:
-        lo, hi = round(eff - tc * se_used, 3), round(eff + tc * se_used, 3)
-    p = _t_two_sided_p(eff / se_used, df)
+        lo, hi = round(beta_fe - tc * se_used, 3), round(beta_fe + tc * se_used, 3)
+    p = _t_two_sided_p(beta_fe / se_used, df)
     return {
         "se": se_used,
         "se_cr1_roh": se_cr1,
@@ -3368,9 +3376,14 @@ def funnel_stratified_analysis(events, mv_prior=None):
                 _use = mv["types_used"]
                 _Y, _Xs, _sd, _kabs = _design(points, _use, "x")
                 _lam = len(_Xs) * 0.5
-                _beta, _Ai, _s2 = _ridge_posterior(_Xs, _Y, _lam)
+                # 15.08.2026: _kabs wurde hier berechnet und dann NICHT uebergeben -
+                # der Zwei-Wege-Within-Transform absorbiert (G-1)+(T-1)+1 Parameter,
+                # und ohne sie in den Freiheitsgraden sind die Sandwich-SE dieser
+                # Stufenmodelle 3-7 % zu klein. Das Hauptmodell (Zeile ~1246) ueber-
+                # gibt denselben Wert seit jeher; hier fehlte er schlicht.
+                _beta, _Ai, _s2 = _ridge_posterior(_Xs, _Y, _lam, k_absorbed=_kabs)
                 _cl = [pt["brand"] for pt in points]
-                _V, _G = _cluster_robust_var(_Xs, _Y, _beta, _Ai, _cl)
+                _V, _G = _cluster_robust_var(_Xs, _Y, _beta, _Ai, _cl, k_absorbed=_kabs)
                 mv["inferenz"] = ("cluster-robuste Sandwich-SE, Cluster = Marke (G=%s). Das "
                                   "Hauptmodell nutzt den exakten Wild-Cluster-Bootstrap; der ist "
                                   "hier zu teuer (2^G Ridge-Fits je Treiber auf %d Punkten). "
@@ -4605,17 +4618,42 @@ def _augment_structure_with_pooled_price(res):
     if not (isinstance(ss, dict) and p.get("available")):
         return
     pts = p.get("price_to_sov") or {}
+    fj_all = lm.get("full_joint") or {}
     for segkey in ("grounded", "ungrounded", "combined"):
+        # 15.08.2026: Bevorzugt aus dem 3-TREIBER-Modell (full_joint) speisen.
+        # Bisher kam die "Autoritaet" aus dem 2-Treiber-Modell (cite_share +
+        # relprice) - dessen cite_share-Beitrag enthaelt die Groesse nur implizit
+        # (ausgelassene Variable), und das Etikett "Groesse+Footprint, nicht
+        # trennbar" stimmte nur deshalb. Seit dem 13.08. rechnet full_joint auf
+        # DERSELBEN gemittelten Zellgrundlage und trennt die beiden sauber:
+        # grounded am 14.08. cite_share 8,70 + Groesse 1,33 statt pauschal 10,22.
+        # Dieselbe Klasse Definitionsdrift wie der am 12.08. behobene
+        # gap_explorer-Widerspruch, eine Ebene hoeher. Die Summe bleibt die
+        # "Autoritaet" der Kachel; die Aufteilung steht als authority_split dabei.
+        # Faellt full_joint aus, greift der bisherige 2-Treiber-Weg unveraendert.
+        fj_seg = fj_all.get(segkey) or {}
+        fj_gd = ((fj_seg.get("gap_decomposition") or {}).get("ERGO")
+                 if fj_seg.get("available") else None)
+        auth_split = None
         blk = pts.get(segkey) or {}
-        if not blk.get("available"):
-            continue
-        gd = (blk.get("gap_decomposition") or {}).get("ERGO")
-        if not gd:
-            continue
+        if fj_gd and (fj_gd.get("contrib_pp") or {}).get("cite_share") is not None:
+            gd = fj_gd
+            contrib = gd.get("contrib_pp") or {}
+            _cs = contrib.get("cite_share") or 0.0
+            _sz = contrib.get("size") or 0.0
+            foot_raw = _cs + _sz
+            price_raw = contrib.get("relprice")
+            auth_split = {"cite_share_pp": round(_cs, 2), "size_pp": round(_sz, 2)}
+        else:
+            if not blk.get("available"):
+                continue
+            gd = (blk.get("gap_decomposition") or {}).get("ERGO")
+            if not gd:
+                continue
+            contrib = gd.get("contrib_pp") or {}
+            foot_raw = contrib.get("cite_share")
+            price_raw = contrib.get("relprice")
         gap = gd.get("actual_gap_pp")
-        contrib = gd.get("contrib_pp") or {}
-        foot_raw = contrib.get("cite_share")
-        price_raw = contrib.get("relprice")
         if gap is None or foot_raw is None or price_raw is None:
             continue
         # KEINE sequentielle Kappung (die drueckte den Preis auf den Rest nach der
@@ -4633,17 +4671,25 @@ def _augment_structure_with_pooled_price(res):
             "leader": gd.get("vs") or blk.get("leader") or "Allianz",
             "gap_pp": round(gap, 2),
             "authority_pp": round(foot, 2),
+            "authority_split": auth_split,
             "authority_capped": bool(abs(foot - foot_raw) > 1e-9),
             "price_pp": round(price, 2),
             "price_capped": price_capped,
             "rest_pp": round(rest, 2),
-            "price_source": "pooled_joint",
+            "price_source": ("full_joint" if auth_split else "pooled_joint"),
             "n_days": p.get("n_days"),
             "days_range": p.get("days_range"),
-            "note": ("Autoritaet (Groesse+Footprint) UND Preis aus DEMSELBEN gemeinsamen "
-                     "Modell (Treiber kontrollieren einander), stabilisiert ueber %s saubere "
-                     "Tage. Der Preis wird nicht mehr als blosser Rest nach der Autoritaet "
-                     "gekappt. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis." % p.get("n_days")),
+            "note": (("Autoritaet = Quellpraesenz %s pp + Groesse %s pp, Preis %s pp - alle drei "
+                      "aus DEMSELBEN 3-Treiber-Modell (full_joint, Treiber kontrollieren "
+                      "einander), stabilisiert ueber %s saubere Tage. Zerlegung ueber "
+                      "gemittelte Zellwerte, kein Kausalnachweis."
+                      % (auth_split["cite_share_pp"], auth_split["size_pp"],
+                         round(price, 2), p.get("n_days")))
+                     if auth_split else
+                     ("Autoritaet (Groesse+Footprint, im 2-Treiber-Modell nicht trennbar) UND "
+                      "Preis aus DEMSELBEN gemeinsamen Modell, stabilisiert ueber %s saubere "
+                      "Tage. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis."
+                      % p.get("n_days"))),
         }
 
 

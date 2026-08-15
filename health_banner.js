@@ -62,8 +62,19 @@
   }
 
   function analyze(g) {
-    var out = { broken: [], allZero: false, ageDays: null, snapDate: null, ok: true };
+    var out = { broken: [], allZero: false, ageDays: null, snapDate: null, ok: true, carried: [] };
     if (!g || !g.products) return out;
+
+    // 15.08.2026: Fortgeschriebene LLMs anzeigen. Der Perplexity-Ausfall ab dem
+    // 06.08. blieb acht Tage unsichtbar, weil die Fortschreibung im Cockpit wie
+    // eine frische Messung aussah. Der GEO-Lauf liefert carried_forward und
+    // seit heute auch das Ursprungsdatum je Engine (carried_forward_from) -
+    // update_snapshot.py reicht beide durch. Ein LLM, das nur Konserve zeigt,
+    // ist kein Fehler, aber es gehoert gesagt.
+    (g.carried_forward || []).forEach(function (l) {
+      var von = (g.carried_forward_from || {})[l] || null;
+      out.carried.push({ llm: l, von: von });
+    });
 
     // Fix 2026-07-15: Nur LLMs pruefen, die im Snapshot wirklich Produktdaten haben.
     // g.llms kann pausierte LLMs enthalten (z.B. Perplexity nach Abschaltung) —
@@ -94,7 +105,7 @@
 
     var stale = (out.ageDays === null) || (out.ageDays > MAX_AGE_DAYS);
     out.stale = stale;
-    out.ok = (out.broken.length === 0) && !out.allZero && !stale;
+    out.ok = (out.broken.length === 0) && !out.allZero && !stale && out.carried.length === 0;
     return out;
   }
 
@@ -103,7 +114,8 @@
 
     // Dismiss nur fuer diesen Snapshot-Stand (kommt bei neuen Daten wieder)
     var key = "ergo_health_dismiss_" + (a.snapDate ? a.snapDate.toISOString().slice(0, 16) : "na")
-      + "_" + a.broken.join("-") + (a.stale ? "_stale" : "") + (a.allZero ? "_zero" : "");
+      + "_" + a.broken.join("-") + (a.stale ? "_stale" : "") + (a.allZero ? "_zero" : "")
+      + ((a.carried || []).length ? ("_cf" + a.carried.map(function (c) { return c.llm; }).join("-")) : "");
     try { if (sessionStorage.getItem(key) === "1") return; } catch (e) {}
 
     var critical = a.allZero || a.broken.length > 0;
@@ -126,6 +138,12 @@
         " alt (Snapshot vom " + fmtDate(a.snapDate) + "). Der GEO-Crawl laeuft " + CRAWL_TAKT +
         " — bei diesem Alter ist mindestens ein Lauf ausgefallen. Bitte den GitHub-Actions-Lauf im GEO-Repo pruefen.");
     }
+    (a.carried || []).forEach(function (c) {
+      var name = LLM_NAMES[c.llm] || c.llm;
+      msgs.push(name + " hat in diesem Lauf keine eigenen Daten geliefert — angezeigt wird der " +
+        "fortgeschriebene Stand" + (c.von ? (" vom " + fmtDate(parseDate(c.von))) : " des letzten Laufs") +
+        ". Typische Ursache: API-Guthaben aufgebraucht. → " + (LLM_HINT[c.llm] || "API-Key & Guthaben pruefen") + ".");
+    });
 
     var bar = document.createElement("div");
     bar.setAttribute("role", "alert");
@@ -133,7 +151,7 @@
       ";color:#fff;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;" +
       "box-shadow:0 2px 8px rgba(0,0,0,.25);padding:10px 44px 10px 16px;font-size:13.5px;line-height:1.45;";
 
-    var inner = "<strong style=\"font-weight:700\">" + (critical ? "⚠️ Datenpipeline-Warnung" : "⏳ Daten veraltet") +
+    var inner = "<strong style=\"font-weight:700\">" + (critical ? "⚠️ Datenpipeline-Warnung" : (a.stale ? "⏳ Daten veraltet" : "⚠️ Hinweis zur Datenqualität")) +
       "</strong> &nbsp;" + msgs.map(function (m) {
         return "<span style=\"display:inline-block;margin:2px 10px 2px 0\">" + m + "</span>";
       }).join("");

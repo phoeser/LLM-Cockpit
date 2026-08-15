@@ -294,6 +294,16 @@ def transform_to_dashboard_format(geo: dict) -> dict:
         "brand": geo.get("brand"),
         "competitors": geo.get("competitors", []),
         "llms": geo.get("llms", []),
+        # 15.08.2026: Diese drei Felder wurden hier bislang WEGGEWORFEN - und
+        # genau daran ist der Perplexity-Ausfall acht Tage lang unsichtbar
+        # geblieben. Der GEO-Lauf wusste die ganze Zeit Bescheid (carried_forward
+        # gesetzt, prompts_error=30 je Thema, data_quality mit Begruendung);
+        # nur kam nichts davon im Cockpit an, also zeigte das Dashboard
+        # eingefrorene Werte als frische Messung. Das Banner (health_banner.js)
+        # liest jetzt carried_forward und sagt es dem Betrachter.
+        "carried_forward": geo.get("carried_forward") or [],
+        "carried_forward_from": geo.get("carried_forward_from") or {},
+        "data_quality": geo.get("data_quality") or {},
         "totals_ranking": geo.get("totals", {}).get("ranking", []),
         "products": {},
     }
@@ -306,6 +316,9 @@ def transform_to_dashboard_format(geo: dict) -> dict:
             "summary_by_llm": {
                 llm: {
                     "prompts_total": s.get("prompts_total", 0),
+                    # prompts_error mitnehmen (15.08.2026): 30 Fehler bei 0
+                    # Treffern sieht sonst aus wie "gemessen, nichts gefunden".
+                    "prompts_error": s.get("prompts_error", 0),
                     "brands": s.get("brands", []),
                 }
                 for llm, s in pdata.get("summary_by_llm", {}).items()

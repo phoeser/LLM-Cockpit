@@ -68,6 +68,16 @@ jobs:
         run: python scripts/update_press.py
         continue-on-error: true
 
+      # 18.08.2026: LinkedIn-Posts je Marke (oeffentlich, via Google/SerpAPI).
+      # Das Skript drosselt sich selbst auf einen Lauf pro Woche (6-Tage-Abstand)
+      # und ueberspringt wortlos, wenn SERPAPI_KEY fehlt - der Step ist also
+      # taeglich harmlos. Secret: gleicher Schluessel wie im geo-visibility-tool.
+      - name: LinkedIn-Posts sammeln (SerpAPI, selbst-woechentlich)
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+        run: python scripts/update_linkedin.py
+        continue-on-error: true
+
       - name: v3 - Dashboard-fertige JSONs exportieren (sentiment + presse)
         run: python scripts/export_v3_json.py
         continue-on-error: true
@@ -197,6 +207,8 @@ jobs:
           git add data/sentiment_data.previous.json 2>/dev/null || true
           git add data/press_data.json 2>/dev/null || true
           git add data/press_data.previous.json 2>/dev/null || true
+          git add data/linkedin_posts.jsonl 2>/dev/null || true
+          git add data/linkedin_state.json 2>/dev/null || true
           git add data/geo_snapshot.json 2>/dev/null || true
           git add data/geo_snapshot.previous.json 2>/dev/null || true
           git add data/sentiment_dashboard.json 2>/dev/null || true

@@ -1074,7 +1074,7 @@ def _ridge_posterior(Xs, Y, lam, center=None, k_absorbed=0):
     return beta, Ainv, sig2
 
 
-def _apply_fdr(res, key="wild_cluster_p", out="wild_cluster_p_fdr", alpha=0.05):
+def _apply_fdr(res, key="wild_cluster_p", out="wild_cluster_p_fdr", alpha=0.05, family=None):
     """Benjamini-Hochberg ueber ALLE Between-Tests im Ergebnisbaum.
 
     17.07.2026, Review #3: "Keine Mehrfachtest-Korrektur - 130 Effekte mit
@@ -1114,16 +1114,29 @@ def _apply_fdr(res, key="wild_cluster_p", out="wild_cluster_p_fdr", alpha=0.05):
         q = min(prev, ordered[i][key] * n / (i + 1))
         ordered[i][out] = round(min(q, 1.0), 4)
         prev = q
+    # 17.08.2026 (Revisions-Rest): Die Fussnote behauptete fuer JEDEN Aufrufer,
+    # die Testfamilie bestehe aus den drei Kanaelen ('combined' mischt 'grounded'
+    # und 'ungrounded'). Das stimmt nur fuer die Modellbloecke, die ueber alle
+    # Kanaele korrigieren. Das peec26-Modell korrigiert ueber ZWEI TREIBER in
+    # EINEM Kanal, die Funnel-Schichtung ueber Treiber x Schichten - dort
+    # benannte die Fussnote eine Familie, ueber die gar nicht korrigiert wurde.
+    # Jetzt beschreibt der Aufrufer seine Familie selbst; der alte Text bleibt
+    # der Default fuer die Kanal-Bloecke.
+    fam_desc, fam_dep = (family if family else (
+        "die %d Between-Tests dieses Modellblocks" % n,
+        "Die Kanaele hier sind es nicht - 'combined' ist eine Mischung "
+        "aus 'grounded' und 'ungrounded' und teilt deren Daten."))
+    if "%d" in fam_desc:
+        fam_desc = fam_desc % n
     for d in ordered:
-        d["fdr_note"] = ("Benjamini-Hochberg ueber die %d Between-Tests dieses Modellblocks. "
+        d["fdr_note"] = ("Benjamini-Hochberg ueber %s. "
                          "Signifikant nach Korrektur: %s (alpha=%.2f). "
                          "EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests "
-                         "voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung "
-                         "aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur "
+                         "voraus. %s Die Korrektur "
                          "ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren."
-                         % (n, "ja" if d[out] < alpha else "nein", alpha))
+                         % (fam_desc, "ja" if d[out] < alpha else "nein", alpha, fam_dep))
         d["fdr_n_tests"] = n
-        d["fdr_family"] = "Between-Tests dieses Modellblocks (Kanaele nicht unabhaengig)"
+        d["fdr_family"] = fam_desc
     return res
 
 
@@ -2520,7 +2533,10 @@ def peec26_model():
     be_foot = (de.get("peec_foot") or {}).get("between") or {}
     be_size = (de.get("size") or {}).get("between") or {}
     # FDR ueber die Between-Familie (peec_foot + size), Wild-Cluster-p als Basis.
-    _apply_fdr({"peec_foot": be_foot, "size": be_size})
+    _apply_fdr({"peec_foot": be_foot, "size": be_size},
+               family=("die %d Between-Tests der Treiber Quellpraesenz und Groesse (ein Kanal)",
+                       "Beide Treiber sind im selben Datensatz auf denselben Marken geschaetzt "
+                       "und nicht unabhaengig."))
     wild_p = {"peec_foot": be_foot.get("wild_cluster_p"), "size": be_size.get("wild_cluster_p")}
     fdr_q = {"peec_foot": be_foot.get("wild_cluster_p_fdr"), "size": be_size.get("wild_cluster_p_fdr")}
     between_loo = be_foot.get("between_loo")
@@ -3431,7 +3447,10 @@ def funnel_stratified_analysis(events, mv_prior=None):
     # Eigene Testfamilie, eigene Korrektur — ueber die cluster-robusten p-Werte.
     _apply_fdr({"funnel_mv": {t: (b.get("multivariat") or {}).get("coefficients") or {}
                               for t, b in per_tag.items()}},
-               key="cluster_p", out="cluster_p_fdr")
+               key="cluster_p", out="cluster_p_fdr",
+               family=("die %d Treiber-x-Schicht-Tests der Prompt-Schichtung",
+                       "Die Schichten teilen sich dieselben Messtage und Marken "
+                       "und sind nicht unabhaengig."))
 
     # "Gesichert" nur, wenn BEIDE Unsicherheitsmasse zustimmen:
     #   (a) FDR-korrigiertes q < 0,05 aus der cluster-robusten Sandwich-Varianz und
@@ -4557,6 +4576,22 @@ def price_level_pooled(max_days=45):
             d["sov"] += c["sov"]; d["cite_share"] += c["cite_share"]
             _n[b] = _n.get(b, 0) + 1
         _t = sorted({c.get("topic") for c in scells if c.get("topic")})
+        # 17.08.2026: Gewerbe-Schnitt fuer den Scatter. Sobald die SOHO-Themen
+        # (Betriebshaftpflicht, Firmenrechtsschutz) ihre 3 Messtage haben und
+        # damit in scells einlaufen, bekommen sie hier eigene Markenmittel -
+        # das Dashboard zeichnet sie als zweite Punktwolke, damit sichtbar
+        # wird, ob die Treiber im Gewerbekontext anders wirken als privat.
+        # Vorher ist der Block None, und die Grafik sagt ehrlich, worauf sie
+        # wartet, statt leere Punkte zu zeigen.
+        _GEWERBE = {"betriebshaftpflicht", "firmenrechtsschutz"}
+        _gc = [c for c in scells if c.get("topic") in _GEWERBE]
+        _gs = {}; _gn = {}
+        for c in _gc:
+            b = c["brand"]
+            d = _gs.setdefault(b, {"sov": 0.0, "cite_share": 0.0})
+            d["sov"] += c["sov"]; d["cite_share"] += c["cite_share"]
+            _gn[b] = _gn.get(b, 0) + 1
+        _gt = sorted({c.get("topic") for c in _gc})
         streubild[lab] = {
             "available": True, "n_cells": len(scells), "n_tage": len(days),
             "tage_von": days[0], "tage_bis": days[-1],
@@ -4569,6 +4604,15 @@ def price_level_pooled(max_days=45):
             "brand_means": {b: {"sov": round(_s[b]["sov"] / _n[b], 3),
                                 "cite_share": round(_s[b]["cite_share"] / _n[b], 3),
                                 "n_zellen": _n[b]} for b in _s},
+            # Gewerbe-Schnitt: nur die SOHO-Themen. None, solange sie ihre
+            # 3 Messtage nicht erreicht haben (dann sind sie in _gc leer).
+            "brand_means_gewerbe": ({b: {"sov": round(_gs[b]["sov"] / _gn[b], 3),
+                                         "cite_share": round(_gs[b]["cite_share"] / _gn[b], 3),
+                                         "n_zellen": _gn[b]} for b in _gs}
+                                    if len(_gs) >= 5 else None),
+            "gewerbe_topics": (_gt or None),
+            "gewerbe_wartend": ({t: n for t, n in (_wartend or {}).items()
+                                 if t in _GEWERBE} or None),
             "labels": {"x": "Quellpraesenz % (Anteil der markeneigenen Domain an den zitierten Quellen)",
                        "y": "Share of Voice %"},
             "note": ("Markenmittel ueber Themen und ueber %d saubere Messtage. Beide Achsen "

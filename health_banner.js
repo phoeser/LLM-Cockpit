@@ -198,3 +198,5 @@
    ueber den Konnektor nicht schreiben; ein Runtime-Modul haengt sich den Reiter
    selbst an und kommt ohne Template-Edit aus. */
 (function(){ try{ var s=document.createElement("script"); s.src="soho_tab.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();
+/* 18.08.2026: LinkedIn-Reiter, gleicher Lademechanismus wie SOHO. */
+(function(){ try{ var s=document.createElement("script"); s.src="linkedin_tab.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();

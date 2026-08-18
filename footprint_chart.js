@@ -22,7 +22,12 @@
      identisch zu den Crawl-Namen, sonst zerfaellt der Join gegen summary_by_llm. */
   var BRAND_DOMAINS = {
     "ergo.de": "ERGO", "ergo.com": "ERGO", "ergodirekt.de": "ERGO",
-    "ergo-reiseversicherung.de": "ERGO", "dkv.de": "ERGO", "dkv.com": "ERGO",
+    "ergo-reiseversicherung.de": "ERGO",
+    /* 18.08.2026 (Entscheidung Paul): DKV ist eigene Marke, kein ERGO-Alias -
+       konsistent zu CosmosDirekt (Generali-Tochter, eigene Marke) und zur
+       Preisseite, die ERGO beim Krankenhauszusatz ausschliesst, weil das
+       Produkt unter DKV laeuft. */
+    "dkv.de": "DKV", "dkv.com": "DKV",
     "allianz.de": "Allianz", "allianz.com": "Allianz", "allianzdirect.de": "Allianz",
     "huk.de": "HUK-Coburg", "huk24.de": "HUK-Coburg", "huk-coburg.de": "HUK-Coburg",
     "axa.de": "AXA", "axa.com": "AXA",

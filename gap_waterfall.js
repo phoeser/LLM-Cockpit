@@ -367,7 +367,17 @@
     // 18.07.2026 Fix: GEO_SNAPSHOT laedt asynchron — fehlen die Hotspots noch,
     // spaeter erneut rendern (vorher fehlten sie dauerhaft, wenn der Snapshot
     // beim ersten Render noch nicht da war).
-    if(!hs){ if((render.__hsTries=(render.__hsTries||0)+1)<=30) setTimeout(function(){ render(host, lm, curBrand); },600); }
+    /* 17.08.2026 (Revisions-Rest): Der Zaehler lag als EINE Eigenschaft auf der
+       render-Funktion, aber jeder Tab-Klick startet ueber build() eine eigene
+       Retry-Kette - mehrere Ketten zogen sich gegenseitig das 30er-Budget ab
+       und renderten parallel doppelt. Jetzt haengt zusaetzlich ein Timer-Handle
+       daneben: solange ein Nachversuch geplant ist, wird kein zweiter geplant
+       und kein Budget verbraucht. */
+    if(!hs){
+      if(!render.__hsTimer && (render.__hsTries=(render.__hsTries||0)+1)<=30){
+        render.__hsTimer=setTimeout(function(){ render.__hsTimer=null; render(host, lm, curBrand); },600);
+      }
+    } else { render.__hsTries=0; }
   }
 
   function build(){

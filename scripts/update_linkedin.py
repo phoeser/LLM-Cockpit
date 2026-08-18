@@ -11,7 +11,7 @@ oeffentlichen LinkedIn-Posts befragen, via SerpAPI — derselbe Schluessel, den
 das GEO-Tool nutzt. Abfrage je Marke: site:linkedin.com/posts "<Marke>" ...
 
 Das findet, was oeffentlich UND von Google indexiert ist — die reichweiten-
-starken Posts, nicht jeden Beitrag. Keine Like-/Kommentarzahlen. Diese
+starken Posts, nicht jeder Beitrag. Keine Like-/Kommentarzahlen. Diese
 Untererfassung steht im Reiter, nicht nur hier im Docstring.
 
 Takt: WOECHENTLICH (montags), obwohl der Nightly taeglich laeuft — das Skript
@@ -108,13 +108,26 @@ def kanon_url(u):
 
 
 def serpapi(query, key):
+    # 18.08.2026, Befund Paul nach dem ersten Lauf ("haben wirklich alle genau
+    # 10 Posts?"): Sieben Marken mit EXAKT 10 Treffern - das war die Google-
+    # Seitengroesse, keine Zaehlung. num=20 hatte Google schlicht ignoriert.
+    # Drei Aenderungen, alle zum gleichen API-Preis (SerpAPI rechnet pro Suche
+    # ab, nicht pro Ergebnis):
+    #   num=100    bis zu 100 Treffer je Abfrage statt der 10er-Seite
+    #   filter=0   Googles Aehnlichkeits-Ausduennung aus - die frisst bei
+    #              site:-Abfragen sonst still Ergebnisse
+    #   qdr:w      NACH dem Erstlauf nur noch die letzte Woche: so ist der
+    #              Fund-Tag hoechstens ~7 Tage nach dem Post (dokumentierter
+    #              Versatz), und der alte Monats-Backlog kann nicht bei jedem
+    #              Lauf als neuer "Ereignis-Schub" wiederauftauchen - genau
+    #              das Import-Artefakt, das die Engine beim Erstlauf abfangen
+    #              musste. Der ERSTE Lauf (kein STATE) holt weiter qdr:m als
+    #              Archiv-Grundstock.
     q = urllib.parse.urlencode({
         "engine": "google", "q": query, "hl": "de", "gl": "de",
-        "num": "20",
-        # Nur der letzte Monat: die Woechentlichkeit ueberlappt damit 4x,
-        # verpasste Posts werden nachgeholt, und Uralt-Treffer verstopfen
-        # das Archiv nicht. Der ERSTE Lauf holt so einen Monat Historie.
-        "tbs": "qdr:m",
+        "num": "100",
+        "filter": "0",
+        "tbs": ("qdr:m" if not STATE.exists() else "qdr:w"),
         "api_key": key,
     })
     req = urllib.request.Request("https://serpapi.com/search.json?" + q,

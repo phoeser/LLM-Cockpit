@@ -3587,7 +3587,7 @@ function buildGeoTab() {
         h += '<div class="grid md:grid-cols-4 gap-3 mb-2">'
           + '<input id="ivDate" type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" />'
           + '<select id="ivProd" class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="">Produkt (optional)</option>'
-          + prods.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('')
+          + prods.map(function(p){ return '<option value="'+esc(p)+'">'+esc(p)+'</option>'; }).join('')
           + '</select>'
           + '<input id="ivLabel" type="text" placeholder="Was wurde gemacht? (kurz)" class="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm" />'
           + '</div>'
@@ -5328,7 +5328,16 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
               +'<td colspan="5" style="padding:5px 8px" class="text-gray-400">'+_kmiss(r.grund||'nicht schätzbar')+' ('+nfmt(r.n_with_event)+' Ereignis-Intervalle)</td></tr>';
             return;
           }
-          var v=_kverdict(r.p_cluster, r.p_cluster_fdr);
+          /* 18.08.2026 (Opus-Review #3): Das Urteil kommt aus r.significant -
+             derselben Regel wie im SoV-Forest und im LinkedIn-Reiter (Cluster-KI
+             schliesst Null aus UND n_with>=8 UND n_clusters>=5). Vorher urteilte
+             diese Tabelle allein ueber p/q und konnte fuer dieselbe Zeile
+             "gesichert" sagen, wo die Nachbar-Anzeigen "nicht gesichert" zeigten. */
+          var v;
+          if(r.significant===true) v={t:'gesichert',tone:'gruen'};
+          else if(r.p_cluster_fdr!=null&&r.p_cluster_fdr<0.05) v={t:'q<0,05, aber unter Mindestbasis',tone:'gelb'};
+          else if(r.p_cluster!=null&&r.p_cluster<0.05) v={t:'nur unkorrigiert signifikant',tone:'gelb'};
+          else v={t:'nicht gesichert',tone:'grau'};
           h+='<tr style="border-bottom:1px solid #f1f5f9">'
             +'<td style="padding:5px 8px" class="text-gray-800">'+_esc(r.label||t)+'<div class="text-xs text-gray-400">'+nfmt(r.n_with_event)+' Ereignis-Intervalle</div></td>'
             +'<td style="padding:5px 8px;text-align:right;font-weight:600">'+_kpp(r.effect_within_fe_pp,2)+'</td>'

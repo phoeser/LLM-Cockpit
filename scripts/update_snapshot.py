@@ -169,7 +169,14 @@ _SOURCE_NOISE = ("vertexaisearch.cloud.google.com", "grounding-api-redirect",
 
 # Unsere 10 Haupt-Marken: Domain -> Anzeigename
 _BRAND_DOMAINS = {
-    "ergo.de": "ERGO", "ergo.com": "ERGO",
+    "ergo.de": "ERGO", "ergo.com": "ERGO", "ergodirekt.de": "ERGO",
+    "ergo-reiseversicherung.de": "ERGO",
+    # 18.08.2026 (Entscheidung Paul): DKV als EIGENE Marke, nicht als ERGO -
+    # konsistent zu CosmosDirekt (Generali-Tochter, eigene Marke) und zur
+    # Preisseite, die ERGO beim Krankenhauszusatz ausschliesst, weil das Produkt
+    # unter DKV laeuft. Vorher fehlten dkv.de/dkv.com hier ganz, ihre Zitate
+    # fielen also stillschweigend aus der Zaehlung.
+    "dkv.de": "DKV", "dkv.com": "DKV",
     "allianz.de": "Allianz", "allianz.com": "Allianz", "allianzdirect.de": "Allianz",
     "huk.de": "HUK-Coburg", "huk24.de": "HUK-Coburg", "huk-coburg.de": "HUK-Coburg",
     "axa.de": "AXA", "axa.com": "AXA",

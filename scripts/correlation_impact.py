@@ -104,6 +104,57 @@ STRUCTURAL_BREAKS = [
                         "beschaedigen. Ab 2026-07-20 werden Volltexte gespeichert, kuenftige "
                         "Definitionsaenderungen sind damit rueckwirkend nachrechenbar."),
     },
+    # ---- 18.08.2026 nachregistriert (Fund der Opus-Doku-Runde, selbst verifiziert):
+    # Der GEO-Deploy vom 13.08. (geo-visibility-tool 0e759a1, "Perplexity wieder
+    # aktivieren") hat NEBENBEI die Wettbewerberliste von 24 auf 6 reduziert und
+    # DKV wieder in die ERGO-Aliase genommen. Beides stand nirgends im Register -
+    # die Intervalle 10.08.->13.08. und 13.08.->15.08. liefen fuenf Tage lang
+    # ungefiltert durch alle Ereignis-Modelle, obwohl z. B. Allianz dabei um
+    # +14,8 pp "stieg" (18,84 % bei 25 Marken -> 33,68 % bei 7). Das war
+    # Nenner-Arithmetik, keine Sichtbarkeit.
+    {
+        "brand": "*",
+        "date": "2026-08-13",
+        "grund": ("Markenliste des Crawls von 25 auf 7 reduziert (Rueckbau der "
+                  "Erweiterung vom 21.07.; geo-visibility-tool 0e759a1, wirksam mit dem "
+                  "Lauf vom 13.08.). SoV ist ein Anteil - schrumpft der Nenner, steigt "
+                  "jeder Wert ohne reale Aenderung: ERGO 7,21 % -> 14,22 %, Allianz "
+                  "18,84 % -> 33,68 %, HUK 14,06 % -> 25,14 %. Im selben Deploy wurde "
+                  "DKV wieder ERGO-Alias (Rueckdrehung der Entscheidung vom 20.07., "
+                  "Klaerung mit Paul laeuft)."),
+        "nachrechenbar": False,
+        "warum_nicht": ("Die 18 entfallenen Marken werden seit dem 13.08. nicht mehr "
+                        "gemessen; ihre Nennungen lassen sich aus den neuen Laeufen "
+                        "nicht rekonstruieren."),
+    },
+    {
+        "brand": "*",
+        "date": "2026-08-19",
+        "grund": ("DKV wird eigene Marke (Entscheidung Paul, 18.08.2026), wirksam mit dem "
+                  "naechsten Crawl. Bis 12.08. zaehlte DKV gar nicht, vom 13.08. bis 18.08. "
+                  "versehentlich als ERGO-Alias, ab jetzt als 7. Wettbewerber - konsistent zu "
+                  "CosmosDirekt (Generali-Tochter, eigene Marke). Der SoV-Nenner waechst damit "
+                  "um eine Marke: 174 Nennungen im Lauf vom 18.08. (92 Krankenhauszusatz, "
+                  "46 Reise, 30 Zahnzusatz) wandern aus dem Nichts in die Zaehlung, ERGO "
+                  "verliert die faelschlich zugerechneten DKV-Nennungen wieder."),
+        "nachrechenbar": False,
+        "warum_nicht": ("Fuer die Laeufe vor dem 13.08. wurde DKV nie erfasst; die Nennungen "
+                        "liessen sich nur aus den Volltexten rekonstruieren, die erst ab "
+                        "20.07. vollstaendig gespeichert werden."),
+    },
+    {
+        "brand": "*",
+        "date": "2026-08-15",
+        "grund": ("Zwei Aenderungen im selben Lauf: (1) Perplexity liefert erstmals "
+                  "seit dem 06.08. wieder eigene Daten - der grounded-Mix besteht "
+                  "seither aus zwei Engines statt einer, Themen-SoV z. B. Allianz/"
+                  "Zahnzusatz 35,15 % -> 41,25 %, ERGO 20,33 % -> 30,60 %. "
+                  "(2) Der Carry-Forward-/Nenner-Fix vom 15.08. rechnet den SoV "
+                  "seither gegen die gefilterte 7-Marken-Liste neu."),
+        "nachrechenbar": False,
+        "warum_nicht": ("Der Engine-Mix vor dem 15.08. laesst sich nicht nachtraeglich "
+                        "um Perplexity ergaenzen - die Antworten wurden nie erhoben."),
+    },
 ]
 
 
@@ -285,31 +336,44 @@ def _drop_linkedin_erstimport(events):
     die Regel automatisch auch fuer deren ersten Batch. Die Events selbst
     bleiben in shared/events.jsonl und im LinkedIn-Reiter sichtbar — entfernt
     sind sie nur aus den Wirkungs-Rechnungen."""
+    # 18.08.2026, Opus-Review-Befunde #2/#6: Die urspruengliche Regel ("je Marke
+    # fliegt der frueheste undatierte Tag") war markenbezogen, das Artefakt ist
+    # aber LAUFBEZOGEN (Monatsfenster-Abfrage). Zwei Fehlerbilder: (a) eine Marke
+    # ohne Treffer im Erstlauf (Signal Iduna, Hannoversche) haette ihren ersten
+    # ECHTEN Wochen-Batch verloren; (b) geht die State-Datei verloren, holt der
+    # Sammler wieder ein Monatsfenster, und die Erst-Tag-Regel griffe nicht mehr.
+    # Seit heute markiert der Sammler jedes Event mit detail.fenster
+    # ("monat"|"woche"). Regel jetzt: undatierte Events aus einem MONATS-Fenster
+    # fliegen immer (Backlog-Kompression); undatierte Events aus Wochen-Fenstern
+    # bleiben (Versatz max. ~7 Tage, dokumentiert). Alt-Events ohne fenster-Feld
+    # (der Erstlauf vom 18.08.) werden weiter ueber die Erst-Tag-je-Marke-Regel
+    # behandelt - nur ungedatete bestimmen den Erst-Tag, sonst schaltet ein
+    # einzelner echt datierter Post (Generali, 20.07.) den Batch frei.
     first = {}
     for e in events:
         if e.get("event_type") != "linkedin_post":
             continue
-        # Nur die UNGEDATETEN Events bestimmen den Erstimport-Tag: ein Post mit
-        # echtem Erscheinungsdatum wurde von _redate_media_events umdatiert und
-        # wuerde sonst als "fruehester Tag" den eigentlichen Import-Batch
-        # freischalten (beim ersten Lauf real passiert: Generalis einziger
-        # datierter Post vom 20.07. haette die 9 undatierten vom 18.08.
-        # durchgelassen).
-        if (e.get("detail") or {}).get("datierung") == "post":
+        d_ = e.get("detail") or {}
+        if d_.get("fenster") or d_.get("datierung") == "post":
             continue
         b, d = e.get("brand"), _day(e.get("timestamp"))
         if b and d and (b not in first or d < first[b]):
             first[b] = d
-    if not first:
-        return events
     kept, dropped = [], 0
     for e in events:
-        if (e.get("event_type") == "linkedin_post"
-                and _day(e.get("timestamp")) == first.get(e.get("brand"))
-                and (e.get("detail") or {}).get("datierung") != "post"):
-            dropped += 1
-            continue
+        if e.get("event_type") == "linkedin_post":
+            d_ = e.get("detail") or {}
+            undatiert = d_.get("datierung") != "post"
+            if undatiert and d_.get("fenster") == "monat":
+                dropped += 1
+                continue
+            if (undatiert and not d_.get("fenster")
+                    and _day(e.get("timestamp")) == first.get(e.get("brand"))):
+                dropped += 1
+                continue
         kept.append(e)
+    if not dropped:
+        return events
     EVENT_LOAD_AUDIT["linkedin_erstimport"] = {
         "entfernt": dropped,
         "erster_tag_je_marke": dict(sorted(first.items())),
@@ -1025,7 +1089,10 @@ def _content_key(e):
     d = e.get("detail") or {}
     cid = e.get("url") or d.get("url") or d.get("title") or e.get("id")
     t = e.get("event_type")
-    if t in ("press_mention", "news_mention"):
+    # 18.08.2026: linkedin_post wie Presse/News - ein Post = ein Event, ueber
+    # alle Tage (Opus-Review #13; heute doppelt abgesichert durch den Emitter,
+    # aber ein Neuaufbau von events.jsonl darf sich nicht darauf verlassen).
+    if t in ("press_mention", "news_mention", "linkedin_post"):
         return (t, e.get("brand"), cid)
     return (t, e.get("brand"), cid, _day(e.get("timestamp")))
 
@@ -3350,7 +3417,7 @@ def zitatanteil_impact(events):
     base = {
         "ziel": ("Zitatanteil je Marke und Tag (eigener Crawl, grounded: "
                  "Zitate der markeneigenen Domains / alle Zitate des Tages, in %)"),
-        "quelle": "data/level_cells.jsonl (dieselben Zellen wie das Niveau-Modell)",
+        "quelle": "data/level_cells_history.jsonl (dieselben Zellen wie das Niveau-Modell)",
         "methode": ("Tages-Intervalle je Marke wie im SoV-Hauptmodell (build_intervals, "
                     "Raten pro Tag, Strukturbruch-Filter), Effekt = Differenz der "
                     "Intervall-Aenderung mit/ohne Ereignis, Inferenz cluster-robust "
@@ -3374,23 +3441,41 @@ def zitatanteil_impact(events):
     min_tage = max(3, int(0.9 * len(days)))
     topics_ok = {t for t, n in abdeckung.items() if n >= min_tage}
     topics_raus = sorted(set(abdeckung) - topics_ok)
-    # Tages-Aggregat je Marke: Summe der eigenen Zitate / Summe aller Zitate
+    # Tages-Aggregat je Marke: Summe der eigenen Zitate / ALLE Zitate des Tages.
+    #
+    # 18.08.2026, Opus-Review-Befund #1 (KRITISCH), selbst nachgerechnet und
+    # bestaetigt: Die erste Fassung summierte den Nenner nur ueber die Themen,
+    # in denen DIE MARKE an dem Tag eine Zelle hatte. Seit dem 15.08. schreibt
+    # das Zellen-Archiv fuer Nicht-Kernmarken aber nur noch die Themen, in denen
+    # sie vorkommen (ADAC: 11 Themen am 13.08. -> 4 am 15.08.) - der Anteil
+    # sprang dadurch, ohne dass sich ein Zitat geaendert haette (ADAC 3,17 % ->
+    # 7,46 % statt korrekt 2,64 %). Auf die Effekte durchgeschlagen: page_change
+    # halbierte sich nach der Korrektur und verlor die Signifikanz. Jetzt wird
+    # der Nenner TAGESWEIT gebildet: jedes zugelassene (Thema, Tag)-Paar genau
+    # einmal (ctot_g ist je Thema-Tag fuer alle Marken identisch - geprueft:
+    # 0 von 237 Paaren abweichend).
+    daytot = {}
+    for r in rows:
+        d = r.get("date")
+        if d not in dsub or r.get("topic") not in topics_ok:
+            continue
+        tot = r.get("ctot_g") or 0
+        if tot:
+            daytot.setdefault(d, {})[r.get("topic")] = tot
+    daysum = {d: float(sum(m.values())) for d, m in daytot.items()}
     agg = {}
     for r in rows:
         d = r.get("date")
         if d not in dsub or r.get("topic") not in topics_ok:
             continue
-        cite = r.get("cite_g") or 0
-        tot = r.get("ctot_g") or 0
-        if not tot:
+        if not (r.get("ctot_g") or 0):
             continue
-        a = agg.setdefault((r.get("brand"), d), [0.0, 0.0])
-        a[0] += cite
-        a[1] += tot
+        a = agg.setdefault((r.get("brand"), d), [0.0])
+        a[0] += r.get("cite_g") or 0
     ser = {}
-    for (b, d), (c, tot) in agg.items():
-        if tot > 0:
-            ser.setdefault(b, []).append((d, 100.0 * c / tot))
+    for (b, d), (c,) in agg.items():
+        if daysum.get(d, 0) > 0:
+            ser.setdefault(b, []).append((d, 100.0 * c / daysum[d]))
     ser = {b: sorted(v) for b, v in ser.items() if len(v) >= 3}
     if len(ser) < 5:
         base["available"] = False
@@ -4807,7 +4892,12 @@ def price_level_pooled(max_days=45):
         # Vorher ist der Block None, und die Grafik sagt ehrlich, worauf sie
         # wartet, statt leere Punkte zu zeigen.
         _GEWERBE = {"betriebshaftpflicht", "firmenrechtsschutz"}
-        _gc = [c for c in scells if c.get("topic") in _GEWERBE]
+        # 18.08.2026 (Opus-Review #12): Zellen mit nur EINEM Messtag fliegen aus
+        # dem Gewerbe-Schnitt - bei zwei Themen waere ein purer Tageswert die
+        # halbe Raute; genau der Artefakttyp, den min_tage_topic am 14.08. im
+        # Hauptpanel beseitigt hat.
+        _gc = [c for c in scells
+               if c.get("topic") in _GEWERBE and (c.get("n_tage") or 0) >= 2]
         _gs = {}; _gn = {}
         for c in _gc:
             b = c["brand"]
@@ -4836,6 +4926,13 @@ def price_level_pooled(max_days=45):
             "gewerbe_topics": (_gt or None),
             "gewerbe_wartend": ({t: n for t, n in (_wartend or {}).items()
                                  if t in _GEWERBE} or None),
+            # 18.08.2026 (Opus-Review #17): Wenn die Themen ihre Messtage haben,
+            # aber zu wenige Marken (oder nur Ein-Tages-Zellen) uebrig sind, war
+            # BEIDES None - die Grafik zeigte weder Rauten noch einen Wartegrund.
+            # Jetzt steht der Grund immer da.
+            "gewerbe_grund": (None if len(_gs) >= 5 else
+                              ("erst %d von mindestens 5 Marken mit belastbaren "
+                               "Gewerbe-Zellen (2+ Messtage)" % len(_gs))),
             "labels": {"x": "Quellpraesenz % (Anteil der markeneigenen Domain an den zitierten Quellen)",
                        "y": "Share of Voice %"},
             "note": ("Markenmittel ueber Themen und ueber %d saubere Messtage. Beide Achsen "

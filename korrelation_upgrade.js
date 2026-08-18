@@ -88,7 +88,18 @@
       var v=bm[b]||{};
       if(typeof v.cite_share==="number" && typeof v.sov==="number") out.push({brand:b, foot:v.cite_share, sov:v.sov});
     });
-    return out.length>=5?{pts:out, tage:sb.n_tage||null, von:sb.tage_von||null, bis:sb.tage_bis||null,
+    /* 17.08.2026: Gewerbe-Schnitt (SOHO-Themen) als zweite Punktwolke. Der
+       Nightly liefert brand_means_gewerbe erst, wenn Betriebshaftpflicht und
+       Firmenrechtsschutz ihre 3 Messtage erreicht haben - vorher steht in
+       gewerbe_wartend, worauf die Grafik wartet. */
+    var gew=[], gbm=sb.brand_means_gewerbe||null;
+    if(gbm) Object.keys(gbm).forEach(function(b){
+      var v=gbm[b]||{};
+      if(typeof v.cite_share==="number" && typeof v.sov==="number") gew.push({brand:b, foot:v.cite_share, sov:v.sov, gewerbe:true});
+    });
+    return out.length>=5?{pts:out, gew:gew, gewWartend:sb.gewerbe_wartend||null,
+                          gewTopics:sb.gewerbe_topics||null,
+                          tage:sb.n_tage||null, von:sb.tage_von||null, bis:sb.tage_bis||null,
                           nCells:sb.n_cells||null, nTopics:sb.n_topics||null}:null;
   }
 
@@ -152,12 +163,24 @@
     if(fRest) ds.push({type:"line",label:"ohne Hebelpunkte",
        data:[{x:xmin,y:fRest.intercept+fRest.slope*xmin},{x:xmax,y:fRest.intercept+fRest.slope*xmax}],
        borderColor:"#c8ccd2",borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false});
+    /* Gewerbe-Punkte (SOHO-Themen) als Rauten dazu - gleiche Achsen, eigener
+       Stil, damit privat und gewerblich unterscheidbar bleiben. */
+    if(D.gew&&D.gew.length){
+      ds.push({type:"scatter",label:"Gewerbe (SOHO)",
+        data:D.gew.map(function(p){return {x:p.foot,y:p.sov,brand:p.brand,gewerbe:true};}),
+        pointStyle:"rectRot",
+        pointRadius:D.gew.map(function(p){return p.brand==="ERGO"?8:5;}),
+        pointBackgroundColor:"#ffffff",
+        pointBorderColor:D.gew.map(function(p){return colOf(p.brand);}),
+        pointBorderWidth:2});
+    }
 
     if(scatterChart){ try{scatterChart.destroy();}catch(e){} scatterChart=null; }
     try{
       scatterChart=new Chart(cv,{data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,
         plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ var r=ctx.raw||{}; if(r.brand==null) return null;
           var res=r.y-(fAll.intercept+fAll.slope*r.x);
+          if(r.gewerbe) return r.brand+" (nur Gewerbe-Themen): "+num(r.y,1)+"% SoV bei "+num(r.x,1)+"% Quellpräsenz";
           return r.brand+": "+num(r.y,1)+"% SoV bei "+num(r.x,1)+"% Quellpräsenz ("+(res>=0?"+":"")+num(res,1)+" pp vs. Gerade)"+(heb.indexOf(r.brand)>=0?" — Hebelpunkt":""); }}}},
         scales:{x:{title:{display:true,text:"Quellpräsenz % (eigener Crawl) — Anteil der markeneigenen Domain an den zitierten Quellen"}},
                 y:{title:{display:true,text:"Share of Voice %  (grounded)"},beginAtZero:true}}}});
@@ -188,7 +211,15 @@
       s+="Keine Marke überschreitet die übliche Hebelgrenze (h &gt; 3p/n) — die Gerade hängt an keinem Einzelpunkt. ";
     }
     if(D.tage) s+="Grundlage: "+D.tage+" Messtage"+((D.von&&D.bis)?(" ("+D.von+" bis "+D.bis+")"):"")+", "+(D.nTopics||"?")+" Themen. ";
-    s+="ERGO rot, Allianz blau, Hebelpunkte bernstein.</div>";
+    s+="ERGO rot, Allianz blau, Hebelpunkte bernstein"+((D.gew&&D.gew.length)?"; Rauten = Markenmittel nur über die Gewerbe-Themen (SOHO)":"")+".</div>";
+    if(D.gew&&D.gew.length){
+      var gT=(D.gewTopics||[]).join(", ");
+      s+="<div style='margin-top:5px;color:#9ca3af'><b>Gewerbe-Schnitt:</b> "+D.gew.length+" Marken über "+(gT||"die SOHO-Themen")+
+         ". Liegen die Rauten einer Marke deutlich neben ihrem runden Punkt, wirken die Treiber im Gewerbekontext anders als im Privatkundengeschäft. Keine eigene Gerade — dafür sind es noch zu wenige Themen.</div>";
+    } else if(D.gewWartend){
+      var w=Object.keys(D.gewWartend).map(function(t){ return t+" ("+D.gewWartend[t]+" von 3 Messtagen)"; }).join(", ");
+      s+="<div style='margin-top:5px;color:#9ca3af'><b>Gewerbe-Schnitt folgt:</b> Die SOHO-Themen erscheinen hier als eigene Punktwolke, sobald sie 3 Messtage erreicht haben — Stand: "+w+".</div>";
+    }
     /* Der wichtigste Vorbehalt gehoert an die Grafik, nicht in eine Fussnote weiter
        unten: Zitate und Nennungen stammen zu einem Teil aus DENSELBEN Antworten.
        Ein Teil des Zusammenhangs ist deshalb Messkonstruktion, nicht Wirkung. Die
@@ -271,12 +302,20 @@
       '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Zwei unabhängige Messungen derselben Sache. Niveau-Unterschiede kommen von unterschiedlichen Engines und Methoden, nicht aus der Markenzahl ('+mk+') — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
       '<div id="korrDiffBox" style="border:1px solid #eee;border-radius:11px;padding:14px 16px"><div style="font-size:12px;color:#9ca3af">Quellen-Vergleich wird geladen (data/peec_cells.csv) …</div></div>';
   }
-  var fb3Wait=0;
+  /* 17.08.2026 (Revisions-Rest): fb3Wait ist modul-global, aber mount() startet
+     bei jedem Tab-Klick (x3 verzoegert) und jedem __korrRender eine NEUE
+     fillBlock3-Kette. Mehrere Ketten teilten sich denselben Zaehler - sie
+     zogen sich gegenseitig das 40er-Budget ab und rannten parallel. Jetzt
+     stellt ein Timer-Handle sicher, dass immer hoechstens EIN Nachversuch
+     geplant ist; Reset (Modus-Wechsel/mount) raeumt den alten Timer ab. */
+  var fb3Wait=0, fb3Timer=null;
+  function fb3Reset(){ if(fb3Timer){ clearTimeout(fb3Timer); fb3Timer=null; } fb3Wait=0; }
   function fillBlock3(){
     var box=document.getElementById("korrDiffBox"); if(!box) return;
     var own=ownSov(b3Mode);
     if(!own){
-      if(fb3Wait++<40){ setTimeout(fillBlock3,500); return; }
+      if(fb3Timer) return;
+      if(fb3Wait++<40){ fb3Timer=setTimeout(function(){ fb3Timer=null; fillBlock3(); },500); return; }
       box.innerHTML=b3Btns()+'<div style="font-size:12px;color:#9ca3af">Eigener Crawl (data/geo_snapshot.json): für den Kanal <b>'+b3ModeLbl()+'</b> keine Daten ladbar — der Vergleich erscheint nach Reload oder in einem anderen Kanal. <b>Keine Ersatz-Nullen.</b></div>'; b3Wire(box); return;
     }
     loadPeecCells().then(function(cells){
@@ -329,7 +368,7 @@
       btn.addEventListener("click", function(){
         var m=btn.getAttribute("data-m");
         if(m===b3Mode) return;
-        b3Mode=m; fb3Wait=0; fillBlock3();
+        b3Mode=m; fb3Reset(); fillBlock3();
       });
     });
   }
@@ -346,7 +385,7 @@
     if(sc && !sc.querySelector("#korrScatterBlock")) sc.innerHTML=scatterBlock();
     if(cmp && !cmp.querySelector("#korrDiffBox")) cmp.innerHTML=block3Skeleton();
     renderScatter();
-    fb3Wait=0; fillBlock3();
+    fb3Reset(); fillBlock3();
     return true;
   }
   window.__korrKuMount=mount;

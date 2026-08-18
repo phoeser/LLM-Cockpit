@@ -5303,6 +5303,48 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       h+='</div></details>';
     }
 
+    /* 18.08.2026 (Hebel 6, Pauls Go): Ereignisse gegen den ZITATANTEIL aus dem
+       eigenen Crawl - die fruehere Stufe der Wirkkette Massnahme -> Zitatanteil
+       -> Sichtbarkeit. Cluster-robust wie das Hauptmodell, zusaetzlich FDR ueber
+       die Typen (strenger als der SoV-Block selbst). Quelle: zitatanteil_impact. */
+    var zi=ci.zitatanteil_impact||null;
+    if(zi){
+      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Dieselben Ereignisse, frühere Kettenstufe: Wirkung auf den <span class="text-ergo-dark">Zitatanteil</span></div>';
+      if(!zi.available){
+        h+='<div class="text-xs text-gray-400">'+_kmiss(zi.grund||'im aktuellen Nightly nicht verfügbar')+'</div></div>';
+      } else {
+        h+='<div class="text-xs text-gray-500 mb-2">Wirkkette: Maßnahme → <b>Zitatanteil</b> → Sichtbarkeit. Die zweite Hälfte ist in Abschnitt 1 gesichert — wirkt ein Ereignistyp hier, gibt es einen belegten indirekten Pfad, auch wenn der direkte Sprung auf den SoV oben im Rauschen bleibt. '
+          +'Zitatanteil je Marke und Tag aus dem eigenen Crawl (grounded), '+nfmt(zi.n_messtage)+' Messtage ('+_esc(zi.tage_von||'')+' bis '+_esc(zi.tage_bis||'')+'), '+nfmt(zi.n_intervalle)+' Intervalle, '+nfmt((zi.marken||[]).length)+' Marken'
+          +(zi.themen_ausgeschlossen?(' · Themen mit lückiger Messreihe ausgeschlossen: '+_esc(zi.themen_ausgeschlossen.join(', '))):'')+'.</div>';
+        h+='<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+          +'<thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
+          +'<th style="padding:5px 8px">Ereignistyp</th><th style="padding:5px 8px;text-align:right">Effekt (Within-FE)</th>'
+          +'<th style="padding:5px 8px;text-align:right">95-%-KI (cluster)</th><th style="padding:5px 8px;text-align:right">p / q</th>'
+          +'<th style="padding:5px 8px;text-align:right">Marken</th><th style="padding:5px 8px;text-align:center">gesichert?</th></tr></thead><tbody>';
+        Object.keys(zi.impact||{}).forEach(function(t){
+          var r=zi.impact[t];
+          if(!r.available){
+            h+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:5px 8px" class="text-gray-500">'+_esc(r.label||t)+'</td>'
+              +'<td colspan="5" style="padding:5px 8px" class="text-gray-400">'+_kmiss(r.grund||'nicht schätzbar')+' ('+nfmt(r.n_with_event)+' Ereignis-Intervalle)</td></tr>';
+            return;
+          }
+          var v=_kverdict(r.p_cluster, r.p_cluster_fdr);
+          h+='<tr style="border-bottom:1px solid #f1f5f9">'
+            +'<td style="padding:5px 8px" class="text-gray-800">'+_esc(r.label||t)+'<div class="text-xs text-gray-400">'+nfmt(r.n_with_event)+' Ereignis-Intervalle</div></td>'
+            +'<td style="padding:5px 8px;text-align:right;font-weight:600">'+_kpp(r.effect_within_fe_pp,2)+'</td>'
+            +'<td style="padding:5px 8px;text-align:right;color:#475569">'+_kv(r.ci95_low_cluster_pp,2)+' … '+_kv(r.ci95_high_cluster_pp,2)+'</td>'
+            +'<td style="padding:5px 8px;text-align:right;color:#475569">'+_kp(r.p_cluster)+(r.p_cluster_fdr!=null?('<div class="text-xs text-gray-400">q '+_kp(r.p_cluster_fdr)+'</div>'):'')+'</td>'
+            +'<td style="padding:5px 8px;text-align:right;color:#64748b">'+nfmt(r.n_clusters)+'</td>'
+            +'<td style="padding:5px 8px;text-align:center">'+_pill(v.t,v.tone)+'</td></tr>';
+        });
+        h+='</tbody></table></div>';
+        h+='<div class="text-xs text-gray-500 mt-2"><b>Zur Einordnung:</b> Effekt in Prozentpunkten Zitatanteil je Intervalltag, um Marken-Fixed-Effects bereinigt. '
+          +'Zitate und Sichtbarkeit stammen teilweise aus denselben Antworten — ein Treffer hier belegt den frühen Kettenschritt, macht aber aus der zweiten Hälfte keinen Kausalnachweis. '
+          +'Anders als der SoV-Block oben ist diese Tabelle zusätzlich FDR-korrigiert (Spalte q).</div>';
+        h+='</div>';
+      }
+    }
+
     // Web-Such-Rate
     var fr=ci.fanout_regime||{};
     if(fanCsv && fr.available){

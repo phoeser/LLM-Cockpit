@@ -107,7 +107,18 @@ def kanon_url(u):
     return u
 
 
-def serpapi(query, key):
+def ist_linkedin(u):
+    """Echte Host-Pruefung statt Substring (Opus-Review #16 - 
+    'linkedin.com.boese.example' passierte den alten in-Test)."""
+    try:
+        p = urllib.parse.urlparse(u)
+        return (p.scheme == "https" and
+                (p.netloc == "linkedin.com" or p.netloc.endswith(".linkedin.com")))
+    except Exception:
+        return False
+
+
+def serpapi(query, key, fenster):
     # 18.08.2026, Befund Paul nach dem ersten Lauf ("haben wirklich alle genau
     # 10 Posts?"): Sieben Marken mit EXAKT 10 Treffern - das war die Google-
     # Seitengroesse, keine Zaehlung. num=20 hatte Google schlicht ignoriert.
@@ -127,7 +138,11 @@ def serpapi(query, key):
         "engine": "google", "q": query, "hl": "de", "gl": "de",
         "num": "100",
         "filter": "0",
-        "tbs": ("qdr:m" if not STATE.exists() else "qdr:w"),
+        # 18.08.2026 (Opus-Review #6): Fenster haengt jetzt am TATSAECHLICHEN
+        # Abstand zum letzten Lauf (Parameter), nicht mehr an der Existenz der
+        # State-Datei - ein verlorener Nightly-Commit erzwang sonst still ein
+        # neues Monatsfenster.
+        "tbs": ("qdr:w" if fenster == "woche" else "qdr:m"),
         "api_key": key,
     })
     req = urllib.request.Request("https://serpapi.com/search.json?" + q,
@@ -147,40 +162,64 @@ def main():
     # Wochen-Takt: fruehestens 6 Tage nach dem letzten erfolgreichen Lauf.
     force = os.environ.get("FORCE_LINKEDIN") == "1"
     heute = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if STATE.exists() and not force:
+    abstand = None
+    if STATE.exists():
         try:
             letzte = json.loads(STATE.read_text(encoding="utf-8")).get("letzter_lauf", "")
-            if letzte and (datetime.fromisoformat(heute) -
-                           datetime.fromisoformat(letzte)).days < 6:
-                print("[LinkedIn] Letzter Lauf %s — naechster fruehestens 6 Tage "
-                      "spaeter. Uebersprungen (FORCE_LINKEDIN=1 erzwingt)." % letzte)
-                return 0
+            if letzte:
+                abstand = (datetime.fromisoformat(heute) -
+                           datetime.fromisoformat(letzte)).days
         except Exception:
             pass
+    if abstand is not None and abstand < 6 and not force:
+        print("[LinkedIn] Letzter Lauf vor %d Tag(en) — naechster fruehestens 6 Tage "
+              "spaeter. Uebersprungen (FORCE_LINKEDIN=1 erzwingt)." % abstand)
+        return 0
+    # Fenster: Woche nur, wenn der letzte Lauf nachweislich hoechstens 8 Tage
+    # zurueckliegt - sonst Monat, und die Events tragen das Fenster im detail,
+    # damit die Engine undatierte Monats-Batches ausschliessen kann.
+    fenster = "woche" if (abstand is not None and abstand <= 8) else "monat"
 
-    bekannt = set()
+    # 18.08.2026 (Opus-Review #9): Dedup JE MARKE statt global. Vorher bekam
+    # die zuerst abgefragte Marke (ERGO) jeden Mehrmarkennennungs-Post exklusiv
+    # zugeschrieben - bei einem Reiter, dessen Kernaussage der Markenvergleich
+    # ist, eine systematische Verzerrung zugunsten von ERGO.
+    bekannt = {}
     if OUT.exists():
         for line in OUT.read_text(encoding="utf-8", errors="ignore").splitlines():
             try:
-                bekannt.add(kanon_url(json.loads(line).get("url")))
+                p = json.loads(line)
+                bekannt.setdefault(p.get("brand"), set()).add(kanon_url(p.get("url")))
             except Exception:
                 pass
 
-    neu, fehler = [], 0
+    neu, fehler, fehler_texte = [], 0, []
     for brand, query in BRANDS:
         try:
-            res = serpapi("site:linkedin.com/posts %s" % query, key)
+            res = serpapi("site:linkedin.com/posts %s" % query, key, fenster)
         except Exception as e:
             print("[LinkedIn] %s: Abfrage fehlgeschlagen: %s" % (brand, str(e)[:100]))
             fehler += 1
+            fehler_texte.append("%s: %s" % (brand, str(e)[:80]))
+            continue
+        # 18.08.2026 (Opus-Review #5): SerpAPI transportiert Fehler auch in einer
+        # HTTP-200-Antwort. "Keine Ergebnisse" ist ein gueltiges leeres Ergebnis;
+        # alles andere (Kontingent, Parameter) ist ein Abfragefehler und darf den
+        # Wochentakt nicht fortschreiben - sonst faellt eine Woche still aus.
+        _err = res.get("error")
+        if _err and "any results" not in str(_err):
+            print("[LinkedIn] %s: SerpAPI-Fehler: %s" % (brand, str(_err)[:100]))
+            fehler += 1
+            fehler_texte.append("%s: %s" % (brand, str(_err)[:80]))
             continue
         treffer = res.get("organic_results") or []
         n_neu = 0
+        seen_b = bekannt.setdefault(brand, set())
         for t in treffer:
             url = kanon_url(t.get("link"))
-            if not url or "linkedin.com" not in url or url in bekannt:
+            if not url or not ist_linkedin(url) or url in seen_b:
                 continue
-            bekannt.add(url)
+            seen_b.add(url)
             datum = parse_datum(t.get("date"))
             post = {
                 "url": url, "brand": brand,
@@ -198,7 +237,8 @@ def main():
                     source="linkedin_via_google", crawler="update_linkedin",
                     magnitude=1.0, url=url,
                     detail={"title": post["title"], "date": datum,
-                            "datierung": ("post" if datum else "erstsichtung")},
+                            "datierung": ("post" if datum else "erstsichtung"),
+                            "fenster": fenster},
                 )
         print("[LinkedIn] %-13s %d Treffer, %d neu" % (brand, len(treffer), n_neu))
 
@@ -206,14 +246,19 @@ def main():
         with open(OUT, "a", encoding="utf-8") as f:
             for p in neu:
                 f.write(json.dumps(p, ensure_ascii=False) + "\n")
-    # Der Lauf zaehlt als erfolgt, sobald die Abfragen ueberwiegend liefen —
-    # sonst wuerde ein Teilausfall den Takt nicht anhalten und das Kontingent
-    # jeden Tag erneut belasten.
-    if fehler < len(BRANDS):
+    # Der Lauf zaehlt nur als erfolgt, wenn hoechstens ein Drittel der Abfragen
+    # scheiterte (Opus-Review #5: vorher genuegte EINE erfolgreiche von zehn,
+    # und neun Marken haetten still eine Woche verloren). Fehlertexte stehen im
+    # State, damit der Pipeline-Health-Check sie sieht.
+    if len(BRANDS) - fehler >= (2 * len(BRANDS)) // 3:
         STATE.parent.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps({"letzter_lauf": heute,
-                                     "neu": len(neu), "fehler": fehler}),
-                         encoding="utf-8")
+        STATE.write_text(json.dumps({"letzter_lauf": heute, "fenster": fenster,
+                                     "neu": len(neu), "fehler": fehler,
+                                     "fehler_texte": fehler_texte[:10]},
+                         ensure_ascii=False), encoding="utf-8")
+    elif fehler:
+        print("[LinkedIn] WARNUNG: %d/%d Abfragen fehlgeschlagen — Takt NICHT "
+              "fortgeschrieben, naechster Nightly versucht erneut." % (fehler, len(BRANDS)))
     print("[LinkedIn] fertig: %d neue Posts, %d Abfragefehler" % (len(neu), fehler))
     return 0
 

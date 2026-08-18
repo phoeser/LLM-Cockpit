@@ -78,6 +78,13 @@ jobs:
         run: python scripts/update_linkedin.py
         continue-on-error: true
 
+      # 18.08.2026: Performance-KPIs (oeffentliche Reaktions-/Kommentarzahlen)
+      # der gesammelten Posts - drosselt sich selbst auf einen Lauf je Woche
+      # und respektiert Authwalls (zaehlt sie, statt Nullen zu erfinden).
+      - name: LinkedIn-KPIs nachmessen (selbst-woechentlich)
+        run: python scripts/update_linkedin_kpis.py
+        continue-on-error: true
+
       - name: v3 - Dashboard-fertige JSONs exportieren (sentiment + presse)
         run: python scripts/export_v3_json.py
         continue-on-error: true
@@ -209,6 +216,8 @@ jobs:
           git add data/press_data.previous.json 2>/dev/null || true
           git add data/linkedin_posts.jsonl 2>/dev/null || true
           git add data/linkedin_state.json 2>/dev/null || true
+          git add data/linkedin_kpis.jsonl 2>/dev/null || true
+          git add data/linkedin_kpis_state.json 2>/dev/null || true
           git add data/geo_snapshot.json 2>/dev/null || true
           git add data/geo_snapshot.previous.json 2>/dev/null || true
           git add data/sentiment_dashboard.json 2>/dev/null || true

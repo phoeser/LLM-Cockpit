@@ -38,24 +38,44 @@
   function pp(v,d){ if(v==null||isNaN(v)) return "—"; return (v>0?"+":"")+num(v,d)+" pp"; }
 
   var POSTS=null, GELADEN=false, LADEFEHLER=false;
+  /* 18.08.2026: Performance-KPIs (Pauls Nachschaerfung "braeuchten noch
+     Performance KPIs"). update_linkedin_kpis.py ruft woechentlich die
+     OEFFENTLICHE Reaktions-/Kommentarzahl jeder Post-Seite ab (mehr gibt
+     LinkedIn von aussen nicht her - Impressionen/Reichweite kennt nur der
+     Seiten-Admin). Je Post zaehlt hier der JUENGSTE Messpunkt mit status=ok. */
+  var KPI=null; // url -> {reactions, comments, checked}
   var BM={"ERGO":"#c2002f","Allianz":"#003781","AXA":"#00008f","HUK-Coburg":"#006633","Generali":"#c8102e","R+V":"#004f9f","Signal Iduna":"#003e7e","CosmosDirekt":"#f59e0b","DEVK":"#10b981","Hannoversche":"#6366f1"};
 
   function laden(cb){
     if(GELADEN){ cb(); return; }
-    fetch("data/linkedin_posts.jsonl?t="+Date.now(),{cache:"no-store"})
-      .then(function(r){ return r.ok?r.text():null; })
-      .then(function(t){
-        GELADEN=true;
-        if(t==null){ LADEFEHLER=true; POSTS=null; cb(); return; }
-        POSTS=[];
-        t.split("\n").forEach(function(l){
+    Promise.all([
+      fetch("data/linkedin_posts.jsonl?t="+Date.now(),{cache:"no-store"}).then(function(r){ return r.ok?r.text():null; }).catch(function(){ return null; }),
+      fetch("data/linkedin_kpis.jsonl?t="+Date.now(),{cache:"no-store"}).then(function(r){ return r.ok?r.text():null; }).catch(function(){ return null; })
+    ]).then(function(res){
+      GELADEN=true;
+      var t=res[0];
+      if(t==null){ LADEFEHLER=true; POSTS=null; cb(); return; }
+      POSTS=[];
+      t.split("\n").forEach(function(l){
+        l=l.trim(); if(!l) return;
+        try{ var p=JSON.parse(l); if(p&&p.url) POSTS.push(p); }catch(e){}
+      });
+      if(res[1]!=null){
+        KPI={};
+        res[1].split("\n").forEach(function(l){
           l=l.trim(); if(!l) return;
-          try{ var p=JSON.parse(l); if(p&&p.url) POSTS.push(p); }catch(e){}
+          try{
+            var k=JSON.parse(l);
+            if(!k||!k.url||k.status!=="ok") return;
+            var alt=KPI[k.url];
+            if(!alt || (k.checked||"")>=(alt.checked||"")) KPI[k.url]=k;
+          }catch(e){}
         });
-        cb();
-      })
-      .catch(function(){ GELADEN=true; LADEFEHLER=true; POSTS=null; cb(); });
+      }
+      cb();
+    });
   }
+  function kpiVon(p){ return (KPI&&KPI[p.url])||null; }
 
   function tagVon(p){ return p.date || p.first_seen || null; }
 
@@ -94,7 +114,9 @@
     }
     h+='<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-gray-500 border-b">'
       +'<th class="py-1 pr-2">Zielgroesse</th><th class="py-1 pr-2 text-right">Effekt</th><th class="py-1 pr-2 text-right">95-%-KI (cluster)</th><th class="py-1 pr-2 text-right">p</th><th class="py-1 text-center">Status</th></tr></thead><tbody>'
-      +zeile(sov,'Sichtbarkeit (Share of Voice)','avg_sov_effect_pp')
+      /* 18.08.2026 (Opus-Review #14): Within-FE auch fuer die SoV-Zeile -
+         das Cluster-KI daneben liegt um beta_fe, nicht um die Gruppendifferenz. */
+      +zeile(sov,'Sichtbarkeit (Share of Voice)','effect_within_fe_pp')
       +zeile(zit,'Zitatanteil (fruehere Kettenstufe)','effect_within_fe_pp')
       +'</tbody></table></div>'
       +'<div class="text-xs text-gray-400 mt-2">Beobachtete Zusammenhaenge, kein Kausalnachweis. Bei wenigen Ereignis-Wochen sind breite Intervalle normal — die Zeilen werden mit jedem Wochenlauf schaerfer.</div>'
@@ -157,7 +179,41 @@
         +'<td class="py-1.5"><div style="height:8px;border-radius:4px;width:'+w+'%;min-width:2px;background:'+(BM[b]||'#94a3b8')+'"></div></td></tr>';
     });
     h+='</tbody></table></div>'
-      +'<div class="text-xs text-gray-400 mt-2">Datierung: Erscheinungstag, wenn Google ihn liefert, sonst Fund-Tag — grosse Marken mit vielen Followern sind in der Google-Indexierung tendenziell ueberrepraesentiert.</div></div>';
+      +'<div class="text-xs text-gray-400 mt-2">Datierung: Erscheinungstag, wenn Google ihn liefert, sonst Fund-Tag — grosse Marken mit vielen Followern sind in der Google-Indexierung tendenziell ueberrepraesentiert. Ein Post, der mehrere Marken nennt, zaehlt bei jeder dieser Marken (seit 18.08. — davor bekam die zuerst abgefragte Marke ihn exklusiv).</div></div>';
+
+    // Engagement je Marke (aus den oeffentlichen Reaktions-/Kommentarzahlen)
+    if(KPI && Object.keys(KPI).length){
+      var eg={};
+      POSTS.forEach(function(p){
+        var k=kpiVon(p); if(!k||k.reactions==null) return;
+        var e=(eg[p.brand]=eg[p.brand]||{n:0,rx:0,cm:0,nCm:0,top:null});
+        e.n++; e.rx+=k.reactions;
+        /* 18.08.2026 (Opus-Review #7): Kommentare nur zaehlen, wenn gemessen. */
+        if(k.comments!=null){ e.cm+=k.comments; e.nCm++; }
+        if(!e.top||k.reactions>e.top.rx) e.top={rx:k.reactions,titel:p.title||p.url,url:p.url};
+      });
+      var egMarken=Object.keys(eg).sort(function(a,b){ return (eg[b].rx/eg[b].n)-(eg[a].rx/eg[a].n); });
+      var nGemessen=Object.keys(KPI).length;
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">Engagement im Vergleich</h3>'
+        +'<p class="text-xs text-gray-500 mb-2">Öffentliche Reaktions- und Kommentarzahlen der Post-Seiten, wöchentlich nachgemessen ('+nGemessen+' von '+POSTS.length+' Posts erfasst). '
+        +'Das ist <b>Engagement, nicht Reichweite</b> — Impressionen kennt nur der Seiten-Admin.</p>'
+        +'<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-gray-500 border-b">'
+        +'<th class="py-1.5 pr-2">Marke</th><th class="py-1.5 pr-2 text-right">Posts gemessen</th><th class="py-1.5 pr-2 text-right">Ø Reaktionen/Post</th><th class="py-1.5 pr-2 text-right">Reaktionen gesamt</th><th class="py-1.5 pr-2 text-right">Kommentare</th><th class="py-1.5">Top-Post</th></tr></thead><tbody>';
+      egMarken.forEach(function(b){
+        var e=eg[b];
+        h+='<tr class="border-b'+(b==="ERGO"?' font-semibold':'')+'"><td class="py-1.5 pr-2" style="color:'+(BM[b]||'#334155')+'">'+esc(b)+'</td>'
+          +'<td class="py-1.5 pr-2 text-right">'+e.n+'</td>'
+          +'<td class="py-1.5 pr-2 text-right">'+num(e.rx/e.n,1)+'</td>'
+          +'<td class="py-1.5 pr-2 text-right">'+e.rx+'</td>'
+          +'<td class="py-1.5 pr-2 text-right">'+(e.nCm?(e.cm+(e.nCm<e.n?(' <span class="text-gray-400">('+e.nCm+' von '+e.n+' gemessen)</span>'):'')):'—')+'</td>'
+          +'<td class="py-1.5 text-gray-500"><a href="'+esc(e.top.url)+'" target="_blank" rel="noopener" class="hover:text-ergo-red">'+esc((e.top.titel||'').slice(0,60))+'</a> <span class="text-gray-400">('+e.top.rx+')</span></td></tr>';
+      });
+      h+='</tbody></table></div>'
+        +'<div class="text-xs text-gray-400 mt-2">Ø über die gemessenen Posts der Marke — Posts unter der Messgrenze (Authwall/Fehler) zählen nicht als 0, sie fehlen. Engagement wächst in den ersten Wochen; junge Posts sind darum systematisch niedriger.</div></div>';
+    } else {
+      h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">Engagement im Vergleich</h3>'
+        +'<div class="text-sm text-gray-400">Die erste KPI-Messung (Reaktionen/Kommentare je Post) läuft mit dem nächsten Wochenlauf — danach steht hier der Marken-Vergleich.</div></div>';
+    }
 
     h+=wirkungHTML();
 
@@ -169,6 +225,7 @@
         +'<span class="px-2 py-0.5 rounded-full text-xs font-semibold text-white" style="background:'+(BM[p.brand]||'#94a3b8')+'">'+esc(p.brand)+'</span>'
         +'<span class="text-xs text-gray-400">'+esc(tagVon(p)||'ohne Datum')+(p.date?'':' (Fund-Tag)')+'</span></div>'
         +'<a href="'+esc(p.url)+'" target="_blank" rel="noopener" class="text-sm font-medium text-ergo-dark hover:text-ergo-red">'+esc(p.title||p.url)+'</a>'
+        +(function(){ var k=kpiVon(p); return k&&k.reactions!=null?(' <span class="text-xs text-gray-500 whitespace-nowrap">👍 '+k.reactions+(k.comments!=null?(' · 💬 '+k.comments):'')+'</span>'):''; })()
         +(p.snippet?('<div class="text-xs text-gray-500 mt-0.5">'+esc(p.snippet)+'</div>'):'')
         +'</div>';
     });

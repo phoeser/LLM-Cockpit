@@ -64,7 +64,8 @@ def _dedup_key(event):
     """Stabiler Schlüssel nur für Presse/News (ein Artikel = ein Event, über alle Tage).
     Andere Typen: kein Dedup (None) -> werden immer geschrieben."""
     t = event.get("event_type")
-    if t in ("press_mention", "news_mention"):
+    # 18.08.2026: linkedin_post genauso — ein Post = ein Event, ueber alle Laeufe.
+    if t in ("press_mention", "news_mention", "linkedin_post"):
         url = event.get("url") or (event.get("detail") or {}).get("url") or (event.get("detail") or {}).get("title")
         if url:
             return (t, event.get("brand"), url)

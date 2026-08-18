@@ -11,13 +11,14 @@
 (function () {
   "use strict";
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded",fn); }
-  /* 15.08.2026: dkv.de/dkv.com ergaenzt. DKV gehoert zur ERGO Group und wird
-     von allen anderen Modulen (gap_waterfall, empfehlungen_dynamic, geo_wirkung)
-     als ERGO gezaehlt - nur hier stand dkv.com (13 Zitate im Snapshot vom
-     14.08.) als Fremdquelle grau in der Spalte "ausser ERGO". Zwei Wahrheiten
-     im selben Reiter. */
-  var OWN = {"ergo.de":1,"ergo.com":1,"ergodirekt.de":1,"ergo-reiseversicherung.de":1,
-             "dkv.de":1,"dkv.com":1};
+  /* 15.08.2026: dkv.de/dkv.com ergaenzt, damit im Reiter nicht zwei Wahrheiten
+     nebeneinander stehen (hier Fremdquelle, in allen anderen Modulen ERGO).
+     18.08.2026 WIEDER ENTFERNT - diesmal in die andere Richtung aufgeloest:
+     Paul hat entschieden, DKV als EIGENE Marke zu fuehren (konsistent zu
+     CosmosDirekt, das ebenfalls eigenstaendig laeuft, obwohl es zur Generali
+     gehoert). dkv.de/dkv.com sind damit ueberall Fremdquellen, und die
+     Einheitlichkeit im Reiter bleibt gewahrt - nur eben andersherum. */
+  var OWN = {"ergo.de":1,"ergo.com":1,"ergodirekt.de":1,"ergo-reiseversicherung.de":1};
   var CH = {
     eigen:       {lab:"ERGO (eigene Seiten)",        col:"#dc0028", how:"direkt: eigene Inhalte/Domains zitierfähig machen"},
     portal:      {lab:"Vergleichsportale / Ratgeber", col:"#2a78d6", how:"über Listung, Rang & Bewertungen dort (z. B. Check24, Verivox)"},

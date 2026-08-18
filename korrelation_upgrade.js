@@ -98,6 +98,7 @@
       if(typeof v.cite_share==="number" && typeof v.sov==="number") gew.push({brand:b, foot:v.cite_share, sov:v.sov, gewerbe:true});
     });
     return out.length>=5?{pts:out, gew:gew, gewWartend:sb.gewerbe_wartend||null,
+                          gewGrund:sb.gewerbe_grund||null,
                           gewTopics:sb.gewerbe_topics||null,
                           tage:sb.n_tage||null, von:sb.tage_von||null, bis:sb.tage_bis||null,
                           nCells:sb.n_cells||null, nTopics:sb.n_topics||null}:null;
@@ -214,11 +215,16 @@
     s+="ERGO rot, Allianz blau, Hebelpunkte bernstein"+((D.gew&&D.gew.length)?"; Rauten = Markenmittel nur über die Gewerbe-Themen (SOHO)":"")+".</div>";
     if(D.gew&&D.gew.length){
       var gT=(D.gewTopics||[]).join(", ");
+      /* 18.08.2026 (Opus-Review #4): Der runde Punkt ist das GESAMT-Mittel
+         (inkl. der Gewerbe-Zellen), nicht das Privatgeschäft - der Text darf
+         nichts anderes behaupten. */
       s+="<div style='margin-top:5px;color:#9ca3af'><b>Gewerbe-Schnitt:</b> "+D.gew.length+" Marken über "+(gT||"die SOHO-Themen")+
-         ". Liegen die Rauten einer Marke deutlich neben ihrem runden Punkt, wirken die Treiber im Gewerbekontext anders als im Privatkundengeschäft. Keine eigene Gerade — dafür sind es noch zu wenige Themen.</div>";
+         ". Liegen die Rauten einer Marke deutlich neben ihrem runden Punkt (dem Mittel über ALLE Themen, Gewerbe eingeschlossen), wirken die Treiber im Gewerbekontext anders als im Gesamtgeschäft. Keine eigene Gerade — dafür sind es noch zu wenige Themen.</div>";
     } else if(D.gewWartend){
       var w=Object.keys(D.gewWartend).map(function(t){ return t+" ("+D.gewWartend[t]+" von 3 Messtagen)"; }).join(", ");
       s+="<div style='margin-top:5px;color:#9ca3af'><b>Gewerbe-Schnitt folgt:</b> Die SOHO-Themen erscheinen hier als eigene Punktwolke, sobald sie 3 Messtage erreicht haben — Stand: "+w+".</div>";
+    } else if(D.gewGrund){
+      s+="<div style='margin-top:5px;color:#9ca3af'><b>Gewerbe-Schnitt folgt:</b> "+D.gewGrund+".</div>";
     }
     /* Der wichtigste Vorbehalt gehoert an die Grafik, nicht in eine Fussnote weiter
        unten: Zitate und Nennungen stammen zu einem Teil aus DENSELBEN Antworten.

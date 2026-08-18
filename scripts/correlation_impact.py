@@ -126,7 +126,11 @@ IMPACT_TYPES = [
     # Loeschungen auftreten, waeren sie stillschweigend ignoriert worden. Noch gibt
     # es keine (der erste Lauf mit Orphan-Pruefung ist #166), der Typ wird also
     # zunaechst mit n_with_event = 0 gefuehrt und gar nicht ausgewiesen.
+    # 18.08.2026: "linkedin_post" — oeffentliche LinkedIn-Posts je Marke
+    # (update_linkedin.py, woechentlich via SerpAPI/Google). Laeuft damit
+    # automatisch in SoV-Impact, Zitatanteil-Impact und alle Schichtungen ein.
     "page_change", "page_new", "page_removed", "press_mention", "news_mention",
+    "linkedin_post",
     "domain_change", "review_change", "review_volume", "price_change",
     "wikipedia_change", "portal_rank_change", "rating_status_change",
     # 10.08.2026: "price_announcement" ergaenzt - angekuendigte Beitrags- und
@@ -167,6 +171,7 @@ TYPE_LABEL = {
     "page_removed": "Geloeschte Seiten",
     "press_mention": "Pressemitteilungen",
     "news_mention": "News-Erwaehnungen",
+    "linkedin_post": "LinkedIn-Posts",
     "domain_change": "Domain-/Subdomain-Aenderungen",
     "review_change": "Bewertungs-Trend (±)",
     "review_volume": "Bewertungs-Volumen",
@@ -236,7 +241,9 @@ def _norm_brand(name):
 # wo der Crawler zufaellig hinsah. Korrigiert wird beim EINLESEN, an EINER Stelle
 # (load_events) — damit wirkt es rueckwirkend auf alle vorhandenen Events und auf
 # jeden nachgelagerten Block, ohne die Datei zu migrieren.
-MEDIA_DATED_TYPES = ("press_mention", "news_mention")
+# 18.08.2026: linkedin_post dabei — der Sammler legt den Erscheinungstag
+# (wenn Google ihn liefert) in detail.date, exakt wie der Presse-Crawl.
+MEDIA_DATED_TYPES = ("press_mention", "news_mention", "linkedin_post")
 # Preis-Oszillation: Rueckkehr auf den Vorwert innerhalb dieser Toleranz (EUR).
 PRICE_RETURN_TOL_EUR = 0.01
 # Ab wie vielen echten Preis-Ereignissen der Treiber ueberhaupt geschaetzt wird.
@@ -3253,6 +3260,161 @@ def citation_target_analysis(events):
     return base
 
 
+def zitatanteil_impact(events):
+    """Ereignis-Effekte gegen den ZITATANTEIL aus dem eigenen Crawl (Hebel 6,
+    Pauls Go vom 18.08.2026).
+
+    Warum eine zweite Zitat-Rechnung neben citation_target_analysis: Die dortige
+    Peec-Reihe hat drei bekannte Schwaechen, die diese hier nicht hat -
+    rollierendes 30-Tage-Fenster (zwei Snapshots ueberlappen sich stark, Effekte
+    verschmieren), nur Top-Domains statt Long Tail, und iid-Inferenz ohne
+    Marken-Cluster. Hier dagegen: der taegliche cite_share aus dem EIGENEN
+    Crawl (dieselben Level-Zellen, aus denen auch das Niveau-Modell rechnet,
+    grounded), aggregiert je Marke und Tag als Zitate der Marke geteilt durch
+    alle Zitate des Tages - und dieselbe cluster-robuste Maschinerie wie im
+    SoV-Hauptmodell (_cluster_effect, Cluster = Marke).
+
+    Der Punkt der Uebung (Wirkkette): Massnahme -> Zitatanteil -> Sichtbarkeit.
+    Die zweite Kettenhaelfte ist im Niveau-Modell gesichert (+5,9 pp je SD,
+    q=0,002). Wenn ein Ereignistyp hier auf den Zitatanteil wirkt, gibt es
+    einen belegten indirekten Pfad zur Sichtbarkeit, auch wenn der direkte
+    Sprung Ereignis->SoV im Rauschen bleibt.
+
+    Themen-Disziplin: Nur Themen, die an mindestens 90 % der sauberen Messtage
+    gemessen wurden. Sonst aendert ein neu dazukommendes Thema (13.08.: SOHO)
+    still die Zusammensetzung der Tagesreihe, und der Sprung wuerde als
+    Ereigniswirkung gelesen - derselbe Fehler, den min_tage_topic am 14.08.
+    im Streubild gefangen hat, nur in der Zeitdimension."""
+    rows, days = level_panel_tage(max_days=0)
+    base = {
+        "ziel": ("Zitatanteil je Marke und Tag (eigener Crawl, grounded: "
+                 "Zitate der markeneigenen Domains / alle Zitate des Tages, in %)"),
+        "quelle": "data/level_cells.jsonl (dieselben Zellen wie das Niveau-Modell)",
+        "methode": ("Tages-Intervalle je Marke wie im SoV-Hauptmodell (build_intervals, "
+                    "Raten pro Tag, Strukturbruch-Filter), Effekt = Differenz der "
+                    "Intervall-Aenderung mit/ohne Ereignis, Inferenz cluster-robust "
+                    "je Marke (_cluster_effect, identische Schutzregeln)."),
+        "wirkkette": ("Erste Haelfte von: Massnahme -> Zitatanteil -> Sichtbarkeit. "
+                      "Die zweite Haelfte (Zitatanteil -> Sichtbarkeit) ist im "
+                      "Niveau-Modell als Between-Effekt gesichert."),
+        "grenzen": ("Zitatanteile stammen aus denselben Engine-Antworten wie der SoV "
+                    "(siehe circularity im Niveau-Modell) - ein gesicherter Effekt hier "
+                    "belegt den fruehen Kettenschritt, macht aber aus der zweiten "
+                    "Haelfte keinen Kausalnachweis."),
+    }
+    if not rows or len(days) < 5:
+        base["available"] = False
+        base["grund"] = ("Nur %d saubere Messtage in der Level-Zellen-Historie - zu wenig "
+                         "fuer eine Intervall-Rechnung. KEINE Aussage, kein Nulleffekt."
+                         % len(days))
+        return base
+    dsub = set(days)
+    abdeckung = level_panel_themen_abdeckung(rows, dsub)
+    min_tage = max(3, int(0.9 * len(days)))
+    topics_ok = {t for t, n in abdeckung.items() if n >= min_tage}
+    topics_raus = sorted(set(abdeckung) - topics_ok)
+    # Tages-Aggregat je Marke: Summe der eigenen Zitate / Summe aller Zitate
+    agg = {}
+    for r in rows:
+        d = r.get("date")
+        if d not in dsub or r.get("topic") not in topics_ok:
+            continue
+        cite = r.get("cite_g") or 0
+        tot = r.get("ctot_g") or 0
+        if not tot:
+            continue
+        a = agg.setdefault((r.get("brand"), d), [0.0, 0.0])
+        a[0] += cite
+        a[1] += tot
+    ser = {}
+    for (b, d), (c, tot) in agg.items():
+        if tot > 0:
+            ser.setdefault(b, []).append((d, 100.0 * c / tot))
+    ser = {b: sorted(v) for b, v in ser.items() if len(v) >= 3}
+    if len(ser) < 5:
+        base["available"] = False
+        base["grund"] = ("Nur %d Marken mit mindestens 3 Tageswerten - unter der "
+                         "5-Cluster-Regel des Moduls." % len(ser))
+        return base
+    counts = count_events_by_brand_day(events)
+    points, _skip = build_intervals(ser, counts, IMPACT_TYPES)
+    if len(points) < 20:
+        base["available"] = False
+        base["grund"] = "Nur %d Intervalle - zu wenig fuer die Cluster-Inferenz." % len(points)
+        return base
+    # Brand-Demeaning fuer die deskriptive Differenz (Inferenz macht ihr eigenes
+    # Within-Transform in _cluster_effect, identisch zum Hauptmodell).
+    bsum, bn = {}, {}
+    for p in points:
+        bsum[p["brand"]] = bsum.get(p["brand"], 0.0) + p["y"]
+        bn[p["brand"]] = bn.get(p["brand"], 0) + 1
+    for p in points:
+        p["yc"] = p["y"] - bsum[p["brand"]] / bn[p["brand"]]
+
+    def _var(v, m):
+        return sum((a - m) ** 2 for a in v) / (len(v) - 1) if len(v) > 1 else 0.0
+
+    res = {}
+    for t in IMPACT_TYPES:
+        xs = [p["x"].get(t, 0.0) for p in points]
+        ys = [p["yc"] for p in points]
+        n_with = sum(1 for x in xs if x > 0)
+        if n_with == 0:
+            continue
+        with_v = [y for x, y in zip(xs, ys) if x > 0]
+        without_v = [y for x, y in zip(xs, ys) if x == 0]
+        eff = se = None
+        if with_v and without_v:
+            m1 = sum(with_v) / len(with_v)
+            m0 = sum(without_v) / len(without_v)
+            eff = m1 - m0
+            if len(with_v) > 1 and len(without_v) > 1:
+                se = math.sqrt(_var(with_v, m1) / len(with_v) + _var(without_v, m0) / len(without_v))
+        cl = _cluster_effect(points, xs, eff, se)
+        if cl is None:
+            res[t] = {"label": TYPE_LABEL.get(t, t), "available": False,
+                      "n_with_event": n_with,
+                      "grund": "cluster-robust nicht schaetzbar (zu wenige Marken mit/ohne Ereignis)"}
+            continue
+        _excl0 = (cl["ci_low"] is not None and ((cl["ci_low"] > 0) or (cl["ci_high"] < 0)))
+        res[t] = {
+            "label": TYPE_LABEL.get(t, t), "available": True,
+            "pearson_r": (round(pearson(xs, ys), 3) if pearson(xs, ys) is not None else None),
+            "avg_cite_effect_pp": (round(eff, 4) if eff is not None else None),
+            "effect_within_fe_pp": round(cl["effect_within_fe"], 4),
+            "effect_se_cluster_pp": round(cl["se"], 4),
+            "ci95_low_cluster_pp": cl["ci_low"], "ci95_high_cluster_pp": cl["ci_high"],
+            "p_cluster": cl["p"], "cluster_df": cl["df"],
+            "n_clusters": cl["n_clusters"], "n_clusters_gesamt": cl["n_clusters_gesamt"],
+            "significance_basis": "cluster",
+            "significant": bool(_excl0 and n_with >= 8 and cl["n_clusters"] >= 5),
+            "n_intervals": len(points), "n_with_event": n_with,
+            "type_confidence": type_confidence(n_with),
+        }
+    # FDR ueber die schaetzbaren Typen - das SoV-Hauptmodell verzichtet darauf
+    # (historische Konvention), aber ein NEUER Block muss nicht mit alten
+    # Schulden starten. significant bleibt zur Vergleichbarkeit auf derselben
+    # Regel wie im SoV-Block; die q-Werte stehen daneben und das Dashboard
+    # stuft "nur unkorrigiert signifikant" sichtbar ab.
+    _apply_fdr(res, key="p_cluster", out="p_cluster_fdr",
+               family=("die %d schaetzbaren Ereignistypen gegen den Zitatanteil",
+                       "Die Typen teilen sich dieselben Intervalle und Marken "
+                       "und sind nicht unabhaengig."))
+    base.update({
+        "available": True,
+        "n_messtage": len(days), "tage_von": days[0], "tage_bis": days[-1],
+        "n_intervalle": len(points),
+        "intervalle_uebersprungen_bruch": len(_skip),
+        "n_themen": len(topics_ok),
+        "themen_ausgeschlossen": (topics_raus or None),
+        "min_tage_thema": min_tage,
+        "marken": sorted(ser),
+        "impact": dict(sorted(res.items(),
+                              key=lambda kv: -abs(kv[1].get("effect_within_fe_pp") or 0))),
+    })
+    return base
+
+
 def funnel_stratified_analysis(events, mv_prior=None):
     """Sichtbarkeit geschichtet nach Funnel-Stufe (Awareness/Consideration/Decision).
 
@@ -5390,6 +5552,10 @@ def main():
     except Exception as _e:
         print("WARN citation_target:", str(_e)[:120])
     try:
+        res["zitatanteil_impact"] = zitatanteil_impact(events)
+    except Exception as _e:
+        print("WARN zitatanteil_impact:", str(_e)[:120])
+    try:
         res["funnel_stratified"] = funnel_stratified_analysis(events, mv_prior=_prior_fs)
     except Exception as _e:
         print("WARN funnel_stratified:", str(_e)[:120])
@@ -5474,6 +5640,7 @@ def main():
     print("OK: %s (Konfidenz=%s, SoV-Messtage=%d, Intervalle=%d)"
           % (OUT_FILE, res["confidence"], res["sov_measure_days"], res["n_intervals_total"]))
     for _k, _lbl in (("citation_target", "Zitat-Zielgroesse"),
+                     ("zitatanteil_impact", "Zitatanteil-Impact (eigener Crawl)"),
                      ("funnel_stratified", "Funnel-Schichtung"),
                      ("page_change_types", "Seitentyp-Aufschluesselung")):
         _b = res.get(_k) or {}

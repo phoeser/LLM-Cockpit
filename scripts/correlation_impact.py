@@ -264,6 +264,66 @@ def _parse_day(v):
     return s
 
 
+def _drop_linkedin_erstimport(events):
+    """LinkedIn-Erstimport je Marke aus den WIRKUNGS-Rechnungen nehmen.
+
+    18.08.2026, direkt nach dem ersten Sammellauf gebaut: Der Sammler holt beim
+    ersten Lauf einer Marke rueckwirkend ~einen Monat oeffentlicher Posts, und
+    weil Google fuer LinkedIn fast nie ein Erscheinungsdatum liefert (im ersten
+    Lauf: 1 von 76), tragen praktisch alle diese Events den FUND-Tag. Ein Monat
+    Aktivitaet, komprimiert auf einen einzigen Tag und ueber 8 Marken gleichzeitig
+    — das ist kein Ereignis, sondern ein Import-Artefakt. Ungefiltert haette es
+    im naechsten Nightly einen Schein-Treiber erzeugen koennen (8+ Marken-Cluster,
+    8+ Ereignis-Intervalle am selben Tag: genau das Muster, das die Signifikanz-
+    Regel passieren laesst).
+
+    Regel: Je Marke wird der FRUEHESTE Tag mit linkedin_post-Events bestimmt;
+    alle Events dieses Tages OHNE echtes Erscheinungsdatum (datierung !=
+    "post") fliegen aus der Analyse. Spaetere Wochen-Batches bleiben drin —
+    dort ist der Fund-Tag hoechstens ~7 Tage nach dem Post, ein dokumentierter
+    Lag, kein komprimierter Monat. Kommt spaeter eine neue Marke dazu, greift
+    die Regel automatisch auch fuer deren ersten Batch. Die Events selbst
+    bleiben in shared/events.jsonl und im LinkedIn-Reiter sichtbar — entfernt
+    sind sie nur aus den Wirkungs-Rechnungen."""
+    first = {}
+    for e in events:
+        if e.get("event_type") != "linkedin_post":
+            continue
+        # Nur die UNGEDATETEN Events bestimmen den Erstimport-Tag: ein Post mit
+        # echtem Erscheinungsdatum wurde von _redate_media_events umdatiert und
+        # wuerde sonst als "fruehester Tag" den eigentlichen Import-Batch
+        # freischalten (beim ersten Lauf real passiert: Generalis einziger
+        # datierter Post vom 20.07. haette die 9 undatierten vom 18.08.
+        # durchgelassen).
+        if (e.get("detail") or {}).get("datierung") == "post":
+            continue
+        b, d = e.get("brand"), _day(e.get("timestamp"))
+        if b and d and (b not in first or d < first[b]):
+            first[b] = d
+    if not first:
+        return events
+    kept, dropped = [], 0
+    for e in events:
+        if (e.get("event_type") == "linkedin_post"
+                and _day(e.get("timestamp")) == first.get(e.get("brand"))
+                and (e.get("detail") or {}).get("datierung") != "post"):
+            dropped += 1
+            continue
+        kept.append(e)
+    EVENT_LOAD_AUDIT["linkedin_erstimport"] = {
+        "entfernt": dropped,
+        "erster_tag_je_marke": dict(sorted(first.items())),
+        "hinweis": ("Erstimport-Batches ohne echtes Erscheinungsdatum sind aus den "
+                    "Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt: ~1 Monat "
+                    "Posts auf einen Fund-Tag komprimiert). Anzeige im LinkedIn-"
+                    "Reiter unberuehrt."),
+    }
+    if dropped:
+        print("[LinkedIn-Erstimport] %d Events vom jeweils ersten Sammel-Tag aus den "
+              "Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt)." % dropped)
+    return kept
+
+
 def _redate_media_events(events):
     """Presse-/News-Events auf detail.date umdatieren; Crawl-Tag bleibt erhalten.
 
@@ -409,6 +469,7 @@ def load_events():
           % (n_kanon, ", ".join("%s->%s" % kv for kv in sorted(_BRAND_ALIASES.items()))))
     _redate_media_events(out)
     _mark_price_artifacts(out)
+    out = _drop_linkedin_erstimport(out)
     return out
 
 

@@ -729,7 +729,11 @@
 <section data-content="korrelation" class="tab-content hidden">
   <div class="mb-5">
     <h2 class="text-2xl font-bold text-ergo-dark mb-1">Wirkt unsere Arbeit auf die LLM-Sichtbarkeit?</h2>
-    <p class="text-sm text-gray-600 mb-3">Sechs Abschnitte, in der Reihenfolge, in der sie unten stehen: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was bringt die Websuche — im kontrollierten Experiment? <b>4.</b> Was schafft es überhaupt in die Zitate? <b>5.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? <b>6.</b> Warum liegt der Marktführer vorn? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p><div class="bg-white border rounded-lg p-3 mb-4"><div class="text-xs font-semibold text-gray-600 mb-2">Wie belastbar ist ein Befund? Drei Stufen, die im ganzen Reiter gelten</div><div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs"><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold h-fit">kausal belegt</span><span class="text-gray-600">Es wurde <b>eingegriffen</b> und gegen eine Kontrollbedingung verglichen. Nur Abschnitt 3 erreicht diese Stufe. <b>Die DiD-Auswertung gehört ausdrücklich nicht dazu</b> — sie prüft die Parallel-Trends-Annahme nicht, liefert kein Konfidenzintervall und korrigiert nicht für Mehrfachtests; der Block sagt das unter seiner Tabelle selbst.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold h-fit">Zusammenhang</span><span class="text-gray-600">Beobachtet, nicht eingegriffen. Robust gerechnet (cluster-robust, FDR-korrigiert), aber die Richtung der Ursache bleibt offen.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold h-fit">nicht nachweisbar</span><span class="text-gray-600">Kein Effekt gefunden. Das heißt <b>nicht</b> „kein Effekt vorhanden" — siehe Nachweisgrenze in Abschnitt 5.</span></div></div></div>
+    <p class="text-sm text-gray-600 mb-3">Sechs Abschnitte, in der Reihenfolge, in der sie unten stehen: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was bringt die Websuche — im kontrollierten Experiment? <b>4.</b> Was schafft es überhaupt in die Zitate? <b>5.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? <b>6.</b> Warum liegt der Marktführer vorn? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p>
+  <!-- 17.08.2026: Der Legenden-Satz zur DiD-Auswertung ("gehoert ausdruecklich nicht dazu ...")
+       beschrieb einen Block, der am 12.08.2026 entfernt wurde. Ein Warnhinweis auf etwas,
+       das nicht mehr auf der Seite steht, verwirrt statt zu schuetzen - gestrichen. -->
+  <div class="bg-white border rounded-lg p-3 mb-4"><div class="text-xs font-semibold text-gray-600 mb-2">Wie belastbar ist ein Befund? Drei Stufen, die im ganzen Reiter gelten</div><div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs"><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold h-fit">kausal belegt</span><span class="text-gray-600">Es wurde <b>eingegriffen</b> und gegen eine Kontrollbedingung verglichen. Nur Abschnitt 3 (das Websuche-Experiment) erreicht diese Stufe.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold h-fit">Zusammenhang</span><span class="text-gray-600">Beobachtet, nicht eingegriffen. Robust gerechnet (cluster-robust, FDR-korrigiert), aber die Richtung der Ursache bleibt offen.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold h-fit">nicht nachweisbar</span><span class="text-gray-600">Kein Effekt gefunden. Das heißt <b>nicht</b> „kein Effekt vorhanden" — siehe Nachweisgrenze in Abschnitt 5.</span></div></div></div>
   </div>
   <div id="korrErgebnis"><div class="text-sm text-gray-400">Lade Auswertung…</div></div>
 
@@ -737,14 +741,14 @@
     <button onclick="window.__korrDetails()" class="w-full text-left px-5 py-3 flex items-center gap-2 hover:bg-gray-50">
       <span id="korrDetArrow" class="text-gray-400 text-sm">▶</span>
       <span class="font-semibold text-ergo-dark text-sm">Detailauswertungen und Rohdaten</span>
-      <span class="text-xs text-gray-400">— Event-Überblick, Drill-down je Anbieter/LLM, multivariates Modell, Tagesübersicht, SoV-Verlauf</span>
+      <span class="text-xs text-gray-400">— Drill-down je Anbieter und LLM, multivariates Modell</span>
     </button>
   </div>
   <div id="korrDetails" class="hidden">
-  <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-2">Event-Überblick (14 Tage)</h3>
-    <div id="corrKPIs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
-  </div>
+  <!-- 17.08.2026 ENTFERNT: Event-Ueberblick (14 Tage). Vier KPI-Kacheln mit rohen
+       Ereigniszaehlern - Zaehlerei ohne Bezugsgroesse, dieselbe Kategorie wie das am
+       12.08. entfernte Mention-Tracking. Ob Ereignisse WIRKEN, beantwortet Abschnitt 2
+       cluster-robust; wie viele es waren, steht in der Datenbasis-Zeile unten. -->
 
   <!-- Validierte Impact-Analyse (Event-Study, waechst mit jedem Tag) -->
   <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-ergo-red">
@@ -767,22 +771,30 @@
        getaggt sind; die Rechnung selbst (scripts/correlation_impact.py,
        intervention_results.json) bleibt unangetastet und laeuft weiter. -->
 
-  <!-- Tages-Heatmap -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
-      <h3 class="text-lg font-bold text-ergo-dark">📅 Tagesübersicht</h3>
-      <select id="corrHmBrandSel" onchange="__renderCorrHeatmap()" class="text-xs border rounded px-2 py-1 text-gray-700"><option value="">Alle Anbieter</option></select>
-    </div>
-    <div id="corrHeatmap" style="overflow-x:auto;"></div>
+  <!-- 17.08.2026: Massnahmen-Tagging. Der DiD-Block flog am 12.08. raus, weil er
+       nur automatisch erkannte Aktivitaets-Spitzen zeigte - nie eine echte
+       Massnahme. Dieses Panel schliesst die Luecke von der anderen Seite: es
+       macht das TAGGEN echter Massnahmen so einfach, dass die Rechnung
+       (scripts/intervention_analysis.py, laeuft laengst im Nightly) endlich
+       echtes Futter bekommt. Ergebnisse erscheinen hier NUR fuer manuell
+       getaggte Massnahmen (source=manuell), nie fuer Auto-Spitzen. -->
+  <div class="bg-white rounded-xl p-6 shadow mb-6 border-l-4 border-amber-500">
+    <h3 class="text-lg font-bold text-ergo-dark mb-1">📌 Maßnahmen-Tagging — aus Beobachtung wird Vorher/Nachher</h3>
+    <p class="text-xs text-gray-500 mb-3">Kampagne gestartet, Seiten überarbeitet, PR-Aktion gelaufen? Hier mit Datum eintragen. Der Nightly rechnet dann automatisch die Sichtbarkeits-Änderung der Woche danach gegen die Wettbewerber (Difference-in-Differences) — je mehr echte Maßnahmen getaggt sind, desto belastbarer wird der ganze Reiter.</p>
+    <div id="intervPanel"><div class="text-sm text-gray-400">Lade Maßnahmen…</div></div>
   </div>
 
-  <!-- SoV-Entwicklung -->
-  <div class="bg-white rounded-xl p-6 shadow mb-6">
-    <h3 class="text-lg font-bold text-ergo-dark mb-2">📊 Share of Voice – Entwicklung</h3>
-    <p class="text-xs text-gray-500 mb-4">Gemessene LLM-Sichtbarkeit pro Anbieter über die letzten Messläufe.</p>
-    <div id="corrSovChart" style="min-height:380px;"></div>
-    <div id="corrSovSummary" class="mt-3"></div>
-  </div>
+  <!-- 17.08.2026 ENTFERNT: Tagesuebersicht (Heatmap). Ein Kalender-Logbuch, welche
+       Marke an welchem Tag aktiv war - beantwortet keine Frage dieses Reiters (dieselbe
+       Begruendung wie beim Event-Stream, 12.08.). Obendrein war sie seit der Auslagerung
+       in __renderCorrHeatmap still LEER: die Funktion las window._corrNonSov, das nie
+       befuellt wurde - jeder Aufruf endete im Leerzustand "Keine Events fuer alle
+       Anbieter im Zeitraum". Es faellt also nicht einmal eine Anzeige weg. -->
+
+  <!-- 17.08.2026 ENTFERNT: "Share of Voice - Entwicklung". Dieselbe Zeitreihe rendert
+       der GEO-Reiter bereits als "Share-of-Voice - Zeitreihe" aus derselben Quelle;
+       zweimal gepflegte Charts laufen irgendwann auseinander. Ein Verweis ersetzt das Duplikat. -->
+  <div class="text-xs text-gray-500 mb-6">Die Share-of-Voice-Zeitreihe je Anbieter steht im Reiter <b>GEO-Sichtbarkeit</b> („Share-of-Voice — Zeitreihe“).</div>
 
 
   <!-- 12.08.2026 ENTFERNT: Mention-Tracking und Event-Stream.
@@ -3550,26 +3562,98 @@ function buildGeoTab() {
        unveraendert weiter und schreibt data/intervention_results.json - fuer
        den Tag, an dem echte Massnahmen getaggt sind. */
 
+    /* 17.08.2026: Massnahmen-Tagging (siehe Panel-Kommentar im Markup).
+       Liest interventions.json (getaggte Massnahmen + geplante Experimente) und
+       intervention_results.json (DiD-Ergebnisse), zeigt Ergebnisse NUR fuer
+       source=manuell. Einreichen per E-Mail (mailto, wie das Q&A-Formular) -
+       die fertige JSON-Zeile steht im Mailtext, Uebernahme ins Repo erfolgt
+       kuratiert. Kein Backend noetig, statische Seite bleibt statisch. */
+    function renderIntervPanel(){
+      var host = document.getElementById('intervPanel'); if (!host) return;
+      // esc aus dem spaeteren Script-Block ist hier nicht im Scope - eigener Escaper.
+      var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+      Promise.all([
+        fetch('data/interventions.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+        fetch('data/intervention_results.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+      ]).then(function(res){
+        var iv = res[0]||{}, ir = res[1]||{};
+        var manuell = (iv.interventions||[]).filter(function(x){ return x.date && x.brand; });
+        var geplant = (iv._geplant||[]).filter(function(x){ return !x.date; });
+        var ergebnisse = (ir.results||[]).filter(function(r){ return r.source === 'manuell'; });
+        var prods = [];
+        try { prods = Object.keys((window.GEO_SNAPSHOT||{}).products||{}); } catch(e){}
+        var h = '';
+        // Formular
+        h += '<div class="grid md:grid-cols-4 gap-3 mb-2">'
+          + '<input id="ivDate" type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" />'
+          + '<select id="ivProd" class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="">Produkt (optional)</option>'
+          + prods.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('')
+          + '</select>'
+          + '<input id="ivLabel" type="text" placeholder="Was wurde gemacht? (kurz)" class="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm" />'
+          + '</div>'
+          + '<div class="flex items-center gap-3 flex-wrap mb-1">'
+          + '<button onclick="window.__ivMail()" class="bg-ergo-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">📧 Maßnahme einreichen</button>'
+          + '<span class="text-xs text-gray-500">Öffnet eine vorbereitete E-Mail — die Maßnahme erscheint nach kuratierter Übernahme mit dem nächsten Update.</span>'
+          + '</div>';
+        // Getaggte Massnahmen
+        h += '<div class="mt-3 text-sm font-semibold text-gray-700">Getaggte Maßnahmen ('+manuell.length+')</div>';
+        if (!manuell.length) {
+          h += '<div class="text-xs text-gray-400 mb-2">Noch keine. Genau deshalb zeigte der frühere Auswertungs-Block nur automatisch erkannte Aktivitäts-Spitzen — mit der ersten echten Maßnahme beginnt hier die Vorher/Nachher-Messung.</div>';
+        } else {
+          manuell.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); }).forEach(function(m){
+            h += '<div class="text-xs text-gray-600 border-b py-1.5">'+esc(m.date)+' · <b>'+esc(m.label||'')+'</b>'+(m.product?(' · '+esc(m.product)):'')+'</div>';
+          });
+        }
+        // Ergebnisse (nur manuell)
+        if (ergebnisse.length) {
+          h += '<div class="mt-3 text-sm font-semibold text-gray-700">Wirkung (DiD gegen Wettbewerber, Fenster '+esc(String(ir.window_days||7))+' Tage)</div>';
+          h += '<div class="overflow-x-auto"><table class="w-full text-xs mt-1"><thead><tr class="text-left text-gray-500 border-b"><th class="py-1 pr-2">Datum</th><th class="py-1 pr-2">Maßnahme</th><th class="py-1 pr-2 text-right">DiD</th><th class="py-1 pr-2 text-right">p (Placebo)</th><th class="py-1">Einordnung</th></tr></thead><tbody>';
+          ergebnisse.forEach(function(r){
+            var pmin = 1/((r.n_controls||0)+1);
+            h += '<tr class="border-b"><td class="py-1 pr-2">'+esc(r.date)+'</td><td class="py-1 pr-2">'+esc(r.label||'')+'</td>'
+              + '<td class="py-1 pr-2 text-right font-semibold" style="color:'+(r.did_pp>0?'#047857':'#b91c1c')+'">'+(r.did_pp>0?'+':'')+Number(r.did_pp).toFixed(2).replace('.',',')+' pp</td>'
+              + '<td class="py-1 pr-2 text-right">'+Number(r.p_placebo).toFixed(2).replace('.',',')+'</td>'
+              + '<td class="py-1 text-gray-500">'+((r.n_controls||0)<10?('unter 10 Kontrollmarken ist p nie unter '+pmin.toFixed(2).replace('.',',')+' — Tendenz, kein Nachweis'):'beschreibende Differenz, kein Kausalbeleg')+'</td></tr>';
+          });
+          h += '</tbody></table></div>';
+          h += '<div class="text-xs text-gray-400 mt-1">Parallel-Trends ungeprüft, kein Konfidenzintervall, keine Mehrfachtest-Korrektur — als Tendenz lesen. Auto-erkannte Aktivitäts-Spitzen werden hier bewusst nicht gezeigt.</div>';
+        } else if (manuell.length) {
+          h += '<div class="text-xs text-gray-400 mt-2">Wirkung erscheint, sobald die Maßnahme genügend Messtage vor und nach dem Datum hat (je '+esc(String(ir.window_days||7))+').</div>';
+        }
+        // Geplante Experimente
+        if (geplant.length) {
+          h += '<div class="mt-3 text-sm font-semibold text-gray-700">Vorbereitete Experimente (Datum eintragen, sobald umgesetzt)</div>';
+          geplant.forEach(function(g){
+            h += '<div class="text-xs text-gray-600 py-1 border-b">Experiment '+esc(String(g.experiment||''))+': <b>'+esc(g.label||'')+'</b> — Hebel: '+esc(g.hebel||'')+' · Test: '+esc(g.treated||'')+' gegen Kontrolle '+esc(g.control||'')+'</div>';
+          });
+        }
+        host.innerHTML = h;
+      });
+    }
+    window.__ivMail = function(){
+      var d=(document.getElementById('ivDate')||{}).value||'';
+      var p=(document.getElementById('ivProd')||{}).value||'';
+      var l=((document.getElementById('ivLabel')||{}).value||'').trim();
+      if(!d||!l){ alert('Bitte Datum und Kurzbeschreibung eintragen.'); return; }
+      var zeile={date:d, brand:'ERGO', label:l}; if(p) zeile.product=p;
+      var body='Bitte folgende Massnahme in data/interventions.json aufnehmen (Array "interventions"):%0D%0A%0D%0A'
+        + encodeURIComponent(JSON.stringify(zeile))
+        + '%0D%0A%0D%0AQuelle: Cockpit-Formular Korrelationsreiter';
+      location.href='mailto:phoeser@web.de?subject='+encodeURIComponent('LLM-Cockpit: Massnahme taggen — '+l)+'&body='+body;
+    };
+
     function renderCorrelationTab() {
     try { renderImpactStudy(); } catch(e){ console.warn('impactStudy:', e.message); }
-    const EI = { review_change:'⭐', press_mention:'📰', news_mention:'🗞️', page_change:'🌐', page_new:'🆕', domain_change:'🔗', sov_change:'📈', berater_shift:'👥', review_volume:'📊', rating_update:'🏆', wikipedia_change:'📚', portal_rank_change:'🛒', rating_status_change:'🏅', price_announcement:'📣' };
-    const EC = { review_change:'#f59e0b', press_mention:'#3b82f6', news_mention:'#6366f1', page_change:'#8b5cf6', page_new:'#06b6d4', domain_change:'#14b8a6', sov_change:'#ef4444', berater_shift:'#ec4899', review_volume:'#f59e0b', rating_update:'#10b981', wikipedia_change:'#0ea5e9', portal_rank_change:'#f97316', rating_status_change:'#eab308', price_announcement:'#e11d48' };
-    /* 11.08.2026: price_change und page_removed fehlten in dieser Tabelle - Tagesuebersicht
-       und Event-Stream zeigten deshalb die rohen Feldnamen mitten in einer sonst
-       durchgaengig deutschen Anzeige. */
-    const EN = { review_change:'Bewertungen', press_mention:'Presse', news_mention:'News', page_change:'Seitenänderungen', page_new:'Neue Seiten', page_removed:'Gelöschte Seiten', domain_change:'Domain', sov_change:'SoV', berater_shift:'Berater', review_volume:'Review-Volumen', price_change:'Preisänderungen', rating_update:'Rating-Update', wikipedia_change:'Wikipedia', portal_rank_change:'Portal-Rang', rating_status_change:'Testsieger-Status', price_announcement:'Beitragsanpassung' };
-    const BC = { 'ERGO':'#c2002f','Allianz':'#003781','AXA':'#00008f','HUK-Coburg':'#006633','Generali':'#c8102e','R+V':'#004f9f','Signal Iduna':'#003e7e','Cosmos Direkt':'#f59e0b','DEVK':'#10b981','Hannoversche':'#6366f1' };
-    const defC = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6'];
-
+    try { renderIntervPanel(); } catch(e){ console.warn('intervPanel:', e.message); }
+    /* 17.08.2026 ENTFERNT: Event-Ueberblick (KPI-Kacheln), Tagesuebersicht (Heatmap)
+       und SoV-Chart samt Farb-/Icon-Tabellen (EI/EC/EN/BC). Begruendung im Markup oben;
+       die Heatmap war seit der Auslagerung ohnehin still leer (window._corrNonSov wurde
+       nie befuellt). Uebrig bleiben der Impact-Drilldown und die Datenbasis-Zeile. */
+    const statEl = document.getElementById('correlationDataStatus');
     if (!CORRELATION_EVENTS || CORRELATION_EVENTS.length === 0) {
-      ['corrKPIs','corrHeatmap','corrSovChart'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">🔍 Noch keine Daten</p><p class="text-sm">Die Korrelations-Engine sammelt Events bei jedem Nightly-Run.</p></div>';
-      });
+      if (statEl) statEl.textContent = 'Noch keine Events — die Korrelations-Engine sammelt bei jedem Nightly-Run.';
       return;
     }
-
-    // ── Daten aufbereiten: letzte 14 Tage ──
     const allDates = [...new Set(CORRELATION_EVENTS.map(e => (e.timestamp||'').substring(0,10)))].sort();
     const latestDate = allDates[allDates.length - 1];
     const cutoff14 = new Date(new Date(latestDate).getTime() - 13*86400000).toISOString().substring(0,10);
@@ -3579,214 +3663,17 @@ function buildGeoTab() {
     const mentions = allSov.filter(e => (e.detail||{}).metric === 'mentions');
     const nonSov = events14.filter(e => e.event_type !== 'sov_change');
     const days14 = [...new Set(events14.map(e => (e.timestamp||'').substring(0,10)))].sort();
-    const brands = [...new Set(events14.map(e => e.brand))].sort((a,b) => a==='ERGO'?-1:b==='ERGO'?1:a.localeCompare(b));
-    const activeTypes = [...new Set(nonSov.map(e => e.event_type))].sort();
-
-    // ── 1. KPI-Cards ──
-    const kpiEl = document.getElementById('corrKPIs');
-    if (kpiEl) {
-      const ergoSov = sovPct.filter(e => e.brand === 'ERGO').sort((a,b) => b.timestamp.localeCompare(a.timestamp));
-      const ergoTrend = ergoSov.length > 0 ? ergoSov[0].detail.new_pct - ergoSov[0].detail.old_pct : null;
-      const ergoLatest = ergoSov.length > 0 ? ergoSov[0].detail.new_pct : null;
-      const totalMentionDelta = mentions.reduce((s,e) => s + ((e.detail.new_mentions||0) - (e.detail.old_mentions||0)), 0);
-
-      function kpiCard(icon, label, value, sub, accent) {
-        return '<div class="rounded-xl p-4 border border-gray-200 bg-gradient-to-br from-white to-gray-50">'
-          + '<div class="text-2xl mb-1">' + icon + '</div>'
-          + '<div class="text-2xl font-bold" style="color:' + (accent||'#1e293b') + '">' + value + '</div>'
-          + '<div class="text-xs font-medium text-gray-600">' + label + '</div>'
-          + (sub ? '<div class="text-xs text-gray-400 mt-1">' + sub + '</div>' : '')
-          + '</div>';
-      }
-
-      kpiEl.innerHTML = kpiCard('📊', 'Events (14 Tage)', events14.length, brands.length + ' Brands, ' + days14.length + ' Tage')
-        /* 11.08.2026: Zwei Kleinigkeiten mit Irrefuehrungspotenzial.
-           (1) Bei einer Veraenderung von exakt 0,0 stand hier ein Aufwaertspfeil
-               ("↑ +0.0 Pp"), weil >=0 als Anstieg galt. Null ist kein Anstieg.
-           (2) "Mention-Trend -412" stand ohne jede Bezugsgroesse da - minus 412
-               wovon, gegen wann? Jetzt mit Basis und Prozentwert. */
-        + kpiCard('📈', 'ERGO SoV', ergoLatest !== null ? ergoLatest.toFixed(1) + '%' : '–',
-            ergoTrend === null ? 'Kein GEO-Run'
-              : (Math.abs(ergoTrend) < 0.05 ? 'unverändert zum Vorlauf'
-                 : (ergoTrend > 0 ? '↑ +' : '↓ ') + ergoTrend.toFixed(1) + ' Pp zum Vorlauf'),
-            ergoTrend === null ? '#6b7280' : (Math.abs(ergoTrend) < 0.05 ? '#6b7280' : (ergoTrend > 0 ? '#16a34a' : '#dc2626')))
-        + (function(){
-            var basis = mentions.reduce(function(s,e){ return s + (e.detail.old_mentions||0); }, 0);
-            var rel = basis > 0 ? (100*totalMentionDelta/basis) : null;
-            return kpiCard('🗣️', 'Mention-Trend',
-              totalMentionDelta !== 0 ? (totalMentionDelta > 0 ? '+' : '') + totalMentionDelta : '–',
-              'Summe der Änderungen über alle Marken in 14 Tagen'
-                + (rel !== null ? ' — ' + (rel>0?'+':'') + rel.toFixed(1).replace('.',',') + ' % gegenüber ' + basis.toLocaleString('de-DE') + ' Nennungen im Ausgangsstand' : '')
-                + ' · ' + mentions.length + ' Messungen',
-              totalMentionDelta === 0 ? '#6b7280' : (totalMentionDelta > 0 ? '#16a34a' : '#dc2626'));
-          })()
-        + kpiCard('📰', 'Presse & News', nonSov.filter(e => e.event_type==='press_mention'||e.event_type==='news_mention').length, 'Artikel in 14 Tagen');
-    }
-
-    // ── 2. Tages-Heatmap (ausgelagert, mit Anbieter-Filter) ──
-    window._corrDays14 = days14;
-    __renderCorrHeatmap();
-
-    // ── 3. SoV-Chart ──
-    const sovEl = document.getElementById('corrSovChart');
-    const sovSumEl = document.getElementById('corrSovSummary');
-    if (sovEl) {
-      if (sovPct.length > 0) {
-        const sovByBrand = {};
-        sovPct.forEach(e => {
-          const d = (e.timestamp||'').substring(0,10);
-          if (!sovByBrand[e.brand]) sovByBrand[e.brand] = {};
-          sovByBrand[e.brand][d] = e.detail.new_pct;
-        });
-        const sovDates = [...new Set(sovPct.map(e => (e.timestamp||'').substring(0,10)))].sort();
-
-        const datasets = Object.entries(sovByBrand).map(([brand, dm], idx) => {
-          const c = BC[brand] || defC[idx % defC.length];
-          return {
-            label: brand,
-            data: sovDates.map(d => dm[d] !== undefined ? dm[d] : null),
-            backgroundColor: brand === 'ERGO' ? c : c + '88',
-            borderColor: c,
-            borderWidth: brand === 'ERGO' ? 3 : 1,
-            borderRadius: 4,
-            barPercentage: 0.85,
-            categoryPercentage: 0.9,
-            order: brand === 'ERGO' ? 0 : 1
-          };
-        }).sort((a,b) => a.label==='ERGO'?-1:b.label==='ERGO'?1:a.label.localeCompare(b.label));
-
-        const canvas = document.createElement('canvas');
-        canvas.height = 350;
-        sovEl.innerHTML = '';
-        sovEl.appendChild(canvas);
-        try {
-          new Chart(canvas, {
-            type: 'bar',
-            data: { labels: sovDates, datasets },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
-                tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y !== null ? ctx.parsed.y.toFixed(1) + '%' : 'k.A.') } }
-              },
-              scales: {
-                y: { title: { display: true, text: 'Share of Voice (%)' }, beginAtZero: true, ticks: { callback: v => v + '%' } },
-                x: { title: { display: true, text: 'GEO-Messung' }, ticks: { maxRotation: 45 } }
-              },
-              interaction: { mode: 'index', intersect: false }
-            }
-          });
-        } catch(e) { sovEl.innerHTML = '<p class="text-gray-400 text-sm">Chart.js nicht geladen.</p>'; }
-
-        // Zusammenfassung
-        if (sovSumEl) {
-          const latest = sovDates[sovDates.length - 1];
-          const latestEvs = sovPct.filter(e => (e.timestamp||'').substring(0,10) === latest);
-          const up = latestEvs.filter(e => e.detail.new_pct > e.detail.old_pct).sort((a,b) => (b.detail.new_pct-b.detail.old_pct)-(a.detail.new_pct-a.detail.old_pct));
-          const down = latestEvs.filter(e => e.detail.new_pct < e.detail.old_pct).sort((a,b) => (a.detail.new_pct-a.detail.old_pct)-(b.detail.new_pct-b.detail.old_pct));
-          let sh = '<div class="p-3 bg-gray-50 rounded-lg text-sm">';
-          sh += '<span class="text-xs text-gray-500 font-medium">Letzte Messung (' + latest + '):</span><br>';
-          if (up.length) sh += '<span class="text-green-700">↑ ' + up.map(e => e.brand + ' (+' + (e.detail.new_pct-e.detail.old_pct).toFixed(1) + ')').join(', ') + '</span>';
-          if (up.length && down.length) sh += ' · ';
-          if (down.length) sh += '<span class="text-red-700">↓ ' + down.map(e => e.brand + ' (' + (e.detail.new_pct-e.detail.old_pct).toFixed(1) + ')').join(', ') + '</span>';
-          sh += '</div>';
-          sovSumEl.innerHTML = sh;
-        }
-      } else {
-        sovEl.innerHTML = '<div class="text-center py-8 text-gray-400"><p class="text-lg mb-2">📊 Noch keine SoV-Messungen</p><p class="text-sm">SoV-Daten werden nach dem nächsten GEO-Run erfasst.</p></div>';
-      }
-    }
-
-    /* 12.08.2026 ENTFERNT: Abschnitt 5 (Mention-Tracking) und 6 (Event-Stream).
-       Mention-Tracking war ein Balkendiagramm der Roh-Nennungen je Marke ohne
-       Bezugsgroesse - als "Fruehindikator" bezeichnet, aber nie als solcher
-       ausgewertet; der SoV-Verlauf direkt darueber sagt dasselbe belastbarer.
-       Der Event-Stream listete die neuesten 100 von rund 1.450 Rohereignissen:
-       ein Logbuch, das keine Frage dieses Reiters beantwortet.
-       Beide Datenquellen bleiben unangetastet und fliessen weiter in die
-       Modelle - entfernt ist nur ihre Anzeige. */
     // ── Status ──
-    const statEl = document.getElementById('correlationDataStatus');
     if (statEl) {
       const dateRange = days14.length >= 2 ? days14[0] + ' bis ' + days14[days14.length-1] : (days14[0] || 'keine Daten');
       statEl.textContent = events14.length + ' Events (' + dateRange + '), ' + allSov.length + ' SoV-Messungen (' + sovPct.length + ' SoV%, ' + mentions.length + ' Mentions), ' + nonSov.length + ' Aktivitäten';
     }
   }
 
-  window.__renderCorrHeatmap = function(){
-    const hmEl = document.getElementById('corrHeatmap');
-    const days14 = window._corrDays14 || [];
-    let nonSov = window._corrNonSov || [];
-    const sel = document.getElementById('corrHmBrandSel');
-    if (sel && sel.options.length <= 1 && nonSov.length) {
-      const bs = {}; nonSov.forEach(e => { if (e.brand) bs[e.brand] = 1; });
-      Object.keys(bs).sort().forEach(b => { const o = document.createElement('option'); o.value = b; o.textContent = b; sel.appendChild(o); });
-    }
-    const pick = sel ? sel.value : '';
-    if (pick) nonSov = nonSov.filter(e => e.brand === pick);
-    if (!hmEl || !days14.length) return;
-    const grid = {};
-    nonSov.forEach(e => {
-      const dd = (e.timestamp||'').substring(0,10);
-      const t = e.event_type;
-      if (!grid[t]) grid[t] = {};
-      grid[t][dd] = (grid[t][dd] || 0) + 1;
-    });
-    const EN = window._corrEN || {};
-    const types = Object.keys(grid).sort((a,b) => {
-      const sa = Object.values(grid[a]).reduce((x,y)=>x+y,0);
-      const sb = Object.values(grid[b]).reduce((x,y)=>x+y,0);
-      return sb - sa;
-    });
-    if (!types.length) { hmEl.innerHTML = '<div class="text-sm text-gray-400 py-3">Keine Events für ' + (pick||'alle Anbieter') + ' im Zeitraum.</div>'; return; }
-    const maxVal = Math.max(...types.flatMap(t => Object.values(grid[t])), 1);
-    let h = '<table style="border-collapse:collapse;width:100%;font-size:12px;">';
-    h += '<thead><tr><th style="text-align:left;padding:6px 8px;font-weight:600;color:#64748b;min-width:140px;">Event-Typ</th>';
-    days14.forEach(dd => {
-      const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(dd+'T12:00:00').getDay()];
-      h += '<th style="text-align:center;padding:4px 2px;font-weight:500;color:#94a3b8;min-width:44px;">' + wd + '<br><span style="font-size:10px;">' + dd.substring(5) + '</span></th>';
-    });
-    h += '<th style="text-align:center;padding:4px 8px;font-weight:600;color:#64748b;">Σ</th></tr></thead><tbody>';
-    types.forEach(t => {
-      const sum = Object.values(grid[t]).reduce((x,y)=>x+y,0);
-      h += '<tr style="border-top:1px solid #f1f5f9;"><td style="padding:6px 8px;font-weight:600;color:#334155;">' + (EN[t]||t) + '</td>';
-      days14.forEach(dd => {
-        const v = grid[t][dd] || 0;
-        const alpha = v ? (0.15 + 0.85 * v / maxVal) : 0;
-        h += '<td style="text-align:center;padding:4px 2px;background:rgba(220,0,40,' + alpha.toFixed(2) + ');color:' + (alpha > 0.5 ? '#fff' : '#334155') + ';">' + (v || '·') + '</td>';
-      });
-      h += '<td style="text-align:center;padding:4px 8px;font-weight:700;color:#1e293b;">' + sum + '</td></tr>';
-    });
-    h += '<tr style="border-top:2px solid #e2e8f0;"><td style="padding:6px 8px;font-weight:700;color:#475569;">Gesamt</td>';
-    days14.forEach(dd => {
-      const dayTotal = nonSov.filter(e => (e.timestamp||'').substring(0,10) === dd).length;
-      h += '<td style="text-align:center;padding:4px 2px;font-weight:700;color:#475569;">' + (dayTotal || '·') + '</td>';
-    });
-    h += '<td style="text-align:center;padding:4px 8px;font-weight:800;color:#1e293b;">' + nonSov.length + '</td></tr>';
-    h += '</tbody></table>';
-    /* 11.08.2026: Seit der Umstellung auf den woechentlichen GEO-Crawl (10.08.2026)
-       fallen Seiten-Ereignisse nur noch an einem Tag der Woche an. In dieser Tabelle
-       sah das aus wie ein Zusammenbruch der Pipeline: 7 und 12 Ereignisse gegen 100
-       bis 200 an den Tagen davor. Der Hinweis wird aus den Daten selbst gebildet -
-       er erscheint nur, wenn die letzten Tage tatsaechlich deutlich duenner sind. */
-    (function(){
-      var SEITEN={page_change:1,page_new:1,page_removed:1};
-      var proTag=days14.map(function(dd){
-        return nonSov.filter(function(e){ return SEITEN[e.event_type] && (e.timestamp||'').substring(0,10)===dd; }).length; });
-      if(proTag.length>=6){
-        var letzte=proTag.slice(-2), frueher=proTag.slice(0,-2);
-        var mLetzte=letzte.reduce(function(a,b){return a+b;},0)/letzte.length;
-        var mFrueher=frueher.reduce(function(a,b){return a+b;},0)/Math.max(frueher.length,1);
-        if(mFrueher>=20 && mLetzte < mFrueher*0.25){
-          h += '<div style="margin-top:10px;background:#eff6ff;border-left:3px solid #60a5fa;border-radius:6px;padding:8px 11px;font-size:11.5px;color:#1e3a5f;line-height:1.5">'
-             + '<b>Kein Ausfall — der Seiten-Crawl läuft seit dem 10.08.2026 wöchentlich statt täglich.</b> '
-             + 'Seiten-Ereignisse fallen deshalb gebündelt an einem Tag der Woche an; die dünnen letzten Spalten sind der Normalzustand zwischen zwei Läufen. '
-             + 'Presse, News und Bewertungen werden weiterhin täglich erhoben.</div>';
-        }
-      }
-    })();
-    hmEl.innerHTML = h;
-  };
+  /* 17.08.2026 ENTFERNT: window.__renderCorrHeatmap - Renderfunktion der
+     Tagesuebersicht. Das Panel ist aus dem Markup genommen (Begruendung dort);
+     die Funktion las window._corrNonSov, das nirgends gesetzt wurde, und haette
+     hier nur als toter Code weitergelebt. */
 
   /* 12.08.2026 ENTFERNT: renderCorrelationStream() - fuellte den Event-Stream
      mit den neuesten 100 Rohereignissen. Anzeige ist raus, Funktion damit tot.
@@ -6153,27 +6040,30 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       head='Kein Treiber ist nach der cluster-robusten Rechnung gesichert';
       tone='slate';
     }
-    var s='<div class="rounded-xl p-5 mb-5 '+(tone==='amber'?'bg-amber-50 border-l-4 border-amber-500':'bg-slate-50 border-l-4 border-slate-400')+'">'
+    /* 17.08.2026: Vor Abschnitt 1 standen DREI Zusammenfassungen hintereinander
+       (diese Prosa, die Antworttafel, die Hebel-Rechnung). Die Struktur-/Kurzfristig-
+       Saetze hier sagten dasselbe wie die Tafel direkt darunter, nur in Prosa.
+       Eingedampft: Headline + ein kompakter Satzblock; die "Nicht verschwiegen"-
+       Transparenz bleibt, aber als Fussnote statt als Absatz. */
+    var s='<div class="rounded-xl p-4 mb-5 '+(tone==='amber'?'bg-amber-50 border-l-4 border-amber-500':'bg-slate-50 border-l-4 border-slate-400')+'">'
       +'<div class="text-lg font-bold text-ergo-dark mb-1">'+head+'</div>'
-      +'<div class="text-sm text-gray-700 leading-relaxed">';
+      +'<div class="text-xs text-gray-600 leading-relaxed">';
     if(strukturHits.length){
       var b=strukturHits.filter(function(x){return x.sc==='between';})[0]||strukturHits[0];
-      s+='<b>Struktur:</b> Marken mit mehr Quellpräsenz sind sichtbarer — '+_kpp(b.eff,2)+' Sichtbarkeit je +1 SD Footprint ('
-        +(b.sc==='within'?'Within':'Between')+', Wild-p '+_kp(b.p)+(b.q!=null?(', q '+_kp(b.q)):'')+', '+nfmt(P.n_brands)+' Marken'
-        +((b.loo&&b.loo.sign_stable!=null)?(', Weglass-Test '+(b.loo.sign_stable?'vorzeichenstabil':'instabil')):'')+'). ';
+      s+='<b>Struktur:</b> Quellpräsenz trägt ('+_kpp(b.eff,2)+' je +1 SD, q '+_kp(b.q!=null?b.q:b.p)+'). ';
     } else {
       s+='<b>Struktur:</b> Im Niveau-Modell übersteht derzeit kein Treiber die Korrektur. ';
     }
     s+='<b>Kurzfristig:</b> '+(evSig.length?(evSig.length+' von '+evEst.length+' cluster-robust schätzbaren Ereignistypen sind gesichert.')
         :(evEst.length?('kein Ereignistyp von '+evEst.length+' cluster-robust schätzbaren ist gesichert.')
-                      :'derzeit ist kein Ereignistyp cluster-robust schätzbar — die Gründe stehen je Treiber unter dem Forest.'))+' ';
+                      :'derzeit ist kein Ereignistyp cluster-robust schätzbar — die Gründe stehen je Treiber unter dem Forest.'))+' Belege und Einzelwerte: Tafel darunter. ';
     // Treffer aus Nebenrechnungen offen benennen
     var neben=[];
     if(lagHit) neben.push('die Versatz-Analyse führt '+nfmt(lagHit)+' gesicherte Treiber-Versatz-Kombination'+(lagHit>1?'en':'')+' (unkorrigiert über '+((la.getestete_lags||[]).length)+' Versätze × '+Object.keys(la.bester_lag_je_treiber||{}).length+' Treiber; '+nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen eine Lead-Warnung)');
     if(mvHits.length) neben.push('das multivariate Modell markiert '+mvHits.length+' Typ'+(mvHits.length>1?'en':'')+(mvSolid.length?(', davon '+mvSolid.length+' belastbar'):', keiner davon belastbar (Out-of-Sample-Güte ≤ 0)'));
     if(fdr.n_signifikant_vor_korrektur) neben.push('die Schichtung nach Prompt-Schlagwort zeigt '+nfmt(fdr.n_signifikant_vor_korrektur)+' Treffer vor und '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Mehrfachtest-Korrektur über '+nfmt(fdr.n_tests)+' Tests');
     if(wja.n_gesichert!=null && wja.n_tests!=null) neben.push('nach Änderungsart sind '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert');
-    if(neben.length) s+='<b>Nicht verschwiegen:</b> '+neben.join('; ')+'. Diese Tests laufen auf demselben Datensatz und sind voneinander abhängig — sie ändern die Kernaussage nicht, gehören aber dazu.';
+    if(neben.length) s+='<span class="text-gray-400"><b>Nicht verschwiegen:</b> '+neben.join('; ')+'. Diese Tests laufen auf demselben Datensatz und sind voneinander abhängig — sie ändern die Kernaussage nicht.</span>';
     s+='</div></div>';
     return s;
   }

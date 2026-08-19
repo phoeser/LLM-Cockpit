@@ -248,7 +248,7 @@ jobs:
           if git diff --cached --quiet; then echo "Keine Datenaenderungen."; exit 0; fi
           git commit -m "data: nightly update (alle Daten + Events)"
           for i in 1 2 3; do
-            git pull --rebase origin main || git rebase --abort 2>/dev/null || true
+            git pull --rebase --autostash origin main || git rebase --abort 2>/dev/null || true
             if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
             echo "Push fehlgeschlagen, Versuch $i"; sleep 10
           done

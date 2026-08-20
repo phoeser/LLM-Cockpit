@@ -88,6 +88,21 @@ WORKFLOWS = [
     ("peec-daily-sources.yml", "Peec-Quellen", "~3 Min"),
     ("dashboard-deploy.yml", "Nur Dashboard bauen", "~2 Min"),
     ("georg-sync.yml", "GEOrg-Wissensbasis", "~2 Min"),
+    # 20.08.2026: wendet Patch-Skripte aus patches/ IM Repo an - der Weg fuer
+    # grosse Dateien, deren Aenderung klein ist (siehe apply-patch.yml).
+    ("apply-patch.yml", "Patch anwenden", "~1 Min"),
+    ("measure-serp-depth.yml", "Tiefentest Social (einmalig)", "~1 Min"),
+    # 20.08.2026, Pauls Ansage ("hoer auf, mich alles im GitHub machen zu
+    # lassen"): Ein Workflow-Eintrag darf jetzt ein VIERTES Feld tragen - die
+    # Dispatch-Inputs. Damit lassen sich auch Laeufe mit gesetzten Schaltern
+    # direkt von dieser Seite starten. Vorher ging das nur in der
+    # GitHub-Oberflaeche, weil die Seite immer nur {"ref": "main"} schickte.
+    #
+    # Konkreter Anlass: Beide Social-Sammler drosseln sich selbst auf einen
+    # Lauf je Woche. Nach einer Aenderung am Sammler will man das Ergebnis
+    # heute sehen und nicht am Wochenende.
+    ("nightly-update.yml", "Nightly MIT Social-Force", "~25 Min",
+     {"force_linkedin": "true", "force_instagram": "true"}),
 ]
 
 
@@ -346,8 +361,8 @@ function bauGruppen() {
   });
 }
 function bauWorkflows() {
-  document.getElementById("wfBtns").innerHTML = WORKFLOWS.map(function (w) {
-    return '<button class="secondary" onclick="triggerWf(\\'' + w[0] + '\\')">' + esc(w[1]) + ' (' + esc(w[2]) + ')</button>';
+  document.getElementById("wfBtns").innerHTML = WORKFLOWS.map(function (w, i) {
+    return '<button class="secondary" data-wf="' + i + '" onclick="triggerWf(this)">' + esc(w[1]) + ' (' + esc(w[2]) + ')</button>';
   }).join("");
 }
 function gewaehlt() {
@@ -362,12 +377,60 @@ function gh(method, path, body, token) {
   });
 }
 
-/* Holt die aktuelle Blob-SHA im Repo. null = Datei dort nicht vorhanden. */
-async function repoSha(remote, token) {
-  var r = await gh("GET", "/repos/" + REPO + "/contents/" + remote + "?ref=main", null, token);
-  if (r.status === 404) return null;
+/* Holt die aktuelle Blob-SHA im Repo. null = Datei dort nicht vorhanden.
+
+   20.08.2026, Pauls Befund: Beim Deploy des Instagram-Stands meldete GENAU die
+   groesste Datei (correlation_impact.py, 300 KB) "Pruefung fehlgeschlagen:
+   Failed to fetch", die acht kleineren gingen durch. Der Grund liegt in der
+   alten Zeile darunter: die Contents-API liefert bei einer GET-Abfrage den
+   VOLLSTAENDIGEN Dateiinhalt base64-kodiert mit - fuer 300 KB Quelltext also
+   rund 400 KB Antwort, nur um daraus ein 40 Zeichen langes SHA zu lesen.
+   "Failed to fetch" ist kein HTTP-Status, sondern der Abbruch der Verbindung
+   selbst; je groesser die Antwort, desto wahrscheinlicher.
+
+   Zwei Aenderungen, die das an der Wurzel beheben:
+
+   1. Die SHAs kommen jetzt aus der Git-Trees-API - EIN Aufruf fuer das ganze
+      Repo, der nur Pfade und SHAs enthaelt, keinen Dateiinhalt. Die Antwort
+      ist damit unabhaengig von der Dateigroesse, und neun Einzelabfragen
+      werden zu einer.
+   2. Falls dieser Weg nicht geht (abgeschnittener Baum bei sehr grossen
+      Repos), faellt die Pruefung auf die Einzelabfrage zurueck - dann aber
+      mit einem zweiten Versuch nach kurzer Pause, statt beim ersten
+      Netz-Zucken aufzugeben. */
+var TREE_CACHE = null;
+async function ladeBaum(token) {
+  if (TREE_CACHE) return TREE_CACHE;
+  var r = await gh("GET", "/repos/" + REPO + "/git/trees/main?recursive=1", null, token);
   if (!r.ok) throw new Error("HTTP " + r.status);
-  return (await r.json()).sha;
+  var j = await r.json();
+  if (j.truncated) return null;   /* Repo zu gross fuer einen Baum -> Einzelweg */
+  var m = {};
+  (j.tree || []).forEach(function (e) { if (e.type === "blob") m[e.path] = e.sha; });
+  TREE_CACHE = m;
+  return m;
+}
+async function repoShaEinzeln(remote, token) {
+  var letzter = null;
+  for (var v = 0; v < 2; v++) {
+    try {
+      var r = await gh("GET", "/repos/" + REPO + "/contents/" + remote + "?ref=main", null, token);
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return (await r.json()).sha;
+    } catch (e) {
+      letzter = e;
+      await new Promise(function (s) { setTimeout(s, 900); });
+    }
+  }
+  throw letzter;
+}
+async function repoSha(remote, token) {
+  try {
+    var baum = await ladeBaum(token);
+    if (baum) return Object.prototype.hasOwnProperty.call(baum, remote) ? baum[remote] : null;
+  } catch (e) { /* bewusst still: der Einzelweg unten ist die Antwort darauf */ }
+  return await repoShaEinzeln(remote, token);
 }
 
 /* Kern der Absicherung: stimmt die Repo-SHA noch mit dem Stand ueberein, gegen
@@ -411,6 +474,7 @@ async function pruefen() {
   var todo = gewaehlt();
   if (!todo.length) { alert("Keine Datei ausgewählt."); return; }
   listeAufbauen(todo);
+  TREE_CACHE = null;   /* jeder Lauf sieht den frischen Repo-Stand */
   /* 13.08.2026: Warnung und Fehler standen beide in Rot. Paul hat die Meldung
      "IM REPO GEÄNDERT" folgerichtig als "2 Fehler" gelesen und eine Stunde nach
      einem Fehler gesucht, den es nicht gab - der Push war laengst durch. Eine
@@ -458,6 +522,8 @@ async function pushOne(f, token, sha) {
   if (sha) body.sha = sha;
   var p = await gh("PUT", "/repos/" + REPO + "/contents/" + f.remote, body, token);
   if (!p.ok) throw new Error("HTTP " + p.status + ": " + (await p.text()).substring(0, 140));
+  /* Nach jedem Push ist der zwischengespeicherte Baum veraltet. */
+  TREE_CACHE = null;
 }
 
 async function startDeploy() {
@@ -467,6 +533,7 @@ async function startDeploy() {
   var todo = gewaehlt();
   if (!todo.length) { alert("Keine Datei ausgewählt."); return; }
   listeAufbauen(todo);
+  TREE_CACHE = null;   /* jeder Lauf sieht den frischen Repo-Stand */
   var ok = 0, err = 0, uebersprungen = 0, deployt = 0;
   for (var i = 0; i < todo.length; i++) {
     var f = todo[i];
@@ -518,13 +585,19 @@ var autoPoll = false, pollTimer = null;
 function wfFehler(text) {
   document.getElementById("runDetails").innerHTML = '<div class="err-banner">' + text + '</div>';
 }
-async function triggerWf(wf) {
+async function triggerWf(el) {
   var token = document.getElementById("token").value.trim();
   if (!token) { alert("Token eingeben."); return; }
   saveTokenIfWanted();
+  /* el ist der Knopf; sein data-wf zeigt auf den WORKFLOWS-Eintrag. Ein
+     vierter Eintrag darin sind die Dispatch-Inputs (z.B. Force-Schalter). */
+  var eintrag = WORKFLOWS[parseInt(el.getAttribute("data-wf"), 10)] || [];
+  var wf = eintrag[0], inputs = eintrag[3] || null;
+  var koerper = {ref: "main"};
+  if (inputs) koerper.inputs = inputs;
   var r;
   try {
-    r = await gh("POST", "/repos/" + REPO + "/actions/workflows/" + wf + "/dispatches", {ref: "main"}, token);
+    r = await gh("POST", "/repos/" + REPO + "/actions/workflows/" + wf + "/dispatches", koerper, token);
   } catch (e) {
     wfFehler('<b>Die Anfrage kam nicht bei GitHub an.</b> Meldung des Browsers: <code>' + esc(e.message) + '</code>.<br><br>'
       + (location.protocol === "file:"

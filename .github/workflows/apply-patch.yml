@@ -1,0 +1,73 @@
+name: Patch anwenden (grosse Datei, kleine Aenderung)
+
+# 20.08.2026, entstanden aus einem konkreten Fehlschlag
+# ----------------------------------------------------
+# Der Auto-Deploy-Weg ueber den Browser scheitert reproduzierbar an GROSSEN
+# Dateien: beim Instagram-Deploy gingen acht Dateien bis 32 KB durch, waehrend
+# scripts/correlation_impact.py (300 KB) mit "Failed to fetch" abbrach - kein
+# HTTP-Fehler, sondern ein Verbindungsabbruch. Die noetige Aenderung an dieser
+# Datei umfasste 42 Zeilen.
+#
+# Statt also die grosse Datei zu transportieren, transportiert dieser Workflow
+# die AENDERUNG: ein kleines Patch-Skript unter patches/ (wenige KB, geht
+# problemlos ueber Konnektor oder Deploy-Seite) wird HIER ausgefuehrt, wo die
+# grosse Datei ohnehin liegt. Uebertragen werden nie mehr als ein paar KB.
+#
+# Sicherheitsnetz liegt im Patch-Skript selbst, nicht hier: es muss jede
+# Textstelle genau einmal finden, prueft das Ergebnis auf gueltiges Python und
+# ist idempotent. Findet es etwas nicht, bricht es mit Exit 1 ab und dieser
+# Workflow committet nichts.
+#
+# Angewandte Patch-Skripte werden nach dem Commit entfernt - patches/ ist eine
+# Warteschlange, kein Archiv.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: repo-writes
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Patch-Skripte ausfuehren
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          skripte=(patches/*.py)
+          if [ ${#skripte[@]} -eq 0 ]; then
+            echo "Keine Patch-Skripte unter patches/ - nichts zu tun."
+            exit 0
+          fi
+          for s in "${skripte[@]}"; do
+            echo "::group::$s"
+            python "$s"
+            echo "::endgroup::"
+          done
+
+      - name: Ergebnis committen
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Angewandte Patch-Skripte entfernen: patches/ ist eine Warteschlange.
+          skripte=(patches/*.py)
+          if [ ${#skripte[@]} -gt 0 ]; then git rm -q "${skripte[@]}"; fi
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nichts geaendert - kein Commit."
+            exit 0
+          fi
+          git commit -m "chore: Patch(es) aus patches/ angewandt"
+          git push

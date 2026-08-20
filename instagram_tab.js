@@ -52,6 +52,11 @@
   function pp(v,d){ if(v==null||isNaN(v)) return "—"; return (v>0?"+":"")+num(v,d)+" pp"; }
 
   var POSTS=null, GELADEN=false, LADEFEHLER=false;
+  /* Muss zu REGELSTAND in scripts/update_instagram.py passen. Traegt ein
+     gespeicherter Beitrag einen anderen (oder gar keinen) Stand, wird seine
+     Einordnung hier neu gerechnet - sonst behielten die 100 Beitraege des
+     Erstlaufs fuer immer die Einordnung von vor der Nachkalibrierung. */
+  var REGELSTAND="2026-08-20b";
   var BM={"ERGO":"#c2002f","Allianz":"#003781","AXA":"#00008f","HUK-Coburg":"#006633","Generali":"#c8102e","R+V":"#004f9f","Signal Iduna":"#003e7e","CosmosDirekt":"#f59e0b","DEVK":"#10b981","Hannoversche":"#6366f1"};
 
   function laden(cb){
@@ -83,19 +88,25 @@
   var DE=/\b(der|die|das|den|dem|des|und|oder|nicht|ist|sind|war|wir|ihr|ihre|ihren|du|dein|deine|dich|uns|unser|unsere|mit|bei|für|auf|aus|vom|zum|zur|im|ein|eine|einen|einem|kein|keine|schon|mehr|wie|was|wenn|weil|damit|jetzt|heute|hier|sich|auch|noch|sehr|beim|durch|gegen|ohne|über|versicherung|versicherungen|beratung|kunden|jahre|wird|wirst|haben|hat)\b/i;
   var FX=/\b(the|and|our|we|you|your|are|for|with|at|from|this|that|about|con|nuestro|nuestra|para|por|los|las|el|una|nuestros|do|dos|no|na|com|em|mais|que|sua|seu|le|les|pour|avec|della|nel|gli|il|by|of|to|all|how|what|why|get|more|best|world|now)\b/i;
   var FX_Z=/[ãõñçáíóúêôàèìò]/i;
+  /* 20.08.2026 an den ersten 100 echten Beitraegen nachkalibriert - identisch
+     mit scripts/update_instagram.py. Der erste Wurf sortierte 57 % als
+     "Sonstiges" ein; jetzt sind es 18 %. Neu dazugekommen, weil der echte
+     Bestand sie zeigte: Aktion & Rabatt, Service & App, Sponsoring. */
   var TYPEN=[
-    ["Recruiting & Karriere", /\bm\/w\/d\b|karriere|jobs?\b|stelle\b|bewerb|werde\s|ausbildung|duales studium|wir stellen ein|wir suchen|join|hiring|arbeitgeber|azubi/i],
-    ["Unternehmensnews & Zahlen", /quartal|halbjahr|geschäftsjahr|bilanz|umsatz|gewinn|vorstand|aufsichtsrat|ernennung|übernahme|fusion|rekord/i],
-    ["Studie & Daten", /studie|umfrage|report\b|analyse|tacho|barometer|index\b/i],
-    ["Auszeichnung & Test", /testsieger|auszeichnung|award|prämiert|zertifi|siegel|ausgezeichnet/i],
-    ["Jubiläum & Team", /\bjahre\b.{0,20}(bei|im team)|jubiläum|j-u-b-e-l|herzlichen glückwunsch|willkommen im team|unser team/i],
-    ["Event & Netzwerk", /messe|kongress|tagung|maklertreff|netzwerk|treffen|konferenz|roadshow|event\b/i],
-    ["Kooperation & Partner", /kooperation|partnerschaft|gemeinsam mit|zusammenarbeit|volksbank|sparkasse|sponsor/i],
-    ["Standort & Vertrieb", /neuer standort|eröffnung|neues kapitel|umzug|neue räume/i],
-    ["Nachhaltigkeit & Engagement", /nachhaltig|klima|esg|spende|ehrenamt|soziales|diversity|inklusion|charity/i],
-    ["Saison & Gruß", /frohe (ostern|weihnachten)|frohes neues|frühling|sommerzeit|adventszeit|guten rutsch|feiertag|wünscht ihnen/i],
-    ["Ratgeber & Wissen", /tipps?\b|ratgeber|wissen|erklär|warum |so geht|checkliste|finanzbildung|worauf|wusstest du/i],
-    ["Produkt & Beratung", /tarif|absicherung|vorsorge|schadenfall|leistung(en)?\b|police|versichert\b|schützt|deckung|prämie|neue[rs]? produkt|kundenportal|app\b|bausteine|sicher(n|t)\s+(dein|ihr|eur)|palette an versicherung/i]
+    ["Recruiting & Karriere", /\bm\/w\/d\b|karriere|\bjobs?\b|stelle\b|bewerb|ausbildung|duales studium|wir stellen ein|wir suchen|hiring|arbeitgeber|azubi|willkommen im team|neue kolleg|arbeiten bei|mein job|unser team|praktik/i],
+    ["Aktion & Rabatt", /\bgratis\b|kostenlos|nachlass|rabatt|\baktion\b|gewinnspiel|sparen|bonus\w*|prämien?\s*(frei|gratis)|bis zu \d+\s*%|sonderkondition/i],
+    ["Auszeichnung & Test", /testsieger|auszeichnung|\baward\b|prämiert|zertifi|siegel|ausgezeichnet|note sehr gut|\bstiftung warentest\b/i],
+    ["Unternehmensnews & Zahlen", /quartal|halbjahr|geschäftsjahr|bilanz|umsatz|gewinn\b|vorstand|aufsichtsrat|ernennung|übernahme|fusion|rekord/i],
+    ["Studie & Daten", /studie|umfrage|\breport\b|analyse|tacho|barometer|\bindex\b|zahlen zeigen/i],
+    ["Jubiläum & Team", /\d+\s*jahre\b.{0,25}(bei|im team|dabei)|jubiläum|j-u-b-e-l|herzlichen glückwunsch|betriebsjubil/i],
+    ["Event, Sport & Sponsoring", /messe|kongress|tagung|maklertreff|netzwerk|konferenz|roadshow|\bevent\b|\barena\b|sponsor|\btickets?\b|turnier|championat|meisterschaft|festival|konzert|reitsport|springreit|dressur|reiterin|wallach|stute|cruise|\bstadion\b|\bliga\b/i],
+    ["Kooperation & Partner", /kooperation|partnerschaft|gemeinsam mit|zusammenarbeit|volksbank|sparkasse|partner von/i],
+    ["Standort & Vertrieb", /bezirksdirektion|generalvertretung|subdirektion|geschäftsstelle|neuer standort|\bstandort\b|eröffnung|neues kapitel|umzug|neue räume/i],
+    ["Nachhaltigkeit & Engagement", /nachhaltig|\bklima\b|\besg\b|spende|ehrenamt|soziales engagement|diversity|inklusion|charity/i],
+    ["Service & App", /\bapp\b|kundenportal|meine versicherung|meine allianz|online[- ]service|vertragsunterlagen|versicherungsunterlagen|selfservice|\blogin\b|schaden melden/i],
+    ["Saison & Gruß", /frohe (ostern|weihnachten)|frohes neues|frühling|sommerzeit|adventszeit|guten rutsch|feiertag|wünscht (ihnen|euch)|\bsommerpause\b/i],
+    ["Ratgeber & Wissen", /tipps?\b|ratgeber|wusstest du|erklär|\bwarum\b|so geht|checkliste|finanzbildung|worauf (du|sie)|\bwissen\b|achten sie|darauf kommt es an|grundlagen|ist eigentlich|was tun (bei|wenn)|was ist\b|denk dran|nicht vergessen|swipe|urlaubsbereit|koffer sind gepackt/i],
+    ["Produkt & Beratung", /tarif|absicherung|vorsorge|schadenfall|leistung(en)?\b|police|versichert\b|schützt|schutz\b|deckung|prämie|neue[rs]? produkt|baustein|beratung|beraten|\bbu\b|berufsunf|kasko|haftpflicht|zahnversicherung|kfz-versicherung|versicherung für|abschließen|\bschaden\b/i]
   ];
   var THEMEN=[
     ["Kfz", /\bkfz\b|\bauto\b|mobilit|e-auto|verbrenner|motorrad|führerschein/i],
@@ -107,6 +118,11 @@
     ["Gewerbe & Firmen", /gewerbe|firmenkunden|betriebs|cyber/i]
   ];
 
+  /* Schriftschnitt-Spielereien einebnen: Instagram-Bios stecken voller
+     mathematischer Fettschrift ("𝙀𝙍𝙂𝙊 𝙑𝙚𝙧𝙨𝙞𝙘𝙝𝙚𝙧𝙪𝙣𝙜"). Ohne diese Normalisierung
+     trifft keine einzige Regel, und der Beitrag faellt still in "Sonstiges". */
+  function nrm(s){ try{ return String(s==null?"":s).normalize("NFKC"); }catch(e){ return String(s==null?"":s); } }
+
   function istKontoname(s){
     s=(s||"").trim();
     if(!(s.length>=2&&s.length<=50)) return false;
@@ -117,7 +133,7 @@
   }
   function teileVon(p){
     if(p.post_text!=null) return {konto:p.absender||"", text:p.post_text};
-    var t=(p.title||"").trim();
+    var t=nrm(p.title).trim();
     if(!t) return {konto:"", text:""};
     var m=/^(.{2,50}?)\s+(?:on|auf)\s+Instagram\s*[:\-]/i.exec(t);
     if(m) return {konto:m[1].trim(), text:t.slice(m[0].length).replace(/^["“”]+|["“”]+$/g,"").trim()};
@@ -142,15 +158,15 @@
     }
     return {name:konto, typ:"Mitarbeitende/Sonstige"};
   }
-  function textVon(p){ return [teileVon(p).text, p.snippet||""].join(" "); }
+  function textVon(p){ return [nrm(teileVon(p).text), nrm(p.snippet)].join(" "); }
   function typVon(p){
-    if(p.post_typ) return p.post_typ;
+    if(p.post_typ && p.regeln===REGELSTAND) return p.post_typ;
     var t=textVon(p);
     for(var i=0;i<TYPEN.length;i++) if(TYPEN[i][1].test(t)) return TYPEN[i][0];
     return (t.trim().length<25)?"Ohne Textsignal":"Sonstiges";
   }
   function themaVon(p){
-    if(p.thema) return p.thema;
+    if(p.thema && p.regeln===REGELSTAND) return p.thema;
     var t=textVon(p);
     for(var i=0;i<THEMEN.length;i++) if(THEMEN[i][1].test(t)) return THEMEN[i][0];
     return "—";
@@ -303,7 +319,7 @@
 
     // ---- Event-Log ----
     h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">📋 Event-Log — jeder erfasste Beitrag</h3>'
-      +'<p class="text-xs text-gray-500 mb-3">Wann, von wem, welcher Typ, welches Thema — und verlinkt. Spaltenköpfe sind klickbar zum Sortieren.</p>'
+      +'<p class="text-xs text-gray-500 mb-3">Wann, welcher Typ, welches Thema — und verlinkt. Spaltenköpfe sind klickbar zum Sortieren. '+'<b>Zur Spalte „Von wem":</b> Google gibt den Kontonamen bei rund neun von zehn Instagram-Beiträgen nicht heraus (am 20.08.2026 an 100 echten Treffern nachgezählt: 2 von 100 tragen ihn im Snippet, 6 im Titel). '+'Dann bleibt die Spalte leer — aus dem Beitragstext auf den Absender zu schließen hat sich bei LinkedIn bereits als Fehlerquelle erwiesen und wird hier bewusst nicht gemacht.</p>'
       +'<div class="flex flex-wrap gap-2 mb-3">'
       +'<select id="igFilterMarke" class="border border-gray-300 rounded px-2 py-1 text-xs" onchange="window.__igLog&&window.__igLog()"><option value="">Alle Marken</option></select>'
       +'<select id="igFilterTyp" class="border border-gray-300 rounded px-2 py-1 text-xs" onchange="window.__igLog&&window.__igLog()"><option value="">Alle Post-Typen</option></select>'

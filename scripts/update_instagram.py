@@ -393,11 +393,31 @@ def thema(posttext, snippet):
 #
 # Der einzige Weg an mehr Treffer ist Blaettern (start=10, 20, ...), und jede
 # Seite ist eine eigene SerpAPI-Suche. Deshalb zwei Grenzen:
-#   SEITEN_MAX        hoechstens fuenf Seiten je Marke (= 50 Treffer)
+#   Seiten je Marke   gestaffelt (siehe unten)
 #   frueher Abbruch   eine nicht volle Seite heisst: mehr gibt es nicht.
 #                     Das kostet nichts und spart in ruhigen Wochen fast alles.
-SEITEN_MAX = 5
+#   BUDGET_JE_LAUF    harte Obergrenze, damit kein Fehler das Kontingent leert.
+#
+# 20.08.2026, Pauls Entscheidung nach dem gemessenen Tiefentest ("im freien
+# Kontingent bleiben"): Fuenf Seiten fuer alle zehn Marken waeren bis zu 433
+# Suchen im Monat - das freie Kontingent liegt bei 250. Also gestaffelt.
+#
+# Der Tiefentest vom 20.08. hat auch gezeigt, WO die Kappung wehtut: ERGO hatte
+# auf LinkedIn neun Posts in der Woche (Vorrat erschoepft, wir hatten alle),
+# Allianz mindestens 37 bei nur zehn erfassten. Die Untererfassung trifft also
+# die grossen Wettbewerber - genau die Zellen, aus denen der Markenvergleich
+# seine Aussage zieht. Deshalb bekommen die Kern-Marken Tiefe, der Rest bleibt
+# bei einer Seite und wird im Reiter als moeglicherweise gekappt ausgewiesen.
+KERN_MARKEN = ("ERGO", "Allianz", "AXA", "HUK-Coburg")
+SEITEN_KERN = 4          # 4 Marken x 4 Seiten = 16
+SEITEN_UEBRIGE = 1       # 6 Marken x 1 Seite  =  6   -> 22 je Lauf und Plattform
+BUDGET_JE_LAUF = 25      # Notbremse: nie mehr als das, egal was passiert
 TREFFER_JE_SEITE = 10   # Googles feste Seitengroesse, seit num=100 weg ist
+
+
+def seiten_fuer(brand):
+    """Wie tief wird fuer diese Marke geblaettert?"""
+    return SEITEN_KERN if brand in KERN_MARKEN else SEITEN_UEBRIGE
 
 
 def serpapi_seite(query, key, fenster, start):
@@ -407,6 +427,13 @@ def serpapi_seite(query, key, fenster, start):
         # num ist bewusst NICHT mehr gesetzt - der Parameter ist wirkungslos
         # (siehe oben) und wuerde nur vortaeuschen, es sei etwas geregelt.
         "filter": "0",   # Googles Aehnlichkeits-Ausduennung aus; wirkt weiterhin
+        # 20.08.2026: deutschsprachig einschraenken. Im Tiefentest gemessen -
+        # ohne diese Grenze gingen Plaetze an gleichnamige Treffer aus anderen
+        # Maerkten (Allianz Parque, Sao Paulo; Allianz Life, USA). Bei zehn
+        # Plaetzen je Seite ist jeder davon zu teuer fuer ein Fussballstadion.
+        # Preis der Regel: ein deutscher Absender, der englisch postet, faellt
+        # heraus. Das ist bei einem Deutschland-Vergleich der bessere Fehler.
+        "lr": "lang_de",
         "start": str(start),
         # Fenster haengt am TATSAECHLICHEN Abstand zum letzten Lauf, nicht an
         # der Existenz der State-Datei - ein verlorener Nightly-Commit erzwang
@@ -420,7 +447,7 @@ def serpapi_seite(query, key, fenster, start):
         return json.loads(r.read().decode("utf-8"))
 
 
-def serpapi(query, key, fenster, max_seiten=SEITEN_MAX):
+def serpapi(query, key, fenster, max_seiten=SEITEN_KERN):
     """Blaettert bis zu max_seiten durch.
     -> (treffer, fehlertext_oder_None, anzahl_suchen)
 
@@ -492,11 +519,27 @@ def main():
                 pass
 
     neu, fehler, fehler_texte, n_weg = [], 0, [], 0
+    gekappt = []   # Marken, bei denen Google noch mehr gehabt haette
     n_suchen = 0   # SerpAPI-Verbrauch dieses Laufs (eine Seite = eine Suche)
     for brand, query in BRANDS:
         try:
-            treffer, fehlertext, seiten = serpapi("site:instagram.com/p %s" % query, key, fenster)
+            # Budget-Notbremse: schon Verbrauchtes plus die tiefste moegliche
+            # Abfrage dieser Marke darf BUDGET_JE_LAUF nicht sprengen. Lieber
+            # eine Marke ohne Tiefe als ein leergeraeumtes Kontingent.
+            tiefe = seiten_fuer(brand)
+            if n_suchen + tiefe > BUDGET_JE_LAUF:
+                tiefe = max(0, BUDGET_JE_LAUF - n_suchen)
+            if tiefe < 1:
+                print("[Instagram] %s: Budget von %d Suchen erreicht - uebersprungen."
+                      % (brand, BUDGET_JE_LAUF))
+                gekappt.append(brand)
+                continue
+            treffer, fehlertext, seiten = serpapi("site:instagram.com/p %s" % query, key, fenster,
+                                                  max_seiten=tiefe)
             n_suchen += seiten
+            # Volle Ausbeute bei ausgeschoepfter Tiefe heisst: da war noch mehr.
+            if seiten >= tiefe and len(treffer) >= tiefe * TREFFER_JE_SEITE:
+                gekappt.append(brand)
         except Exception as e:
             print("[Instagram] %s: Abfrage fehlgeschlagen: %s" % (brand, str(e)[:100]))
             fehler += 1
@@ -575,6 +618,11 @@ def main():
         STATE.write_text(json.dumps({"letzter_lauf": heute, "fenster": fenster,
                                      "neu": len(neu), "verworfen_sprache": n_weg,
                                      "suchen": n_suchen, "fehler": fehler,
+                                     # Marken, bei denen die Ausbeute die
+                                     # erlaubte Tiefe voll ausschoepfte - dort
+                                     # haette Google mehr gehabt. Der Reiter
+                                     # weist diese Zahlen als Untergrenze aus.
+                                     "gekappt": sorted(set(gekappt)),
                                      "fehler_texte": fehler_texte[:10]},
                          ensure_ascii=False), encoding="utf-8")
     elif fehler:

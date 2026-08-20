@@ -180,8 +180,13 @@ IMPACT_TYPES = [
     # 18.08.2026: "linkedin_post" — oeffentliche LinkedIn-Posts je Marke
     # (update_linkedin.py, woechentlich via SerpAPI/Google). Laeuft damit
     # automatisch in SoV-Impact, Zitatanteil-Impact und alle Schichtungen ein.
+    # 20.08.2026: "instagram_post" — oeffentliche Instagram-Beitraege je Marke
+    # (update_instagram.py, woechentlich via SerpAPI/Google). Anders als bei
+    # LinkedIn gibt es hier KEINE Engagement-Zahlen (Instagram liefert
+    # oeffentlich nur die Login-Huelle) — die Magnitude ist deshalb immer 1,0,
+    # ein Post ist ein Post.
     "page_change", "page_new", "page_removed", "press_mention", "news_mention",
-    "linkedin_post",
+    "linkedin_post", "instagram_post",
     "domain_change", "review_change", "review_volume", "price_change",
     "wikipedia_change", "portal_rank_change", "rating_status_change",
     # 10.08.2026: "price_announcement" ergaenzt - angekuendigte Beitrags- und
@@ -223,6 +228,7 @@ TYPE_LABEL = {
     "press_mention": "Pressemitteilungen",
     "news_mention": "News-Erwaehnungen",
     "linkedin_post": "LinkedIn-Posts",
+    "instagram_post": "Instagram-Posts",
     "domain_change": "Domain-/Subdomain-Aenderungen",
     "review_change": "Bewertungs-Trend (±)",
     "review_volume": "Bewertungs-Volumen",
@@ -294,7 +300,8 @@ def _norm_brand(name):
 # jeden nachgelagerten Block, ohne die Datei zu migrieren.
 # 18.08.2026: linkedin_post dabei — der Sammler legt den Erscheinungstag
 # (wenn Google ihn liefert) in detail.date, exakt wie der Presse-Crawl.
-MEDIA_DATED_TYPES = ("press_mention", "news_mention", "linkedin_post")
+MEDIA_DATED_TYPES = ("press_mention", "news_mention", "linkedin_post",
+                     "instagram_post")
 # Preis-Oszillation: Rueckkehr auf den Vorwert innerhalb dieser Toleranz (EUR).
 PRICE_RETURN_TOL_EUR = 0.01
 # Ab wie vielen echten Preis-Ereignissen der Treiber ueberhaupt geschaetzt wird.
@@ -315,8 +322,14 @@ def _parse_day(v):
     return s
 
 
-def _drop_linkedin_erstimport(events):
-    """LinkedIn-Erstimport je Marke aus den WIRKUNGS-Rechnungen nehmen.
+def _drop_social_erstimport(events, typ="linkedin_post", label="LinkedIn"):
+    """Social-Erstimport je Marke aus den WIRKUNGS-Rechnungen nehmen.
+
+    20.08.2026 verallgemeinert: dieselbe Mechanik gilt fuer Instagram, weil
+    der Instagram-Sammler nach demselben Muster arbeitet (Monatsfenster im
+    Erstlauf, Wochenfenster danach, Datum nur wenn Google eins liefert).
+    Der Aufrufer sagt, welcher Ereignistyp gemeint ist - die Regel selbst
+    ist unveraendert.
 
     18.08.2026, direkt nach dem ersten Sammellauf gebaut: Der Sammler holt beim
     ersten Lauf einer Marke rueckwirkend ~einen Monat oeffentlicher Posts, und
@@ -351,7 +364,7 @@ def _drop_linkedin_erstimport(events):
     # einzelner echt datierter Post (Generali, 20.07.) den Batch frei.
     first = {}
     for e in events:
-        if e.get("event_type") != "linkedin_post":
+        if e.get("event_type") != typ:
             continue
         d_ = e.get("detail") or {}
         if d_.get("fenster") or d_.get("datierung") == "post":
@@ -361,7 +374,7 @@ def _drop_linkedin_erstimport(events):
             first[b] = d
     kept, dropped = [], 0
     for e in events:
-        if e.get("event_type") == "linkedin_post":
+        if e.get("event_type") == typ:
             d_ = e.get("detail") or {}
             undatiert = d_.get("datierung") != "post"
             if undatiert and d_.get("fenster") == "monat":
@@ -374,17 +387,17 @@ def _drop_linkedin_erstimport(events):
         kept.append(e)
     if not dropped:
         return events
-    EVENT_LOAD_AUDIT["linkedin_erstimport"] = {
+    EVENT_LOAD_AUDIT["%s_erstimport" % typ.split("_")[0]] = {
         "entfernt": dropped,
         "erster_tag_je_marke": dict(sorted(first.items())),
         "hinweis": ("Erstimport-Batches ohne echtes Erscheinungsdatum sind aus den "
                     "Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt: ~1 Monat "
-                    "Posts auf einen Fund-Tag komprimiert). Anzeige im LinkedIn-"
-                    "Reiter unberuehrt."),
+                    "Posts auf einen Fund-Tag komprimiert). Anzeige im %s-"
+                    "Reiter unberuehrt." % label),
     }
     if dropped:
-        print("[LinkedIn-Erstimport] %d Events vom jeweils ersten Sammel-Tag aus den "
-              "Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt)." % dropped)
+        print("[%s-Erstimport] %d Events vom jeweils ersten Sammel-Tag aus den "
+              "Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt)." % (label, dropped))
     return kept
 
 
@@ -533,7 +546,8 @@ def load_events():
           % (n_kanon, ", ".join("%s->%s" % kv for kv in sorted(_BRAND_ALIASES.items()))))
     _redate_media_events(out)
     _mark_price_artifacts(out)
-    out = _drop_linkedin_erstimport(out)
+    out = _drop_social_erstimport(out, "linkedin_post", "LinkedIn")
+    out = _drop_social_erstimport(out, "instagram_post", "Instagram")
     return out
 
 
@@ -1092,7 +1106,7 @@ def _content_key(e):
     # 18.08.2026: linkedin_post wie Presse/News - ein Post = ein Event, ueber
     # alle Tage (Opus-Review #13; heute doppelt abgesichert durch den Emitter,
     # aber ein Neuaufbau von events.jsonl darf sich nicht darauf verlassen).
-    if t in ("press_mention", "news_mention", "linkedin_post"):
+    if t in ("press_mention", "news_mention", "linkedin_post", "instagram_post"):
         return (t, e.get("brand"), cid)
     return (t, e.get("brand"), cid, _day(e.get("timestamp")))
 

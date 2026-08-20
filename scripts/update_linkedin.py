@@ -16,9 +16,11 @@ Untererfassung steht im Reiter, nicht nur hier im Docstring.
 
 Takt: WOECHENTLICH (montags), obwohl der Nightly taeglich laeuft — das Skript
 prueft selbst, ob seit dem letzten Lauf 6+ Tage vergangen sind, und beendet
-sich sonst wortlos mit Exit 0. Grund: SerpAPI-Kontingent (die ~10 Abfragen je
-Lauf teilen sich das Budget mit dem GEO-Tool). FORCE_LINKEDIN=1 erzwingt einen
-Lauf, z. B. fuer den allerersten.
+sich sonst wortlos mit Exit 0. Grund: SerpAPI-Kontingent — seit dem
+20.08.2026 blaettert der Sammler bis zu fuenf Seiten je Marke, ein Lauf kostet
+also bis zu 50 Suchen statt 10 (in ruhigen Wochen deutlich weniger, weil bei
+der ersten nicht vollen Seite abgebrochen wird). Das Budget teilt er sich mit
+dem GEO-Tool und dem Instagram-Sammler. FORCE_LINKEDIN=1 erzwingt einen Lauf.
 
 Ausgabe:
 - data/linkedin_posts.jsonl   ein Post pro Zeile, dedupliziert ueber die URL
@@ -218,30 +220,38 @@ def thema(titel, snippet):
     return ""
 
 
-def serpapi(query, key, fenster):
-    # 18.08.2026, Befund Paul nach dem ersten Lauf ("haben wirklich alle genau
-    # 10 Posts?"): Sieben Marken mit EXAKT 10 Treffern - das war die Google-
-    # Seitengroesse, keine Zaehlung. num=20 hatte Google schlicht ignoriert.
-    # Drei Aenderungen, alle zum gleichen API-Preis (SerpAPI rechnet pro Suche
-    # ab, nicht pro Ergebnis):
-    #   num=100    bis zu 100 Treffer je Abfrage statt der 10er-Seite
-    #   filter=0   Googles Aehnlichkeits-Ausduennung aus - die frisst bei
-    #              site:-Abfragen sonst still Ergebnisse
-    #   qdr:w      NACH dem Erstlauf nur noch die letzte Woche: so ist der
-    #              Fund-Tag hoechstens ~7 Tage nach dem Post (dokumentierter
-    #              Versatz), und der alte Monats-Backlog kann nicht bei jedem
-    #              Lauf als neuer "Ereignis-Schub" wiederauftauchen - genau
-    #              das Import-Artefakt, das die Engine beim Erstlauf abfangen
-    #              musste. Der ERSTE Lauf (kein STATE) holt weiter qdr:m als
-    #              Archiv-Grundstock.
+# 20.08.2026, Pauls Entscheidung nach einem Befund, der einen frueheren Fix
+# widerlegt hat: BIS ZU FUENF SEITEN je Marke.
+#
+# Vorgeschichte: Am 18.08. fielen Paul "genau 10 Posts je Marke" auf. Meine
+# Antwort damals war num=100 - und die war falsch. Google hat den Parameter
+# num im September 2025 abgeschafft (SerpAPI fuehrt dazu ein offenes Ticket
+# "Only 10 results when num=100 is set"). Ich hatte an einer Stellschraube
+# gedreht, die es nicht mehr gibt, und das Ergebnis nicht nachgemessen. Der
+# Deckel blieb: im Lauf vom 20.08. landeten die aktivsten Marken erneut auf
+# exakt 10 - also systematisch untererfasst, und zwar ausgerechnet die
+# Spitzenreiter, auf die es im Markenvergleich ankommt.
+#
+# Der einzige Weg an mehr Treffer ist Blaettern (start=10, 20, ...), und jede
+# Seite ist eine eigene SerpAPI-Suche. Deshalb zwei Grenzen:
+#   SEITEN_MAX        hoechstens fuenf Seiten je Marke (= 50 Treffer)
+#   frueher Abbruch   eine nicht volle Seite heisst: mehr gibt es nicht.
+#                     Das kostet nichts und spart in ruhigen Wochen fast alles.
+SEITEN_MAX = 5
+TREFFER_JE_SEITE = 10   # Googles feste Seitengroesse, seit num=100 weg ist
+
+
+def serpapi_seite(query, key, fenster, start):
+    """Eine Ergebnisseite. start=0 ist die erste, dann 10, 20, ..."""
     q = urllib.parse.urlencode({
         "engine": "google", "q": query, "hl": "de", "gl": "de",
-        "num": "100",
-        "filter": "0",
-        # 18.08.2026 (Opus-Review #6): Fenster haengt jetzt am TATSAECHLICHEN
-        # Abstand zum letzten Lauf (Parameter), nicht mehr an der Existenz der
-        # State-Datei - ein verlorener Nightly-Commit erzwang sonst still ein
-        # neues Monatsfenster.
+        # num ist bewusst NICHT mehr gesetzt - der Parameter ist wirkungslos
+        # (siehe oben) und wuerde nur vortaeuschen, es sei etwas geregelt.
+        "filter": "0",   # Googles Aehnlichkeits-Ausduennung aus; wirkt weiterhin
+        "start": str(start),
+        # Fenster haengt am TATSAECHLICHEN Abstand zum letzten Lauf, nicht an
+        # der Existenz der State-Datei - ein verlorener Nightly-Commit erzwang
+        # sonst still ein neues Monatsfenster.
         "tbs": ("qdr:w" if fenster == "woche" else "qdr:m"),
         "api_key": key,
     })
@@ -249,6 +259,35 @@ def serpapi(query, key, fenster):
                                  headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=45) as r:
         return json.loads(r.read().decode("utf-8"))
+
+
+def serpapi(query, key, fenster, max_seiten=SEITEN_MAX):
+    """Blaettert bis zu max_seiten durch.
+    -> (treffer, fehlertext_oder_None, anzahl_suchen)
+
+    "Keine Ergebnisse" ist KEIN Fehler, sondern das Ende der Liste. Alles
+    andere (Kontingent, Parameter) ist einer und wird nach oben gereicht -
+    damit ein leerer Lauf nie als erfolgreicher durchgeht."""
+    alle, gesehen, anzahl_suchen = [], set(), 0
+    for i in range(max_seiten):
+        antwort = serpapi_seite(query, key, fenster, i * TREFFER_JE_SEITE)
+        anzahl_suchen += 1
+        fehlertext = antwort.get("error")
+        if fehlertext:
+            if "any results" in str(fehlertext):
+                break
+            return alle, str(fehlertext), anzahl_suchen
+        seite = antwort.get("organic_results") or []
+        frisch = [t for t in seite if t.get("link") not in gesehen]
+        for t in seite:
+            gesehen.add(t.get("link"))
+        alle.extend(frisch)
+        # Nicht volle Seite oder nur Wiederholungen: hier ist Schluss. Google
+        # liefert bei site:-Abfragen gern dieselbe Seite noch einmal statt
+        # einer leeren - beides heisst dasselbe.
+        if len(seite) < TREFFER_JE_SEITE or not frisch:
+            break
+    return alle, None, anzahl_suchen
 
 
 def main():
@@ -294,9 +333,11 @@ def main():
                 pass
 
     neu, fehler, fehler_texte = [], 0, []
+    n_suchen = 0   # SerpAPI-Verbrauch dieses Laufs (eine Seite = eine Suche)
     for brand, query in BRANDS:
         try:
-            res = serpapi("site:linkedin.com/posts %s" % query, key, fenster)
+            treffer, fehlertext, seiten = serpapi("site:linkedin.com/posts %s" % query, key, fenster)
+            n_suchen += seiten
         except Exception as e:
             print("[LinkedIn] %s: Abfrage fehlgeschlagen: %s" % (brand, str(e)[:100]))
             fehler += 1
@@ -306,13 +347,11 @@ def main():
         # HTTP-200-Antwort. "Keine Ergebnisse" ist ein gueltiges leeres Ergebnis;
         # alles andere (Kontingent, Parameter) ist ein Abfragefehler und darf den
         # Wochentakt nicht fortschreiben - sonst faellt eine Woche still aus.
-        _err = res.get("error")
-        if _err and "any results" not in str(_err):
-            print("[LinkedIn] %s: SerpAPI-Fehler: %s" % (brand, str(_err)[:100]))
+        if fehlertext:
+            print("[LinkedIn] %s: SerpAPI-Fehler: %s" % (brand, str(fehlertext)[:100]))
             fehler += 1
-            fehler_texte.append("%s: %s" % (brand, str(_err)[:80]))
+            fehler_texte.append("%s: %s" % (brand, str(fehlertext)[:80]))
             continue
-        treffer = res.get("organic_results") or []
         n_neu = 0
         seen_b = bekannt.setdefault(brand, set())
         for t in treffer:
@@ -365,7 +404,7 @@ def main():
     if len(BRANDS) - fehler >= (2 * len(BRANDS)) // 3:
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps({"letzter_lauf": heute, "fenster": fenster,
-                                     "neu": len(neu), "fehler": fehler,
+                                     "neu": len(neu), "suchen": n_suchen, "fehler": fehler,
                                      "fehler_texte": fehler_texte[:10]},
                          ensure_ascii=False), encoding="utf-8")
     elif fehler:

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T06:24:04Z",
+  "generated_at": "2026-08-20T15:48:22Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -76,7 +76,7 @@
   },
   "event_load_audit": {
     "marken_kanonisierung": {
-      "n_events_umbenannt": 594,
+      "n_events_umbenannt": 597,
       "aliase": {
         "Cosmos Direkt": "CosmosDirekt",
         "cosmos direkt": "CosmosDirekt"
@@ -84,9 +84,9 @@
       "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors"
     },
     "presse_datierung": {
-      "umdatiert": 2683,
-      "bereits_gleich": 100,
-      "fallback_timestamp": 75,
+      "umdatiert": 2692,
+      "bereits_gleich": 102,
+      "fallback_timestamp": 234,
       "hinweis": "Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, zukuenftigem oder nach dem Crawl liegendem Datum."
     },
     "preis_artefakte": {
@@ -110,6 +110,11 @@
         "R+V": "2026-08-18"
       },
       "hinweis": "Erstimport-Batches ohne echtes Erscheinungsdatum sind aus den Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt: ~1 Monat Posts auf einen Fund-Tag komprimiert). Anzeige im LinkedIn-Reiter unberuehrt."
+    },
+    "instagram_erstimport": {
+      "entfernt": 92,
+      "erster_tag_je_marke": {},
+      "hinweis": "Erstimport-Batches ohne echtes Erscheinungsdatum sind aus den Wirkungs-Rechnungen ausgeschlossen (Import-Artefakt: ~1 Monat Posts auf einen Fund-Tag komprimiert). Anzeige im Instagram-Reiter unberuehrt."
     }
   },
   "multivariate": {
@@ -133,6 +138,7 @@
       "press_mention",
       "news_mention",
       "linkedin_post",
+      "instagram_post",
       "domain_change",
       "review_volume",
       "price_change",
@@ -145,9 +151,9 @@
     "coefficients": {
       "media_negative": {
         "label": "Presse/News: Schaden/Leistung",
-        "coef_pp_per_event_day": 0.5602,
-        "ci95_low": -0.2866,
-        "ci95_high": 1.407,
+        "coef_pp_per_event_day": 0.5606,
+        "ci95_low": -0.2861,
+        "ci95_high": 1.4074,
         "prob_positive": 0.903,
         "prob_direction": 0.903,
         "significant": false,
@@ -157,9 +163,9 @@
       },
       "media_positive": {
         "label": "Presse/News: Produkt/Strategie",
-        "coef_pp_per_event_day": -0.2831,
-        "ci95_low": -0.9999,
-        "ci95_high": 0.4337,
+        "coef_pp_per_event_day": -0.2833,
+        "ci95_low": -1.0001,
+        "ci95_high": 0.4335,
         "prob_positive": 0.219,
         "prob_direction": 0.781,
         "significant": false,
@@ -169,9 +175,9 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "coef_pp_per_event_day": 0.1515,
-        "ci95_low": -0.094,
-        "ci95_high": 0.397,
+        "coef_pp_per_event_day": 0.1518,
+        "ci95_low": -0.0936,
+        "ci95_high": 0.3972,
         "prob_positive": 0.887,
         "prob_direction": 0.887,
         "significant": false,
@@ -191,6 +197,18 @@
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
+      "review_negative": {
+        "label": "Negative Bewertungen",
+        "coef_pp_per_event_day": 0.0059,
+        "ci95_low": -0.2833,
+        "ci95_high": 0.295,
+        "prob_positive": 0.516,
+        "prob_direction": 0.516,
+        "significant": false,
+        "n_with_event": 23,
+        "reliable": false,
+        "note": "OOS<=0: Einzeleffekte nicht belastbar"
+      },
       "page_removed": {
         "label": "Geloeschte Seiten",
         "coef_pp_per_event_day": -0.0045,
@@ -203,27 +221,15 @@
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
-      "review_negative": {
-        "label": "Negative Bewertungen",
-        "coef_pp_per_event_day": 0.0042,
-        "ci95_low": -0.2313,
-        "ci95_high": 0.2397,
-        "prob_positive": 0.514,
-        "prob_direction": 0.514,
-        "significant": false,
-        "n_with_event": 27,
-        "reliable": false,
-        "note": "OOS<=0: Einzeleffekte nicht belastbar"
-      },
       "review_positive": {
         "label": "Positive Bewertungen",
-        "coef_pp_per_event_day": -0.003,
-        "ci95_low": -0.0669,
-        "ci95_high": 0.0609,
-        "prob_positive": 0.463,
-        "prob_direction": 0.537,
+        "coef_pp_per_event_day": -0.0043,
+        "ci95_low": -0.0715,
+        "ci95_high": 0.0628,
+        "prob_positive": 0.45,
+        "prob_direction": 0.55,
         "significant": false,
-        "n_with_event": 26,
+        "n_with_event": 20,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
@@ -673,6 +679,32 @@
       "type_confidence": "belastbar",
       "type_confidence_grund": null
     },
+    "instagram_post": {
+      "label": "Instagram-Posts",
+      "available": true,
+      "pearson_r": 0.006,
+      "spearman_r": 0.028,
+      "avg_sov_effect_pp": 0.11,
+      "effect_se_pp": 0.133,
+      "ci95_low_pp": -0.314,
+      "ci95_high_pp": 0.534,
+      "n_clusters": 3,
+      "n_clusters_gesamt": 25,
+      "effect_se_cluster_pp": 0.133,
+      "effect_se_cr1_roh_pp": 0.128,
+      "effect_within_fe_pp": 0.118,
+      "ci95_low_cluster_pp": -0.455,
+      "ci95_high_cluster_pp": 0.69,
+      "p_cluster": 0.470508,
+      "cluster_df": 2,
+      "significance_basis": "cluster",
+      "significant": false,
+      "significant_iid": false,
+      "n_intervals": 668,
+      "n_with_event": 4,
+      "type_confidence": "unzureichend",
+      "type_confidence_grund": "Nur 3 Marke(n) mit Ereignis. Der Effekt stuetzt sich damit auf 3 unabhaengige Einheiten, nicht auf 4 Intervalle — unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig davon, wie eng das iid-Intervall aussieht."
+    },
     "page_removed": {
       "label": "Geloeschte Seiten",
       "available": true,
@@ -754,6 +786,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -799,6 +832,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -1061,6 +1095,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -1106,6 +1141,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -3318,6 +3354,12 @@
         "available": false,
         "grund": "zu wenige Intervalle mit diesem Ereignis"
       },
+      "instagram_post": {
+        "label": "Instagram-Posts",
+        "n_with_event": 2,
+        "available": false,
+        "grund": "zu wenige Intervalle mit diesem Ereignis"
+      },
       "domain_change": {
         "label": "Domain-/Subdomain-Aenderungen",
         "n_with_event": 0,
@@ -3408,7 +3450,7 @@
     "intervalle_uebersprungen_bruch": 1526,
     "fdr": {
       "n_gesichert_multivariat": 1,
-      "n_tests": 140,
+      "n_tests": 158,
       "alpha": 0.05,
       "verfahren": "Benjamini-Hochberg",
       "n_signifikant_vor_korrektur": 3,
@@ -3534,7 +3576,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -3550,7 +3592,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9786,
+            "p_fdr": 0.9761,
             "significant_fdr": false
           },
           "page_removed": {
@@ -3566,7 +3608,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -3582,7 +3624,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -3598,7 +3640,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -3606,6 +3648,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.04502389932809214,
+            "avg_sov_effect_pp": 0.475,
+            "effect_se_pp": 0.554,
+            "ci95_low_pp": -1.287,
+            "ci95_high_pp": 2.236,
+            "significant": false,
+            "p_value": 0.391178,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -3626,7 +3684,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -3642,7 +3700,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -3670,7 +3728,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9454,
+            "p_fdr": 0.9436,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -3704,6 +3762,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -3731,9 +3790,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0893,
-              "ci95_low": -0.3911,
-              "ci95_high": 0.2124,
+              "coef_pp_per_event_day": -0.0892,
+              "ci95_low": -0.391,
+              "ci95_high": 0.2125,
               "prob_positive": 0.281,
               "prob_direction": 0.719,
               "significant": false,
@@ -3907,7 +3966,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -3923,7 +3982,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -3939,7 +3998,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -3955,7 +4014,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -3971,7 +4030,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -3979,6 +4038,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.047872805645545934,
+            "avg_sov_effect_pp": 0.297,
+            "effect_se_pp": 0.203,
+            "ci95_low_pp": -0.35,
+            "ci95_high_pp": 0.944,
+            "significant": false,
+            "p_value": 0.144655,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -3999,7 +4074,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -4015,7 +4090,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "price_change": {
@@ -4043,7 +4118,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -4077,6 +4152,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -4088,9 +4164,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2244,
-              "ci95_low": 0.0471,
-              "ci95_high": 0.4016,
+              "coef_pp_per_event_day": 0.2245,
+              "ci95_low": 0.0472,
+              "ci95_high": 0.4017,
               "prob_positive": 0.993,
               "prob_direction": 0.993,
               "significant": false,
@@ -4280,7 +4356,7 @@
             "n_with_event": 244,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -4296,7 +4372,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -4312,7 +4388,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -4328,7 +4404,7 @@
             "n_with_event": 29,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -4344,7 +4420,7 @@
             "n_with_event": 51,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -4352,6 +4428,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.02308035216086158,
+            "avg_sov_effect_pp": 0.146,
+            "effect_se_pp": 0.299,
+            "ci95_low_pp": -0.805,
+            "ci95_high_pp": 1.096,
+            "significant": false,
+            "p_value": 0.625108,
+            "n_intervals": 672,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4372,7 +4464,7 @@
             "n_with_event": 24,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -4388,7 +4480,7 @@
             "n_with_event": 19,
             "type_confidence": "moderat",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -4440,6 +4532,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -4467,9 +4560,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0827,
-              "ci95_low": -0.1085,
-              "ci95_high": 0.2738,
+              "coef_pp_per_event_day": 0.0828,
+              "ci95_low": -0.1084,
+              "ci95_high": 0.2739,
               "prob_positive": 0.802,
               "prob_direction": 0.802,
               "significant": false,
@@ -4643,7 +4736,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "page_new": {
@@ -4659,7 +4752,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -4675,7 +4768,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -4691,7 +4784,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -4707,7 +4800,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -4715,6 +4808,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": -0.033615335188023523,
+            "avg_sov_effect_pp": -0.781,
+            "effect_se_pp": 0.917,
+            "ci95_low_pp": -3.699,
+            "ci95_high_pp": 2.138,
+            "significant": false,
+            "p_value": 0.394728,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -4735,7 +4844,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -4751,7 +4860,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -4779,7 +4888,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -4813,6 +4922,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -4824,9 +4934,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.4969,
-              "ci95_low": -1.1649,
-              "ci95_high": 0.1711,
+              "coef_pp_per_event_day": -0.4968,
+              "ci95_low": -1.1648,
+              "ci95_high": 0.1712,
               "prob_positive": 0.072,
               "prob_direction": 0.928,
               "significant": false,
@@ -5016,7 +5126,7 @@
             "n_with_event": 244,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -5032,7 +5142,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -5048,7 +5158,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -5064,7 +5174,7 @@
             "n_with_event": 29,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -5080,7 +5190,7 @@
             "n_with_event": 51,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -5088,6 +5198,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.018813317526202807,
+            "avg_sov_effect_pp": 0.141,
+            "effect_se_pp": 0.076,
+            "ci95_low_pp": -0.1,
+            "ci95_high_pp": 0.382,
+            "significant": false,
+            "p_value": 0.062344,
+            "n_intervals": 672,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -5108,7 +5234,7 @@
             "n_with_event": 24,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -5124,7 +5250,7 @@
             "n_with_event": 19,
             "type_confidence": "moderat",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "price_change": {
@@ -5176,6 +5302,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -5203,9 +5330,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0716,
-              "ci95_low": -0.3017,
-              "ci95_high": 0.1584,
+              "coef_pp_per_event_day": -0.0715,
+              "ci95_low": -0.3016,
+              "ci95_high": 0.1585,
               "prob_positive": 0.271,
               "prob_direction": 0.729,
               "significant": false,
@@ -5379,7 +5506,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -5395,7 +5522,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "page_removed": {
@@ -5411,7 +5538,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -5427,7 +5554,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -5443,7 +5570,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -5451,6 +5578,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": -0.005621956830728276,
+            "avg_sov_effect_pp": -0.118,
+            "effect_se_pp": 0.588,
+            "ci95_low_pp": -1.989,
+            "ci95_high_pp": 1.754,
+            "significant": false,
+            "p_value": 0.841423,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9362,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -5471,7 +5614,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -5487,7 +5630,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -5515,7 +5658,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -5549,6 +5692,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -5560,9 +5704,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.6635,
-              "ci95_low": -1.2644,
-              "ci95_high": -0.0627,
+              "coef_pp_per_event_day": -0.6634,
+              "ci95_low": -1.2643,
+              "ci95_high": -0.0626,
               "prob_positive": 0.015,
               "prob_direction": 0.985,
               "significant": true,
@@ -5752,7 +5896,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -5768,7 +5912,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -5784,7 +5928,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -5800,7 +5944,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -5816,7 +5960,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -5824,6 +5968,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.02871172380262733,
+            "avg_sov_effect_pp": 0.256,
+            "effect_se_pp": 0.195,
+            "ci95_low_pp": -0.364,
+            "ci95_high_pp": 0.875,
+            "significant": false,
+            "p_value": 0.189177,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -5844,7 +6004,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -5860,7 +6020,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -5888,7 +6048,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.944,
+            "p_fdr": 0.9396,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -5922,6 +6082,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -6014,11 +6175,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0037,
-              "ci95_low": -0.2525,
-              "ci95_high": 0.26,
-              "prob_positive": 0.511,
-              "prob_direction": 0.511,
+              "coef_pp_per_event_day": 0.0038,
+              "ci95_low": -0.2524,
+              "ci95_high": 0.2601,
+              "prob_positive": 0.512,
+              "prob_direction": 0.512,
               "significant": false,
               "n_with_event": 26,
               "cluster_se": 0.0206,
@@ -6126,7 +6287,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "page_new": {
@@ -6142,7 +6303,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -6158,7 +6319,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "press_mention": {
@@ -6174,7 +6335,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9417,
+            "p_fdr": 0.9364,
             "significant_fdr": false
           },
           "news_mention": {
@@ -6190,7 +6351,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -6198,6 +6359,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.011907435010710586,
+            "avg_sov_effect_pp": 0.332,
+            "effect_se_pp": 1.155,
+            "ci95_low_pp": -3.343,
+            "ci95_high_pp": 4.007,
+            "significant": false,
+            "p_value": 0.774008,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9322,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -6218,7 +6395,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -6234,7 +6411,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -6262,7 +6439,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -6296,6 +6473,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -6323,9 +6501,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.7583,
-              "ci95_low": -0.0399,
-              "ci95_high": 1.5565,
+              "coef_pp_per_event_day": 0.7584,
+              "ci95_low": -0.0398,
+              "ci95_high": 1.5566,
               "prob_positive": 0.969,
               "prob_direction": 0.969,
               "significant": false,
@@ -6499,7 +6677,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "page_new": {
@@ -6515,7 +6693,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -6531,7 +6709,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -6547,7 +6725,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -6563,7 +6741,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9587,
+            "p_fdr": 0.9557,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -6571,6 +6749,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.005610528283498447,
+            "avg_sov_effect_pp": 0.087,
+            "effect_se_pp": 0.066,
+            "ci95_low_pp": -0.122,
+            "ci95_high_pp": 0.296,
+            "significant": false,
+            "p_value": 0.184342,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -6607,7 +6801,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -6635,7 +6829,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -6669,6 +6863,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -6680,9 +6875,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2267,
-              "ci95_low": -0.1946,
-              "ci95_high": 0.648,
+              "coef_pp_per_event_day": 0.2268,
+              "ci95_low": -0.1945,
+              "ci95_high": 0.6481,
               "prob_positive": 0.854,
               "prob_direction": 0.854,
               "significant": false,
@@ -6873,7 +7068,7 @@
             "n_with_event": 244,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -6889,7 +7084,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9587,
+            "p_fdr": 0.9557,
             "significant_fdr": false
           },
           "page_removed": {
@@ -6905,7 +7100,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -6921,7 +7116,7 @@
             "n_with_event": 29,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -6937,7 +7132,7 @@
             "n_with_event": 51,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -6945,6 +7140,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": -0.002453549655535705,
+            "avg_sov_effect_pp": -0.02,
+            "effect_se_pp": 0.234,
+            "ci95_low_pp": -0.763,
+            "ci95_high_pp": 0.723,
+            "significant": false,
+            "p_value": 0.931523,
+            "n_intervals": 672,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9557,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -6965,7 +7176,7 @@
             "n_with_event": 24,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "review_volume": {
@@ -6981,7 +7192,7 @@
             "n_with_event": 19,
             "type_confidence": "moderat",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "price_change": {
@@ -7033,6 +7244,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -7044,9 +7256,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0635,
-              "ci95_low": -0.3161,
-              "ci95_high": 0.189,
+              "coef_pp_per_event_day": -0.0634,
+              "ci95_low": -0.316,
+              "ci95_high": 0.1891,
               "prob_positive": 0.311,
               "prob_direction": 0.689,
               "significant": false,
@@ -7061,7 +7273,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0565,
-              "ci95_low": -0.0918,
+              "ci95_low": -0.0919,
               "ci95_high": 0.2049,
               "prob_positive": 0.772,
               "prob_direction": 0.772,
@@ -7125,7 +7337,7 @@
             "review_volume": {
               "label": "Bewertungs-Volumen",
               "coef_pp_per_event_day": -0.0027,
-              "ci95_low": -0.2983,
+              "ci95_low": -0.2984,
               "ci95_high": 0.2929,
               "prob_positive": 0.493,
               "prob_direction": 0.507,
@@ -7236,7 +7448,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -7252,7 +7464,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -7268,7 +7480,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.986,
+            "p_fdr": 0.9852,
             "significant_fdr": false
           },
           "press_mention": {
@@ -7284,7 +7496,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -7300,7 +7512,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -7308,6 +7520,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": -0.025708685092590593,
+            "avg_sov_effect_pp": -0.803,
+            "effect_se_pp": 0.622,
+            "ci95_low_pp": -2.784,
+            "ci95_high_pp": 1.177,
+            "significant": false,
+            "p_value": 0.196629,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -7328,7 +7556,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -7344,7 +7572,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9587,
+            "p_fdr": 0.9557,
             "significant_fdr": false
           },
           "price_change": {
@@ -7372,7 +7600,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -7406,6 +7634,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -7417,9 +7646,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.2995,
-              "ci95_low": -1.2033,
-              "ci95_high": 0.6043,
+              "coef_pp_per_event_day": -0.2994,
+              "ci95_low": -1.2032,
+              "ci95_high": 0.6044,
               "prob_positive": 0.258,
               "prob_direction": 0.742,
               "significant": false,
@@ -7609,7 +7838,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -7625,7 +7854,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -7641,7 +7870,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -7657,7 +7886,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -7673,7 +7902,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -7681,6 +7910,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.06173148015488382,
+            "avg_sov_effect_pp": 0.301,
+            "effect_se_pp": 0.24,
+            "ci95_low_pp": -0.461,
+            "ci95_high_pp": 1.064,
+            "significant": false,
+            "p_value": 0.208533,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -7701,7 +7946,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9461,
+            "p_fdr": 0.9459,
             "significant_fdr": false
           },
           "review_volume": {
@@ -7717,7 +7962,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -7745,7 +7990,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -7779,6 +8024,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -7790,9 +8036,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.087,
-              "ci95_low": -0.0533,
-              "ci95_high": 0.2273,
+              "coef_pp_per_event_day": 0.0871,
+              "ci95_low": -0.0532,
+              "ci95_high": 0.2274,
               "prob_positive": 0.888,
               "prob_direction": 0.888,
               "significant": false,
@@ -7983,7 +8229,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -7999,7 +8245,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -8015,7 +8261,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -8031,7 +8277,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -8047,7 +8293,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9454,
+            "p_fdr": 0.9436,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -8055,6 +8301,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.007810998495383302,
+            "avg_sov_effect_pp": 0.155,
+            "effect_se_pp": 0.152,
+            "ci95_low_pp": -0.328,
+            "ci95_high_pp": 0.638,
+            "significant": false,
+            "p_value": 0.306599,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -8075,7 +8337,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "review_volume": {
@@ -8091,7 +8353,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -8119,7 +8381,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.986,
+            "p_fdr": 0.9852,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -8153,6 +8415,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -8164,9 +8427,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.214,
-              "ci95_low": -0.3598,
-              "ci95_high": 0.7877,
+              "coef_pp_per_event_day": 0.2141,
+              "ci95_low": -0.3597,
+              "ci95_high": 0.7878,
               "prob_positive": 0.768,
               "prob_direction": 0.768,
               "significant": false,
@@ -8182,7 +8445,7 @@
               "label": "Bewertungs-Volumen",
               "coef_pp_per_event_day": -0.2054,
               "ci95_low": -0.8566,
-              "ci95_high": 0.4459,
+              "ci95_high": 0.4458,
               "prob_positive": 0.268,
               "prob_direction": 0.732,
               "significant": false,
@@ -8356,7 +8619,7 @@
             "n_with_event": 244,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -8372,7 +8635,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -8388,7 +8651,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -8404,7 +8667,7 @@
             "n_with_event": 29,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -8420,7 +8683,7 @@
             "n_with_event": 51,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -8428,6 +8691,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.0128994182377274,
+            "avg_sov_effect_pp": 0.068,
+            "effect_se_pp": 0.091,
+            "ci95_low_pp": -0.223,
+            "ci95_high_pp": 0.359,
+            "significant": false,
+            "p_value": 0.45824,
+            "n_intervals": 672,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -8448,7 +8727,7 @@
             "n_with_event": 24,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -8464,7 +8743,7 @@
             "n_with_event": 19,
             "type_confidence": "moderat",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -8516,6 +8795,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -8575,11 +8855,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0126,
-              "ci95_low": -0.1709,
-              "ci95_high": 0.1458,
-              "prob_positive": 0.438,
-              "prob_direction": 0.562,
+              "coef_pp_per_event_day": -0.0125,
+              "ci95_low": -0.1708,
+              "ci95_high": 0.1459,
+              "prob_positive": 0.439,
+              "prob_direction": 0.561,
               "significant": false,
               "n_with_event": 24,
               "cluster_se": 0.0189,
@@ -8720,7 +9000,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -8736,7 +9016,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -8752,7 +9032,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9454,
+            "p_fdr": 0.9436,
             "significant_fdr": false
           },
           "press_mention": {
@@ -8768,7 +9048,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -8784,7 +9064,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -8792,6 +9072,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.030170512515816067,
+            "avg_sov_effect_pp": 0.25,
+            "effect_se_pp": 0.201,
+            "ci95_low_pp": -0.388,
+            "ci95_high_pp": 0.888,
+            "significant": false,
+            "p_value": 0.212145,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -8812,7 +9108,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -8828,7 +9124,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -8856,7 +9152,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -8890,6 +9186,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -8901,9 +9198,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1508,
-              "ci95_low": -0.0558,
-              "ci95_high": 0.3573,
+              "coef_pp_per_event_day": 0.1509,
+              "ci95_low": -0.0557,
+              "ci95_high": 0.3574,
               "prob_positive": 0.924,
               "prob_direction": 0.924,
               "significant": false,
@@ -8920,8 +9217,8 @@
               "coef_pp_per_event_day": -0.1362,
               "ci95_low": -0.3706,
               "ci95_high": 0.0983,
-              "prob_positive": 0.128,
-              "prob_direction": 0.872,
+              "prob_positive": 0.127,
+              "prob_direction": 0.873,
               "significant": false,
               "n_with_event": 22,
               "cluster_se": 0.084,
@@ -9093,7 +9390,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "page_new": {
@@ -9109,7 +9406,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -9125,7 +9422,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -9141,7 +9438,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -9157,7 +9454,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -9165,6 +9462,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": -0.013558571620608818,
+            "avg_sov_effect_pp": -0.213,
+            "effect_se_pp": 0.332,
+            "ci95_low_pp": -1.271,
+            "ci95_high_pp": 0.844,
+            "significant": false,
+            "p_value": 0.520542,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -9185,7 +9498,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -9201,7 +9514,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -9229,7 +9542,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -9263,6 +9576,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -9306,11 +9620,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.051,
-              "ci95_low": -0.4021,
-              "ci95_high": 0.5042,
-              "prob_positive": 0.587,
-              "prob_direction": 0.587,
+              "coef_pp_per_event_day": 0.0511,
+              "ci95_low": -0.402,
+              "ci95_high": 0.5043,
+              "prob_positive": 0.588,
+              "prob_direction": 0.588,
               "significant": false,
               "n_with_event": 26,
               "cluster_se": 0.1075,
@@ -9466,7 +9780,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -9482,7 +9796,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_removed": {
@@ -9498,7 +9812,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -9514,7 +9828,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "news_mention": {
@@ -9530,7 +9844,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -9538,6 +9852,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.06173148015488382,
+            "avg_sov_effect_pp": 0.301,
+            "effect_se_pp": 0.24,
+            "ci95_low_pp": -0.461,
+            "ci95_high_pp": 1.064,
+            "significant": false,
+            "p_value": 0.208533,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -9558,7 +9888,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9461,
+            "p_fdr": 0.9459,
             "significant_fdr": false
           },
           "review_volume": {
@@ -9574,7 +9904,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "price_change": {
@@ -9602,7 +9932,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -9636,6 +9966,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -9647,9 +9978,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.087,
-              "ci95_low": -0.0533,
-              "ci95_high": 0.2273,
+              "coef_pp_per_event_day": 0.0871,
+              "ci95_low": -0.0532,
+              "ci95_high": 0.2274,
               "prob_positive": 0.888,
               "prob_direction": 0.888,
               "significant": false,
@@ -9840,7 +10171,7 @@
             "n_with_event": 246,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "page_new": {
@@ -9856,7 +10187,7 @@
             "n_with_event": 45,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "page_removed": {
@@ -9872,7 +10203,7 @@
             "n_with_event": 6,
             "type_confidence": "vorlaeufig",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "press_mention": {
@@ -9888,7 +10219,7 @@
             "n_with_event": 31,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "news_mention": {
@@ -9904,7 +10235,7 @@
             "n_with_event": 54,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "linkedin_post": {
@@ -9912,6 +10243,22 @@
             "n_with_event": 0,
             "available": false,
             "grund": "zu wenige Intervalle mit Ereignis"
+          },
+          "instagram_post": {
+            "label": "Instagram-Posts",
+            "pearson_r": 0.019082877628223787,
+            "avg_sov_effect_pp": 0.409,
+            "effect_se_pp": 0.812,
+            "ci95_low_pp": -2.175,
+            "ci95_high_pp": 2.993,
+            "significant": false,
+            "p_value": 0.614725,
+            "n_intervals": 755,
+            "n_with_event": 4,
+            "type_confidence": "unzureichend",
+            "available": true,
+            "p_fdr": 0.9266,
+            "significant_fdr": false
           },
           "domain_change": {
             "label": "Domain-/Subdomain-Aenderungen",
@@ -9932,7 +10279,7 @@
             "n_with_event": 26,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9266,
             "significant_fdr": false
           },
           "review_volume": {
@@ -9948,7 +10295,7 @@
             "n_with_event": 22,
             "type_confidence": "belastbar",
             "available": true,
-            "p_fdr": 0.9553,
+            "p_fdr": 0.9557,
             "significant_fdr": false
           },
           "price_change": {
@@ -9976,7 +10323,7 @@
             "n_with_event": 4,
             "type_confidence": "unzureichend",
             "available": true,
-            "p_fdr": 0.9317,
+            "p_fdr": 0.9322,
             "significant_fdr": false
           },
           "rating_status_change": {
@@ -10010,6 +10357,7 @@
           ],
           "types_excluded_too_few": [
             "linkedin_post",
+            "instagram_post",
             "domain_change",
             "price_change",
             "wikipedia_change",
@@ -10021,11 +10369,11 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.2215,
-              "ci95_low": -0.8403,
-              "ci95_high": 0.3973,
-              "prob_positive": 0.241,
-              "prob_direction": 0.759,
+              "coef_pp_per_event_day": -0.2214,
+              "ci95_low": -0.8402,
+              "ci95_high": 0.3974,
+              "prob_positive": 0.242,
+              "prob_direction": 0.758,
               "significant": false,
               "n_with_event": 26,
               "cluster_se": 0.2881,
@@ -10215,6 +10563,16 @@
         "available": false,
         "grund": "Zu wenige Intervalle mit diesem Ereignis (<3)."
       },
+      "instagram_post": {
+        "label": "Instagram-Posts",
+        "n_with_event": 4,
+        "avg_sov_effect_pp": 0.183,
+        "se_pp": 0.161,
+        "ci95_low_pp": -0.329,
+        "ci95_high_pp": 0.695,
+        "significant": false,
+        "p_value": 0.254774
+      },
       "domain_change": {
         "label": "Domain-/Subdomain-Aenderungen",
         "n_with_event": 0,
@@ -10336,6 +10694,16 @@
         "n_with_event": 0,
         "available": false,
         "grund": "Zu wenige Intervalle mit diesem Ereignis (<3)."
+      },
+      "instagram_post": {
+        "label": "Instagram-Posts",
+        "n_with_event": 3,
+        "avg_sov_effect_pp": -0.052,
+        "se_pp": 0.06,
+        "ci95_low_pp": -0.311,
+        "ci95_high_pp": 0.207,
+        "significant": false,
+        "p_value": 0.391353
       },
       "domain_change": {
         "label": "Domain-/Subdomain-Aenderungen",
@@ -10537,6 +10905,15 @@
           "significant": false,
           "p_value": 0.482914
         },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "n_with_event": 4,
+          "effect_cite_share_pp": 0.154,
+          "ci95_low_pp": -0.319,
+          "ci95_high_pp": 0.627,
+          "significant": false,
+          "p_value": 0.300188
+        },
         "review_change": {
           "label": "Bewertungs-Trend (±)",
           "n_with_event": 22,
@@ -10566,6 +10943,7 @@
       "press_mention": 1.22,
       "news_mention": 1.03,
       "linkedin_post": null,
+      "instagram_post": 1.98,
       "domain_change": null,
       "review_change": 1.37,
       "review_volume": 1.05,
@@ -10676,10 +11054,10 @@
       }
     ],
     "event_deckung": {
-      "n_presse_news_events": 2782,
+      "n_presse_news_events": 2789,
       "auf_zitierten_quellen": 231,
-      "anteil_auf_zitierten_quellen": 0.083,
-      "nicht_zitiert": 2551
+      "anteil_auf_zitierten_quellen": 0.0828,
+      "nicht_zitiert": 2558
     },
     "top_autoritaetsquellen_ohne_event": [
       "ergo.de",
@@ -11132,7 +11510,7 @@
     "je_lag": {
       "-14": {
         "n_intervalle": 668,
-        "n_treiber": 6
+        "n_treiber": 7
       },
       "-7": {
         "n_intervalle": 668,
@@ -11328,20 +11706,20 @@
         "label": "Pressemitteilungen",
         "bester_lag": 3,
         "r_bei_bestem_lag": 0.161,
-        "effekt_pp": 0.422,
+        "effekt_pp": 0.419,
         "gesichert": false,
         "verlauf": [
           {
             "lag": -14,
-            "r": 0.077,
-            "effekt_pp": 0.255,
-            "p": 0.17531,
+            "r": 0.075,
+            "effekt_pp": 0.244,
+            "p": 0.189177,
             "gesichert": false,
             "lead": true
           },
           {
             "lag": -7,
-            "r": 0.059,
+            "r": 0.055,
             "effekt_pp": 0.273,
             "p": 0.219503,
             "gesichert": false,
@@ -11349,7 +11727,7 @@
           },
           {
             "lag": -3,
-            "r": 0.018,
+            "r": 0.038,
             "effekt_pp": 0.007,
             "p": 0.982187,
             "gesichert": false,
@@ -11366,14 +11744,14 @@
           {
             "lag": 3,
             "r": 0.161,
-            "effekt_pp": 0.422,
-            "p": 0.148158,
+            "effekt_pp": 0.419,
+            "p": 0.145436,
             "gesichert": false,
             "lead": false
           },
           {
             "lag": 7,
-            "r": 0.025,
+            "r": 0.024,
             "effekt_pp": -0.013,
             "p": 0.949303,
             "gesichert": false,
@@ -11389,7 +11767,7 @@
           },
           {
             "lag": 28,
-            "r": -0.022,
+            "r": -0.023,
             "effekt_pp": -0.139,
             "p": 0.337144,
             "gesichert": false,
@@ -11399,8 +11777,8 @@
         "vorzeichenwechsel": 1,
         "musterbewertung": "ein Vorzeichenwechsel — uneindeutig",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.077 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.161 (3 Tage).",
-        "max_abs_r_lead": 0.077,
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.075 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.161 (3 Tage).",
+        "max_abs_r_lead": 0.075,
         "max_abs_r_ab_lag0": 0.161,
         "r_bei_lag0": 0.07
       },
@@ -11462,8 +11840,8 @@
           {
             "lag": 14,
             "r": -0.012,
-            "effekt_pp": -0.1,
-            "p": 0.470534,
+            "effekt_pp": -0.098,
+            "p": 0.47506,
             "gesichert": false,
             "lead": false
           },
@@ -11525,9 +11903,9 @@
         "verlauf": [
           {
             "lag": -14,
-            "r": 0.032,
-            "effekt_pp": 0.219,
-            "p": 0.292454,
+            "r": 0.031,
+            "effekt_pp": 0.211,
+            "p": 0.29089,
             "gesichert": false,
             "lead": true
           },
@@ -11541,9 +11919,9 @@
           },
           {
             "lag": -3,
-            "r": -0.025,
-            "effekt_pp": -0.114,
-            "p": 0.556825,
+            "r": -0.024,
+            "effekt_pp": -0.108,
+            "p": 0.569131,
             "gesichert": false,
             "lead": true
           },
@@ -11591,8 +11969,8 @@
         "vorzeichenwechsel": 3,
         "musterbewertung": "springend — 3 Vorzeichenwechsel ueber 5 Versaetze. Der beste Versatz ist hier hoechstwahrscheinlich ein Rauschmaximum, kein Wirkungsmuster.",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.032 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.098 (0 Tage).",
-        "max_abs_r_lead": 0.032,
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.031 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.098 (0 Tage).",
+        "max_abs_r_lead": 0.031,
         "max_abs_r_ab_lag0": 0.098,
         "r_bei_lag0": -0.098
       },
@@ -11606,8 +11984,8 @@
           {
             "lag": -14,
             "r": 0.03,
-            "effekt_pp": 0.215,
-            "p": 0.451033,
+            "effekt_pp": 0.203,
+            "p": 0.453756,
             "gesichert": false,
             "lead": true
           },
@@ -11621,9 +11999,9 @@
           },
           {
             "lag": -3,
-            "r": 0.003,
-            "effekt_pp": -0.001,
-            "p": 0.99845,
+            "r": 0.004,
+            "effekt_pp": 0.007,
+            "p": 0.986124,
             "gesichert": false,
             "lead": true
           },
@@ -11982,12 +12360,12 @@
     }
   },
   "press_by_citation": {
-    "n_presse_events": 2782,
+    "n_presse_events": 2789,
     "je_klasse": {
-      "unbekannt": 1762,
-      "zitiert_marke": 208,
-      "zitiert_redaktionell": 155,
-      "nicht_zitiert": 657
+      "unbekannt": 1763,
+      "zitiert_marke": 210,
+      "zitiert_redaktionell": 156,
+      "nicht_zitiert": 660
     },
     "klassen_label": {
       "zitiert_redaktionell": "Presse in zitierten Redaktionsmedien",
@@ -11996,7 +12374,7 @@
     },
     "methode": "Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle der Einordnung: data/content_citations.json, gesetzt von scripts/enrich_press_events.py als detail.zitat_klasse.",
     "grenzen": "Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht zuordnen liess - nicht, dass es nicht zitiert wird.",
-    "abdeckung": 0.3666,
+    "abdeckung": 0.3679,
     "available": true,
     "wirkung_je_klasse": {
       "zitiert_redaktionell": {
@@ -12005,7 +12383,7 @@
         "avg_sov_effect_pp": 0.152,
         "n_intervals": 668,
         "n_with_event": 36,
-        "n_events": 155,
+        "n_events": 156,
         "significant_iid": false,
         "p_iid": 0.788862,
         "effect_se_cluster_pp": 0.567,
@@ -12023,7 +12401,7 @@
         "avg_sov_effect_pp": -0.146,
         "n_intervals": 668,
         "n_with_event": 105,
-        "n_events": 657,
+        "n_events": 660,
         "significant_iid": false,
         "p_iid": 0.38824,
         "effect_se_cluster_pp": 0.17,
@@ -12041,7 +12419,7 @@
         "avg_sov_effect_pp": 0.474,
         "n_intervals": 668,
         "n_with_event": 50,
-        "n_events": 208,
+        "n_events": 210,
         "significant_iid": false,
         "p_iid": 0.210494,
         "effect_se_cluster_pp": 0.378,
@@ -12072,7 +12450,7 @@
       },
       {
         "domain": "versicherungsbote.de",
-        "n_artikel": 41,
+        "n_artikel": 42,
         "zitate": 4498
       },
       {
@@ -12176,21 +12554,21 @@
       "press_mention": {
         "available": true,
         "label": "Pressemitteilungen",
-        "steigung_pp_je_ereignis_tag": 0.2948,
+        "steigung_pp_je_ereignis_tag": 0.2942,
         "n_intervals": 668,
         "n_with_event": 66,
-        "dosis_min": 0.0909,
+        "dosis_min": 0.1429,
         "dosis_max": 4.0,
         "dosis_median": 1.0,
-        "steigung_within_fe": 0.2980858542611676,
-        "se_cluster": 0.18688742585218734,
-        "ci95_low": -0.133,
-        "ci95_high": 0.729,
-        "p_cluster": 0.149378,
+        "steigung_within_fe": 0.2973360573751736,
+        "se_cluster": 0.18695929595961455,
+        "ci95_low": -0.134,
+        "ci95_high": 0.728,
+        "p_cluster": 0.150413,
         "n_clusters": 9,
         "significant": false,
         "significance_basis": "cluster",
-        "wirkung_ueber_beobachtete_spanne_pp": 1.165,
+        "wirkung_ueber_beobachtete_spanne_pp": 1.147,
         "p_fdr": 0.2668,
         "significant_unkorrigiert": false
       },
@@ -12219,6 +12597,12 @@
         "available": false,
         "label": "LinkedIn-Posts",
         "n_with_event": 0,
+        "grund": "zu wenige Intervalle mit Ereignis"
+      },
+      "instagram_post": {
+        "available": false,
+        "label": "Instagram-Posts",
+        "n_with_event": 4,
         "grund": "zu wenige Intervalle mit Ereignis"
       },
       "domain_change": {
@@ -12448,6 +12832,32 @@
           "type_confidence": "belastbar",
           "type_confidence_grund": null
         },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.011,
+          "spearman_r": 0.017,
+          "avg_sov_effect_pp": 0.129,
+          "effect_se_pp": 0.123,
+          "ci95_low_pp": -0.263,
+          "ci95_high_pp": 0.521,
+          "n_clusters": 3,
+          "n_clusters_gesamt": 25,
+          "effect_se_cluster_pp": 0.123,
+          "effect_se_cr1_roh_pp": 0.122,
+          "effect_within_fe_pp": 0.138,
+          "ci95_low_cluster_pp": -0.392,
+          "ci95_high_cluster_pp": 0.668,
+          "p_cluster": 0.379611,
+          "cluster_df": 2,
+          "significance_basis": "cluster",
+          "significant": false,
+          "significant_iid": false,
+          "n_intervals": 598,
+          "n_with_event": 4,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Nur 3 Marke(n) mit Ereignis. Der Effekt stuetzt sich damit auf 3 unabhaengige Einheiten, nicht auf 4 Intervalle — unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig davon, wie eng das iid-Intervall aussieht."
+        },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
           "available": true,
@@ -12603,6 +13013,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -12615,9 +13026,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0188,
-            "ci95_low": 0.5021,
-            "ci95_high": 1.5355,
+            "coef_pp_per_event_day": 1.0204,
+            "ci95_low": 0.5037,
+            "ci95_high": 1.537,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -12625,9 +13036,9 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1125,
-            "ci95_low": -0.3717,
-            "ci95_high": 0.5967,
+            "coef_pp_per_event_day": 0.1127,
+            "ci95_low": -0.3716,
+            "ci95_high": 0.5969,
             "prob_positive": 0.676,
             "prob_direction": 0.676,
             "significant": false,
@@ -12635,13 +13046,23 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0749,
+            "coef_pp_per_event_day": -0.075,
             "ci95_low": -0.2271,
-            "ci95_high": 0.0772,
+            "ci95_high": 0.0771,
             "prob_positive": 0.167,
             "prob_direction": 0.833,
             "significant": false,
             "n_with_event": 41
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0167,
+            "ci95_low": -0.1892,
+            "ci95_high": 0.1558,
+            "prob_positive": 0.425,
+            "prob_direction": 0.575,
+            "significant": false,
+            "n_with_event": 23
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -12653,16 +13074,6 @@
             "significant": true,
             "n_with_event": 60
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0137,
-            "ci95_low": -0.1542,
-            "ci95_high": 0.1267,
-            "prob_positive": 0.424,
-            "prob_direction": 0.576,
-            "significant": false,
-            "n_with_event": 27
-          },
           "page_removed": {
             "label": "Geloeschte Seiten",
             "coef_pp_per_event_day": 0.0097,
@@ -12673,16 +13084,6 @@
             "significant": false,
             "n_with_event": 6
           },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0017,
-            "ci95_low": -0.0364,
-            "ci95_high": 0.0398,
-            "prob_positive": 0.535,
-            "prob_direction": 0.535,
-            "significant": false,
-            "n_with_event": 26
-          },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0014,
@@ -12692,6 +13093,16 @@
             "prob_direction": 0.766,
             "significant": false,
             "n_with_event": 275
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0007,
+            "ci95_low": -0.0407,
+            "ci95_high": 0.0393,
+            "prob_positive": 0.486,
+            "prob_direction": 0.514,
+            "significant": false,
+            "n_with_event": 20
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -12884,6 +13295,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -13102,6 +13514,32 @@
           "type_confidence": "belastbar",
           "type_confidence_grund": null
         },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.01,
+          "spearman_r": 0.03,
+          "avg_sov_effect_pp": 0.136,
+          "effect_se_pp": 0.264,
+          "ci95_low_pp": -0.703,
+          "ci95_high_pp": 0.975,
+          "n_clusters": 3,
+          "n_clusters_gesamt": 25,
+          "effect_se_cluster_pp": 0.264,
+          "effect_se_cr1_roh_pp": 0.202,
+          "effect_within_fe_pp": 0.145,
+          "ci95_low_cluster_pp": -0.989,
+          "ci95_high_cluster_pp": 1.28,
+          "p_cluster": 0.636786,
+          "cluster_df": 2,
+          "significance_basis": "cluster",
+          "significant": false,
+          "significant_iid": false,
+          "n_intervals": 605,
+          "n_with_event": 4,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Nur 3 Marke(n) mit Ereignis. Der Effekt stuetzt sich damit auf 3 unabhaengige Einheiten, nicht auf 4 Intervalle — unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig davon, wie eng das iid-Intervall aussieht."
+        },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
           "available": true,
@@ -13231,6 +13669,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -13245,7 +13684,7 @@
             "label": "Presse/News: Schaden/Leistung",
             "coef_pp_per_event_day": 0.6424,
             "ci95_low": 0.0057,
-            "ci95_high": 1.2791,
+            "ci95_high": 1.279,
             "prob_positive": 0.976,
             "prob_direction": 0.976,
             "significant": false,
@@ -13253,9 +13692,9 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2567,
-            "ci95_low": -0.2903,
-            "ci95_high": 0.8037,
+            "coef_pp_per_event_day": 0.2569,
+            "ci95_low": -0.2901,
+            "ci95_high": 0.8039,
             "prob_positive": 0.821,
             "prob_direction": 0.821,
             "significant": false,
@@ -13263,33 +13702,43 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1385,
-            "ci95_low": -0.0493,
-            "ci95_high": 0.3264,
+            "coef_pp_per_event_day": 0.1388,
+            "ci95_low": -0.0489,
+            "ci95_high": 0.3266,
             "prob_positive": 0.926,
             "prob_direction": 0.926,
             "significant": false,
             "n_with_event": 41
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.027,
-            "ci95_low": -0.2003,
-            "ci95_high": 0.1463,
-            "prob_positive": 0.38,
-            "prob_direction": 0.62,
-            "significant": false,
-            "n_with_event": 27
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
             "coef_pp_per_event_day": -0.0264,
             "ci95_low": -0.149,
             "ci95_high": 0.0962,
-            "prob_positive": 0.337,
-            "prob_direction": 0.663,
+            "prob_positive": 0.336,
+            "prob_direction": 0.664,
             "significant": false,
             "n_with_event": 6
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0211,
+            "ci95_low": -0.2339,
+            "ci95_high": 0.1918,
+            "prob_positive": 0.423,
+            "prob_direction": 0.577,
+            "significant": false,
+            "n_with_event": 23
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0119,
+            "ci95_low": -0.0375,
+            "ci95_high": 0.0613,
+            "prob_positive": 0.681,
+            "prob_direction": 0.681,
+            "significant": false,
+            "n_with_event": 20
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -13300,16 +13749,6 @@
             "prob_direction": 1.0,
             "significant": true,
             "n_with_event": 60
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0101,
-            "ci95_low": -0.0369,
-            "ci95_high": 0.0571,
-            "prob_positive": 0.663,
-            "prob_direction": 0.663,
-            "significant": false,
-            "n_with_event": 26
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -13439,6 +13878,32 @@
           "n_with_event": 72,
           "type_confidence": "belastbar",
           "type_confidence_grund": null
+        },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.016,
+          "spearman_r": 0.031,
+          "avg_sov_effect_pp": 0.198,
+          "effect_se_pp": 0.238,
+          "ci95_low_pp": -0.561,
+          "ci95_high_pp": 0.957,
+          "n_clusters": 3,
+          "n_clusters_gesamt": 25,
+          "effect_se_cluster_pp": 0.238,
+          "effect_se_cr1_roh_pp": 0.236,
+          "effect_within_fe_pp": 0.214,
+          "ci95_low_cluster_pp": -0.812,
+          "ci95_high_cluster_pp": 1.24,
+          "p_cluster": 0.463528,
+          "cluster_df": 2,
+          "significance_basis": "cluster",
+          "significant": false,
+          "significant_iid": false,
+          "n_intervals": 492,
+          "n_with_event": 4,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Nur 3 Marke(n) mit Ereignis. Der Effekt stuetzt sich damit auf 3 unabhaengige Einheiten, nicht auf 4 Intervalle — unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig davon, wie eng das iid-Intervall aussieht."
         },
         "page_removed": {
           "label": "Geloeschte Seiten",
@@ -13621,6 +14086,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -13633,43 +14099,43 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2143,
-            "ci95_low": -0.4929,
-            "ci95_high": 0.9215,
-            "prob_positive": 0.724,
-            "prob_direction": 0.724,
+            "coef_pp_per_event_day": 0.2137,
+            "ci95_low": -0.4937,
+            "ci95_high": 0.9211,
+            "prob_positive": 0.723,
+            "prob_direction": 0.723,
             "significant": false,
             "n_with_event": 12
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.0824,
-            "ci95_low": -0.1709,
-            "ci95_high": 0.3357,
-            "prob_positive": 0.738,
-            "prob_direction": 0.738,
+            "coef_pp_per_event_day": 0.0827,
+            "ci95_low": -0.1705,
+            "ci95_high": 0.3358,
+            "prob_positive": 0.739,
+            "prob_direction": 0.739,
             "significant": false,
             "n_with_event": 29
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.0379,
-            "ci95_low": -0.8251,
-            "ci95_high": 0.9009,
-            "prob_positive": 0.534,
-            "prob_direction": 0.534,
+            "coef_pp_per_event_day": 0.0445,
+            "ci95_low": -0.8185,
+            "ci95_high": 0.9075,
+            "prob_positive": 0.54,
+            "prob_direction": 0.54,
             "significant": false,
             "n_with_event": 9
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0171,
-            "ci95_low": -0.2072,
-            "ci95_high": 0.1729,
-            "prob_positive": 0.43,
-            "prob_direction": 0.57,
+            "coef_pp_per_event_day": -0.0123,
+            "ci95_low": -0.246,
+            "ci95_high": 0.2213,
+            "prob_positive": 0.459,
+            "prob_direction": 0.541,
             "significant": false,
-            "n_with_event": 27
+            "n_with_event": 23
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -13681,33 +14147,33 @@
             "significant": true,
             "n_with_event": 52
           },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0058,
-            "ci95_low": -0.0457,
-            "ci95_high": 0.0574,
-            "prob_positive": 0.588,
-            "prob_direction": 0.588,
-            "significant": false,
-            "n_with_event": 26
-          },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": 0.0033,
-            "ci95_low": -0.1303,
+            "coef_pp_per_event_day": 0.0032,
+            "ci95_low": -0.1304,
             "ci95_high": 0.1369,
             "prob_positive": 0.519,
             "prob_direction": 0.519,
             "significant": false,
             "n_with_event": 6
           },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0012,
+            "ci95_low": -0.0552,
+            "ci95_high": 0.0528,
+            "prob_positive": 0.482,
+            "prob_direction": 0.518,
+            "significant": false,
+            "n_with_event": 20
+          },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0004,
             "ci95_low": -0.0072,
             "ci95_high": 0.0064,
-            "prob_positive": 0.455,
-            "prob_direction": 0.545,
+            "prob_positive": 0.454,
+            "prob_direction": 0.546,
             "significant": false,
             "n_with_event": 238
           }
@@ -13823,6 +14289,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -13911,6 +14378,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -14175,6 +14643,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -14188,9 +14657,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.5602,
-            "ci95_low": 0.5602,
-            "ci95_high": 0.5602,
+            "coef_pp_per_event_day": 0.5606,
+            "ci95_low": 0.5606,
+            "ci95_high": 0.5606,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -14529,6 +14998,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "review_change",
           "review_volume",
           "price_change",
@@ -14541,9 +15011,9 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.2831,
-            "ci95_low": -0.2831,
-            "ci95_high": -0.2831,
+            "coef_pp_per_event_day": -0.2833,
+            "ci95_low": -0.2833,
+            "ci95_high": -0.2833,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -14571,9 +15041,9 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.003,
-            "ci95_low": -0.003,
-            "ci95_high": -0.003,
+            "coef_pp_per_event_day": -0.0043,
+            "ci95_low": -0.0043,
+            "ci95_high": -0.0043,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -14656,6 +15126,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -14792,7 +15263,7 @@
         "press_mention": {
           "label": "Pressemitteilungen",
           "available": true,
-          "pearson_r": -0.057,
+          "pearson_r": -0.06,
           "spearman_r": -0.268,
           "avg_sov_effect_pp": -0.557,
           "effect_se_pp": 0.269,
@@ -14812,6 +15283,32 @@
           "significant_iid": false,
           "n_intervals": 37,
           "n_with_event": 2,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 1 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist."
+        },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.033,
+          "spearman_r": 0.187,
+          "avg_sov_effect_pp": 0.309,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "n_clusters": 1,
+          "n_clusters_gesamt": null,
+          "effect_se_cluster_pp": null,
+          "effect_se_cr1_roh_pp": null,
+          "effect_within_fe_pp": null,
+          "ci95_low_cluster_pp": null,
+          "ci95_high_cluster_pp": null,
+          "p_cluster": null,
+          "cluster_df": null,
+          "significance_basis": "nicht_schaetzbar",
+          "significant": null,
+          "significant_iid": null,
+          "n_intervals": 37,
+          "n_with_event": 1,
           "type_confidence": "unzureichend",
           "type_confidence_grund": "Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 1 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist."
         },
@@ -14903,15 +15400,14 @@
         "n_brands": 1,
         "types_used": [
           "page_change",
-          "page_new",
-          "review_positive",
-          "review_negative"
+          "page_new"
         ],
         "types_excluded_too_few": [
           "page_removed",
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -14932,26 +15428,6 @@
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 5
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0042,
-            "ci95_low": 0.0042,
-            "ci95_high": 0.0042,
-            "prob_positive": 1.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 4
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.003,
-            "ci95_low": -0.003,
-            "ci95_high": -0.003,
-            "prob_positive": 0.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 4
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -15046,6 +15522,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -15500,6 +15977,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -15523,13 +16001,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.003,
-            "ci95_low": -0.003,
-            "ci95_high": -0.003,
+            "coef_pp_per_event_day": -0.0043,
+            "ci95_low": -0.0043,
+            "ci95_high": -0.0043,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 5
+            "n_with_event": 4
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -15604,6 +16082,32 @@
           "significant_iid": false,
           "n_intervals": 56,
           "n_with_event": 4,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 1 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist."
+        },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.06,
+          "spearman_r": 0.117,
+          "avg_sov_effect_pp": 0.309,
+          "effect_se_pp": null,
+          "ci95_low_pp": null,
+          "ci95_high_pp": null,
+          "n_clusters": 1,
+          "n_clusters_gesamt": null,
+          "effect_se_cluster_pp": null,
+          "effect_se_cr1_roh_pp": null,
+          "effect_within_fe_pp": null,
+          "ci95_low_cluster_pp": null,
+          "ci95_high_cluster_pp": null,
+          "p_cluster": null,
+          "cluster_df": null,
+          "significance_basis": "nicht_schaetzbar",
+          "significant": null,
+          "significant_iid": null,
+          "n_intervals": 56,
+          "n_with_event": 1,
           "type_confidence": "unzureichend",
           "type_confidence_grund": "Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 1 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist."
         },
@@ -15703,6 +16207,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -15715,9 +16220,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1515,
-            "ci95_low": 0.1515,
-            "ci95_high": 0.1515,
+            "coef_pp_per_event_day": 0.1518,
+            "ci95_low": 0.1518,
+            "ci95_high": 0.1518,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -15872,6 +16377,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -16083,6 +16589,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -16095,9 +16602,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1515,
-            "ci95_low": 0.1515,
-            "ci95_high": 0.1515,
+            "coef_pp_per_event_day": 0.1518,
+            "ci95_low": 0.1518,
+            "ci95_high": 0.1518,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -16105,9 +16612,9 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0042,
-            "ci95_low": 0.0042,
-            "ci95_high": 0.0042,
+            "coef_pp_per_event_day": 0.0059,
+            "ci95_low": 0.0059,
+            "ci95_high": 0.0059,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16115,13 +16622,13 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.003,
-            "ci95_low": -0.003,
-            "ci95_high": -0.003,
+            "coef_pp_per_event_day": -0.0043,
+            "ci95_low": -0.0043,
+            "ci95_high": -0.0043,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
-            "n_with_event": 5
+            "n_with_event": 4
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -16199,6 +16706,32 @@
           "type_confidence": "unzureichend",
           "type_confidence_grund": "Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 1 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist."
         },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": -0.163,
+          "spearman_r": -0.187,
+          "avg_sov_effect_pp": -0.094,
+          "effect_se_pp": 0.126,
+          "ci95_low_pp": -1.695,
+          "ci95_high_pp": 1.506,
+          "n_clusters": 1,
+          "n_clusters_gesamt": null,
+          "effect_se_cluster_pp": null,
+          "effect_se_cr1_roh_pp": null,
+          "effect_within_fe_pp": null,
+          "ci95_low_cluster_pp": null,
+          "ci95_high_cluster_pp": null,
+          "p_cluster": null,
+          "cluster_df": null,
+          "significance_basis": "nicht_schaetzbar",
+          "significant": null,
+          "significant_iid": false,
+          "n_intervals": 17,
+          "n_with_event": 2,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 1 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist."
+        },
         "press_mention": {
           "label": "Pressemitteilungen",
           "available": true,
@@ -16243,6 +16776,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -16255,9 +16789,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1515,
-            "ci95_low": 0.1515,
-            "ci95_high": 0.1515,
+            "coef_pp_per_event_day": 0.1518,
+            "ci95_low": 0.1518,
+            "ci95_high": 0.1518,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16330,6 +16864,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -16434,6 +16969,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -16626,6 +17162,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -16844,6 +17381,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -16994,6 +17532,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -17098,6 +17637,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -17202,6 +17742,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_change",
           "review_volume",
@@ -17334,6 +17875,32 @@
           "ci95_low_cluster_pp": -1.303,
           "ci95_high_cluster_pp": 1.731,
           "p_cluster": 0.606,
+          "cluster_df": 2,
+          "significance_basis": "cluster",
+          "significant": false,
+          "significant_iid": false,
+          "n_intervals": 605,
+          "n_with_event": 4,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Nur 3 Marke(n) mit Ereignis. Der Effekt stuetzt sich damit auf 3 unabhaengige Einheiten, nicht auf 4 Intervalle — unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig davon, wie eng das iid-Intervall aussieht."
+        },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.014,
+          "spearman_r": 0.028,
+          "avg_sov_effect_pp": 0.17,
+          "effect_se_pp": 0.189,
+          "ci95_low_pp": -0.43,
+          "ci95_high_pp": 0.771,
+          "n_clusters": 3,
+          "n_clusters_gesamt": 25,
+          "effect_se_cluster_pp": 0.19,
+          "effect_se_cr1_roh_pp": 0.19,
+          "effect_within_fe_pp": 0.182,
+          "ci95_low_cluster_pp": -0.635,
+          "ci95_high_cluster_pp": 1.0,
+          "p_cluster": 0.43864,
           "cluster_df": 2,
           "significance_basis": "cluster",
           "significant": false,
@@ -17524,6 +18091,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -17536,29 +18104,29 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.3832,
-            "ci95_low": -0.2237,
-            "ci95_high": 0.9901,
-            "prob_positive": 0.892,
-            "prob_direction": 0.892,
+            "coef_pp_per_event_day": 0.3851,
+            "ci95_low": -0.2218,
+            "ci95_high": 0.992,
+            "prob_positive": 0.893,
+            "prob_direction": 0.893,
             "significant": false,
             "n_with_event": 12
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2204,
-            "ci95_low": -0.3009,
-            "ci95_high": 0.7418,
-            "prob_positive": 0.796,
-            "prob_direction": 0.796,
+            "coef_pp_per_event_day": 0.2206,
+            "ci95_low": -0.3008,
+            "ci95_high": 0.7421,
+            "prob_positive": 0.797,
+            "prob_direction": 0.797,
             "significant": false,
             "n_with_event": 16
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1344,
+            "coef_pp_per_event_day": 0.1343,
             "ci95_low": -0.0446,
-            "ci95_high": 0.3135,
+            "ci95_high": 0.3133,
             "prob_positive": 0.929,
             "prob_direction": 0.929,
             "significant": false,
@@ -17566,43 +18134,43 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0247,
-            "ci95_low": -0.1899,
-            "ci95_high": 0.1404,
-            "prob_positive": 0.385,
-            "prob_direction": 0.615,
+            "coef_pp_per_event_day": -0.0224,
+            "ci95_low": -0.2254,
+            "ci95_high": 0.1805,
+            "prob_positive": 0.414,
+            "prob_direction": 0.586,
             "significant": false,
-            "n_with_event": 27
+            "n_with_event": 23
           },
           "page_new": {
             "label": "Neue Seiten",
             "coef_pp_per_event_day": 0.0088,
             "ci95_low": 0.0039,
-            "ci95_high": 0.0137,
+            "ci95_high": 0.0136,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": true,
             "n_with_event": 60
           },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0088,
-            "ci95_low": -0.036,
-            "ci95_high": 0.0536,
-            "prob_positive": 0.65,
-            "prob_direction": 0.65,
-            "significant": false,
-            "n_with_event": 26
-          },
           "page_removed": {
             "label": "Geloeschte Seiten",
             "coef_pp_per_event_day": -0.0086,
             "ci95_low": -0.1254,
-            "ci95_high": 0.1083,
+            "ci95_high": 0.1082,
             "prob_positive": 0.443,
             "prob_direction": 0.557,
             "significant": false,
             "n_with_event": 6
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": 0.0065,
+            "ci95_low": -0.0405,
+            "ci95_high": 0.0536,
+            "prob_positive": 0.607,
+            "prob_direction": 0.607,
+            "significant": false,
+            "n_with_event": 20
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -17789,6 +18357,32 @@
           "type_confidence": "belastbar",
           "type_confidence_grund": null
         },
+        "instagram_post": {
+          "label": "Instagram-Posts",
+          "available": true,
+          "pearson_r": 0.011,
+          "spearman_r": 0.015,
+          "avg_sov_effect_pp": 0.124,
+          "effect_se_pp": 0.126,
+          "ci95_low_pp": -0.276,
+          "ci95_high_pp": 0.524,
+          "n_clusters": 3,
+          "n_clusters_gesamt": 25,
+          "effect_se_cluster_pp": 0.126,
+          "effect_se_cr1_roh_pp": 0.125,
+          "effect_within_fe_pp": 0.133,
+          "ci95_low_cluster_pp": -0.408,
+          "ci95_high_cluster_pp": 0.674,
+          "p_cluster": 0.401778,
+          "cluster_df": 2,
+          "significance_basis": "cluster",
+          "significant": false,
+          "significant_iid": false,
+          "n_intervals": 598,
+          "n_with_event": 4,
+          "type_confidence": "unzureichend",
+          "type_confidence_grund": "Nur 3 Marke(n) mit Ereignis. Der Effekt stuetzt sich damit auf 3 unabhaengige Einheiten, nicht auf 4 Intervalle — unterhalb von 5 Clustern ist er nicht schaetzbar, unabhaengig davon, wie eng das iid-Intervall aussieht."
+        },
         "wikipedia_change": {
           "label": "Wikipedia-Ausbau (±)",
           "available": true,
@@ -17944,6 +18538,7 @@
           "press_mention",
           "news_mention",
           "linkedin_post",
+          "instagram_post",
           "domain_change",
           "review_volume",
           "price_change",
@@ -17956,9 +18551,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0138,
-            "ci95_low": 0.4958,
-            "ci95_high": 1.5318,
+            "coef_pp_per_event_day": 1.0154,
+            "ci95_low": 0.4975,
+            "ci95_high": 1.5333,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17966,9 +18561,9 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1234,
-            "ci95_low": -0.362,
-            "ci95_high": 0.6088,
+            "coef_pp_per_event_day": 0.1235,
+            "ci95_low": -0.3619,
+            "ci95_high": 0.6089,
             "prob_positive": 0.691,
             "prob_direction": 0.691,
             "significant": false,
@@ -17976,8 +18571,8 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0771,
-            "ci95_low": -0.2296,
+            "coef_pp_per_event_day": -0.077,
+            "ci95_low": -0.2294,
             "ci95_high": 0.0755,
             "prob_positive": 0.161,
             "prob_direction": 0.839,
@@ -17996,23 +18591,33 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0117,
-            "ci95_low": -0.1525,
-            "ci95_high": 0.129,
-            "prob_positive": 0.435,
-            "prob_direction": 0.565,
+            "coef_pp_per_event_day": -0.0138,
+            "ci95_low": -0.1867,
+            "ci95_high": 0.1591,
+            "prob_positive": 0.438,
+            "prob_direction": 0.562,
             "significant": false,
-            "n_with_event": 27
+            "n_with_event": 23
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": 0.0091,
-            "ci95_low": -0.0904,
-            "ci95_high": 0.1086,
+            "coef_pp_per_event_day": 0.009,
+            "ci95_low": -0.0905,
+            "ci95_high": 0.1085,
             "prob_positive": 0.571,
             "prob_direction": 0.571,
             "significant": false,
             "n_with_event": 6
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0022,
+            "ci95_low": -0.0423,
+            "ci95_high": 0.0379,
+            "prob_positive": 0.457,
+            "prob_direction": 0.543,
+            "significant": false,
+            "n_with_event": 20
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -18023,16 +18628,6 @@
             "prob_direction": 0.774,
             "significant": false,
             "n_with_event": 275
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0004,
-            "ci95_low": -0.0378,
-            "ci95_high": 0.0386,
-            "prob_positive": 0.508,
-            "prob_direction": 0.508,
-            "significant": false,
-            "n_with_event": 26
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."

@@ -33,9 +33,12 @@ Arbeitsweise
 - Zwischen zwei Abrufen liegen SLEEP_S Sekunden (hoeflich bleiben; ausserdem
   faellt eine Drossel-Sperre sonst auf alle folgenden Abrufe).
 - Ausgabe data/linkedin_kpis.jsonl, EIN Messpunkt pro Zeile:
-    {"url", "brand", "checked", "reactions", "comments", "status"}
+    {"url", "brand", "checked", "reactions", "comments", "status",
+     "text", "autor_name"}
   status: "ok" | "authwall" | "fehler". Bei authwall/fehler sind die
-  Zahlfelder null — kein Wert ist keine Null.
+  Zahlfelder null — kein Wert ist keine Null. "text" ist der oeffentliche
+  Beitragstext (bis 600 Zeichen) aus derselben Seite; er speist im Dashboard
+  die Einordnung nach Post-Typ und das Event-Log.
 """
 import json
 import os
@@ -71,6 +74,38 @@ def kpis_aus_html(html):
     r = int(rx.group(1)) if rx else None
     c = int(cm.group(1).replace(".", "")) if cm else None
     return r, c
+
+
+def _entschaerfen(s):
+    """HTML-Schnipsel -> lesbarer Text."""
+    s = re.sub(r"<[^>]+>", " ", s or "")
+    for a, b in (("&amp;", "&"), ("&quot;", '"'), ("&#39;", "'"), ("&lt;", "<"),
+                 ("&gt;", ">"), ("&nbsp;", " ")):
+        s = s.replace(a, b)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def inhalt_aus_html(html):
+    """(post_text, autor_name) aus derselben Seite, die wir ohnehin laden.
+
+    20.08.2026, Pauls Auftrag "Event-Log mit wann, von wem, Thema": Googles
+    Snippets liefern bei rund der Haelfte der Posts nur Navigationstext
+    ("Menue schliessen. ERGO Versicherung AG ..."). Der echte Beitragstext
+    steht dagegen in der oeffentlichen Post-Seite - und die rufen wir fuer die
+    Reaktionszahlen sowieso ab. Kein zusaetzlicher Request, aber der
+    Unterschied zwischen "Sonstiges" und einer echten Einordnung.
+
+    Nichts davon wird erraten: Findet sich kein Text, bleibt das Feld leer."""
+    txt = ""
+    m = re.search(r'<p class="attributed-text-segment-list__content[^"]*"[^>]*>(.*?)</p>',
+                  html, re.S)
+    if m:
+        txt = _entschaerfen(m.group(1))[:600]
+    autor = ""
+    a = re.search(r'data-tracking-control-name="public_post_feed-actor-name"[^>]*>\s*([^<]{2,80})', html)
+    if a:
+        autor = _entschaerfen(a.group(1))[:80]
+    return txt, autor
 
 
 def main():
@@ -118,6 +153,7 @@ def main():
     zeilen = []
     for p in posts:
         status, r, c = "fehler", None, None
+        text, autor_name = "", ""
         # Host-Pruefung (Opus-Review #16): nur https auf *.linkedin.com abrufen.
         try:
             _pu = urllib.parse.urlparse(p["url"])
@@ -138,6 +174,7 @@ def main():
                 status = "authwall"
             else:
                 r, c = kpis_aus_html(html)
+                text, autor_name = inhalt_aus_html(html)
                 status = "ok" if r is not None else "fehler"
         except Exception:
             status = "fehler"
@@ -149,7 +186,7 @@ def main():
             n_err += 1
         zeilen.append({"url": p["url"], "brand": p.get("brand"),
                        "checked": heute, "reactions": r, "comments": c,
-                       "status": status})
+                       "status": status, "text": text, "autor_name": autor_name})
         time.sleep(SLEEP_S)
 
     if zeilen:

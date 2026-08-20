@@ -31,15 +31,19 @@ Ausgabe:
 - data/instagram_posts.jsonl   ein Post pro Zeile, dedupliziert je (Marke, URL)
 - shared/events.jsonl          event_type "instagram_post" je NEUEM Post
 
-Kontingent: 10 Abfragen je Lauf, dieselbe SerpAPI-Kasse wie LinkedIn und das
-GEO-Tool. Zusammen liegen beide Sammler bei rund 90-100 Suchen im Monat — das
-ist die Groessenordnung des freien Kontingents. Wenn es eng wird, ist der
-erste Hebel der Takt (14-taegig), nicht die Markenzahl.
+Kontingent: seit dem 20.08.2026 blaettert der Sammler bis zu fuenf Seiten je
+Marke (Pauls Entscheidung, siehe Kommentar bei SEITEN_MAX) - ein Lauf kostet
+also bis zu 50 SerpAPI-Suchen statt 10. In ruhigen Wochen deutlich weniger,
+weil bei der ersten nicht vollen Seite abgebrochen wird. Dieselbe Kasse wie
+LinkedIn und das GEO-Tool; der State-Eintrag "suchen" weist den tatsaechlichen
+Verbrauch je Lauf aus. Wenn es eng wird, ist der erste Hebel der Takt
+(14-taegig), dann SEITEN_MAX - nicht die Markenzahl.
 """
 import json
 import os
 import re
 import sys
+import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -51,6 +55,13 @@ try:
     HAS_EVENTS = True
 except ImportError:
     HAS_EVENTS = False
+
+# Stand der Einordnungs-Regeln. Wird je Beitrag mitgeschrieben, damit das
+# Dashboard erkennt, ob eine gespeicherte Einordnung noch der aktuellen Regel
+# entspricht - sonst rechnet es sie zur Laufzeit neu. Ohne diese Marke wuerden
+# alte Beitraege ihre veraltete Einordnung fuer immer behalten, denn ein
+# einmal gefundener Beitrag wird nie noch einmal gecrawlt.
+REGELSTAND = "2026-08-20b"
 
 OUT = Path("data/instagram_posts.jsonl")
 STATE = Path("data/instagram_state.json")
@@ -71,6 +82,15 @@ BRANDS = [
 
 MONATE_EN = {m: i + 1 for i, m in enumerate(
     ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
+
+
+def norm(s):
+    """Schriftschnitt-Spielereien einebnen. Instagram-Bios stecken voller
+    mathematischer Fettschrift (20.08.2026 real gesehen: "\U0001d400\U0001d411\U0001d418\U0001d40e
+    \U0001d417\U0001d452\U0001d45f\U0001d460..."). Fuer den Menschen ist das "ERGO Versicherung", fuer
+    jede Regex ohne Normalisierung sind es voellig andere Zeichen - und der
+    Beitrag faellt still in "Sonstiges"."""
+    return unicodedata.normalize("NFKC", s or "")
 
 
 def parse_datum(s):
@@ -134,8 +154,9 @@ def ist_instagram(u):
 # Reaktionszahlen abrufen). Das ist eine Heuristik, keine Inhaltsanalyse, und
 # steht im Reiter auch so dran.
 #
-# An 20 echten Google-Titeln (20.08.2026, Marken ERGO und Allianz) kalibriert.
-# Zwei Befunde aus dieser Stichprobe, die den ersten Entwurf widerlegt haben:
+# An echten Google-Treffern kalibriert (20.08.2026: erst 20 Titel von ERGO
+# und Allianz, dann am vollen Erstbestand von 100 Beitraegen nachgeschaerft).
+# Zwei Befunde aus der ersten Stichprobe, die den Entwurf widerlegt haben:
 #
 # 1. DER TITEL IST NICHT IMMER DER KONTONAME. Google liefert zwei Formen:
 #       "ERGO Versicherung | Der langersehnte #Fruehling steht ..."   <- Konto | Text
@@ -218,7 +239,7 @@ def titel_teile(titel):
       "<Posttext>"                  gar kein Konto im Titel
     Ohne erkennbares Konto ist der GANZE Titel Posttext - wichtig, weil der
     Post-Typ sonst am Firmennamen statt am Inhalt haengt."""
-    t = (titel or "").strip()
+    t = norm(titel).strip()
     if not t:
         return "", ""
     m = re.match(r"^(.{2,50}?)\s+(?:on|auf)\s+Instagram\s*[:\-]", t, re.I)
@@ -279,7 +300,7 @@ def sprachurteil(posttext, snippet, konto):
     Klassen Aschersleben"). Verworfen wird nur, wo ein Fremdsprachsignal
     steht und KEIN deutsches - so faellt das Stadion Allianz Parque raus,
     ohne dass ein deutscher Post mit englischem Hashtag mitfaellt."""
-    t = " ".join([posttext or "", snippet or "", konto or ""])
+    t = " ".join([norm(posttext), norm(snippet), norm(konto)])
     if DE_MARKER.search(t):
         return True, "deutsch"
     if FX_ZEICHEN.search(t):
@@ -290,22 +311,37 @@ def sprachurteil(posttext, snippet, konto):
 
 
 # Reihenfolge zaehlt: die erste passende Regel gewinnt.
+#
+# 20.08.2026 an den ERSTEN 100 echten Beitraegen nachkalibriert. Der erste
+# Wurf sortierte 57 % aller Beitraege als "Sonstiges" ein - eine Einordnung,
+# die vier von sieben Beitraegen nicht einordnet, taugt nicht zum Schichten
+# ("welche Art Post wirkt?"). Nach der Nachkalibrierung sind es 18 %.
+#
+# Was der echte Bestand gezeigt hat und der Entwurf nicht kannte:
+#   - Aktions- und Rabatt-Posts sind eine eigene, haeufige Gattung
+#     ("Monatspraemien gratis", "bis zu 25 % Nachlass", "BonusDrive").
+#   - Service/App-Posts ebenso ("Meine Allianz App", "ERGO Kundenportal").
+#   - Ein erheblicher Teil ist Sponsoring: Reitsport, Festivals, Stadion.
+#     Ohne eigene Kategorie landete das alles im Restehaufen.
+#   - "Beratung", "Baustein", "Schutz" fehlten im Produkt-Muster, obwohl das
+#     die haeufigsten Produktwoerter im Bestand sind.
+# Die verbleibenden 18 % sind ehrlicher Rest: abgeschnittene Titel,
+# Kontaktangaben, allgemeine Markensaetze - da ist nichts zu erkennen.
 POST_TYPEN = [
-    ("Recruiting & Karriere", r"\bm/w/d\b|karriere|jobs?\b|stelle\b|bewerb|werde\s|ausbildung|duales studium|wir stellen ein|wir suchen|join|hiring|arbeitgeber|azubi"),
-    ("Unternehmensnews & Zahlen", r"quartal|halbjahr|gesch(ae|ä)ftsjahr|bilanz|umsatz|gewinn|vorstand|aufsichtsrat|ernennung|(ue|ü)bernahme|fusion|rekord"),
-    ("Studie & Daten", r"studie|umfrage|report\b|analyse|tacho|barometer|index\b"),
-    ("Auszeichnung & Test", r"testsieger|auszeichnung|award|pr(ae|ä)miert|zertifi|siegel|ausgezeichnet"),
-    ("Jubiläum & Team", r"\bjahre\b.{0,20}(bei|im team)|jubil(ae|ä)um|j-u-b-e-l|herzlichen gl(ue|ü)ckwunsch|willkommen im team|unser team"),
-    ("Event & Netzwerk", r"messe|kongress|tagung|maklertreff|netzwerk|treffen|konferenz|roadshow|event\b"),
-    ("Kooperation & Partner", r"kooperation|partnerschaft|gemeinsam mit|zusammenarbeit|volksbank|sparkasse|sponsor"),
-    ("Standort & Vertrieb", r"neuer standort|er(oe|ö)ffnung|neues kapitel|umzug|neue r(ae|ä)ume"),
-    ("Nachhaltigkeit & Engagement", r"nachhaltig|klima|esg|spende|ehrenamt|soziales|diversity|inklusion|charity"),
-    ("Saison & Gruß", r"frohe (ostern|weihnachten)|frohes neues|fr(ue|ü)hling|sommerzeit|adventszeit|guten rutsch|feiertag|w(ue|ü)nscht ihnen"),
-    ("Ratgeber & Wissen", r"tipps?\b|ratgeber|wissen|erkl(ae|ä)r|warum |so geht|checkliste|finanzbildung|worauf|wusstest du"),
-    # "versicherung" allein reicht NICHT - das Wort steht in fast jedem
-    # Firmennamen; der erste Wurf sortierte dadurch die Haelfte aller Posts
-    # als "Produkt" ein. Es braucht ein echtes Produktsignal.
-    ("Produkt & Beratung", r"tarif|absicherung|vorsorge|schadenfall|leistung(en)?\b|police|versichert\b|sch(ue|ü)tzt|deckung|pr(ae|ä)mie|neue[rs]? produkt|kundenportal|app\b|bausteine|sicher(n|t)\s+(dein|ihr|eur)|palette an versicherung"),
+    ("Recruiting & Karriere", r"\bm/w/d\b|karriere|\bjobs?\b|stelle\b|bewerb|ausbildung|duales studium|wir stellen ein|wir suchen|hiring|arbeitgeber|azubi|willkommen im team|neue kolleg|arbeiten bei|mein job|unser team|praktik"),
+    ("Aktion & Rabatt", r"\bgratis\b|kostenlos|nachlass|rabatt|\baktion\b|gewinnspiel|sparen|bonus\w*|pr(ae|ä)mien?\s*(frei|gratis)|% \w*sparen|bis zu \d+\s*%|sonderkondition"),
+    ("Auszeichnung & Test", r"testsieger|auszeichnung|\baward\b|pr(ae|ä)miert|zertifi|siegel|ausgezeichnet|note sehr gut|\bstiftung warentest\b"),
+    ("Unternehmensnews & Zahlen", r"quartal|halbjahr|gesch(ae|ä)ftsjahr|bilanz|umsatz|gewinn\b|vorstand|aufsichtsrat|ernennung|(ue|ü)bernahme|fusion|rekord"),
+    ("Studie & Daten", r"studie|umfrage|\breport\b|analyse|tacho|barometer|\bindex\b|zahlen zeigen"),
+    ("Jubiläum & Team", r"\d+\s*jahre\b.{0,25}(bei|im team|dabei)|jubil(ae|ä)um|j-u-b-e-l|herzlichen gl(ue|ü)ckwunsch|betriebsjubil"),
+    ("Event, Sport & Sponsoring", r"messe|kongress|tagung|maklertreff|netzwerk|konferenz|roadshow|\bevent\b|\barena\b|sponsor|\btickets?\b|turnier|championat|meisterschaft|festival|konzert|reitsport|springreit|dressur|reiterin|wallach|stute|cruise|\bstadion\b|\bliga\b"),
+    ("Kooperation & Partner", r"kooperation|partnerschaft|gemeinsam mit|zusammenarbeit|volksbank|sparkasse|partner von"),
+    ("Standort & Vertrieb", r"bezirksdirektion|generalvertretung|subdirektion|gesch(ae|ä)ftsstelle|neuer standort|\bstandort\b|er(oe|ö)ffnung|neues kapitel|umzug|neue r(ae|ä)ume"),
+    ("Nachhaltigkeit & Engagement", r"nachhaltig|\bklima\b|\besg\b|spende|ehrenamt|soziales engagement|diversity|inklusion|charity"),
+    ("Service & App", r"\bapp\b|kundenportal|meine versicherung|meine allianz|online[- ]service|digital(e|es)? (service|zugang)|vertragsunterlagen|versicherungsunterlagen|selfservice|\blogin\b|schaden melden"),
+    ("Saison & Gruß", r"frohe (ostern|weihnachten)|frohes neues|fr(ue|ü)hling|sommerzeit|adventszeit|guten rutsch|feiertag|w(ue|ü)nscht (ihnen|euch)|\bsommerpause\b"),
+    ("Ratgeber & Wissen", r"tipps?\b|ratgeber|wusstest du|erkl(ae|ä)r|\bwarum\b|so geht|checkliste|finanzbildung|worauf (du|sie)|\bwissen\b|achten sie|darauf kommt es an|grundlagen|ist eigentlich|was tun (bei|wenn)|was ist\b|denk dran|nicht vergessen|swipe|urlaubsbereit|koffer sind gepackt"),
+    ("Produkt & Beratung", r"tarif|absicherung|vorsorge|schadenfall|leistung(en)?\b|police|versichert\b|sch(ue|ü)tzt|schutz\b|deckung|pr(ae|ä)mie|neue[rs]? produkt|baustein|beratung|beraten|\bbu\b|berufsunf|kasko|haftpflicht|zahnversicherung|kfz-versicherung|versicherung f(ue|ü)r|abschlie(ss|ß)en|\bschaden\b"),
 ]
 
 
@@ -315,7 +351,7 @@ def post_typ(posttext, snippet):
     gibt es bewusst einen ehrlichen Rest: Titel ohne inhaltliches Signal als
     "Produkt" zu raten waere schlechter als zuzugeben, dass man es nicht
     weiss."""
-    t = ((posttext or "") + " " + (snippet or "")).lower()
+    t = (norm(posttext) + " " + norm(snippet)).lower()
     for name, pat in POST_TYPEN:
         if re.search(pat, t):
             return name
@@ -336,37 +372,45 @@ THEMEN = [
 
 
 def thema(posttext, snippet):
-    t = ((posttext or "") + " " + (snippet or "")).lower()
+    t = (norm(posttext) + " " + norm(snippet)).lower()
     for name, pat in THEMEN:
         if re.search(pat, t):
             return name
     return ""
 
 
-def serpapi(query, key, fenster):
-    # 18.08.2026, Befund Paul nach dem ersten Lauf ("haben wirklich alle genau
-    # 10 Posts?"): Sieben Marken mit EXAKT 10 Treffern - das war die Google-
-    # Seitengroesse, keine Zaehlung. num=20 hatte Google schlicht ignoriert.
-    # Drei Aenderungen, alle zum gleichen API-Preis (SerpAPI rechnet pro Suche
-    # ab, nicht pro Ergebnis):
-    #   num=100    bis zu 100 Treffer je Abfrage statt der 10er-Seite
-    #   filter=0   Googles Aehnlichkeits-Ausduennung aus - die frisst bei
-    #              site:-Abfragen sonst still Ergebnisse
-    #   qdr:w      NACH dem Erstlauf nur noch die letzte Woche: so ist der
-    #              Fund-Tag hoechstens ~7 Tage nach dem Post (dokumentierter
-    #              Versatz), und der alte Monats-Backlog kann nicht bei jedem
-    #              Lauf als neuer "Ereignis-Schub" wiederauftauchen - genau
-    #              das Import-Artefakt, das die Engine beim Erstlauf abfangen
-    #              musste. Der ERSTE Lauf (kein STATE) holt weiter qdr:m als
-    #              Archiv-Grundstock.
+# 20.08.2026, Pauls Entscheidung nach einem Befund, der einen frueheren Fix
+# widerlegt hat: BIS ZU FUENF SEITEN je Marke.
+#
+# Vorgeschichte: Am 18.08. fielen Paul "genau 10 Posts je Marke" auf. Meine
+# Antwort damals war num=100 - und die war falsch. Google hat den Parameter
+# num im September 2025 abgeschafft (SerpAPI fuehrt dazu ein offenes Ticket
+# "Only 10 results when num=100 is set"). Ich hatte an einer Stellschraube
+# gedreht, die es nicht mehr gibt, und das Ergebnis nicht nachgemessen. Der
+# Deckel blieb: im Lauf vom 20.08. landeten die aktivsten Marken erneut auf
+# exakt 10 - also systematisch untererfasst, und zwar ausgerechnet die
+# Spitzenreiter, auf die es im Markenvergleich ankommt.
+#
+# Der einzige Weg an mehr Treffer ist Blaettern (start=10, 20, ...), und jede
+# Seite ist eine eigene SerpAPI-Suche. Deshalb zwei Grenzen:
+#   SEITEN_MAX        hoechstens fuenf Seiten je Marke (= 50 Treffer)
+#   frueher Abbruch   eine nicht volle Seite heisst: mehr gibt es nicht.
+#                     Das kostet nichts und spart in ruhigen Wochen fast alles.
+SEITEN_MAX = 5
+TREFFER_JE_SEITE = 10   # Googles feste Seitengroesse, seit num=100 weg ist
+
+
+def serpapi_seite(query, key, fenster, start):
+    """Eine Ergebnisseite. start=0 ist die erste, dann 10, 20, ..."""
     q = urllib.parse.urlencode({
         "engine": "google", "q": query, "hl": "de", "gl": "de",
-        "num": "100",
-        "filter": "0",
-        # 18.08.2026 (Opus-Review #6): Fenster haengt jetzt am TATSAECHLICHEN
-        # Abstand zum letzten Lauf (Parameter), nicht mehr an der Existenz der
-        # State-Datei - ein verlorener Nightly-Commit erzwang sonst still ein
-        # neues Monatsfenster.
+        # num ist bewusst NICHT mehr gesetzt - der Parameter ist wirkungslos
+        # (siehe oben) und wuerde nur vortaeuschen, es sei etwas geregelt.
+        "filter": "0",   # Googles Aehnlichkeits-Ausduennung aus; wirkt weiterhin
+        "start": str(start),
+        # Fenster haengt am TATSAECHLICHEN Abstand zum letzten Lauf, nicht an
+        # der Existenz der State-Datei - ein verlorener Nightly-Commit erzwang
+        # sonst still ein neues Monatsfenster.
         "tbs": ("qdr:w" if fenster == "woche" else "qdr:m"),
         "api_key": key,
     })
@@ -374,6 +418,35 @@ def serpapi(query, key, fenster):
                                  headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=45) as r:
         return json.loads(r.read().decode("utf-8"))
+
+
+def serpapi(query, key, fenster, max_seiten=SEITEN_MAX):
+    """Blaettert bis zu max_seiten durch.
+    -> (treffer, fehlertext_oder_None, anzahl_suchen)
+
+    "Keine Ergebnisse" ist KEIN Fehler, sondern das Ende der Liste. Alles
+    andere (Kontingent, Parameter) ist einer und wird nach oben gereicht -
+    damit ein leerer Lauf nie als erfolgreicher durchgeht."""
+    alle, gesehen, anzahl_suchen = [], set(), 0
+    for i in range(max_seiten):
+        antwort = serpapi_seite(query, key, fenster, i * TREFFER_JE_SEITE)
+        anzahl_suchen += 1
+        fehlertext = antwort.get("error")
+        if fehlertext:
+            if "any results" in str(fehlertext):
+                break
+            return alle, str(fehlertext), anzahl_suchen
+        seite = antwort.get("organic_results") or []
+        frisch = [t for t in seite if t.get("link") not in gesehen]
+        for t in seite:
+            gesehen.add(t.get("link"))
+        alle.extend(frisch)
+        # Nicht volle Seite oder nur Wiederholungen: hier ist Schluss. Google
+        # liefert bei site:-Abfragen gern dieselbe Seite noch einmal statt
+        # einer leeren - beides heisst dasselbe.
+        if len(seite) < TREFFER_JE_SEITE or not frisch:
+            break
+    return alle, None, anzahl_suchen
 
 
 def main():
@@ -419,9 +492,11 @@ def main():
                 pass
 
     neu, fehler, fehler_texte, n_weg = [], 0, [], 0
+    n_suchen = 0   # SerpAPI-Verbrauch dieses Laufs (eine Seite = eine Suche)
     for brand, query in BRANDS:
         try:
-            res = serpapi("site:instagram.com/p %s" % query, key, fenster)
+            treffer, fehlertext, seiten = serpapi("site:instagram.com/p %s" % query, key, fenster)
+            n_suchen += seiten
         except Exception as e:
             print("[Instagram] %s: Abfrage fehlgeschlagen: %s" % (brand, str(e)[:100]))
             fehler += 1
@@ -431,13 +506,11 @@ def main():
         # HTTP-200-Antwort. "Keine Ergebnisse" ist ein gueltiges leeres Ergebnis;
         # alles andere (Kontingent, Parameter) ist ein Abfragefehler und darf den
         # Wochentakt nicht fortschreiben - sonst faellt eine Woche still aus.
-        _err = res.get("error")
-        if _err and "any results" not in str(_err):
-            print("[Instagram] %s: SerpAPI-Fehler: %s" % (brand, str(_err)[:100]))
+        if fehlertext:
+            print("[Instagram] %s: SerpAPI-Fehler: %s" % (brand, str(fehlertext)[:100]))
             fehler += 1
-            fehler_texte.append("%s: %s" % (brand, str(_err)[:80]))
+            fehler_texte.append("%s: %s" % (brand, str(fehlertext)[:80]))
             continue
-        treffer = res.get("organic_results") or []
         n_neu = 0
         seen_b = bekannt.setdefault(brand, set())
         for t in treffer:
@@ -463,6 +536,7 @@ def main():
                 "quelle": "serpapi_google", "plattform": "instagram",
                 "absender": _abs, "absender_typ": _abs_typ,
                 "post_typ": _ptyp, "thema": _thema,
+                "regeln": REGELSTAND,
                 # Markennamen sind mehrdeutig (Allianz Parque, Allianz Life).
                 # Verworfene Posts bleiben in der Datei - sichtbar, nicht still.
                 "relevant": _rel, "relevanz_grund": _grund,
@@ -500,7 +574,7 @@ def main():
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps({"letzter_lauf": heute, "fenster": fenster,
                                      "neu": len(neu), "verworfen_sprache": n_weg,
-                                     "fehler": fehler,
+                                     "suchen": n_suchen, "fehler": fehler,
                                      "fehler_texte": fehler_texte[:10]},
                          ensure_ascii=False), encoding="utf-8")
     elif fehler:

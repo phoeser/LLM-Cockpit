@@ -1,0 +1,52 @@
+name: Tiefentest Social-Sammler (einmalig)
+
+# 20.08.2026, Pauls Befund "auch bei Instagram nur 10 Posts je Anbieter"
+# ---------------------------------------------------------------------
+# Google hat num=100 im September 2025 abgeschaltet: 10 Treffer je Suche sind
+# seither die Obergrenze. Mehr geht nur ueber Blaettern - und jede Seite ist
+# eine eigene, kostenpflichtige SerpAPI-Suche. Ob sich das lohnt, entscheidet
+# eine Zahl, die niemand kennt: Wie viele Posts hat Google je Marke und Woche
+# ueberhaupt?
+#
+# Dieser Workflow misst genau das - EINMALIG, mit hartem Budget (16 Suchen,
+# im Skript verankert) und ohne die laufende Sammlung anzufassen. Er schreibt
+# ausschliesslich data/serp_depth_report.md.
+#
+# Nach der Entscheidung kann dieser Workflow geloescht werden.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: repo-writes
+  cancel-in-progress: false
+
+jobs:
+  messen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Tiefe messen
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+        run: python scripts/measure_serp_depth.py
+
+      - name: Bericht committen
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/serp_depth_report.md
+          if git diff --cached --quiet; then
+            echo "Kein Bericht entstanden - kein Commit."
+            exit 0
+          fi
+          git commit -m "chore: Tiefentest der Social-Sammler"
+          git push

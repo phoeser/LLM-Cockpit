@@ -52,6 +52,7 @@
   function pp(v,d){ if(v==null||isNaN(v)) return "—"; return (v>0?"+":"")+num(v,d)+" pp"; }
 
   var POSTS=null, GELADEN=false, LADEFEHLER=false;
+  var STATE=null;   // data/instagram_state.json - u.a. die Liste "gekappt"
   /* Muss zu REGELSTAND in scripts/update_instagram.py passen. Traegt ein
      gespeicherter Beitrag einen anderen (oder gar keinen) Stand, wird seine
      Einordnung hier neu gerechnet - sonst behielten die 100 Beitraege des
@@ -61,10 +62,19 @@
 
   function laden(cb){
     if(GELADEN){ cb(); return; }
-    fetch("data/instagram_posts.jsonl?t="+Date.now(),{cache:"no-store"})
-      .then(function(r){ return r.ok?r.text():null; })
-      .catch(function(){ return null; })
-      .then(function(t){
+    Promise.all([
+      fetch("data/instagram_posts.jsonl?t="+Date.now(),{cache:"no-store"})
+        .then(function(r){ return r.ok?r.text():null; }).catch(function(){ return null; }),
+      /* 20.08.2026: Der State weist aus, bei welchen Marken die erlaubte
+         Seitentiefe voll ausgeschoepft wurde - dort hatte Google mehr, als wir
+         geholt haben. Diese Zahlen sind Untergrenzen und muessen im Reiter auch
+         so aussehen, sonst liest man sie als Zaehlung. */
+      fetch("data/instagram_state.json?t="+Date.now(),{cache:"no-store"})
+        .then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
+    ])
+      .then(function(res){
+        var t=res[0];
+        STATE=res[1]||null;
         GELADEN=true;
         if(t==null){ LADEFEHLER=true; POSTS=null; cb(); return; }
         POSTS=[];
@@ -178,6 +188,34 @@
     if(FX_Z.test(t)||FX.test(t)) return false;
     return true;
   }
+
+  /* ---- Kappung: welche Marken sind Untergrenzen? (20.08.2026) ----
+     Seit dem gemessenen Tiefentest blaettert der Sammler gestaffelt: vier
+     Seiten fuer ERGO, Allianz, AXA und HUK-Coburg, eine Seite fuer die
+     uebrigen sechs. Wo die Ausbeute die erlaubte Tiefe voll ausschoepfte,
+     hatte Google mehr - der Sammler vermerkt das im State unter "gekappt".
+
+     Warum das im Reiter stehen MUSS: Der Tiefentest hat ERGO auf LinkedIn mit
+     neun Posts der Woche vollstaendig erfasst, Allianz dagegen mit zehn von
+     mindestens 37. Ohne Markierung liest man daraus einen Gleichstand, den es
+     nicht gibt - und zwar einen, der uns schmeichelt. */
+  function istGekappt(marke){
+    var g=(STATE&&STATE.gekappt)||null;
+    return !!(g && g.indexOf(marke)>=0);
+  }
+  function zahlMitKappung(marke, n){
+    return istGekappt(marke) ? ('<span title="Die erlaubte Seitentiefe war ausgeschöpft — Google hatte mehr. Untergrenze, keine Zählung.">≥ '+n+'</span>') : String(n);
+  }
+  function kappungsHinweis(){
+    var g=(STATE&&STATE.gekappt)||[];
+    if(!g.length) return '';
+    return '<div class="text-xs text-amber-700 bg-amber-50 border-l-4 border-amber-400 rounded p-2 mt-2">'
+      +'<b>≥ bedeutet Untergrenze.</b> Bei '+g.length+' Marke'+(g.length===1?'':'n')+' war die erlaubte Seitentiefe ausgeschöpft ('
+      +g.map(esc).join(', ')+') — dort hatte Google mehr Beiträge, als wir geholt haben. '
+      +'Die Tiefe ist bewusst gestaffelt, um im freien SerpAPI-Kontingent zu bleiben: vier Ergebnisseiten für ERGO, Allianz, AXA und HUK-Coburg, eine für die übrigen. '
+      +'Ein Markenvergleich zwischen einer vollständigen und einer gekappten Zahl ist deshalb nicht belastbar.</div>';
+  }
+
   function tagVon(p){ return p.date || p.first_seen || null; }
   function stichtag(d){ return new Date(Date.now()-d*86400000).toISOString().slice(0,10); }
   function relPosts(){ return (POSTS||[]).filter(relevantVon); }
@@ -281,12 +319,13 @@
     marken.forEach(function(b){
       var w=Math.round(100*(je30[b]||0)/max30);
       h+='<tr class="border-b'+(b==="ERGO"?' font-semibold':'')+'"><td class="py-1.5 pr-2" style="color:'+(BM[b]||'#334155')+'">'+esc(b)+'</td>'
-        +'<td class="py-1.5 pr-2 text-right">'+(je30[b]||0)+'</td>'
-        +'<td class="py-1.5 pr-2 text-right">'+(je90[b]||0)+'</td>'
-        +'<td class="py-1.5 pr-2 text-right text-gray-500">'+(je[b]||0)+'</td>'
+        +'<td class="py-1.5 pr-2 text-right">'+zahlMitKappung(b,je30[b]||0)+'</td>'
+        +'<td class="py-1.5 pr-2 text-right">'+zahlMitKappung(b,je90[b]||0)+'</td>'
+        +'<td class="py-1.5 pr-2 text-right text-gray-500">'+zahlMitKappung(b,je[b]||0)+'</td>'
         +'<td class="py-1.5"><div style="height:8px;border-radius:4px;width:'+w+'%;min-width:2px;background:'+(BM[b]||'#94a3b8')+'"></div></td></tr>';
     });
     h+='</tbody></table></div>'
+      +kappungsHinweis()
       +'<div class="text-xs text-gray-400 mt-2">Datierung: Erscheinungstag, wenn Google ihn liefert, sonst Fund-Tag. Große Marken sind in der Google-Indexierung tendenziell überrepräsentiert; ein Beitrag, der mehrere Marken nennt, zählt bei jeder dieser Marken.</div></div>';
 
     h+=wirkungHTML();

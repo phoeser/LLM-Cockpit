@@ -67,8 +67,14 @@
           try{
             var k=JSON.parse(l);
             if(!k||!k.url||k.status!=="ok") return;
-            var alt=KPI[k.url];
-            if(!alt || (k.checked||"")>=(alt.checked||"")) KPI[k.url]=k;
+            var vor=KPI[k.url];
+            if(!vor || (k.checked||"")>=(vor.checked||"")){
+              /* Text und Autorname sind stabil - einmal geholt, nie wieder
+                 verlieren, auch wenn eine spaetere Messung sie nicht mitliefert. */
+              if(vor){ if(!k.text && vor.text) k.text=vor.text;
+                       if(!k.autor_name && vor.autor_name) k.autor_name=vor.autor_name; }
+              KPI[k.url]=k;
+            }
           }catch(e){}
         });
       }
@@ -76,6 +82,70 @@
     });
   }
   function kpiVon(p){ return (KPI&&KPI[p.url])||null; }
+
+  /* ---------------- Einordnung je Post (Laufzeit) ----------------
+     20.08.2026, Pauls Auftrag: "Event-Log, der jeden einzelnen Post zeigt
+     (wann, von wem, Thema) und verlinkt — dann kann man den Effekt besser
+     quantifizieren und auf bestimmte Arten von Posts eingrenzen."
+
+     Dieselben Regeln wie in scripts/update_linkedin.py, hier aber zur
+     LAUFZEIT — damit auch die Posts aus dem Erstlauf eingeordnet werden, die
+     die Felder noch nicht mitbringen. Grundlage ist der oeffentliche
+     Beitragstext (kommt mit der KPI-Messung), sonst Titel und Snippet. */
+  var MEDIEN=["versicherungsbote","horizont","frankfurter-allgemeine-zeitung","handelsblatt",
+              "wirtschaftswoche","procontra","asscompact","versicherungswirtschaft","cash-online","fondsprofessionell"];
+  var MARKEN_ACCOUNTS=["ergo-group-ag","ergo-oesterreich","ergo-versicherung","ergo-direkt","dkv",
+              "allianz","allianz-deutschland","allianz-se","axa","axa-deutschland","huk-coburg",
+              "generali-deutschland","generali","signal-iduna","r-v-versicherung","devk","hannoversche","cosmosdirekt"];
+  var TYPEN=[
+    ["Recruiting & Karriere", /\bm\/w\/d\b|karriere|jobs?\b|stelle\b|bewerb|werde\s|ausbildung|wir suchen|hiring|arbeitgeber/i],
+    ["Unternehmensnews & Zahlen", /quartal|halbjahr|gesch(ae|ä)ftsjahr|financialresults|bilanz|umsatz|gewinn|vorstand|aufsichtsrat|ernennung|übernahme|fusion|rekord/i],
+    ["Studie & Daten", /studie|umfrage|report\b|analyse|tacho|barometer|trendwende|index\b/i],
+    ["Auszeichnung & Test", /testsieger|auszeichnung|award|prämiert|siegel|zertifi/i],
+    ["Event & Netzwerk", /messe|kongress|tagung|maklertreff|netzwerk|treffen|konferenz|roadshow|event/i],
+    ["Kooperation & Partner", /kooperation|partnerschaft|gemeinsam mit|zusammenarbeit|volksbank|sparkasse|partner von/i],
+    ["Standort & Vertrieb", /generalvertretung|neuer standort|eröffnung|neues kapitel|geschäftsstelle/i],
+    ["Nachhaltigkeit & Engagement", /nachhaltig|klima|esg|spende|ehrenamt|soziales|diversity|inklusion/i],
+    ["Ratgeber & Wissen", /tipps?\b|ratgeber|wissen|erklär|warum |so geht|checkliste|finanzbildung|worauf/i],
+    ["Produkt & Beratung", /tarif|absicherung|vorsorge|schadenfall|leistung(en)?\b|police|versichert\b|schützt|deckung|prämie/i]
+  ];
+  var THEMEN=[
+    ["Kfz", /\bkfz\b|auto|mobilit|e-auto|verbrenner|motorrad/i],
+    ["Gesundheit & Kranken", /krank|gesundheit|zahn|pflege|klinik|dkv/i],
+    ["Leben & Vorsorge", /lebensvers|rente|vorsorge|altersvorsorge|berufsunf|hinterblieben/i],
+    ["Wohnen & Sach", /hausrat|gebäude|wohn|haftpflicht|elementar|unwetter/i],
+    ["Recht", /rechtsschutz|urteil/i],
+    ["Reise", /reise|urlaub/i],
+    ["Gewerbe & Firmen", /gewerbe|firmenkunden|betriebs|cyber/i]
+  ];
+  function textVon(p){
+    var k=kpiVon(p);
+    return [(k&&k.text)||"", p.title||"", p.snippet||""].join(" ");
+  }
+  function absenderVon(p){
+    var k=kpiVon(p);
+    var m=/\/posts\/([^_\/]+)_/.exec(p.url||"");
+    var slug=m?decodeURIComponent(m[1]):"";
+    var s=slug.toLowerCase();
+    var name=(k&&k.autor_name)||slug.replace(/-/g," ");
+    var typ="Sonstige";
+    if(!slug) return {name:"—", slug:"", typ:typ};
+    if(MEDIEN.some(function(w){return s.indexOf(w)>=0;})) typ="Fachmedien";
+    else if(MARKEN_ACCOUNTS.indexOf(s)>=0) typ="Unternehmensaccount";
+    else if(/generalvertretung|agentur|geschäftsstelle|hauptvertretung|volksbank|sparkasse|makler|bezirksdirektion/.test(s)) typ="Vertriebspartner";
+    else if(/-[0-9a-z]{6,}$/.test(s)||s.indexOf("-")>=0) typ="Mitarbeitende";
+    return {name:name, slug:slug, typ:typ};
+  }
+  function typVon(p){
+    var t=textVon(p);
+    for(var i=0;i<TYPEN.length;i++) if(TYPEN[i][1].test(t)) return TYPEN[i][0];
+    return "Ohne klares Signal";
+  }
+  function themaVon(p){
+    var t=textVon(p);
+    for(var i=0;i<THEMEN.length;i++) if(THEMEN[i][1].test(t)) return THEMEN[i][0];
+    return "—";
+  }
 
   function tagVon(p){ return p.date || p.first_seen || null; }
 
@@ -231,25 +301,127 @@
     });
     h+='</div>';
 
-    h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-2">Archiv ('+POSTS.length+' Posts)</h3>'
-      +'<input type="search" id="liSuche" placeholder="Posts durchsuchen (Titel, Marke, Text) …" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3" oninput="window.__liArchiv&&window.__liArchiv()" />'
-      +'<div id="liArchivListe" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg"></div></div>';
+    // ---- Was wirkt? Engagement je Post-Typ ----
+    var jeTyp={};
+    POSTS.forEach(function(p){
+      var t=typVon(p), k=kpiVon(p);
+      var e=(jeTyp[t]=jeTyp[t]||{n:0,mitKpi:0,rx:0});
+      e.n++;
+      if(k&&k.reactions!=null){ e.mitKpi++; e.rx+=k.reactions; }
+    });
+    var typen=Object.keys(jeTyp).sort(function(a,b){
+      var A=jeTyp[a],B=jeTyp[b];
+      return (B.mitKpi?B.rx/B.mitKpi:-1)-(A.mitKpi?A.rx/A.mitKpi:-1);
+    });
+    h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">Welche Art von Post läuft?</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Einordnung aus dem öffentlichen Beitragstext (Heuristik, kein Volltext-Verständnis). '
+      +'<b>Wichtig:</b> Das ist Engagement auf LinkedIn — <u>nicht</u> Wirkung auf die LLM-Sichtbarkeit. Die steht in der Tabelle darüber und braucht mehrere Wochen Messreihe.</p>'
+      +'<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-gray-500 border-b">'
+      +'<th class="py-1.5 pr-2">Post-Typ</th><th class="py-1.5 pr-2 text-right">Posts</th><th class="py-1.5 pr-2 text-right">gemessen</th><th class="py-1.5 pr-2 text-right">Ø Reaktionen</th><th class="py-1.5"></th></tr></thead><tbody>';
+    var maxAvg=Math.max.apply(null, typen.map(function(t){ var e=jeTyp[t]; return e.mitKpi?e.rx/e.mitKpi:0; }).concat([1]));
+    typen.forEach(function(t){
+      var e=jeTyp[t], avg=e.mitKpi?e.rx/e.mitKpi:null;
+      h+='<tr class="border-b"><td class="py-1.5 pr-2 text-gray-800">'+esc(t)+'</td>'
+        +'<td class="py-1.5 pr-2 text-right">'+e.n+'</td>'
+        +'<td class="py-1.5 pr-2 text-right text-gray-500">'+e.mitKpi+'</td>'
+        +'<td class="py-1.5 pr-2 text-right font-semibold">'+(avg==null?'—':num(avg,1))+'</td>'
+        +'<td class="py-1.5"><div style="height:8px;border-radius:4px;min-width:2px;width:'+(avg==null?0:Math.round(100*avg/maxAvg))+'%;background:#c2002f"></div></td></tr>';
+    });
+    h+='</tbody></table></div><div class="text-xs text-gray-400 mt-2">„Ohne klares Signal“ heißt: Der abrufbare Text trägt kein Merkmal, an dem sich der Typ festmachen lässt — geraten wird nicht.</div></div>';
+
+    // ---- Event-Log: jeder einzelne Post ----
+    h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-1">📋 Event-Log — jeder erfasste Post</h3>'
+      +'<p class="text-xs text-gray-500 mb-3">Wann, von wem, welcher Typ, welches Thema, wie viel Engagement — und verlinkt. '
+      +'Spaltenköpfe sind klickbar zum Sortieren. Grundlage für die Frage, welche Art von Post auf die LLM-Sichtbarkeit einzahlt.</p>'
+      +'<div class="flex flex-wrap gap-2 mb-3">'
+      +'<select id="liFilterMarke" class="border border-gray-300 rounded px-2 py-1 text-xs" onchange="window.__liLog&&window.__liLog()"><option value="">Alle Marken</option></select>'
+      +'<select id="liFilterTyp" class="border border-gray-300 rounded px-2 py-1 text-xs" onchange="window.__liLog&&window.__liLog()"><option value="">Alle Post-Typen</option></select>'
+      +'<select id="liFilterAbs" class="border border-gray-300 rounded px-2 py-1 text-xs" onchange="window.__liLog&&window.__liLog()"><option value="">Alle Absender-Typen</option></select>'
+      +'<input type="search" id="liSuche" placeholder="Volltext durchsuchen …" class="flex-1 min-w-[180px] border border-gray-300 rounded px-3 py-1 text-xs" oninput="window.__liLog&&window.__liLog()" />'
+      +'</div>'
+      +'<div id="liLogInfo" class="text-xs text-gray-400 mb-1"></div>'
+      +'<div id="liLogTabelle" class="overflow-x-auto max-h-[32rem] overflow-y-auto border border-gray-200 rounded-lg"></div></div>';
 
     return h;
   }
 
-  function archivFuellen(){
-    var el=document.getElementById("liArchivListe"); if(!el||!POSTS) return;
+  /* ---------------- Event-Log ---------------- */
+  var LOG_SORT={feld:"datum", ab:true};
+  function logZeilen(){
+    var fm=(document.getElementById("liFilterMarke")||{}).value||"";
+    var ft=(document.getElementById("liFilterTyp")||{}).value||"";
+    var fa=(document.getElementById("liFilterAbs")||{}).value||"";
     var q=((document.getElementById("liSuche")||{}).value||"").toLowerCase();
-    var rows=POSTS.slice().sort(function(a,b){ return (tagVon(b)||"").localeCompare(tagVon(a)||""); })
-      .filter(function(p){ return !q || ((p.title||"")+" "+(p.brand||"")+" "+(p.snippet||"")).toLowerCase().indexOf(q)>=0; });
-    el.innerHTML = rows.slice(0,300).map(function(p){
-      return '<div class="border-b px-3 py-1.5 text-xs"><span class="text-gray-400">'+esc(tagVon(p)||'—')+'</span> · '
-        +'<span style="color:'+(BM[p.brand]||'#334155')+';font-weight:600">'+esc(p.brand)+'</span> · '
-        +'<a href="'+esc(p.url)+'" target="_blank" rel="noopener" class="text-gray-700 hover:text-ergo-red">'+esc(p.title||p.url)+'</a></div>';
-    }).join("") || '<div class="px-3 py-3 text-xs text-gray-400">Keine Treffer.</div>';
+    var out=[];
+    (POSTS||[]).forEach(function(p){
+      var a=absenderVon(p), t=typVon(p), th=themaVon(p), k=kpiVon(p);
+      if(fm&&p.brand!==fm) return;
+      if(ft&&t!==ft) return;
+      if(fa&&a.typ!==fa) return;
+      if(q && (textVon(p)+" "+a.name+" "+p.brand).toLowerCase().indexOf(q)<0) return;
+      out.push({p:p, datum:tagVon(p)||"", exakt:!!p.date, marke:p.brand||"", autor:a.name,
+                absTyp:a.typ, typ:t, thema:th,
+                rx:(k&&k.reactions!=null)?k.reactions:null,
+                cm:(k&&k.comments!=null)?k.comments:null,
+                text:((k&&k.text)||p.snippet||p.title||"")});
+    });
+    var f=LOG_SORT.feld, ab=LOG_SORT.ab?1:-1;
+    out.sort(function(x,y){
+      var A=x[f], B=y[f];
+      if(A==null&&B==null) return 0;
+      if(A==null) return 1; if(B==null) return -1;
+      if(typeof A==="number"&&typeof B==="number") return (B-A)*ab;
+      return String(B).localeCompare(String(A))*ab;
+    });
+    return out;
   }
-  window.__liArchiv=archivFuellen;
+  function logFuellen(){
+    var el=document.getElementById("liLogTabelle"); if(!el||!POSTS) return;
+    // Filter-Optionen einmalig fuellen
+    [["liFilterMarke", function(p){return p.brand;}],
+     ["liFilterTyp", typVon],
+     ["liFilterAbs", function(p){return absenderVon(p).typ;}]].forEach(function(cfg){
+      var sel=document.getElementById(cfg[0]);
+      if(!sel||sel.options.length>1) return;
+      var s={}; POSTS.forEach(function(p){ var v=cfg[1](p); if(v) s[v]=1; });
+      Object.keys(s).sort().forEach(function(v){
+        var o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o);
+      });
+    });
+    var rows=logZeilen();
+    var info=document.getElementById("liLogInfo");
+    if(info) info.textContent=rows.length+" von "+POSTS.length+" Posts";
+    function th(feld,label,rechts){
+      var pfeil=(LOG_SORT.feld===feld)?(LOG_SORT.ab?" ▼":" ▲"):"";
+      return '<th class="py-1.5 px-2 '+(rechts?'text-right':'text-left')+' cursor-pointer select-none hover:text-ergo-red" onclick="window.__liSort(\''+feld+'\')">'+label+pfeil+'</th>';
+    }
+    var h='<table class="w-full text-xs"><thead class="sticky top-0 bg-white"><tr class="text-gray-500 border-b">'
+      +th("datum","Datum")+th("marke","Marke")+th("autor","Von wem")+th("absTyp","Absender")
+      +th("typ","Post-Typ")+th("thema","Thema")+th("rx","👍",true)+th("cm","💬",true)
+      +'<th class="py-1.5 px-2 text-left">Beitrag</th></tr></thead><tbody>';
+    if(!rows.length) h+='<tr><td colspan="9" class="py-3 px-2 text-gray-400">Keine Treffer.</td></tr>';
+    rows.forEach(function(r){
+      h+='<tr class="border-b align-top">'
+        +'<td class="py-1.5 px-2 whitespace-nowrap text-gray-500">'+esc(r.datum||"—")+(r.exakt?'':'<span title="Fund-Tag, kein Erscheinungsdatum von Google geliefert"> *</span>')+'</td>'
+        +'<td class="py-1.5 px-2 whitespace-nowrap"><span style="color:'+(BM[r.marke]||"#334155")+';font-weight:600">'+esc(r.marke)+'</span></td>'
+        +'<td class="py-1.5 px-2 whitespace-nowrap">'+esc(r.autor)+'</td>'
+        +'<td class="py-1.5 px-2 whitespace-nowrap text-gray-500">'+esc(r.absTyp)+'</td>'
+        +'<td class="py-1.5 px-2 whitespace-nowrap">'+esc(r.typ)+'</td>'
+        +'<td class="py-1.5 px-2 whitespace-nowrap text-gray-500">'+esc(r.thema)+'</td>'
+        +'<td class="py-1.5 px-2 text-right'+(r.rx!=null?' font-semibold':' text-gray-400')+'">'+(r.rx!=null?r.rx:"—")+'</td>'
+        +'<td class="py-1.5 px-2 text-right text-gray-500">'+(r.cm!=null?r.cm:"—")+'</td>'
+        +'<td class="py-1.5 px-2"><a href="'+esc(r.p.url)+'" target="_blank" rel="noopener" class="text-gray-700 hover:text-ergo-red">'+esc(r.text.slice(0,150))+(r.text.length>150?"…":"")+'</a></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }
+  window.__liLog=logFuellen;
+  window.__liSort=function(feld){
+    if(LOG_SORT.feld===feld) LOG_SORT.ab=!LOG_SORT.ab; else { LOG_SORT.feld=feld; LOG_SORT.ab=true; }
+    logFuellen();
+  };
+  window.__liArchiv=logFuellen;
 
   /* ---------------- Reiter anlegen (Muster soho_tab.js) ---------------- */
   function zeigen(){
@@ -260,7 +432,7 @@
     var sec=document.getElementById("linkedinSection");
     if(sec){
       sec.classList.remove("hidden");
-      laden(function(){ try{ sec.innerHTML=sectionHTML(); archivFuellen(); }catch(e){} });
+      laden(function(){ try{ sec.innerHTML=sectionHTML(); logFuellen(); }catch(e){} });
     }
     try{ window.scrollTo({top:0,behavior:"smooth"}); }catch(e){}
   }

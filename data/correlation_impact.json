@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T15:48:22Z",
+  "generated_at": "2026-08-20T23:12:49Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -76,7 +76,7 @@
   },
   "event_load_audit": {
     "marken_kanonisierung": {
-      "n_events_umbenannt": 597,
+      "n_events_umbenannt": 598,
       "aliase": {
         "Cosmos Direkt": "CosmosDirekt",
         "cosmos direkt": "CosmosDirekt"
@@ -84,9 +84,9 @@
       "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors"
     },
     "presse_datierung": {
-      "umdatiert": 2692,
-      "bereits_gleich": 102,
-      "fallback_timestamp": 234,
+      "umdatiert": 2695,
+      "bereits_gleich": 103,
+      "fallback_timestamp": 446,
       "hinweis": "Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, zukuenftigem oder nach dem Crawl liegendem Datum."
     },
     "preis_artefakte": {
@@ -151,11 +151,11 @@
     "coefficients": {
       "media_negative": {
         "label": "Presse/News: Schaden/Leistung",
-        "coef_pp_per_event_day": 0.5606,
-        "ci95_low": -0.2861,
-        "ci95_high": 1.4074,
-        "prob_positive": 0.903,
-        "prob_direction": 0.903,
+        "coef_pp_per_event_day": 0.563,
+        "ci95_low": -0.2842,
+        "ci95_high": 1.4102,
+        "prob_positive": 0.904,
+        "prob_direction": 0.904,
         "significant": false,
         "n_with_event": 15,
         "reliable": false,
@@ -163,9 +163,9 @@
       },
       "media_positive": {
         "label": "Presse/News: Produkt/Strategie",
-        "coef_pp_per_event_day": -0.2833,
-        "ci95_low": -1.0001,
-        "ci95_high": 0.4335,
+        "coef_pp_per_event_day": -0.2836,
+        "ci95_low": -1.0005,
+        "ci95_high": 0.4333,
         "prob_positive": 0.219,
         "prob_direction": 0.781,
         "significant": false,
@@ -175,13 +175,37 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "coef_pp_per_event_day": 0.1518,
-        "ci95_low": -0.0936,
-        "ci95_high": 0.3972,
-        "prob_positive": 0.887,
-        "prob_direction": 0.887,
+        "coef_pp_per_event_day": 0.1517,
+        "ci95_low": -0.0926,
+        "ci95_high": 0.396,
+        "prob_positive": 0.888,
+        "prob_direction": 0.888,
         "significant": false,
         "n_with_event": 45,
+        "reliable": false,
+        "note": "OOS<=0: Einzeleffekte nicht belastbar"
+      },
+      "review_negative": {
+        "label": "Negative Bewertungen",
+        "coef_pp_per_event_day": 0.0188,
+        "ci95_low": -0.5379,
+        "ci95_high": 0.5755,
+        "prob_positive": 0.526,
+        "prob_direction": 0.526,
+        "significant": false,
+        "n_with_event": 22,
+        "reliable": false,
+        "note": "OOS<=0: Einzeleffekte nicht belastbar"
+      },
+      "review_positive": {
+        "label": "Positive Bewertungen",
+        "coef_pp_per_event_day": -0.0128,
+        "ci95_low": -0.1213,
+        "ci95_high": 0.0956,
+        "prob_positive": 0.408,
+        "prob_direction": 0.592,
+        "significant": false,
+        "n_with_event": 18,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
@@ -197,39 +221,15 @@
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
-      "review_negative": {
-        "label": "Negative Bewertungen",
-        "coef_pp_per_event_day": 0.0059,
-        "ci95_low": -0.2833,
-        "ci95_high": 0.295,
-        "prob_positive": 0.516,
-        "prob_direction": 0.516,
-        "significant": false,
-        "n_with_event": 23,
-        "reliable": false,
-        "note": "OOS<=0: Einzeleffekte nicht belastbar"
-      },
       "page_removed": {
         "label": "Geloeschte Seiten",
         "coef_pp_per_event_day": -0.0045,
-        "ci95_low": -0.1719,
-        "ci95_high": 0.1628,
+        "ci95_low": -0.1718,
+        "ci95_high": 0.1629,
         "prob_positive": 0.479,
         "prob_direction": 0.521,
         "significant": false,
         "n_with_event": 6,
-        "reliable": false,
-        "note": "OOS<=0: Einzeleffekte nicht belastbar"
-      },
-      "review_positive": {
-        "label": "Positive Bewertungen",
-        "coef_pp_per_event_day": -0.0043,
-        "ci95_low": -0.0715,
-        "ci95_high": 0.0628,
-        "prob_positive": 0.45,
-        "prob_direction": 0.55,
-        "significant": false,
-        "n_with_event": 20,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
@@ -249,7 +249,7 @@
     "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
   },
   "validation": {
-    "placebo_false_positive_rate": 0.0238,
+    "placebo_false_positive_rate": 0.02,
     "out_of_sample": {
       "r2_oos_vs_baseline": -0.027,
       "n_test": 668
@@ -3790,7 +3790,7 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0892,
+              "coef_pp_per_event_day": -0.0893,
               "ci95_low": -0.391,
               "ci95_high": 0.2125,
               "prob_positive": 0.281,
@@ -4164,8 +4164,8 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2245,
-              "ci95_low": 0.0472,
+              "coef_pp_per_event_day": 0.2244,
+              "ci95_low": 0.0471,
               "ci95_high": 0.4017,
               "prob_positive": 0.993,
               "prob_direction": 0.993,
@@ -4560,9 +4560,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0828,
+              "coef_pp_per_event_day": 0.0827,
               "ci95_low": -0.1084,
-              "ci95_high": 0.2739,
+              "ci95_high": 0.2738,
               "prob_positive": 0.802,
               "prob_direction": 0.802,
               "significant": false,
@@ -5330,7 +5330,7 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0715,
+              "coef_pp_per_event_day": -0.0716,
               "ci95_low": -0.3016,
               "ci95_high": 0.1585,
               "prob_positive": 0.271,
@@ -5704,7 +5704,7 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.6634,
+              "coef_pp_per_event_day": -0.6635,
               "ci95_low": -1.2643,
               "ci95_high": -0.0626,
               "prob_positive": 0.015,
@@ -6176,8 +6176,8 @@
             "review_change": {
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": 0.0038,
-              "ci95_low": -0.2524,
-              "ci95_high": 0.2601,
+              "ci95_low": -0.2525,
+              "ci95_high": 0.26,
               "prob_positive": 0.512,
               "prob_direction": 0.512,
               "significant": false,
@@ -6503,7 +6503,7 @@
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": 0.7584,
               "ci95_low": -0.0398,
-              "ci95_high": 1.5566,
+              "ci95_high": 1.5565,
               "prob_positive": 0.969,
               "prob_direction": 0.969,
               "significant": false,
@@ -7273,7 +7273,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0565,
-              "ci95_low": -0.0919,
+              "ci95_low": -0.0918,
               "ci95_high": 0.2049,
               "prob_positive": 0.772,
               "prob_direction": 0.772,
@@ -7646,9 +7646,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.2994,
-              "ci95_low": -1.2032,
-              "ci95_high": 0.6044,
+              "coef_pp_per_event_day": -0.2995,
+              "ci95_low": -1.2033,
+              "ci95_high": 0.6043,
               "prob_positive": 0.258,
               "prob_direction": 0.742,
               "significant": false,
@@ -8427,7 +8427,7 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2141,
+              "coef_pp_per_event_day": 0.214,
               "ci95_low": -0.3597,
               "ci95_high": 0.7878,
               "prob_positive": 0.768,
@@ -8857,7 +8857,7 @@
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": -0.0125,
               "ci95_low": -0.1708,
-              "ci95_high": 0.1459,
+              "ci95_high": 0.1458,
               "prob_positive": 0.439,
               "prob_direction": 0.561,
               "significant": false,
@@ -9198,7 +9198,7 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1509,
+              "coef_pp_per_event_day": 0.1508,
               "ci95_low": -0.0557,
               "ci95_high": 0.3574,
               "prob_positive": 0.924,
@@ -9622,9 +9622,9 @@
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": 0.0511,
               "ci95_low": -0.402,
-              "ci95_high": 0.5043,
-              "prob_positive": 0.588,
-              "prob_direction": 0.588,
+              "ci95_high": 0.5042,
+              "prob_positive": 0.587,
+              "prob_direction": 0.587,
               "significant": false,
               "n_with_event": 26,
               "cluster_se": 0.1075,
@@ -10371,7 +10371,7 @@
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": -0.2214,
               "ci95_low": -0.8402,
-              "ci95_high": 0.3974,
+              "ci95_high": 0.3973,
               "prob_positive": 0.242,
               "prob_direction": 0.758,
               "significant": false,
@@ -11054,10 +11054,10 @@
       }
     ],
     "event_deckung": {
-      "n_presse_news_events": 2789,
+      "n_presse_news_events": 2793,
       "auf_zitierten_quellen": 231,
-      "anteil_auf_zitierten_quellen": 0.0828,
-      "nicht_zitiert": 2558
+      "anteil_auf_zitierten_quellen": 0.0827,
+      "nicht_zitiert": 2562
     },
     "top_autoritaetsquellen_ohne_event": [
       "ergo.de",
@@ -11510,7 +11510,7 @@
     "je_lag": {
       "-14": {
         "n_intervalle": 668,
-        "n_treiber": 7
+        "n_treiber": 8
       },
       "-7": {
         "n_intervalle": 668,
@@ -11518,7 +11518,7 @@
       },
       "-3": {
         "n_intervalle": 668,
-        "n_treiber": 7
+        "n_treiber": 8
       },
       "0": {
         "n_intervalle": 668,
@@ -11712,8 +11712,8 @@
           {
             "lag": -14,
             "r": 0.075,
-            "effekt_pp": 0.244,
-            "p": 0.189177,
+            "effekt_pp": 0.242,
+            "p": 0.187711,
             "gesichert": false,
             "lead": true
           },
@@ -11728,8 +11728,8 @@
           {
             "lag": -3,
             "r": 0.038,
-            "effekt_pp": 0.007,
-            "p": 0.982187,
+            "effekt_pp": 0.01,
+            "p": 0.975923,
             "gesichert": false,
             "lead": true
           },
@@ -11768,8 +11768,8 @@
           {
             "lag": 28,
             "r": -0.023,
-            "effekt_pp": -0.139,
-            "p": 0.337144,
+            "effekt_pp": -0.14,
+            "p": 0.33262,
             "gesichert": false,
             "lead": false
           }
@@ -11904,8 +11904,8 @@
           {
             "lag": -14,
             "r": 0.031,
-            "effekt_pp": 0.211,
-            "p": 0.29089,
+            "effekt_pp": 0.206,
+            "p": 0.292399,
             "gesichert": false,
             "lead": true
           },
@@ -11920,8 +11920,8 @@
           {
             "lag": -3,
             "r": -0.024,
-            "effekt_pp": -0.108,
-            "p": 0.569131,
+            "effekt_pp": -0.113,
+            "p": 0.545214,
             "gesichert": false,
             "lead": true
           },
@@ -11983,9 +11983,9 @@
         "verlauf": [
           {
             "lag": -14,
-            "r": 0.03,
-            "effekt_pp": 0.203,
-            "p": 0.453756,
+            "r": 0.029,
+            "effekt_pp": 0.198,
+            "p": 0.454367,
             "gesichert": false,
             "lead": true
           },
@@ -12049,8 +12049,8 @@
         "vorzeichenwechsel": 1,
         "musterbewertung": "ein Vorzeichenwechsel — uneindeutig",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.030 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.095 (7 Tage).",
-        "max_abs_r_lead": 0.03,
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.029 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.095 (7 Tage).",
+        "max_abs_r_lead": 0.029,
         "max_abs_r_ab_lag0": 0.095,
         "r_bei_lag0": -0.056
       },
@@ -12360,12 +12360,12 @@
     }
   },
   "press_by_citation": {
-    "n_presse_events": 2789,
+    "n_presse_events": 2793,
     "je_klasse": {
-      "unbekannt": 1763,
-      "zitiert_marke": 210,
+      "unbekannt": 1764,
+      "zitiert_marke": 212,
       "zitiert_redaktionell": 156,
-      "nicht_zitiert": 660
+      "nicht_zitiert": 661
     },
     "klassen_label": {
       "zitiert_redaktionell": "Presse in zitierten Redaktionsmedien",
@@ -12374,7 +12374,7 @@
     },
     "methode": "Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle der Einordnung: data/content_citations.json, gesetzt von scripts/enrich_press_events.py als detail.zitat_klasse.",
     "grenzen": "Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht zuordnen liess - nicht, dass es nicht zitiert wird.",
-    "abdeckung": 0.3679,
+    "abdeckung": 0.3684,
     "available": true,
     "wirkung_je_klasse": {
       "zitiert_redaktionell": {
@@ -12401,7 +12401,7 @@
         "avg_sov_effect_pp": -0.146,
         "n_intervals": 668,
         "n_with_event": 105,
-        "n_events": 660,
+        "n_events": 661,
         "significant_iid": false,
         "p_iid": 0.38824,
         "effect_se_cluster_pp": 0.17,
@@ -12419,7 +12419,7 @@
         "avg_sov_effect_pp": 0.474,
         "n_intervals": 668,
         "n_with_event": 50,
-        "n_events": 210,
+        "n_events": 212,
         "significant_iid": false,
         "p_iid": 0.210494,
         "effect_se_cluster_pp": 0.378,
@@ -13026,9 +13026,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0204,
-            "ci95_low": 0.5037,
-            "ci95_high": 1.537,
+            "coef_pp_per_event_day": 1.0249,
+            "ci95_low": 0.5078,
+            "ci95_high": 1.542,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -13036,33 +13036,23 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1127,
-            "ci95_low": -0.3716,
-            "ci95_high": 0.5969,
-            "prob_positive": 0.676,
-            "prob_direction": 0.676,
+            "coef_pp_per_event_day": 0.1123,
+            "ci95_low": -0.3721,
+            "ci95_high": 0.5968,
+            "prob_positive": 0.675,
+            "prob_direction": 0.675,
             "significant": false,
             "n_with_event": 14
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.075,
-            "ci95_low": -0.2271,
-            "ci95_high": 0.0771,
-            "prob_positive": 0.167,
-            "prob_direction": 0.833,
+            "coef_pp_per_event_day": -0.0735,
+            "ci95_low": -0.2248,
+            "ci95_high": 0.0778,
+            "prob_positive": 0.17,
+            "prob_direction": 0.83,
             "significant": false,
             "n_with_event": 41
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0167,
-            "ci95_low": -0.1892,
-            "ci95_high": 0.1558,
-            "prob_positive": 0.425,
-            "prob_direction": 0.575,
-            "significant": false,
-            "n_with_event": 23
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -13077,12 +13067,32 @@
           "page_removed": {
             "label": "Geloeschte Seiten",
             "coef_pp_per_event_day": 0.0097,
-            "ci95_low": -0.0895,
+            "ci95_low": -0.0896,
             "ci95_high": 0.109,
             "prob_positive": 0.576,
             "prob_direction": 0.576,
             "significant": false,
             "n_with_event": 6
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.008,
+            "ci95_low": -0.3395,
+            "ci95_high": 0.3235,
+            "prob_positive": 0.481,
+            "prob_direction": 0.519,
+            "significant": false,
+            "n_with_event": 22
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0076,
+            "ci95_low": -0.0721,
+            "ci95_high": 0.057,
+            "prob_positive": 0.409,
+            "prob_direction": 0.591,
+            "significant": false,
+            "n_with_event": 18
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -13093,16 +13103,6 @@
             "prob_direction": 0.766,
             "significant": false,
             "n_with_event": 275
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0007,
-            "ci95_low": -0.0407,
-            "ci95_high": 0.0393,
-            "prob_positive": 0.486,
-            "prob_direction": 0.514,
-            "significant": false,
-            "n_with_event": 20
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -13682,9 +13682,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.6424,
-            "ci95_low": 0.0057,
-            "ci95_high": 1.279,
+            "coef_pp_per_event_day": 0.6457,
+            "ci95_low": 0.0085,
+            "ci95_high": 1.2829,
             "prob_positive": 0.976,
             "prob_direction": 0.976,
             "significant": false,
@@ -13692,57 +13692,57 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2569,
-            "ci95_low": -0.2901,
-            "ci95_high": 0.8039,
-            "prob_positive": 0.821,
-            "prob_direction": 0.821,
+            "coef_pp_per_event_day": 0.2573,
+            "ci95_low": -0.2899,
+            "ci95_high": 0.8045,
+            "prob_positive": 0.822,
+            "prob_direction": 0.822,
             "significant": false,
             "n_with_event": 16
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1388,
-            "ci95_low": -0.0489,
+            "coef_pp_per_event_day": 0.1398,
+            "ci95_low": -0.0469,
             "ci95_high": 0.3266,
-            "prob_positive": 0.926,
-            "prob_direction": 0.926,
+            "prob_positive": 0.929,
+            "prob_direction": 0.929,
             "significant": false,
             "n_with_event": 41
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0398,
+            "ci95_low": -0.4489,
+            "ci95_high": 0.3693,
+            "prob_positive": 0.424,
+            "prob_direction": 0.576,
+            "significant": false,
+            "n_with_event": 22
+          },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": -0.0264,
+            "coef_pp_per_event_day": -0.0265,
             "ci95_low": -0.149,
-            "ci95_high": 0.0962,
+            "ci95_high": 0.0961,
             "prob_positive": 0.336,
             "prob_direction": 0.664,
             "significant": false,
             "n_with_event": 6
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0211,
-            "ci95_low": -0.2339,
-            "ci95_high": 0.1918,
-            "prob_positive": 0.423,
-            "prob_direction": 0.577,
-            "significant": false,
-            "n_with_event": 23
-          },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0119,
-            "ci95_low": -0.0375,
-            "ci95_high": 0.0613,
-            "prob_positive": 0.681,
-            "prob_direction": 0.681,
+            "coef_pp_per_event_day": 0.0124,
+            "ci95_low": -0.0673,
+            "ci95_high": 0.0921,
+            "prob_positive": 0.62,
+            "prob_direction": 0.62,
             "significant": false,
-            "n_with_event": 20
+            "n_with_event": 18
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0113,
+            "coef_pp_per_event_day": 0.0112,
             "ci95_low": 0.0061,
             "ci95_high": 0.0164,
             "prob_positive": 1.0,
@@ -14099,73 +14099,73 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2137,
-            "ci95_low": -0.4937,
-            "ci95_high": 0.9211,
-            "prob_positive": 0.723,
-            "prob_direction": 0.723,
+            "coef_pp_per_event_day": 0.2093,
+            "ci95_low": -0.4983,
+            "ci95_high": 0.917,
+            "prob_positive": 0.719,
+            "prob_direction": 0.719,
             "significant": false,
             "n_with_event": 12
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.0827,
-            "ci95_low": -0.1705,
-            "ci95_high": 0.3358,
-            "prob_positive": 0.739,
-            "prob_direction": 0.739,
+            "coef_pp_per_event_day": 0.0862,
+            "ci95_low": -0.1649,
+            "ci95_high": 0.3372,
+            "prob_positive": 0.749,
+            "prob_direction": 0.749,
             "significant": false,
             "n_with_event": 29
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.0585,
+            "ci95_low": -0.39,
+            "ci95_high": 0.5071,
+            "prob_positive": 0.601,
+            "prob_direction": 0.601,
+            "significant": false,
+            "n_with_event": 22
+          },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.0445,
-            "ci95_low": -0.8185,
-            "ci95_high": 0.9075,
-            "prob_positive": 0.54,
-            "prob_direction": 0.54,
+            "coef_pp_per_event_day": 0.0482,
+            "ci95_low": -0.816,
+            "ci95_high": 0.9123,
+            "prob_positive": 0.543,
+            "prob_direction": 0.543,
             "significant": false,
             "n_with_event": 9
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0123,
-            "ci95_low": -0.246,
-            "ci95_high": 0.2213,
-            "prob_positive": 0.459,
-            "prob_direction": 0.541,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0126,
+            "ci95_low": -0.0998,
+            "ci95_high": 0.0746,
+            "prob_positive": 0.388,
+            "prob_direction": 0.612,
             "significant": false,
-            "n_with_event": 23
+            "n_with_event": 18
           },
           "page_new": {
             "label": "Neue Seiten",
-            "coef_pp_per_event_day": 0.0061,
+            "coef_pp_per_event_day": 0.006,
             "ci95_low": 0.0003,
             "ci95_high": 0.0118,
-            "prob_positive": 0.981,
-            "prob_direction": 0.981,
+            "prob_positive": 0.98,
+            "prob_direction": 0.98,
             "significant": true,
             "n_with_event": 52
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": 0.0032,
-            "ci95_low": -0.1304,
-            "ci95_high": 0.1369,
-            "prob_positive": 0.519,
-            "prob_direction": 0.519,
-            "significant": false,
-            "n_with_event": 6
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0012,
-            "ci95_low": -0.0552,
-            "ci95_high": 0.0528,
-            "prob_positive": 0.482,
+            "coef_pp_per_event_day": 0.0031,
+            "ci95_low": -0.1306,
+            "ci95_high": 0.1367,
+            "prob_positive": 0.518,
             "prob_direction": 0.518,
             "significant": false,
-            "n_with_event": 20
+            "n_with_event": 6
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -14657,9 +14657,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.5606,
-            "ci95_low": 0.5606,
-            "ci95_high": 0.5606,
+            "coef_pp_per_event_day": 0.563,
+            "ci95_low": 0.563,
+            "ci95_high": 0.563,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -15011,9 +15011,19 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.2833,
-            "ci95_low": -0.2833,
-            "ci95_high": -0.2833,
+            "coef_pp_per_event_day": -0.2836,
+            "ci95_low": -0.2836,
+            "ci95_high": -0.2836,
+            "prob_positive": 0.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 4
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0128,
+            "ci95_low": -0.0128,
+            "ci95_high": -0.0128,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -15034,16 +15044,6 @@
             "coef_pp_per_event_day": -0.0045,
             "ci95_low": -0.0045,
             "ci95_high": -0.0045,
-            "prob_positive": 0.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 4
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0043,
-            "ci95_low": -0.0043,
-            "ci95_high": -0.0043,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -15989,6 +15989,16 @@
         ],
         "exploratory": false,
         "coefficients": {
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0128,
+            "ci95_low": -0.0128,
+            "ci95_high": -0.0128,
+            "prob_positive": 0.0,
+            "prob_direction": 1.0,
+            "significant": false,
+            "n_with_event": 4
+          },
           "page_new": {
             "label": "Neue Seiten",
             "coef_pp_per_event_day": 0.0081,
@@ -15998,16 +16008,6 @@
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 11
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0043,
-            "ci95_low": -0.0043,
-            "ci95_high": -0.0043,
-            "prob_positive": 0.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 4
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -16220,9 +16220,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1518,
-            "ci95_low": 0.1518,
-            "ci95_high": 0.1518,
+            "coef_pp_per_event_day": 0.1517,
+            "ci95_low": 0.1517,
+            "ci95_high": 0.1517,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16580,7 +16580,6 @@
         "types_used": [
           "page_change",
           "review_change",
-          "review_positive",
           "review_negative"
         ],
         "types_excluded_too_few": [
@@ -16602,9 +16601,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1518,
-            "ci95_low": 0.1518,
-            "ci95_high": 0.1518,
+            "coef_pp_per_event_day": 0.1517,
+            "ci95_low": 0.1517,
+            "ci95_high": 0.1517,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -16612,20 +16611,10 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0059,
-            "ci95_low": 0.0059,
-            "ci95_high": 0.0059,
+            "coef_pp_per_event_day": 0.0188,
+            "ci95_low": 0.0188,
+            "ci95_high": 0.0188,
             "prob_positive": 1.0,
-            "prob_direction": 1.0,
-            "significant": false,
-            "n_with_event": 4
-          },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0043,
-            "ci95_low": -0.0043,
-            "ci95_high": -0.0043,
-            "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
             "n_with_event": 4
@@ -16789,9 +16778,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1518,
-            "ci95_low": 0.1518,
-            "ci95_high": 0.1518,
+            "coef_pp_per_event_day": 0.1517,
+            "ci95_low": 0.1517,
+            "ci95_high": 0.1517,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18104,43 +18093,33 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.3851,
-            "ci95_low": -0.2218,
-            "ci95_high": 0.992,
-            "prob_positive": 0.893,
-            "prob_direction": 0.893,
+            "coef_pp_per_event_day": 0.3889,
+            "ci95_low": -0.2186,
+            "ci95_high": 0.9963,
+            "prob_positive": 0.895,
+            "prob_direction": 0.895,
             "significant": false,
             "n_with_event": 12
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2206,
-            "ci95_low": -0.3008,
-            "ci95_high": 0.7421,
-            "prob_positive": 0.797,
-            "prob_direction": 0.797,
+            "coef_pp_per_event_day": 0.22,
+            "ci95_low": -0.3017,
+            "ci95_high": 0.7416,
+            "prob_positive": 0.796,
+            "prob_direction": 0.796,
             "significant": false,
             "n_with_event": 16
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1343,
-            "ci95_low": -0.0446,
-            "ci95_high": 0.3133,
-            "prob_positive": 0.929,
-            "prob_direction": 0.929,
+            "coef_pp_per_event_day": 0.1363,
+            "ci95_low": -0.0417,
+            "ci95_high": 0.3143,
+            "prob_positive": 0.933,
+            "prob_direction": 0.933,
             "significant": false,
             "n_with_event": 41
-          },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0224,
-            "ci95_low": -0.2254,
-            "ci95_high": 0.1805,
-            "prob_positive": 0.414,
-            "prob_direction": 0.586,
-            "significant": false,
-            "n_with_event": 23
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -18154,23 +18133,33 @@
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": -0.0086,
-            "ci95_low": -0.1254,
+            "coef_pp_per_event_day": -0.0087,
+            "ci95_low": -0.1255,
             "ci95_high": 0.1082,
-            "prob_positive": 0.443,
-            "prob_direction": 0.557,
+            "prob_positive": 0.442,
+            "prob_direction": 0.558,
             "significant": false,
             "n_with_event": 6
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.004,
+            "ci95_low": -0.394,
+            "ci95_high": 0.386,
+            "prob_positive": 0.492,
+            "prob_direction": 0.508,
+            "significant": false,
+            "n_with_event": 22
+          },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": 0.0065,
-            "ci95_low": -0.0405,
-            "ci95_high": 0.0536,
-            "prob_positive": 0.607,
-            "prob_direction": 0.607,
+            "coef_pp_per_event_day": 0.0013,
+            "ci95_low": -0.0747,
+            "ci95_high": 0.0773,
+            "prob_positive": 0.513,
+            "prob_direction": 0.513,
             "significant": false,
-            "n_with_event": 20
+            "n_with_event": 18
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
@@ -18551,9 +18540,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0154,
-            "ci95_low": 0.4975,
-            "ci95_high": 1.5333,
+            "coef_pp_per_event_day": 1.0205,
+            "ci95_low": 0.5022,
+            "ci95_high": 1.5388,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18561,21 +18550,21 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1235,
-            "ci95_low": -0.3619,
-            "ci95_high": 0.6089,
-            "prob_positive": 0.691,
-            "prob_direction": 0.691,
+            "coef_pp_per_event_day": 0.1228,
+            "ci95_low": -0.3628,
+            "ci95_high": 0.6083,
+            "prob_positive": 0.69,
+            "prob_direction": 0.69,
             "significant": false,
             "n_with_event": 14
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.077,
-            "ci95_low": -0.2294,
-            "ci95_high": 0.0755,
-            "prob_positive": 0.161,
-            "prob_direction": 0.839,
+            "coef_pp_per_event_day": -0.0755,
+            "ci95_low": -0.2271,
+            "ci95_high": 0.0761,
+            "prob_positive": 0.165,
+            "prob_direction": 0.835,
             "significant": false,
             "n_with_event": 41
           },
@@ -18589,15 +18578,15 @@
             "significant": true,
             "n_with_event": 60
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0138,
-            "ci95_low": -0.1867,
-            "ci95_high": 0.1591,
-            "prob_positive": 0.438,
-            "prob_direction": 0.562,
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0119,
+            "ci95_low": -0.0767,
+            "ci95_high": 0.0528,
+            "prob_positive": 0.359,
+            "prob_direction": 0.641,
             "significant": false,
-            "n_with_event": 23
+            "n_with_event": 18
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
@@ -18609,15 +18598,15 @@
             "significant": false,
             "n_with_event": 6
           },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0022,
-            "ci95_low": -0.0423,
-            "ci95_high": 0.0379,
-            "prob_positive": 0.457,
-            "prob_direction": 0.543,
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.0042,
+            "ci95_low": -0.328,
+            "ci95_high": 0.3365,
+            "prob_positive": 0.51,
+            "prob_direction": 0.51,
             "significant": false,
-            "n_with_event": 20
+            "n_with_event": 22
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",

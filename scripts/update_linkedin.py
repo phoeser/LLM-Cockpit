@@ -118,6 +118,106 @@ def ist_linkedin(u):
         return False
 
 
+# ---------------------------------------------------------------------------
+# 20.08.2026 (Pauls Auftrag): Jeder Post bekommt drei ableitbare Merkmale mit -
+# Absender, Absender-Typ und Post-Typ. Ziel dahinter: nicht nur "LinkedIn wirkt
+# / wirkt nicht", sondern "WELCHE Art von Post wirkt". Dafuer muessen die
+# Merkmale IM EVENT stehen, sonst kann die Korrelations-Engine spaeter nicht
+# danach schichten.
+#
+# Alles wird aus Titel, Snippet und URL abgeleitet - der Post-Volltext liegt
+# uns nicht vor. Das ist eine Heuristik, keine Inhaltsanalyse; sie steht im
+# Reiter auch so dran. Dieselben Regeln laufen im Dashboard (linkedin_tab.js)
+# noch einmal zur Laufzeit, damit auch die 76 Posts aus dem Erstlauf - die
+# diese Felder noch nicht tragen - eingeordnet werden.
+MEDIEN_SLUGS = ("versicherungsbote", "horizont", "frankfurter-allgemeine-zeitung",
+                "handelsblatt", "wirtschaftswoche", "procontra", "asscompact",
+                "versicherungswirtschaft", "cash-online", "fondsprofessionell")
+
+# Offizielle Markenauftritte - exakte Slugs, damit "peterjungallianz" (ein
+# Vertreter) nicht als Konzernaccount durchgeht.
+MARKEN_ACCOUNTS = (
+    "ergo-group-ag", "ergo-oesterreich", "ergo-versicherung", "ergo-direkt", "dkv",
+    "allianz", "allianz-deutschland", "allianz-se", "axa", "axa-deutschland",
+    "huk-coburg", "generali-deutschland", "generali", "signal-iduna",
+    "r-v-versicherung", "devk", "hannoversche", "cosmosdirekt",
+)
+
+def absender(url, titel):
+    """(Handle, Typ). Typ: Unternehmensaccount | Mitarbeitende | Vertriebspartner
+    | Fachmedien | Sonstige.
+
+    20.08.2026 nachgeschaerft, nachdem der erste Wurf ergo-oesterreich als
+    "Vertriebspartner" einsortierte, nur weil im Titel "volksbank" stand: Ueber
+    den Absender entscheidet der SLUG, nicht der Text des Posts. Wer postet,
+    steht in der URL; wovon er schreibt, ist eine andere Frage."""
+    m = re.search(r"/posts/([^_/]+)_", url or "")
+    slug = urllib.parse.unquote(m.group(1)) if m else ""
+    s = slug.lower()
+    if not slug:
+        return "", "Sonstige"
+    if any(w in s for w in MEDIEN_SLUGS):
+        return slug, "Fachmedien"
+    if s in MARKEN_ACCOUNTS:
+        return slug, "Unternehmensaccount"
+    if re.search(r"generalvertretung|agentur|gesch(ae)?ftsstelle|hauptvertretung|volksbank|sparkasse|makler|bezirksdirektion", s):
+        return slug, "Vertriebspartner"
+    # Personen-Slugs: "vorname-nachname" oder mit LinkedIn-Hash am Ende.
+    if re.search(r"-[0-9a-z]{6,}$", s) or s.count("-") >= 1:
+        return slug, "Mitarbeitende"
+    return slug, "Sonstige"
+
+
+# Reihenfolge zaehlt: die erste passende Regel gewinnt.
+POST_TYPEN = [
+    ("Recruiting & Karriere", r"\bm/w/d\b|karriere|jobs?\b|stelle\b|bewerb|werde\s|ausbildung|dualesstudium|wir suchen|join|hiring|arbeitgeber"),
+    ("Unternehmensnews & Zahlen", r"quartal|halbjahr|gesch(ae|ä)ftsjahr|financialresults|bilanz|umsatz|gewinn|vorstand|aufsichtsrat|ernennung|uebernahme|übernahme|fusion|rekord"),
+    ("Studie & Daten", r"studie|umfrage|report\b|analyse|tacho|barometer|trendwende|zeigt.{0,15}dass|index\b"),
+    ("Auszeichnung & Test", r"testsieger|auszeichnung|award|pr(ae|ä)miert|note\s+sehr\s+gut|zertifi|siegel"),
+    ("Event & Netzwerk", r"messe|kongress|tagung|maklertreff|netzwerk|treffen|konferenz|roadshow|stand\b|event"),
+    ("Kooperation & Partner", r"kooperation|partnerschaft|gemeinsam mit|zusammenarbeit|volksbank|sparkasse"),
+    ("Standort & Vertrieb", r"generalvertretung|neuer standort|er(oe|ö)ffnung|neues kapitel|gesch(ae|ä)ftsstelle"),
+    ("Nachhaltigkeit & Engagement", r"nachhaltig|klima|esg|spende|ehrenamt|soziales|diversity|inklusion"),
+    ("Ratgeber & Wissen", r"tipps?\b|ratgeber|wissen|erkl(ae|ä)r|warum |so geht|checkliste|finanzbildung|worauf"),
+    # 20.08.2026 nachgeschaerft: "versicherung" allein reicht NICHT - das Wort
+    # steht in fast jedem Firmennamen ("ERGO Versicherung AG ..."), und der
+    # erste Wurf sortierte dadurch die Haelfte aller Posts als "Produkt" ein.
+    # Jetzt braucht es ein echtes Produktsignal.
+    ("Produkt & Beratung", r"tarif|absicherung|vorsorge|schadenfall|leistung(en)?\b|police|versichert\b|sch(ue|ü)tzt|deckung|pr(ae|ä)mie|neue[rs]? produkt"),
+]
+
+def post_typ(titel, snippet):
+    """Heuristik aus Titel + Snippet. Kein Volltext - deshalb gibt es bewusst
+    einen ehrlichen Rest: Titel wie "Beitrag von Max Mustermann" tragen kein
+    inhaltliches Signal, und die als "Produkt" zu raten waere schlechter als
+    zuzugeben, dass man es nicht weiss."""
+    t = ((titel or "") + " " + (snippet or "")).lower()
+    for name, pat in POST_TYPEN:
+        if re.search(pat, t):
+            return name
+    if re.match(r"^\s*beitrag von\b", (titel or "").lower()) and len((snippet or "").strip()) < 40:
+        return "Ohne Textsignal"
+    return "Sonstiges"
+
+
+THEMEN = [
+    ("Kfz", r"\bkfz\b|auto|mobilit|e-auto|verbrenner|motorrad"),
+    ("Gesundheit & Kranken", r"krank|gesundheit|zahn|pflege|klinik|dkv"),
+    ("Leben & Vorsorge", r"lebensvers|rente|vorsorge|altersvorsorge|berufsunf|hinterblieben"),
+    ("Wohnen & Sach", r"hausrat|geb(ae|ä)ude|wohn|haftpflicht|elementar|unwetter"),
+    ("Recht", r"rechtsschutz|recht\b|urteil"),
+    ("Reise", r"reise|urlaub"),
+    ("Gewerbe & Firmen", r"gewerbe|firmenkunden|unternehmen.{0,10}versicher|betriebs|cyber"),
+]
+
+def thema(titel, snippet):
+    t = ((titel or "") + " " + (snippet or "")).lower()
+    for name, pat in THEMEN:
+        if re.search(pat, t):
+            return name
+    return ""
+
+
 def serpapi(query, key, fenster):
     # 18.08.2026, Befund Paul nach dem ersten Lauf ("haben wirklich alle genau
     # 10 Posts?"): Sieben Marken mit EXAKT 10 Treffern - das war die Google-
@@ -221,13 +321,20 @@ def main():
                 continue
             seen_b.add(url)
             datum = parse_datum(t.get("date"))
+            _tit = (t.get("title") or "")[:300]
+            _snip = (t.get("snippet") or "")[:500]
+            _abs, _abs_typ = absender(url, _tit)
+            _ptyp = post_typ(_tit, _snip)
+            _thema = thema(_tit, _snip)
             post = {
                 "url": url, "brand": brand,
-                "title": (t.get("title") or "")[:300],
-                "snippet": (t.get("snippet") or "")[:500],
+                "title": _tit,
+                "snippet": _snip,
                 "date": datum,                 # Erscheinungstag, wenn parsebar
                 "first_seen": heute,           # Fund-Tag (immer)
                 "quelle": "serpapi_google",
+                "absender": _abs, "absender_typ": _abs_typ,
+                "post_typ": _ptyp, "thema": _thema,
             }
             neu.append(post)
             n_neu += 1
@@ -238,7 +345,12 @@ def main():
                     magnitude=1.0, url=url,
                     detail={"title": post["title"], "date": datum,
                             "datierung": ("post" if datum else "erstsichtung"),
-                            "fenster": fenster},
+                            "fenster": fenster,
+                            # Merkmale mit ins Event: nur so kann die
+                            # Korrelations-Engine spaeter nach Post-Typ
+                            # schichten ("welche Art Post wirkt?").
+                            "absender": _abs, "absender_typ": _abs_typ,
+                            "post_typ": _ptyp, "thema": _thema},
                 )
         print("[LinkedIn] %-13s %d Treffer, %d neu" % (brand, len(treffer), n_neu))
 

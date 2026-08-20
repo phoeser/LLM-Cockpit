@@ -15,6 +15,20 @@ on:
     # Nightly am Ende selbst anstoesst (wie der Montags-Peec-Task, CLAUDE.md 3c).
     - cron: '30 5 * * *'
   workflow_dispatch:
+    # 20.08.2026 (Pauls Frage "ist der LinkedIn-Part schon repariert?"): Die
+    # LinkedIn-Sammler drosseln sich selbst auf einen Lauf je Woche. Nach einer
+    # Aenderung am Sammler will man nicht bis Montag warten, um zu sehen, ob sie
+    # wirkt. Dieser Schalter erzwingt einen Lauf - Standard bleibt "false",
+    # damit der taegliche Nightly nichts am Wochentakt aendert.
+    inputs:
+      force_linkedin:
+        description: 'LinkedIn-Sammler + KPIs sofort laufen lassen (statt erst wieder montags)'
+        type: boolean
+        default: false
+      force_instagram:
+        description: 'Instagram-Sammler sofort laufen lassen (statt erst im Wochentakt)'
+        type: boolean
+        default: false
 
 concurrency:
   group: repo-writes
@@ -75,6 +89,7 @@ jobs:
       - name: LinkedIn-Posts sammeln (SerpAPI, selbst-woechentlich)
         env:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FORCE_LINKEDIN: ${{ github.event.inputs.force_linkedin == 'true' && '1' || '' }}
         run: python scripts/update_linkedin.py
         continue-on-error: true
 
@@ -82,7 +97,24 @@ jobs:
       # der gesammelten Posts - drosselt sich selbst auf einen Lauf je Woche
       # und respektiert Authwalls (zaehlt sie, statt Nullen zu erfinden).
       - name: LinkedIn-KPIs nachmessen (selbst-woechentlich)
+        env:
+          FORCE_LINKEDIN_KPIS: ${{ github.event.inputs.force_linkedin == 'true' && '1' || '' }}
         run: python scripts/update_linkedin_kpis.py
+        continue-on-error: true
+
+      # 20.08.2026, Pauls Auftrag ("Reiter Instagram, alle Posts tracken, Impact
+      # auf GEO"): gleicher Weg wie LinkedIn - Google-Suche nach
+      # site:instagram.com/p je Marke ueber SerpAPI, weil die offizielle Graph
+      # API nur das EIGENE Konto zeigt und Paul die Wettbewerber braucht.
+      # Selbst-woechentlich, ueberspringt wortlos ohne SERPAPI_KEY.
+      # KEINE KPI-Nachmessung: Instagram gibt oeffentlich keine Reaktionszahlen
+      # heraus (am 20.08.2026 an echten Post-URLs geprueft) - ein Step, der nur
+      # Nullen erfinden koennte, existiert hier bewusst nicht.
+      - name: Instagram-Posts sammeln (SerpAPI, selbst-woechentlich)
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FORCE_INSTAGRAM: ${{ github.event.inputs.force_instagram == 'true' && '1' || '' }}
+        run: python scripts/update_instagram.py
         continue-on-error: true
 
       - name: v3 - Dashboard-fertige JSONs exportieren (sentiment + presse)
@@ -218,6 +250,8 @@ jobs:
           git add data/linkedin_state.json 2>/dev/null || true
           git add data/linkedin_kpis.jsonl 2>/dev/null || true
           git add data/linkedin_kpis_state.json 2>/dev/null || true
+          git add data/instagram_posts.jsonl 2>/dev/null || true
+          git add data/instagram_state.json 2>/dev/null || true
           git add data/geo_snapshot.json 2>/dev/null || true
           git add data/geo_snapshot.previous.json 2>/dev/null || true
           git add data/sentiment_dashboard.json 2>/dev/null || true

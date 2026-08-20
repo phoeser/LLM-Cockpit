@@ -200,3 +200,8 @@
 (function(){ try{ var s=document.createElement("script"); s.src="soho_tab.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();
 /* 18.08.2026: LinkedIn-Reiter, gleicher Lademechanismus wie SOHO. */
 (function(){ try{ var s=document.createElement("script"); s.src="linkedin_tab.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();
+/* 20.08.2026: Instagram-Reiter, gleicher Lademechanismus. Wird NACH dem
+   LinkedIn-Reiter geladen, damit sein Knopf sich direkt dahinter einhaengen
+   kann (instagram_tab.js sucht #linkedinTabBtn; findet es ihn nicht, faellt
+   es auf das Reiter-Ende zurueck - der Reiter geht also nie verloren). */
+(function(){ try{ var s=document.createElement("script"); s.src="instagram_tab.js?t="+Date.now(); document.body.appendChild(s); }catch(e){} })();

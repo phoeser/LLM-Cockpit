@@ -290,20 +290,31 @@ def serpapi_seite(query, key, fenster, start):
 
 def serpapi(query, key, fenster, max_seiten=SEITEN_KERN):
     """Blaettert bis zu max_seiten durch.
-    -> (treffer, fehlertext_oder_None, anzahl_suchen)
+    -> (treffer, fehlertext_oder_None, anzahl_suchen, erschoepft)
+
+    "erschoepft" beantwortet die Frage, auf die es fuer die Anzeige ankommt:
+    Haben wir aufgehoert, weil GOOGLE nichts mehr hatte (True), oder weil
+    unser Seitenbudget zu Ende war (False)? Nur im zweiten Fall ist die Zahl
+    eine Untergrenze. Vorher wurde das aus der Trefferzahl geschaetzt
+    ("volle Ausbeute = gekappt") - das ging schief, sobald das Dedup ueber
+    die Seiten hinweg ein paar Wiederholungen entfernte: Allianz kam am
+    20.08. mit 37 statt 40 Treffern zurueck und galt damit faelschlich als
+    vollstaendig, obwohl vier von vier erlaubten Seiten voll waren.
 
     "Keine Ergebnisse" ist KEIN Fehler, sondern das Ende der Liste. Alles
     andere (Kontingent, Parameter) ist einer und wird nach oben gereicht -
     damit ein leerer Lauf nie als erfolgreicher durchgeht."""
     alle, gesehen, anzahl_suchen = [], set(), 0
+    erschoepft = False
     for i in range(max_seiten):
         antwort = serpapi_seite(query, key, fenster, i * TREFFER_JE_SEITE)
         anzahl_suchen += 1
         fehlertext = antwort.get("error")
         if fehlertext:
             if "any results" in str(fehlertext):
+                erschoepft = True
                 break
-            return alle, str(fehlertext), anzahl_suchen
+            return alle, str(fehlertext), anzahl_suchen, erschoepft
         seite = antwort.get("organic_results") or []
         frisch = [t for t in seite if t.get("link") not in gesehen]
         for t in seite:
@@ -313,8 +324,9 @@ def serpapi(query, key, fenster, max_seiten=SEITEN_KERN):
         # liefert bei site:-Abfragen gern dieselbe Seite noch einmal statt
         # einer leeren - beides heisst dasselbe.
         if len(seite) < TREFFER_JE_SEITE or not frisch:
+            erschoepft = True
             break
-    return alle, None, anzahl_suchen
+    return alle, None, anzahl_suchen, erschoepft
 
 
 def main():
@@ -375,11 +387,11 @@ def main():
                       % (brand, BUDGET_JE_LAUF))
                 gekappt.append(brand)
                 continue
-            treffer, fehlertext, seiten = serpapi("site:linkedin.com/posts %s" % query, key, fenster,
-                                                  max_seiten=tiefe)
+            treffer, fehlertext, seiten, erschoepft = serpapi(
+                "site:linkedin.com/posts %s" % query, key, fenster, max_seiten=tiefe)
             n_suchen += seiten
-            # Volle Ausbeute bei ausgeschoepfter Tiefe heisst: da war noch mehr.
-            if seiten >= tiefe and len(treffer) >= tiefe * TREFFER_JE_SEITE:
+            # Gekappt heisst: nicht Google war am Ende, sondern unser Budget.
+            if not erschoepft:
                 gekappt.append(brand)
         except Exception as e:
             print("[LinkedIn] %s: Abfrage fehlgeschlagen: %s" % (brand, str(e)[:100]))

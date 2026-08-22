@@ -725,15 +725,25 @@
   </div>
 </section>
 
+<!-- korr-entschlackung-2026-08-22 -->
 <!-- ===== TAB: KORRELATION (GEO × Cockpit) ===== -->
 <section data-content="korrelation" class="tab-content hidden">
   <div class="mb-5">
     <h2 class="text-2xl font-bold text-ergo-dark mb-1">Wirkt unsere Arbeit auf die LLM-Sichtbarkeit?</h2>
-    <p class="text-sm text-gray-600 mb-3">Sechs Abschnitte, in der Reihenfolge, in der sie unten stehen: <b>1.</b> Was treibt die Sichtbarkeit strukturell (Quellpräsenz, Größe, Preis)? <b>2.</b> Bewegen einzelne Ereignisse sie kurzfristig? <b>3.</b> Was bringt die Websuche — im kontrollierten Experiment? <b>4.</b> Was schafft es überhaupt in die Zitate? <b>5.</b> Wie gut ist die Messung — und wie groß müsste eine Wirkung sein, damit wir sie finden könnten? <b>6.</b> Warum liegt der Marktführer vorn? Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p>
+    <p class="text-sm text-gray-600 mb-3">Die Antwort steht zuerst, die sechs Abschnitte darunter belegen sie — jeder trägt seine Nummer. Alle Zahlen kommen zur Laufzeit aus den Nightly-Daten; fehlt ein Wert, steht dort „keine Angabe“ mit Grund, nie eine Null.</p>
   <!-- 17.08.2026: Der Legenden-Satz zur DiD-Auswertung ("gehoert ausdruecklich nicht dazu ...")
        beschrieb einen Block, der am 12.08.2026 entfernt wurde. Ein Warnhinweis auf etwas,
        das nicht mehr auf der Seite steht, verwirrt statt zu schuetzen - gestrichen. -->
-  <div class="bg-white border rounded-lg p-3 mb-4"><div class="text-xs font-semibold text-gray-600 mb-2">Wie belastbar ist ein Befund? Drei Stufen, die im ganzen Reiter gelten</div><div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs"><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold h-fit">kausal belegt</span><span class="text-gray-600">Es wurde <b>eingegriffen</b> und gegen eine Kontrollbedingung verglichen. Nur Abschnitt 3 (das Websuche-Experiment) erreicht diese Stufe.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold h-fit">Zusammenhang</span><span class="text-gray-600">Beobachtet, nicht eingegriffen. Robust gerechnet (cluster-robust, FDR-korrigiert), aber die Richtung der Ursache bleibt offen.</span></div><div class="flex gap-2"><span class="shrink-0 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold h-fit">nicht nachweisbar</span><span class="text-gray-600">Kein Effekt gefunden. Das heißt <b>nicht</b> „kein Effekt vorhanden" — siehe Nachweisgrenze in Abschnitt 5.</span></div></div></div>
+  <!-- 22.08.2026: Aus drei erklaerten Absaetzen werden drei beschriftete Chips.
+       Die Erklaerungen stehen unveraendert (und ausfuehrlicher) im Glossar am Fuss
+       des Reiters, wo sie einmal stehen statt an fuenf Stellen verstreut. -->
+  <div class="flex flex-wrap items-center gap-2 mb-4 text-xs">
+    <span class="text-gray-500">Belastbarkeit der Befunde:</span>
+    <span class="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold">kausal belegt</span><span class="text-gray-500">eingegriffen und verglichen</span>
+    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">Zusammenhang</span><span class="text-gray-500">beobachtet, Ursache offen</span>
+    <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold">nicht nachweisbar</span><span class="text-gray-500">nicht gefunden — nicht: nicht vorhanden</span>
+    <a href="#korrGlossar" class="text-gray-400 underline hover:text-ergo-red">Was die Begriffe genau heißen</a>
+  </div>
   </div>
   <div id="korrErgebnis"><div class="text-sm text-gray-400">Lade Auswertung…</div></div>
 
@@ -5045,11 +5055,16 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       +forestPlot(rows,{xlabel:'Effekt auf Share of Voice (pp je Intervall) — Balken = 95-%-Intervall, cluster-robust je Marke'});
     // Nebenangabe: iid-Signifikanz
     var iidOnly=Object.keys(imp).filter(function(k){ var r=imp[k]; return r.significant_iid===true && r.significant!==true; });
-    h+='<div class="text-xs text-gray-500 mt-3 leading-relaxed">Gezeigt wird durchgängig die <b>cluster-robuste</b> Rechnung (Einheit = Marke). '
+    h+='<div class="text-xs text-gray-500 mt-3 leading-relaxed">Gesichert nach der <b>cluster-robusten</b> Rechnung: <b>'+nSig+' von '+rows.length+'</b> Treibern. '
       +(iidOnly.length
-        ? ('Nebenangabe: '+iidOnly.length+' Treiber wären unter der <i>iid</i>-Annahme signifikant ('+iidOnly.map(function(k){return _esc((imp[k].label||k));}).join(', ')+'). Diese Annahme unterstellt, dass jedes Intervall unabhängig ist — bei mehreren Intervallen je Marke ist sie zu optimistisch und wird hier nicht als Befund geführt.')
-        : 'Nebenangabe: kein Treiber ist unter der optimistischeren <i>iid</i>-Annahme signifikant, ohne es auch cluster-robust zu sein.')
-      +' Gesichert nach dieser Basis: <b>'+nSig+' von '+rows.length+'</b> Treibern.</div>';
+        ? (iidOnly.length+' weitere wären nur unter der optimistischeren <i>iid</i>-Annahme signifikant ('+iidOnly.map(function(k){return _esc((imp[k].label||k));}).join(', ')+') und werden hier nicht als Befund geführt.')
+        : 'Kein Treiber ist unter der optimistischeren <i>iid</i>-Annahme signifikant, ohne es auch cluster-robust zu sein.')
+      +'</div>';
+
+    /* 22.08.2026: Ab hier sammelt h die Gegenproben in einen eigenen Puffer.
+       Zurueckgeschaltet wird direkt vor der Zitat-Kette; der gesammelte Text
+       landet dann geschlossen in einem Aufklapper. */
+    var hVorGegen=h; h='';
 
     // Multivariat: alle Treiber gleichzeitig
     var mv=ci.multivariate||{};
@@ -5065,7 +5080,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
          Treiber die Vorhersage nicht, und damit ist kein Einzeleffekt daraus
          belastbar. Wer die Koeffizienten braucht, findet sie unveraendert in
          der Drill-down-Tabelle im Detailbereich. */
-      h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+      h+='<div data-gp="alle Treiber gleichzeitig" class="mt-3 text-xs text-gray-600 leading-relaxed">'
         +'<b>Alle Treiber gleichzeitig gerechnet</b> ('+nfmt(mv.n_points)+' Intervalle, '+nfmt(mv.n_brands)+' Marken, '
         +((mv.types_used||[]).length)+' Ereignistypen): '
         +(hits.length===0
@@ -5079,7 +5094,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     // Gegenprobe nach Entrauschung (grounded + Wochen-Mittel)
     var ed=ci.event_impact_denoised||{};
     if(ed.available){
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Gegenprobe nach Entrauschung</div>'
+      h+='<div data-gp="nach Entrauschung" class="mt-4 pt-1"><div class="text-xs font-semibold text-gray-600 mb-1">Gegenprobe nach Entrauschung</div>'
         +'<div class="text-xs text-gray-600 leading-relaxed">Kanal '+_esc(ed.kanal||'')+': '+nfmt(ed.n_intervalle_taeglich)+' tägliche gegen '+nfmt(ed.n_intervalle_woechentlich)+' nicht überlappende Wochen-Intervalle. '
         +'Gesichert: '+nfmt(ed.n_gesichert_taeglich)+' täglich, <b>'+nfmt(ed.n_gesichert_woechentlich)+'</b> wöchentlich. '+_esc(ed.kernaussage||'')+'</div></div>';
     }
@@ -5159,7 +5174,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
           return '<div class="text-xs font-semibold text-gray-500 mt-3 mb-1">'+_esc(g.titel)+'</div>'
             +forestPlot(g.rows,{xlabel:'Effekt je Schicht (pp je Intervall) — Balken = 95-%-Intervall (iid)'});
         };
-        h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+        h+='<div data-gp="nach Prompt-Schicht" class="mt-3 text-xs text-gray-600 leading-relaxed">'
           +'<b>Wirkt es in bestimmten Prompt-Schichten?</b> Peec verschlagwortet jeden Prompt; geprüft wurden '
           +nfmt(_alleRows.length)+' Schichten aus vier Familien (Funnel-Stufe, Such-Absicht, Markenbezug, Thema). '
           +(_nSig ? (nfmt(_nSig)+' davon nach FDR gesichert. ')
@@ -5208,7 +5223,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
                   eff:v.steigung_within_fe, lo:v.ci95_low, hi:v.ci95_high,
                   sig:(v.significant===true), n:v.n_with_event};
         });
-        h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+        h+='<div data-gp="Dosis-Wirkung" class="mt-3 text-xs text-gray-600 leading-relaxed">'
           +'<b>Wirkt <em>mehr</em> davon auch mehr?</b> Bis heute fragte jede Rechnung in diesem Reiter nur, '
           +'<em>ob</em> in einem Zeitraum etwas passiert ist — nicht, wie viel. Ein Intervall mit einer '
           +'Pressemitteilung zählte wie eines mit zwanzig. Diese Rechnung nutzt die Menge: geschätzt wird die '
@@ -5234,7 +5249,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
 
       /* 12.08.2026 GEKUERZT: Forest wandert ins Aufklappbare, das Ergebnis
          steht als Satz davor. */
-      h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+      h+='<div data-gp="nach Änderungsart" class="mt-3 text-xs text-gray-600 leading-relaxed">'
         +'<b>Kommt es darauf an, <em>was</em> geändert wird?</b> '
         +((pct.n_page_change!=null&&pct.n_klassifiziert!=null)?(nfmt(pct.n_klassifiziert)+' von '+nfmt(pct.n_page_change)+' Änderungen sind nach Art klassifiziert — Preis, Leistung, FAQ, Text, Struktur. '):'')
         +(wja.n_gesichert
@@ -5259,7 +5274,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
          Rauschen erzeugt. Das gehoert in einen Satz, nicht in eine Tabelle, die
          aussieht wie ein Befund. Die Tabelle selbst bleibt aufklappbar. */
       var _nLags=(la.getestete_lags||[]).length, _nTr=Object.keys(la.bester_lag_je_treiber||{}).length;
-      h+='<div class="mt-3 text-xs text-gray-600 leading-relaxed">'
+      h+='<div data-gp="mit Zeitversatz" class="mt-3 text-xs text-gray-600 leading-relaxed">'
         +'<b>Wirkt es vielleicht später?</b> Geprüft wurden '+_nLags+' Zeitversätze ('
         +((la.getestete_lags||[]).join(', '))+' Tage) über '+_nTr+' Treiber. '
         +(lagHits.length
@@ -5303,6 +5318,70 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       h+='</div></details>';
     }
 
+    /* 22.08.2026: Puffer zu. Die sechs Gegenproben gehen geschlossen in einen
+       Aufklapper, der sie im Kopf beim Namen nennt - wer eine bestimmte Nachrechnung
+       sucht, sieht ohne Klick, dass es sie gibt. Faellt ein Block mangels Daten aus,
+       verschwindet sein Name automatisch mit, weil die Liste aus den data-gp-Marken
+       des tatsaechlich erzeugten Textes stammt. */
+    (function(){
+      var gegen=h; h=hVorGegen;
+      if(!gegen) return;
+      var namen=(gegen.match(/data-gp="([^"]+)"/g)||[]).map(function(m){ return m.slice(9,-1); });
+      h+='<details class="mt-4 border-t pt-3"><summary class="cursor-pointer text-xs font-semibold text-gray-600 hover:text-ergo-red select-none">'
+        +'Gegenproben zum Forest'+(namen.length?(' ('+namen.length+')'):'')+' — dieselbe Frage anders gerechnet'
+        +(namen.length?('<span class="font-normal text-gray-400">: '+namen.join(' · ')+'</span>'):'')
+        +'</summary><div class="mt-1">'+gegen+'</div></details>';
+    })();
+
+    /* 22.08.2026: Die ausfuehrliche Zitatanteil-Tabelle stand hier mitten in
+       Abschnitt 2, obwohl Abschnitt 4 dieselbe Frage an derselben Kette noch
+       einmal stellt. Sie ist nach Abschnitt 4 gezogen; hier bleibt das Ergebnis
+       in einer Zeile, damit der Faden nicht reisst. */
+    (function(){
+      var zi=ci.zitatanteil_impact||null; if(!zi) return;
+      var txt;
+      if(!zi.available){
+        txt=_kmiss(zi.grund||'im aktuellen Nightly nicht verfügbar');
+      } else {
+        var keys=Object.keys(zi.impact||{});
+        var ok=keys.filter(function(t){ return (zi.impact[t]||{}).significant===true; });
+        var sch=keys.filter(function(t){ return (zi.impact[t]||{}).available!==false; });
+        txt=(ok.length
+              ? ('<b>'+nfmt(ok.length)+' von '+nfmt(sch.length)+'</b> schätzbaren Typen wirken auf den Zitatanteil: '
+                 +ok.map(function(t){ return _esc((zi.impact[t]||{}).label||t); }).join(', ')+'.')
+              : ('Kein Ereignistyp von '+nfmt(sch.length)+' schätzbaren wirkt gesichert auf den Zitatanteil.'))
+            +' Gerechnet über '+nfmt(zi.n_intervalle)+' Intervalle und '+nfmt((zi.marken||[]).length)+' Marken.';
+      }
+      h+='<div class="mt-4 border-t pt-3 text-xs text-gray-600 leading-relaxed">'
+        +'<b>Frühere Kettenstufe — Wirkung auf den Zitatanteil:</b> '+txt
+        +' <span class="text-gray-400">Die Tabelle dazu steht in Abschnitt 4, neben der zweiten Zitat-Messung.</span></div>';
+    })();
+
+    // Web-Such-Rate
+    var fr=ci.fanout_regime||{};
+    if(fanCsv && fr.available){
+      var pts=[];
+      fanCsv.split(/\r?\n/).slice(1).forEach(function(l){
+        var c=l.split(';'); if(c.length<4||!c[0]) return;
+        var v=parseFloat(c[3]); if(!isNaN(v)) pts.push({x:c[0].replace(/^﻿/,''), y:v});
+      });
+      if(pts.length){
+        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Wie oft die Engines überhaupt im Web suchen</div>'
+          +'<div class="text-xs text-gray-500 mb-2">Anteil der Antworten mit Web-Suche. In der Einbruchphase antworten die Modelle aus dem Gedächtnis — eine Seitenänderung <b>kann</b> dort nicht wirken. Das verdünnt jeden echten Effekt.</div>'
+          +lineChartSVG(pts,{threshold:fr.schwelle})
+          +'<div class="text-xs text-gray-500 mt-1">'+nfmt(fr.n_tage_web)+' von '+nfmt(fr.n_tage)+' Tagen web-gestützt · Spanne '+_kv(fr.rate_min*100,1)+' % bis '+_kv(fr.rate_max*100,1)+' %.</div></div>';
+      }
+    }
+    return h+'</div>';
+  }
+
+  /* ---------- Block 3: Was schafft es in die Zitate? ---------- */
+  /* ---------- Ereignisse -> Zitatanteil (verschoben 22.08.2026) ----------
+     Woertlich der Block, der bis heute in Abschnitt 2 stand. Nur die Einleitung
+     ist angepasst, weil er jetzt neben der zweiten Zitat-Messung steht und den
+     Verweis auf "oben" nicht mehr braucht. */
+  function kZitatAnteil(ci){
+    var h='';
     /* 18.08.2026 (Hebel 6, Pauls Go): Ereignisse gegen den ZITATANTEIL aus dem
        eigenen Crawl - die fruehere Stufe der Wirkkette Massnahme -> Zitatanteil
        -> Sichtbarkeit. Cluster-robust wie das Hauptmodell, zusaetzlich FDR ueber
@@ -5354,26 +5433,14 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       }
     }
 
-    // Web-Such-Rate
-    var fr=ci.fanout_regime||{};
-    if(fanCsv && fr.available){
-      var pts=[];
-      fanCsv.split(/\r?\n/).slice(1).forEach(function(l){
-        var c=l.split(';'); if(c.length<4||!c[0]) return;
-        var v=parseFloat(c[3]); if(!isNaN(v)) pts.push({x:c[0].replace(/^﻿/,''), y:v});
-      });
-      if(pts.length){
-        h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Wie oft die Engines überhaupt im Web suchen</div>'
-          +'<div class="text-xs text-gray-500 mb-2">Anteil der Antworten mit Web-Suche. In der Einbruchphase antworten die Modelle aus dem Gedächtnis — eine Seitenänderung <b>kann</b> dort nicht wirken. Das verdünnt jeden echten Effekt.</div>'
-          +lineChartSVG(pts,{threshold:fr.schwelle})
-          +'<div class="text-xs text-gray-500 mt-1">'+nfmt(fr.n_tage_web)+' von '+nfmt(fr.n_tage)+' Tagen web-gestützt · Spanne '+_kv(fr.rate_min*100,1)+' % bis '+_kv(fr.rate_max*100,1)+' %.</div></div>';
-      }
-    }
-    return h+'</div>';
+    return h;
   }
 
-  /* ---------- Block 3: Was schafft es in die Zitate? ---------- */
   function kBlock3(ci, cc){
+    /* 22.08.2026: Sammelpuffer fuer die Nebenauswertungen dieses Abschnitts.
+       Wird bei der Autoritaets-Tabelle geoeffnet und vor der Zitat-Klammer
+       wieder geschlossen; alles dazwischen landet in einem Aufklapper. */
+    var hZ4=null;
     var h='<div class="bg-white rounded-xl p-5 shadow mb-5">'
       +'<h3 class="text-base font-bold text-ergo-dark mb-1">4 · Was schafft es in die Zitate?</h3>'
       +'<p class="text-xs text-gray-500 mb-3">Kurzer Anriss — die vollständige Auswertung je URL steht im Reiter <b>Content &amp; Zitate</b>.</p>';
@@ -5435,7 +5502,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     }
     var cas=ci.citation_authority_signal||{};
     if(cas.available && (cas.ranking_aktuell||[]).length){
-      h+='<div class="mt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Autoritätsgewichteter Zitier-Anteil je Marke</div>'
+      hZ4=h; h='';
+      h+='<div data-z4="Autoritätsgewichtung" class="mt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Autoritätsgewichteter Zitier-Anteil je Marke</div>'
         +'<div class="text-xs text-gray-400 mb-1">'+nfmt(cas.n_snapshots)+' Snapshots — die Kopplung Zitier-Anteil → SoV reift mit weiteren Snapshots.</div>'
         +'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr class="text-xs text-gray-400 text-left"><th class="px-2 py-1">Marke</th><th class="px-2 text-right">Anteil</th><th class="px-2 text-right">Δ seit erstem Snapshot</th></tr></thead><tbody>'
         +cas.ranking_aktuell.slice(0,8).map(function(x){
@@ -5450,6 +5518,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
        ZWEIGETEILT: eine Punktschaetzung aus echten Publikationsdaten und eine
        untere Schranke aus Sitemap-Obergrenzen - beides zu vermengen ergaebe
        eine Zahl, die weder das eine noch das andere ist. */
+    /* data-z4 haengt unten am Wrapper dieses Blocks. */
     var mb=((cc.kennzahlen||{}).median_tage_bis_erstes_zitat)||{};
     if(mb.available){
       var us=mb.untere_schranke||{};
@@ -5483,7 +5552,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       var g=na.gesamt||{};
       var top=na.marken.slice().sort(function(a,b){ return (b.seiten||0)-(a.seiten||0); }).slice(0,10);
       h+='<div class="border-t mt-4 pt-4">'
-        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">Wie viele Seiten lassen sich als „nicht neu" ausschließen?</h4>'
+        +'<h4 data-z4="Neuheits-Ausschluss" class="text-sm font-bold text-ergo-dark mb-1">Wie viele Seiten lassen sich als „nicht neu" ausschließen?</h4>'
         +'<p class="text-xs text-gray-500 mb-2">Wo ein echtes Publikationsdatum fehlt, liefert das Sitemap-<code>lastmod</code> eine <b>Obergrenze</b> („veröffentlicht spätestens am …"). '
         +'Damit lässt sich Neuheit <b>ausschließen</b>, nie beweisen: Eine Seite mit alter Obergrenze ist sicher nicht neu; eine mit junger Obergrenze ist nur ein <i>Kandidat</i> und kann beliebig älter sein. '
         +'Stand '+_esc(na.stichtag||'')+' · '+nfmt(g.seiten)+' Seiten, davon '+_kv(g.mit_datumsschranke_pct,0)+' % mit Datumsschranke.</p>'
@@ -5523,7 +5592,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
                     .filter(function(x){ return x.r!=null; })
                     .sort(function(a,b){ return b.r-a.r; });
       h+='<div class="border-t mt-4 pt-4">'
-        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">In welchen Themen hängt Quellpräsenz am engsten mit Sichtbarkeit zusammen?</h4>'
+        +'<h4 data-z4="Themen-Kopplung" class="text-sm font-bold text-ergo-dark mb-1">In welchen Themen hängt Quellpräsenz am engsten mit Sichtbarkeit zusammen?</h4>'
         +'<p class="text-xs text-gray-500 mb-2">Zusammenhang zwischen dem Zitations-Footprint einer Marke und ihrem Share of Voice, je Thema gerechnet (grounded, '
         +nfmt(fa.n_cells)+' Zellen über '+nfmt(fa.n_brands)+' Marken und '+nfmt(fa.n_topics)+' Themen). '
         +'<b>Deskriptiv</b> — ein hoher Wert heißt: dort gehen Quellpräsenz und Sichtbarkeit besonders eng miteinander, nicht dass das eine das andere verursacht.</p>'
@@ -5541,8 +5610,32 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var npd=ci.new_page_did||{};
     if(npd.available===false){
       h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mt-3 text-xs text-gray-700 leading-relaxed">'
-        +'<b>In Vorbereitung — wirken echt neue Seiten? (DiD auf dem Publikationsdatum):</b> '+_esc(npd.grund||'noch keine belastbare Auswertung')+'</div>';
+        +'<b data-z4="in Vorbereitung">In Vorbereitung — wirken echt neue Seiten? (DiD auf dem Publikationsdatum):</b> '+_esc(npd.grund||'noch keine belastbare Auswertung')+'</div>';
     }
+    /* Puffer A zu: die Nebenauswertungen in einen Aufklapper, der sie im Kopf
+       beim Namen nennt. Faellt eine mangels Daten aus, faellt ihr Name mit weg. */
+    if(hZ4!==null){
+      var nebenTxt=h; h=hZ4; hZ4=null;
+      if(nebenTxt){
+        var nz=(nebenTxt.match(/data-z4="([^"]+)"/g)||[]).map(function(m){ return m.slice(9,-1); });
+        if(/median_tage|bis zum ersten Zitat|Tage/.test(nebenTxt) && nz.indexOf('Zeit bis zum ersten Zitat')<0) nz.splice(1,0,'Zeit bis zum ersten Zitat');
+        h+='<details class="mt-4 border-t pt-3"><summary class="cursor-pointer text-xs font-semibold text-gray-600 hover:text-ergo-red select-none">'
+          +'Zitat-Analysen im Detail'+(nz.length?(' ('+nz.length+')'):'')
+          +(nz.length?('<span class="font-normal text-gray-400">: '+nz.join(' · ')+'</span>'):'')
+          +'</summary><div class="mt-1">'+nebenTxt+'</div></details>';
+      }
+    }
+
+    /* 22.08.2026: Beide Ereignis-auf-Zitat-Rechnungen unter einer Ueberschrift.
+       Sie messen dieselbe Frage mit verschiedenen Groessen und Quellen - genau
+       deshalb gehoeren sie nebeneinander und nicht in zwei Abschnitte. */
+    h+='<div class="border-t mt-4 pt-4"><h4 class="text-sm font-bold text-ergo-dark mb-1">Wirken Ereignisse auf die Zitate? Zwei Messungen</h4>'
+      +'<p class="text-xs text-gray-500 mb-2">Die erste rechnet den Zitat<b>anteil</b> aus dem eigenen Crawl in Prozentpunkten, cluster-robust und zusätzlich FDR-korrigiert. '
+      +'Die zweite die absolute Zitat<b>zahl</b> aus Peec. Unterschiedliche Quelle, unterschiedliche Einheit — die Zahlen sind nicht gegeneinander zu rechnen, '
+      +'wohl aber die Richtung ihrer Befunde.</p></div>';
+    try { h+=kZitatAnteil(ci); } catch(e){ console.warn('kZitatAnteil:', e.message); }
+
+    var hVorCt=h; h='';
     var ct=ci.citation_target||{};
     if(ct.available===false){
       h+='<div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mt-3 text-xs text-gray-700 leading-relaxed">'
@@ -5573,7 +5666,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       ctRows.sort(function(a,b){ return Math.abs(b.eff||0)-Math.abs(a.eff||0); });
       var ctSig=ctRows.filter(function(r){ return r.sig; });
       h+='<div class="border-t mt-4 pt-4">'
-        +'<h4 class="text-sm font-bold text-ergo-dark mb-1">Zitate als zweite Zielgröße — wirkt etwas schon <i>vor</i> dem Share of Voice?</h4>'
+        +'<div class="text-xs font-semibold text-gray-600 mb-1">Zweite Messung: Zitat<span class="text-ergo-dark">zahl</span> (Peec) — wirkt etwas schon <i>vor</i> dem Share of Voice?</div>'
         +'<p class="text-xs text-gray-500 mb-3">Zitiert zu werden steht in der Wirkungskette <b>vor</b> dem Genanntwerden. Dieselbe Event-Study-Logik wie oben, '
         +'nur mit der Zitatzahl je Marke als Ziel (Peec <code>citation_count</code>). Stand: '
         +nfmt(ct.n_messpunkte)+' Messpunkte, '+nfmt(ct.n_intervalle)+' Intervalle, '+nfmt((ct.marken||[]).length)+' Marken.</p>'
@@ -5612,6 +5705,17 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       }
       h+='</div>';
     }
+    /* Puffer B zu: Die Peec-Messung fuehrt den einzigen "gesicherten"
+       Kurzfrist-Befund des Reiters - und der steht selbst unter Artefaktverdacht
+       und geht ausdruecklich nicht in die Kernaussage ein. Genau so ein Befund
+       gehoert nicht in den Lesefluss, aber vollstaendig abrufbar bleiben. */
+    (function(){
+      var ctTxt=h; h=hVorCt;
+      if(!ctTxt) return;
+      h+='<details class="mt-2"><summary class="cursor-pointer text-xs font-semibold text-gray-600 hover:text-ergo-red select-none">'
+        +'Zweite Messung: Zitatzahl aus Peec<span class="font-normal text-gray-400"> — andere Quelle, andere Einheit, mit Artefakt-Vorbehalt</span>'
+        +'</summary><div class="mt-1">'+ctTxt+'</div></details>';
+    })();
     return h+'</div>';
   }
 
@@ -5709,6 +5813,10 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       +_kcard('Placebo-Rate',(fp!=null?(_kv(100*fp,1)+' %'):'<span class="text-gray-400 text-base">keine Angabe</span>'),'Zufallsdaten erzeugen so oft einen „gesicherten“ Effekt. Erwartung: rund 5 %.','','grau')
       +'</div>';
 
+    /* 22.08.2026: Ab hier sammelt h in einen eigenen Puffer - alles Folgende
+       gehoert hinter den Aufklapper, nur die vier Karten oben bleiben offen. */
+    var hKarten=h; h='';
+
     // ---- Nachweisgrenze (MDE) ----
     var imp=ci.impact||{};
     /* KORREKTUR 10.08.2026: Hier stand fest 'var K=2.8' - die Normalapproximation
@@ -5759,7 +5867,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
                grund:(r.grund||r.type_confidence_grund||null) };
     });
     var est=mrows.filter(function(r){ return r.mde!=null; }).sort(function(a,b){ return a.mde-b.mde; });
-    h+='<div class="mt-4 border-t pt-3"><div class="text-sm font-bold text-ergo-dark mb-1">Nachweisgrenze: Wie groß müsste eine Wirkung sein, damit wir sie finden?</div>'
+    h+='<div data-mg="Nachweisgrenze je Treiber" class="mt-1"><div class="text-sm font-bold text-ergo-dark mb-1">Nachweisgrenze: Wie groß müsste eine Wirkung sein, damit wir sie finden?</div>'
       +'<div class="text-xs text-gray-500 mb-2">Der <b>minimal detektierbare Effekt (MDE)</b> ergibt sich aus dem cluster-robusten Standardfehler: MDE = <i>K</i> × SE (zweiseitig, 5 % Irrtum, 80 % Power). <b>K hängt an den Freiheitsgraden</b> — bei vielen Clustern liegt es nahe 2,8, bei zwei oder drei Clustern deutlich darüber, weil dort die t-Verteilung gilt und nicht die Normalverteilung. Der Faktor steht je Zeile in der Spalte <i>K</i>. Die Grenze sagt, ab welcher Größe ein echter Effekt bei der heutigen Datenlage überhaupt sichtbar würde — damit wird „nicht signifikant“ interpretierbar.</div>';
     if(!est.length){
       h+='<div class="text-xs text-gray-600">'+_kmiss('Für keinen Treiber liegt ein cluster-robuster Standardfehler vor — ohne SE keine Nachweisgrenze.')+'</div>';
@@ -5805,7 +5913,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     // ---- Strukturbrueche, uebersprungene Intervalle ----
     var sb=ci.structural_breaks||[], isb=ci.intervals_skipped_breaks||[];
     if(sb.length){
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Strukturbrüche in der Messreihe</div>'
+      h+='<div data-mg="Strukturbrüche" class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Strukturbrüche in der Messreihe</div>'
         +'<div class="text-xs text-gray-600 leading-relaxed">'+sb.map(function(x){
           return '<div class="mb-1"><b>'+_esc(x.date||'')+'</b>'+(x.brand&&x.brand!=='*'?(' · '+_esc(x.brand)):' · alle Marken')+': '+_esc(String(x.grund||'').slice(0,320))
             +(x.nachrechenbar===false?(' <span class="text-amber-700">Nicht rückgerechnet'+(x.warum_nicht?(': '+_esc(String(x.warum_nicht).slice(0,180))):'')+'</span>'):'')+'</div>';
@@ -5816,7 +5924,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     // ---- Datenherkunft: SoV-Quellen und Ereignis-Aufbereitung ----
     var sa=(ci.sov_source_audit||{}).gesamt, ea=ci.event_load_audit||{};
     if(sa || ea){
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Woraus die Reihen gebaut sind</div><ul class="text-xs text-gray-600 leading-relaxed list-disc pl-5">';
+      h+='<div data-mg="Datenherkunft" class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Woraus die Reihen gebaut sind</div><ul class="text-xs text-gray-600 leading-relaxed list-disc pl-5">';
       if(sa){
         var gl=sa.gelesen||{}, vw=sa.verworfen||{}, vd=sa.verwendet||{};
         h+='<li><b>SoV-Quellen:</b> gelesen '+Object.keys(gl).map(function(k){return _esc(k)+' '+nfmt(gl[k]);}).join(', ')
@@ -5841,11 +5949,22 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       ['grounded','ungrounded','combined'].forEach(function(ch){ scan((((pl.price_to_sov||{})[ch])||{}).drivers_eff); });
     })();
     if(notes.length){
-      h+='<div class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Grenzen der Rechnung (aus den Modell-Notizen)</div>'
+      h+='<div data-mg="Grenzen der Rechnung" class="mt-4 border-t pt-3"><div class="text-xs font-semibold text-gray-600 mb-1">Grenzen der Rechnung (aus den Modell-Notizen)</div>'
         +'<ul class="text-xs text-gray-600 leading-relaxed list-disc pl-5">'
         +notes.slice(0,4).map(function(t){ return '<li>'+_esc(t)+'</li>'; }).join('')
         +'</ul></div>';
     }
+    /* Puffer zu: Messguete-Details in EINEN Aufklapper, der im Kopf nennt, was
+       drinsteht. Faellt ein Teil mangels Daten aus, faellt sein Name mit weg. */
+    (function(){
+      var det=h; h=hKarten;
+      if(!det) return;
+      var namen=(det.match(/data-mg="([^"]+)"/g)||[]).map(function(m){ return m.slice(9,-1); });
+      h+='<details class="mt-4 border-t pt-3"><summary class="cursor-pointer text-xs font-semibold text-gray-600 hover:text-ergo-red select-none">'
+        +'Messgüte im Detail'+(namen.length?(' ('+namen.length+')'):'')
+        +(namen.length?('<span class="font-normal text-gray-400">: '+namen.join(' · ')+'</span>'):'')
+        +'</summary><div class="mt-1">'+det+'</div></details>';
+    })();
     h+='<div class="text-xs text-gray-400 mt-3">'+_esc(ci.method||'')+'</div>';
     return h+'</div>';
   }
@@ -5860,6 +5979,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
      Feldern, aus denen die Bloecke unten rechnen - sie ist eine Zusammenfassung,
      keine zweite Rechnung. Fehlt ein Wert, steht "keine Angabe" mit Grund. */
   function kAntwort(ci){
+    var kern=null; try { kern=kKern(ci); } catch(e){ console.warn('kKern:', e.message); }
     var lm=ci.level_model||{}, P=lm.peec26_model||{};
     var pf=((P.drivers_eff||{}).peec_foot)||{};
     var sz=((P.drivers_eff||{}).size)||{};
@@ -5986,13 +6106,21 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         beleg:'jeder gemessene Effekt liegt <b>unter</b> seiner Nachweisgrenze — die Messung könnte ihn bei dieser Datenlage gar nicht finden (Abschnitt 5)',
         hebel:'🟢 direkt steuerbar — aber einzeln zu klein, um messbar zu werden'});
     }
-    if(!rows.length) return '';
+    /* Auch ohne Tabellenzeilen darf die Kernaussage nicht verschwinden. */
+    if(!rows.length){
+      return (kern&&kern.head)
+        ? ('<div class="bg-white rounded-xl p-5 shadow mb-5 border-t-4" style="border-color:#dc0028">'
+           +'<div class="text-lg font-bold text-ergo-dark">'+kern.head+'</div>'
+           +'<div class="text-xs text-gray-400 mt-1">Keine Angabe zu den Einzeltreibern — die Tafel bleibt leer, bis die Felder im Nightly stehen.</div>'
+           +kKernNeben(kern)+'</div>')
+        : '';
+    }
     rows.sort(function(a,b){ return a.sort-b.sort; });
 
     return '<div class="bg-white rounded-xl p-5 shadow mb-5 border-t-4" style="border-color:#dc0028">'
-      +'<h3 class="text-base font-bold text-ergo-dark mb-1">Die Antwort in einer Tafel: was treibt die Sichtbarkeit — und wie stark?</h3>'
-      +'<p class="text-xs text-gray-500 mb-3">Zusammenfassung der sechs Abschnitte unten, aus denselben Feldern gerechnet. '
-      +'Sortiert nach Tragweite, nicht nach Sicherheit — die Belastbarkeit steht in der eigenen Spalte.</p>'
+      +((kern&&kern.head)?('<div class="text-lg font-bold text-ergo-dark mb-1">'+kern.head+'</div>'):'')
+      +'<p class="text-xs text-gray-500 mb-3">Was die Sichtbarkeit treibt und wie stark — Zusammenfassung der Abschnitte unten aus denselben Feldern, '
+      +'sortiert nach Tragweite, nicht nach Sicherheit. Die Belastbarkeit steht in der eigenen Spalte.</p>'
       +'<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-ergo-dark text-white">'
       +'<th class="text-left px-3 py-2">Treiber</th><th class="text-left px-3 py-2">Stärke</th>'
       +'<th class="text-left px-3 py-2">Belastbarkeit</th><th class="text-left px-3 py-2">Hebel</th></tr></thead><tbody>'
@@ -6018,6 +6146,7 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
            +'Bis das geklärt ist, gilt der Anteil der Größe als Spanne zwischen '+_kv(Math.min(Math.abs(gd.contrib_pp.size),Math.abs(fjGd.contrib_pp.size)),1)+' und '+_kv(Math.max(Math.abs(gd.contrib_pp.size),Math.abs(fjGd.contrib_pp.size)),1)+' pp, nicht als Punktwert. '
            +'Auf die Kernaussage wirkt sich das nicht aus — die Quellpräsenz trägt in beiden Modellen den weitaus größten Teil.</div>')
         : '')
+      +kKernNeben(kern)
       +'</div>';
   }
 
@@ -6058,7 +6187,12 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       +'</div></div>';
   }
 
-  /* ---------- Kernaussage: muss zu allen Blöcken passen ---------- */
+  /* ---------- Kernaussage: muss zu allen Blöcken passen ----------
+     22.08.2026: Liefert kein eigenes HTML mehr, sondern {head, tone, neben[]}.
+     Die Headline wird zur Ueberschrift der Antwort-Tafel, die Nebenrechnungen
+     landen als Aufklapper unter derselben Tafel. Grund: Vor Abschnitt 1 standen
+     zuletzt immer noch zwei Zusammenfassungen uebereinander, die dieselben Werte
+     einmal in Prosa und einmal in Spalten zeigten. Die Spalten gewinnen. */
   function kKern(ci){
     var lm=ci.level_model||{}, P=lm.peec26_model||{};
     var pf=(((P.drivers_eff||{}).peec_foot)||{});
@@ -6091,32 +6225,52 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       head='Kein Treiber ist nach der cluster-robusten Rechnung gesichert';
       tone='slate';
     }
-    /* 17.08.2026: Vor Abschnitt 1 standen DREI Zusammenfassungen hintereinander
-       (diese Prosa, die Antworttafel, die Hebel-Rechnung). Die Struktur-/Kurzfristig-
-       Saetze hier sagten dasselbe wie die Tafel direkt darunter, nur in Prosa.
-       Eingedampft: Headline + ein kompakter Satzblock; die "Nicht verschwiegen"-
-       Transparenz bleibt, aber als Fussnote statt als Absatz. */
-    var s='<div class="rounded-xl p-4 mb-5 '+(tone==='amber'?'bg-amber-50 border-l-4 border-amber-500':'bg-slate-50 border-l-4 border-slate-400')+'">'
-      +'<div class="text-lg font-bold text-ergo-dark mb-1">'+head+'</div>'
-      +'<div class="text-xs text-gray-600 leading-relaxed">';
-    if(strukturHits.length){
-      var b=strukturHits.filter(function(x){return x.sc==='between';})[0]||strukturHits[0];
-      s+='<b>Struktur:</b> Quellpräsenz trägt ('+_kpp(b.eff,2)+' je +1 SD, q '+_kp(b.q!=null?b.q:b.p)+'). ';
-    } else {
-      s+='<b>Struktur:</b> Im Niveau-Modell übersteht derzeit kein Treiber die Korrektur. ';
-    }
-    s+='<b>Kurzfristig:</b> '+(evSig.length?(evSig.length+' von '+evEst.length+' cluster-robust schätzbaren Ereignistypen sind gesichert.')
-        :(evEst.length?('kein Ereignistyp von '+evEst.length+' cluster-robust schätzbaren ist gesichert.')
-                      :'derzeit ist kein Ereignistyp cluster-robust schätzbar — die Gründe stehen je Treiber unter dem Forest.'))+' Belege und Einzelwerte: Tafel darunter. ';
     // Treffer aus Nebenrechnungen offen benennen
     var neben=[];
     if(lagHit) neben.push('die Versatz-Analyse führt '+nfmt(lagHit)+' gesicherte Treiber-Versatz-Kombination'+(lagHit>1?'en':'')+' (unkorrigiert über '+((la.getestete_lags||[]).length)+' Versätze × '+Object.keys(la.bester_lag_je_treiber||{}).length+' Treiber; '+nfmt(la.n_treiber_mit_lead_warnung)+' Treiber tragen eine Lead-Warnung)');
     if(mvHits.length) neben.push('das multivariate Modell markiert '+mvHits.length+' Typ'+(mvHits.length>1?'en':'')+(mvSolid.length?(', davon '+mvSolid.length+' belastbar'):', keiner davon belastbar (Out-of-Sample-Güte ≤ 0)'));
     if(fdr.n_signifikant_vor_korrektur) neben.push('die Schichtung nach Prompt-Schlagwort zeigt '+nfmt(fdr.n_signifikant_vor_korrektur)+' Treffer vor und '+nfmt(fdr.n_signifikant_nach_korrektur)+' nach der Mehrfachtest-Korrektur über '+nfmt(fdr.n_tests)+' Tests');
     if(wja.n_gesichert!=null && wja.n_tests!=null) neben.push('nach Änderungsart sind '+nfmt(wja.n_gesichert)+' von '+nfmt(wja.n_tests)+' Arten gesichert');
-    if(neben.length) s+='<span class="text-gray-400"><b>Nicht verschwiegen:</b> '+neben.join('; ')+'. Diese Tests laufen auf demselben Datensatz und sind voneinander abhängig — sie ändern die Kernaussage nicht.</span>';
-    s+='</div></div>';
-    return s;
+    return {head:head, tone:tone, neben:neben};
+  }
+
+  /* Aufklapper unter der Tafel: die Nebenrechnungen, die die Kernaussage NICHT
+     tragen. Sie stehen weiter da - nur nicht mehr im Lesefluss. */
+  function kKernNeben(k){
+    if(!k||!k.neben||!k.neben.length) return '';
+    return '<details class="mt-2 text-xs"><summary class="cursor-pointer text-gray-500 hover:text-ergo-dark">'
+      +'Nicht verschwiegen: '+k.neben.length+' Nebenrechnung'+(k.neben.length>1?'en':'')+', die die Kernaussage nicht tragen</summary>'
+      +'<div class="text-gray-500 leading-relaxed mt-2">'+k.neben.join('; ')
+      +'. Diese Tests laufen auf demselben Datensatz und sind voneinander abhängig — sie ändern die Kernaussage nicht.</div></details>';
+  }
+
+  /* ---------- Methodik-Glossar (22.08.2026) ----------
+     Sieben Begriffe, die vorher an insgesamt gut zwanzig Stellen im Reiter je
+     neu erklaert wurden. Hier einmal, ausfuehrlicher als jede der Kurzfassungen,
+     und ueber den Anker #korrGlossar aus dem Kopf erreichbar. */
+  function kGlossar(){
+    var E=[
+      ['cluster-robust',
+       'Der Standardfehler wird je <b>Marke</b> gebildet, nicht je Messpunkt. Hintergrund: Von einer Marke liegen viele Intervalle vor, die einander ähneln — behandelt man sie als unabhängige Beobachtungen, wirkt die Datenlage größer, als sie ist, und zu viele Effekte erscheinen gesichert. Die Einheit ist deshalb die Marke. Das ist die strengere und im ganzen Reiter durchgängig verwendete Rechnung.'],
+      ['iid-Annahme',
+       'Die optimistischere Gegenrechnung: jedes Intervall zählt als eigene unabhängige Beobachtung. Sie liefert engere Intervalle und mehr „Treffer“. Wo sie im Reiter auftaucht, steht sie ausdrücklich als <i>Nebenangabe</i> — nie als Befund.'],
+      ['FDR / Mehrfachtest-Korrektur',
+       'Wer hundert Tests rechnet, findet allein durch Zufall etwa fünf „signifikante“ Ergebnisse. Die FDR-Korrektur (Benjamini-Hochberg) hebt die Schwelle entsprechend der Zahl der Tests in derselben Familie an. Der korrigierte Wert heißt <b>q</b>, der unkorrigierte <b>p</b>. Wo im Reiter nur p steht, ist der Befund nicht gegen Mehrfachtests abgesichert — das ist an der Stelle jeweils vermerkt.'],
+      ['Nachweisgrenze (MDE)',
+       'Die kleinste Wirkung, die bei der heutigen Datenlage überhaupt auffindbar wäre: MDE = K × Standardfehler. K stammt aus der t-Verteilung und hängt an den Freiheitsgraden — bei wenigen Marken mit Ereignis ist es deutlich größer als die oft genannte 2,8. Die Tabelle je Treiber steht in Abschnitt 5 unter „Messgüte im Detail“.'],
+      ['„nicht nachweisbar“ ist nicht „nicht vorhanden“',
+       'Ein Nullbefund heißt: <b>nicht gefunden</b>. Ob ein Effekt existiert, der kleiner ist als die Nachweisgrenze, kann diese Messung nicht beantworten. Für die meisten Einzelmaßnahmen gilt genau das — sie sind zu klein, um in einer markenweiten Messung sichtbar zu werden.'],
+      ['keine Angabe statt Null',
+       'Fehlt ein Wert in den Nightly-Daten, steht im Reiter „keine Angabe“ mit dem Grund — nie eine 0 und nie ein eingefrorener Ersatzwert. Eine 0 wäre eine Aussage; ein fehlender Wert ist keine.'],
+      ['Fensterüberlappung / Zirkularität',
+       'Manche Zielgrößen stammen aus rollierenden Fenstern (etwa 30 Tage), während die Messpunkte nur einen Tag auseinanderliegen. Zwei aufeinanderfolgende Messungen teilen dann fast ihren ganzen Inhalt — die „Veränderung“ zwischen ihnen ist überwiegend dieselbe Messung. Befunde aus solchen Konstellationen sind im Reiter als Artefaktverdacht gekennzeichnet und gehen nicht in die Kernaussage ein.']
+    ];
+    return '<details id="korrGlossar" class="bg-white rounded-xl p-4 shadow mb-5">'
+      +'<summary class="cursor-pointer text-sm font-bold text-ergo-dark select-none">Was die Begriffe heißen '
+      +'<span class="text-xs font-normal text-gray-400">— '+E.length+' Einträge, die vorher an jeder Fundstelle einzeln erklärt wurden</span></summary>'
+      +'<dl class="mt-3 text-xs leading-relaxed">'
+      +E.map(function(e){ return '<dt class="font-semibold text-gray-700 mt-2">'+e[0]+'</dt><dd class="text-gray-600">'+e[1]+'</dd>'; }).join('')
+      +'</dl></details>';
   }
 
   window.buildKorrErgebnis = function(){
@@ -6132,14 +6286,17 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var host=document.getElementById('korrErgebnis'); if(!host) return;
     if(!ci){ host.innerHTML='<div class="text-sm text-gray-400">Korrelationsdaten (data/correlation_impact.json) nicht geladen — es werden bewusst keine Ersatzwerte gezeigt.</div>'; return; }
     var h='';
-    try { h+=kKern(ci); } catch(e){ console.warn('kKern:', e.message); }
+    /* 22.08.2026 Reihenfolge geaendert: Die Kernaussage steckt jetzt IN der Tafel
+       (kAntwort), und die Hebel-Rechnung steht nicht mehr vor den Befunden, sondern
+       hinter ihnen - direkt vor Abschnitt 6, der denselben Abstand zerlegt. */
     try { h+=kAntwort(ci); } catch(e){ console.warn('kAntwort:', e.message); }
-    try { h+=kHebel(ci); } catch(e){ console.warn('kHebel:', e.message); }
     try { h+=kBlock1(ci); } catch(e){ console.warn('kBlock1:', e.message); }
     try { h+=kBlock2(ci, fanCsv); } catch(e){ console.warn('kBlock2:', e.message); }
     try { h+=kBlock3(ci, cc); } catch(e){ console.warn('kBlock3:', e.message); }
     try { h+=kPresse(ci); } catch(e){ console.warn('kPresse:', e.message); }
     try { h+=kBlock4(ci); } catch(e){ console.warn('kBlock4:', e.message); }
+    try { h+=kHebel(ci); } catch(e){ console.warn('kHebel:', e.message); }
+    try { h+=kGlossar(); } catch(e){ console.warn('kGlossar:', e.message); }
     h+='<div class="text-xs text-gray-400 mb-4">Stand der Auswertung: '+_esc(String(ci.generated_at||'').slice(0,10))+' · Quelle: data/correlation_impact.json'+(cc&&cc.meta?(' · data/content_citations.json ('+_esc(String(cc.meta.erzeugt_am||'').slice(0,10))+')'):'')+'</div>';
     host.innerHTML=h;
     // Interaktive Bausteine (Scatter, Quellen-Vergleich) aus korrelation_upgrade.js nachziehen

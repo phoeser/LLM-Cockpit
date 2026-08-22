@@ -84,18 +84,35 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/price_comparison.json 2>/dev/null || true
-          git add data/review_history.json 2>/dev/null || true
-          git add data/sentiment_data.json 2>/dev/null || true
-          git add data/sentiment_data.previous.json 2>/dev/null || true
-          git add shared/events.jsonl 2>/dev/null || true
-          git add data/review_themes.json 2>/dev/null || true
-          git add data/review_themes_cache.json 2>/dev/null || true
+          # 22.08.2026: Statt einer handgepflegten Liste ALLES aus data/ und
+          # shared/ stagen.
+          #
+          # Grund - Lauf #35 vom 17.08. hat es vorgefuehrt: Der Crawl lief 20
+          # Minuten fehlerfrei durch, der Commit entstand ("6 files changed"),
+          # und dann scheiterte der Push dreimal mit
+          #     error: cannot pull with rebase: You have unstaged changes.
+          # Die unstaged Datei war data/berater_reviews.json - sie wird von
+          # update_sentiment.py geschrieben, ist im Repo versioniert, stand aber
+          # nicht in der Liste oben. Die Liste war ueber die Zeit hinter dem
+          # gewandert, was die Skripte tatsaechlich schreiben.
+          #
+          # Folge: eine komplette Preiswoche verloren, und der Frische-Alarm
+          # faerbte seither jeden Nightly rot. Eine Liste, die man von Hand
+          # nachziehen muss, geht irgendwann schief - "-A data shared" nicht.
+          # Die Skripte schreiben in diese Verzeichnisse ausschliesslich JSON
+          # und JSONL, es kommt also kein Muell mit.
+          git add -A data shared
           if git diff --cached --quiet; then echo "Keine Aenderungen."; exit 0; fi
           git commit -m "data: Check24 update (${{ steps.modus.outputs.wochenlauf == 'true' && 'Preise + Reviews' || 'nur Preise, Saisonfenster' }})"
           for i in 1 2 3; do
             git pull --rebase --autostash -X theirs origin main || git rebase --abort 2>/dev/null || true
             if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi
-            echo "Push fehlgeschlagen, Versuch $i"; sleep 10
+            echo "Push fehlgeschlagen, Versuch $i"
+            # Beim ersten Fehlschlag zeigen, WAS im Weg liegt - das war beim
+            # Lauf #35 die eine Information, die dreimal gefehlt hat.
+            if [ "$i" = "1" ]; then
+              echo "--- git status (Diagnose) ---"; git status --porcelain | head -20
+            fi
+            sleep 10
           done
           echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1

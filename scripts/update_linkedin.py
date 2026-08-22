@@ -51,6 +51,10 @@ try:
     HAS_EVENTS = True
 except ImportError:
     HAS_EVENTS = False
+try:
+    from shared.social_dating import datum_aus_url
+except ImportError:                      # Modul fehlt -> alter Zustand, kein Absturz
+    datum_aus_url = lambda url, fund_tag=None: None
 
 OUT = Path("data/linkedin_posts.jsonl")
 STATE = Path("data/linkedin_state.json")
@@ -415,6 +419,20 @@ def main():
                 continue
             seen_b.add(url)
             datum = parse_datum(t.get("date"))
+            # 21.08.2026: Liefert Google kein Datum - und das ist der Normalfall
+            # (1 von 184 bei LinkedIn, 5 von 274 bei Instagram) -, wird es aus
+            # der Beitrags-URL abgeleitet. Beide Plattformen tragen den
+            # Erstellungszeitpunkt in der ID; siehe shared/social_dating.py,
+            # dort steht auch, wogegen die Deutung geprueft wurde. Kostet keinen
+            # zusaetzlichen Abruf. "heute" ist der Fund-Tag und dient als
+            # Sicherung: ein spaeteres Datum kann nicht stimmen.
+            datierung = "post" if datum else None
+            if not datum:
+                datum = datum_aus_url(url, heute)
+                if datum:
+                    datierung = "url"
+            if not datierung:
+                datierung = "erstsichtung"
             _tit = (t.get("title") or "")[:300]
             _snip = (t.get("snippet") or "")[:500]
             _abs, _abs_typ = absender(url, _tit)
@@ -438,7 +456,7 @@ def main():
                     source="linkedin_via_google", crawler="update_linkedin",
                     magnitude=1.0, url=url,
                     detail={"title": post["title"], "date": datum,
-                            "datierung": ("post" if datum else "erstsichtung"),
+                            "datierung": datierung,
                             "fenster": fenster,
                             # Merkmale mit ins Event: nur so kann die
                             # Korrelations-Engine spaeter nach Post-Typ

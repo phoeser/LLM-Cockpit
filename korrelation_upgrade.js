@@ -132,7 +132,9 @@
       '<div style="font-size:13px;font-weight:700;margin-bottom:2px">Über-/Unterperformer — Quellpräsenz gegen Sichtbarkeit (eigener Crawl)</div>'+
       '<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Jeder Punkt = eine Marke'+(nBr?(" ("+nBr+" Marken)"):"")+', Mittel über die Themen und über alle sauberen Messtage. '+
         'Durchgezogen = Ausgleichsgerade über alle Marken. Gestrichelt = dieselbe Gerade ohne die Marken, die sie am stärksten bestimmen. Liegen beide weit auseinander, trägt der Zusammenhang nur wenige Punkte.</div>'+
-      '<div style="position:relative;height:270px"><canvas id="korrScatterCv"></canvas></div>'+
+      (D
+        ? '<div style="position:relative;height:270px"><canvas id="korrScatterCv"></canvas></div>'
+        : '<div style="font-size:11.5px;color:#9ca3af;padding:6px 0">Keine Angabe — die Markenmittel aus dem eigenen Crawl (<code>correlation_impact.json → price_level_pooled.streubild</code>) fehlen im aktuellen Nightly. Es wird bewusst keine leere Diagrammfläche reserviert und kein Ersatzwert gezeigt.</div>')+
       '<div style="font-size:11px;color:#6b7280;margin-top:6px" id="korrScatterNote"></div>'+
       '<div style="font-size:10.5px;color:#9ca3af;margin-top:4px">'+FOOTDEF+' Deskriptiver Zusammenhang, kein Kausalnachweis.</div>'+
     '</div>';
@@ -304,9 +306,14 @@
     var nPeec=(P&&P.brands&&P.brands.length)||null, nOwn=ownBrandCount();
     var mk=(nPeec&&nOwn)?("Markenzahl "+nPeec+" bei Peec gegen "+nOwn+" im eigenen Crawl")
                         :"Markenzahl je Quelle: keine Angabe, solange eine der beiden Quellen nicht geladen ist";
-    return '<div style="font-size:13px;font-weight:700;color:#1a1a2e">Gegenprobe: Peec gegen den eigenen Crawl</div>'+
-      '<div style="font-size:11.5px;color:#9ca3af;margin:1px 0 10px">Zwei unabhängige Messungen derselben Sache. Niveau-Unterschiede kommen von unterschiedlichen Engines und Methoden, nicht aus der Markenzahl ('+mk+') — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
-      '<div id="korrDiffBox" style="border:1px solid #eee;border-radius:11px;padding:14px 16px"><div style="font-size:12px;color:#9ca3af">Quellen-Vergleich wird geladen (data/peec_cells.csv) …</div></div>';
+    /* 22.08.2026 eingeklappt: Der Block ist eine Gegenprobe, kein Befund - und mit
+       Abstand der laengste Text in Abschnitt 1. Er steht unveraendert da, nur einen
+       Klick tiefer. #korrDiffBox bleibt erhalten, fillBlock3() schreibt weiter
+       hinein; <details> versteckt den Inhalt, entfernt ihn aber nicht aus dem DOM. */
+    return '<details><summary style="cursor:pointer;font-size:13px;font-weight:700;color:#1a1a2e;user-select:none">Gegenprobe: Peec gegen den eigenen Crawl'+
+      '<span style="font-weight:400;font-size:11.5px;color:#9ca3af"> — zwei unabhängige Messungen derselben Sache, verglichen über die Rang-Konvergenz je Thema</span></summary>'+
+      '<div style="font-size:11.5px;color:#9ca3af;margin:8px 0 10px">Niveau-Unterschiede kommen von unterschiedlichen Engines und Methoden, nicht aus der Markenzahl ('+mk+') — entscheidend ist die <b>Rang-Konvergenz</b> je Thema.</div>'+
+      '<div id="korrDiffBox" style="border:1px solid #eee;border-radius:11px;padding:14px 16px"><div style="font-size:12px;color:#9ca3af">Quellen-Vergleich wird geladen (data/peec_cells.csv) …</div></div></details>';
   }
   /* 17.08.2026 (Revisions-Rest): fb3Wait ist modul-global, aber mount() startet
      bei jedem Tab-Klick (x3 verzoegert) und jedem __korrRender eine NEUE
@@ -388,7 +395,10 @@
     var sc=document.getElementById("korrMountScatter");
     var cmp=document.getElementById("korrMountSourceCompare");
     if(!sc && !cmp) return false;
-    if(sc && !sc.querySelector("#korrScatterBlock")) sc.innerHTML=scatterBlock();
+    /* Neu aufbauen auch dann, wenn der Block zwar steht, aber ohne Diagramm -
+       das passiert, wenn die Daten beim ersten Rendern noch nicht da waren. */
+    if(sc && (!sc.querySelector("#korrScatterBlock")
+              || (!sc.querySelector("#korrScatterCv") && crawlBrandMeans()))) sc.innerHTML=scatterBlock();
     if(cmp && !cmp.querySelector("#korrDiffBox")) cmp.innerHTML=block3Skeleton();
     renderScatter();
     fb3Reset(); fillBlock3();

@@ -367,7 +367,10 @@ def _drop_social_erstimport(events, typ="linkedin_post", label="LinkedIn"):
         if e.get("event_type") != typ:
             continue
         d_ = e.get("detail") or {}
-        if d_.get("fenster") or d_.get("datierung") == "post":
+        # 21.08.2026: "url" zaehlt wie "post" als echtes Erscheinungsdatum - es
+        # stammt aus der Beitrags-ID der Plattform und ist damit exakter als
+        # Googles Angabe, nicht ungenauer (shared/social_dating.py).
+        if d_.get("fenster") or d_.get("datierung") in ("post", "url"):
             continue
         b, d = e.get("brand"), _day(e.get("timestamp"))
         if b and d and (b not in first or d < first[b]):
@@ -376,7 +379,7 @@ def _drop_social_erstimport(events, typ="linkedin_post", label="LinkedIn"):
     for e in events:
         if e.get("event_type") == typ:
             d_ = e.get("detail") or {}
-            undatiert = d_.get("datierung") != "post"
+            undatiert = d_.get("datierung") not in ("post", "url")
             if undatiert and d_.get("fenster") == "monat":
                 dropped += 1
                 continue

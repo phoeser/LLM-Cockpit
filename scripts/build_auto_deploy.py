@@ -92,6 +92,10 @@ WORKFLOWS = [
     # grosse Dateien, deren Aenderung klein ist (siehe apply-patch.yml).
     ("apply-patch.yml", "Patch anwenden", "~1 Min"),
     ("measure-serp-depth.yml", "Tiefentest Social (einmalig)", "~1 Min"),
+    # 22.08.2026: Der Preislauf laeuft nur montags. Faellt er aus - wie am
+    # 17.08. -, muss man ihn von Hand nachholen koennen, ohne in die
+    # GitHub-Oberflaeche zu wechseln.
+    ("weekly-prices.yml", "Check24-Preise + Reviews", "~30 Min"),
     # 20.08.2026, Pauls Ansage ("hoer auf, mich alles im GitHub machen zu
     # lassen"): Ein Workflow-Eintrag darf jetzt ein VIERTES Feld tragen - die
     # Dispatch-Inputs. Damit lassen sich auch Laeufe mit gesetzten Schaltern

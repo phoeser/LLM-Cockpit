@@ -23,9 +23,9 @@ durchgereicht. Dieses Skript holt das nach.
 
 Zuordnung
 ---------
-Ueber den Artikeltitel, der in beiden Quellen steht. Nicht jedes Ereignis
-findet einen Partner: die Historie ist gekappt, die Ereignisse reichen weiter
-zurueck. Was nicht zugeordnet werden kann, bekommt ausdruecklich
+Ueber den Artikeltitel, der in beiden Quellen steht — und seit 23.08.2026
+zusaetzlich ueber den Verlagsnamen als Fallback (siehe quellen_index).
+Was nicht zugeordnet werden kann, bekommt ausdruecklich
 `zitat_klasse: unbekannt` — NICHT "nicht zitiert". Der Unterschied ist
 wesentlich: eine fehlende Zuordnung ist keine Aussage ueber das Medium.
 
@@ -84,6 +84,42 @@ def domain_klassen():
                   for d in (presse.get("domains") or []) if d.get("domain")}.items()}
 
 
+def quellen_index():
+    """{quellen-name: domain} aus der Presse-Historie — der Fallback fuer alles,
+    was der Titel-Abgleich nicht trifft.
+
+    23.08.2026 (Modell-Audit, Pauls Go): Der Titel-Abgleich liess 63 % der
+    2.813 Presse-Ereignisse unklassifiziert. Vor dem Umbau gemessen, auf dem
+    echten Bestand: Die Google-News-URL ist seit dem Formatwechsel NICHT mehr
+    dekodierbar (0 % Zugewinn) — der Verlagsname aus detail.media_source
+    dagegen hebt die Abdeckung von 37 % auf 88 %.
+
+    Sicherung gegen mehrdeutige Verlagsnamen: Ein Name wird nur uebernommen,
+    wenn mindestens 90 % seiner Artikel in der Historie auf DIESELBE Domain
+    zeigen. "t-online" -> t-online.de ist eindeutig; ein Name, der auf mehrere
+    Domains streut, liefert bewusst keinen Treffer und das Ereignis bleibt
+    "unbekannt" — eine fehlende Zuordnung ist keine Aussage ueber das Medium.
+    """
+    h = lies_json(HISTORIE, []) or []
+    zaehl = {}
+    for a in h:
+        if not isinstance(a, dict):
+            continue
+        q = str(a.get("source") or "").strip().lower()
+        dom = str(a.get("domain") or "").replace("www.", "").lower()
+        if not q or not dom:
+            continue
+        zaehl.setdefault(q, {}).setdefault(dom, 0)
+        zaehl[q][dom] += 1
+    out = {}
+    for q, doms in zaehl.items():
+        gesamt = sum(doms.values())
+        dom, n = max(doms.items(), key=lambda kv: kv[1])
+        if gesamt and n / gesamt >= 0.9:
+            out[q] = dom
+    return out
+
+
 def titel_index():
     """{titel: domain} aus der Presse-Historie."""
     h = lies_json(HISTORIE, []) or []
@@ -105,6 +141,7 @@ def main():
 
     klassen, gewichte = domain_klassen()
     idx = titel_index()
+    q_idx = quellen_index()
     if not idx:
         print("Keine Presse-Historie mit Domains — nichts anzureichern.")
         return 0
@@ -147,16 +184,26 @@ def main():
 
             titel = (d.get("title") or "").strip()
             dom = idx.get(titel)
+            weg = "titel" if dom else None
+            if not dom:
+                # Fallback ueber den Verlagsnamen (siehe quellen_index-Kommentar).
+                quelle = str(d.get("media_source") or "").strip().lower()
+                dom = q_idx.get(quelle)
+                weg = "quelle" if dom else None
             if dom:
                 d["domain"] = dom
                 d["zitat_klasse"] = klassen.get(dom, "nicht_zitiert")
                 d["domain_zitate"] = gewichte.get(dom, 0)
+                d["zuordnung_weg"] = weg
             else:
                 # Ausdruecklich "unbekannt", nicht "nicht_zitiert": eine fehlende
                 # Zuordnung ist keine Aussage ueber das Medium.
                 d["zitat_klasse"] = "unbekannt"
+                d.pop("zuordnung_weg", None)
             n_gesetzt += 1
             stat[d["zitat_klasse"]] = stat.get(d["zitat_klasse"], 0) + 1
+            if weg:
+                stat["_weg_" + weg] = stat.get("_weg_" + weg, 0) + 1
             zeilen_neu.append(json.dumps(e, ensure_ascii=False))
 
     # Nie eine funktionierende Datei durch eine kuerzere ersetzen.

@@ -70,4 +70,4 @@ jobs:
             exit 0
           fi
           git commit -m "chore: Patch(es) aus patches/ angewandt"
-          git push
+                    for i in 1 2 3; do git pull --rebase origin main || { git rebase --abort 2>/dev/null || true; }; if git push origin main; then echo "Push OK (Versuch $i)"; exit 0; fi; echo "Push fehlgeschlagen, Versuch $i (23.08.2026: Wiederholung wie georg-sync, Grund Lauf 6)"; sleep 10; done; echo "FEHLER: Push nach 3 Versuchen gescheitert"; exit 1

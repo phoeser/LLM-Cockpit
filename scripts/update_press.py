@@ -33,12 +33,32 @@ except ImportError:
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
+# Erhebungsregime der eigenen Pressemitteilungen - wird in die Ausgabe-JSON
+# geschrieben, damit nachgelagerte Auswertungen den Bruch kennen, ohne diesen
+# Code zu lesen.
+PRESS_QUERY_REGIME = {
+    "ergo_query_angeglichen_am": "2026-08-23",
+    "hinweis": ("Bis 22.08.2026 lief die ERGO-own_query ohne '+Presse OR "
+                "Pressemitteilung'; press_mention-Zahlen vor/nach diesem Tag "
+                "entstammen verschiedenen Erhebungsregimen."),
+}
+
 # ── Brand-Konfiguration ──────────────────────────────────────────────────────
 BRANDS = [
     {
         "key": "ergo", "name": "ERGO",
         "media_query": "ERGO+Versicherung",
-        "own_query": "site:ergo.com+OR+site:ergo-group.com",
+        # 23.08.2026 REGIMEWECHSEL (Modell-Audit, Pauls Go): Bis heute lief die
+        # ERGO-Anfrage OHNE den Zusatz "+Presse OR Pressemitteilung", den
+        # Allianz, AXA und Generali seit jeher tragen. Folge: ERGO zaehlte
+        # ALLES, was Google auf ergo.com/ergo-group.com indexiert (auch
+        # Magazin- und Ratgeberartikel), die Wettbewerber nur Presse-Seiten -
+        # die press_mention-Zaehlbasis war systematisch asymmetrisch und der
+        # ERGO-Vergleich damit unfair NACH OBEN verzerrt.
+        # Ereignisse vor dem 23.08.2026 bleiben unveraendert im Bestand; wer
+        # press_mention ueber diesen Tag hinweg vergleicht, vergleicht zwei
+        # Erhebungsregime. Das JSON weist das unter press_query_regime aus.
+        "own_query": "site:ergo.com+OR+site:ergo-group.com+Presse+OR+Pressemitteilung",
         "domain": "ergo.com",
     },
     {
@@ -763,6 +783,7 @@ def main():
     out_data = {
         "as_of": today,
         "sources": ["Google News RSS (Medien)", "Google News RSS (Eigene PMs via site:-Filter)"],
+        "press_query_regime": PRESS_QUERY_REGIME,
         "brands": brand_meta,
         "stats": {},
         "articles": {},

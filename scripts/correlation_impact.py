@@ -1571,6 +1571,81 @@ def review_posneg_by_day():
     return out
 
 
+
+
+def _event_co_occurrence(counts, max_paare=8):
+    """Ko-Okkurrenz der Ereignistypen auf den Modell-Zellen (Marke x Tag).
+
+    23.08.2026 (Modell-Audit, Pauls Go): Die Einzeltabelle `impact` rechnet
+    jeden Treiber fuer sich - was am selben Tag bei derselben Marke sonst noch
+    passiert, steckt unbenannt im Schaetzer. Diese Auswertung macht das
+    Ausmass sichtbar, damit das Dashboard es je Treiber ausweisen kann.
+    Gerechnet wird auf denselben counts-Zellen wie das Modell selbst
+    (nach Dedup und Presse-Umdatierung), sov_change ausgenommen.
+    """
+    zellen = []
+    for b, tage in (counts or {}).items():
+        for day, typen in tage.items():
+            t = {k for k, v in typen.items() if v and k != "sov_change"}
+            if t:
+                zellen.append(t)
+    if not zellen:
+        return {"available": False, "grund": "keine Ereigniszellen"}
+    alle_typen = sorted({t for z in zellen for t in z})
+    je_typ = {}
+    for t in alle_typen:
+        mit_t = [z for z in zellen if t in z]
+        n = len(mit_t)
+        mit_anderen = sum(1 for z in mit_t if len(z) > 1)
+        begleiter = {}
+        for z in mit_t:
+            for o in z:
+                if o != t:
+                    begleiter[o] = begleiter.get(o, 0) + 1
+        top = sorted(begleiter.items(), key=lambda kv: -kv[1])[:3]
+        je_typ[t] = {
+            "label": TYPE_LABEL.get(t, t),
+            "n_zellen": n,
+            "anteil_mit_anderen": round(mit_anderen / n, 3) if n else None,
+            "haeufigste_begleiter": [
+                {"type": o, "label": TYPE_LABEL.get(o, o), "n_gemeinsam": c}
+                for o, c in top],
+        }
+    # Paarweise phi-Korrelation der Inzidenzen; nur belastbare und auffaellige
+    # Paare (beide Typen >= 10 Zellen, |phi| >= 0.15).
+    paare = []
+    nz = len(zellen)
+    for i, a in enumerate(alle_typen):
+        na = sum(1 for z in zellen if a in z)
+        if na < 10:
+            continue
+        for b2 in alle_typen[i + 1:]:
+            nb = sum(1 for z in zellen if b2 in z)
+            if nb < 10:
+                continue
+            nab = sum(1 for z in zellen if a in z and b2 in z)
+            pa, pb = na / nz, nb / nz
+            nenner = (pa * (1 - pa) * pb * (1 - pb)) ** 0.5
+            if nenner <= 0:
+                continue
+            phi = (nab / nz - pa * pb) / nenner
+            if abs(phi) >= 0.15:
+                paare.append({"a": a, "b": b2, "phi": round(phi, 2),
+                              "n_gemeinsam": nab})
+    paare.sort(key=lambda p: -abs(p["phi"]))
+    return {
+        "available": True,
+        "n_zellen_mit_ereignis": nz,
+        "je_typ": je_typ,
+        "auffaellige_paare": paare[:max_paare],
+        "hinweis": ("Anteil der Ereigniszellen (Marke x Tag) eines Typs, in denen "
+                    "gleichzeitig mindestens ein anderer Typ auftritt. Ein hoher "
+                    "Wert heisst: der Einzeleffekt dieses Treibers in der "
+                    "impact-Tabelle traegt die Wirkung der Begleiter mit - nur "
+                    "das multivariate Modell trennt sie."),
+    }
+
+
 def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None, prior_mean=None, validate=False):
     # Vorrang: dichte SoV-Historie; Fallback: sov_change-Events (nur Gesamt)
     if llm_set is not None:
@@ -1881,6 +1956,7 @@ def analyze(events, llm=None, brand_filter=None, llm_set=None, scope_label=None,
         "significance_basis_global": "cluster",
         "sov_source_audit": SOV_SOURCE_AUDIT,
         "event_load_audit": EVENT_LOAD_AUDIT,
+        "event_co_occurrence": _event_co_occurrence(counts),
         "multivariate": multivar,
         "validation": validation,
         "sov_source": sov_source,

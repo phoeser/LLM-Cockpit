@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-23T06:23:05Z",
+  "generated_at": "2026-08-23T11:44:54Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -84,7 +84,7 @@
       "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors"
     },
     "presse_datierung": {
-      "umdatiert": 3151,
+      "umdatiert": 3158,
       "bereits_gleich": 113,
       "fallback_timestamp": 0,
       "hinweis": "Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, zukuenftigem oder nach dem Crawl liegendem Datum."
@@ -97,6 +97,366 @@
       "toleranz_eur": 0.01,
       "regel": "Je (Marke, Produkt, Altersprofil): new_price == old_price des Vorgaengers (+-0,01 EUR) -> Rueckkehr; Rueckkehr UND Hinbewegung werden ausgeschlossen. Bei einer durchgehenden Oszillation ist jedes Event zugleich Rueckkehr und Hinbewegung eines Paars — deshalb liegt die Zahl der Markierungen ueber der der Rueckkehren."
     }
+  },
+  "event_co_occurrence": {
+    "available": true,
+    "n_zellen_mit_ereignis": 2236,
+    "je_typ": {
+      "domain_change": {
+        "label": "Domain-/Subdomain-Aenderungen",
+        "n_zellen": 23,
+        "anteil_mit_anderen": 0.435,
+        "haeufigste_begleiter": [
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 7
+          },
+          {
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
+            "n_gemeinsam": 5
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 2
+          }
+        ]
+      },
+      "instagram_post": {
+        "label": "Instagram-Posts",
+        "n_zellen": 104,
+        "anteil_mit_anderen": 0.769,
+        "haeufigste_begleiter": [
+          {
+            "type": "linkedin_post",
+            "label": "LinkedIn-Posts",
+            "n_gemeinsam": 45
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 31
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 24
+          }
+        ]
+      },
+      "linkedin_post": {
+        "label": "LinkedIn-Posts",
+        "n_zellen": 98,
+        "anteil_mit_anderen": 0.878,
+        "haeufigste_begleiter": [
+          {
+            "type": "instagram_post",
+            "label": "Instagram-Posts",
+            "n_gemeinsam": 45
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 36
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 28
+          }
+        ]
+      },
+      "news_mention": {
+        "label": "News-Erwaehnungen",
+        "n_zellen": 1323,
+        "anteil_mit_anderen": 0.212,
+        "haeufigste_begleiter": [
+          {
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
+            "n_gemeinsam": 166
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 88
+          },
+          {
+            "type": "review_change",
+            "label": "Bewertungs-Trend (±)",
+            "n_gemeinsam": 31
+          }
+        ]
+      },
+      "page_change": {
+        "label": "Seitenaenderungen (Wettbewerb)",
+        "n_zellen": 390,
+        "anteil_mit_anderen": 0.495,
+        "haeufigste_begleiter": [
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 88
+          },
+          {
+            "type": "page_new",
+            "label": "Neue Seiten",
+            "n_gemeinsam": 57
+          },
+          {
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
+            "n_gemeinsam": 48
+          }
+        ]
+      },
+      "page_new": {
+        "label": "Neue Seiten",
+        "n_zellen": 117,
+        "anteil_mit_anderen": 0.632,
+        "haeufigste_begleiter": [
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 57
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 26
+          },
+          {
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
+            "n_gemeinsam": 14
+          }
+        ]
+      },
+      "page_removed": {
+        "label": "Geloeschte Seiten",
+        "n_zellen": 6,
+        "anteil_mit_anderen": 0.833,
+        "haeufigste_begleiter": [
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 5
+          },
+          {
+            "type": "linkedin_post",
+            "label": "LinkedIn-Posts",
+            "n_gemeinsam": 2
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 1
+          }
+        ]
+      },
+      "portal_rank_change": {
+        "label": "Portal-Rang Check24 (±)",
+        "n_zellen": 9,
+        "anteil_mit_anderen": 0.556,
+        "haeufigste_begleiter": [
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 3
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 2
+          },
+          {
+            "type": "page_new",
+            "label": "Neue Seiten",
+            "n_gemeinsam": 1
+          }
+        ]
+      },
+      "press_mention": {
+        "label": "Pressemitteilungen",
+        "n_zellen": 624,
+        "anteil_mit_anderen": 0.346,
+        "haeufigste_begleiter": [
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 166
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 48
+          },
+          {
+            "type": "review_change",
+            "label": "Bewertungs-Trend (±)",
+            "n_gemeinsam": 16
+          }
+        ]
+      },
+      "price_announcement": {
+        "label": "Beitragsanpassung (angekuendigt)",
+        "n_zellen": 7,
+        "anteil_mit_anderen": 0.714,
+        "haeufigste_begleiter": [
+          {
+            "type": "linkedin_post",
+            "label": "LinkedIn-Posts",
+            "n_gemeinsam": 4
+          },
+          {
+            "type": "instagram_post",
+            "label": "Instagram-Posts",
+            "n_gemeinsam": 4
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 3
+          }
+        ]
+      },
+      "price_change": {
+        "label": "Preis-Aenderungen (gemessen)",
+        "n_zellen": 1,
+        "anteil_mit_anderen": 1.0,
+        "haeufigste_begleiter": [
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 1
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 1
+          }
+        ]
+      },
+      "review_change": {
+        "label": "Bewertungs-Trend (±)",
+        "n_zellen": 88,
+        "anteil_mit_anderen": 0.852,
+        "haeufigste_begleiter": [
+          {
+            "type": "review_volume",
+            "label": "Bewertungs-Volumen",
+            "n_gemeinsam": 44
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 31
+          },
+          {
+            "type": "page_change",
+            "label": "Seitenaenderungen (Wettbewerb)",
+            "n_gemeinsam": 21
+          }
+        ]
+      },
+      "review_volume": {
+        "label": "Bewertungs-Volumen",
+        "n_zellen": 79,
+        "anteil_mit_anderen": 0.81,
+        "haeufigste_begleiter": [
+          {
+            "type": "review_change",
+            "label": "Bewertungs-Trend (±)",
+            "n_gemeinsam": 44
+          },
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 30
+          },
+          {
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
+            "n_gemeinsam": 15
+          }
+        ]
+      },
+      "wikipedia_change": {
+        "label": "Wikipedia-Ausbau (±)",
+        "n_zellen": 5,
+        "anteil_mit_anderen": 0.8,
+        "haeufigste_begleiter": [
+          {
+            "type": "news_mention",
+            "label": "News-Erwaehnungen",
+            "n_gemeinsam": 4
+          },
+          {
+            "type": "linkedin_post",
+            "label": "LinkedIn-Posts",
+            "n_gemeinsam": 1
+          },
+          {
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
+            "n_gemeinsam": 1
+          }
+        ]
+      }
+    },
+    "auffaellige_paare": [
+      {
+        "a": "review_change",
+        "b": "review_volume",
+        "phi": 0.51,
+        "n_gemeinsam": 44
+      },
+      {
+        "a": "instagram_post",
+        "b": "linkedin_post",
+        "phi": 0.42,
+        "n_gemeinsam": 45
+      },
+      {
+        "a": "news_mention",
+        "b": "press_mention",
+        "phi": -0.41,
+        "n_gemeinsam": 166
+      },
+      {
+        "a": "news_mention",
+        "b": "page_change",
+        "phi": -0.34,
+        "n_gemeinsam": 88
+      },
+      {
+        "a": "page_change",
+        "b": "page_new",
+        "phi": 0.19,
+        "n_gemeinsam": 57
+      },
+      {
+        "a": "news_mention",
+        "b": "page_new",
+        "phi": -0.18,
+        "n_gemeinsam": 26
+      },
+      {
+        "a": "instagram_post",
+        "b": "news_mention",
+        "phi": -0.16,
+        "n_gemeinsam": 24
+      },
+      {
+        "a": "page_change",
+        "b": "press_mention",
+        "phi": -0.16,
+        "n_gemeinsam": 48
+      }
+    ],
+    "hinweis": "Anteil der Ereigniszellen (Marke x Tag) eines Typs, in denen gleichzeitig mindestens ein anderer Typ auftritt. Ein hoher Wert heisst: der Einzeleffekt dieses Treibers in der impact-Tabelle traegt die Wirkung der Begleiter mit - nur das multivariate Modell trennt sie."
   },
   "multivariate": {
     "available": true,
@@ -132,9 +492,9 @@
     "coefficients": {
       "media_negative": {
         "label": "Presse/News: Schaden/Leistung",
-        "coef_pp_per_event_day": 0.5581,
-        "ci95_low": -0.2914,
-        "ci95_high": 1.4076,
+        "coef_pp_per_event_day": 0.5584,
+        "ci95_low": -0.2918,
+        "ci95_high": 1.4087,
         "prob_positive": 0.901,
         "prob_direction": 0.901,
         "significant": false,
@@ -144,9 +504,9 @@
       },
       "media_positive": {
         "label": "Presse/News: Produkt/Strategie",
-        "coef_pp_per_event_day": -0.2747,
-        "ci95_low": -0.983,
-        "ci95_high": 0.4336,
+        "coef_pp_per_event_day": -0.2746,
+        "ci95_low": -0.9829,
+        "ci95_high": 0.4337,
         "prob_positive": 0.224,
         "prob_direction": 0.776,
         "significant": false,
@@ -156,7 +516,7 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "coef_pp_per_event_day": 0.1515,
+        "coef_pp_per_event_day": 0.1514,
         "ci95_low": -0.0931,
         "ci95_high": 0.396,
         "prob_positive": 0.888,
@@ -168,20 +528,20 @@
       },
       "review_negative": {
         "label": "Negative Bewertungen",
-        "coef_pp_per_event_day": 0.0543,
-        "ci95_low": -0.6907,
-        "ci95_high": 0.7994,
-        "prob_positive": 0.557,
-        "prob_direction": 0.557,
+        "coef_pp_per_event_day": 0.0617,
+        "ci95_low": -1.051,
+        "ci95_high": 1.1744,
+        "prob_positive": 0.543,
+        "prob_direction": 0.543,
         "significant": false,
-        "n_with_event": 8,
+        "n_with_event": 7,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
       "linkedin_post": {
         "label": "LinkedIn-Posts",
-        "coef_pp_per_event_day": -0.0269,
-        "ci95_low": -0.2704,
+        "coef_pp_per_event_day": -0.027,
+        "ci95_low": -0.2705,
         "ci95_high": 0.2166,
         "prob_positive": 0.414,
         "prob_direction": 0.586,
@@ -192,11 +552,11 @@
       },
       "instagram_post": {
         "label": "Instagram-Posts",
-        "coef_pp_per_event_day": 0.015,
-        "ci95_low": -0.1891,
-        "ci95_high": 0.2191,
-        "prob_positive": 0.557,
-        "prob_direction": 0.557,
+        "coef_pp_per_event_day": 0.0162,
+        "ci95_low": -0.1873,
+        "ci95_high": 0.2198,
+        "prob_positive": 0.562,
+        "prob_direction": 0.562,
         "significant": false,
         "n_with_event": 46,
         "reliable": false,
@@ -204,13 +564,13 @@
       },
       "review_positive": {
         "label": "Positive Bewertungen",
-        "coef_pp_per_event_day": -0.0117,
-        "ci95_low": -0.1767,
-        "ci95_high": 0.1534,
-        "prob_positive": 0.445,
-        "prob_direction": 0.555,
+        "coef_pp_per_event_day": -0.0143,
+        "ci95_low": -0.2038,
+        "ci95_high": 0.1752,
+        "prob_positive": 0.441,
+        "prob_direction": 0.559,
         "significant": false,
-        "n_with_event": 9,
+        "n_with_event": 8,
         "reliable": false,
         "note": "OOS<=0: Einzeleffekte nicht belastbar"
       },
@@ -229,8 +589,8 @@
       "page_removed": {
         "label": "Geloeschte Seiten",
         "coef_pp_per_event_day": -0.0043,
-        "ci95_low": -0.172,
-        "ci95_high": 0.1633,
+        "ci95_low": -0.1719,
+        "ci95_high": 0.1634,
         "prob_positive": 0.48,
         "prob_direction": 0.52,
         "significant": false,
@@ -254,7 +614,7 @@
     "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
   },
   "validation": {
-    "placebo_false_positive_rate": 0.0225,
+    "placebo_false_positive_rate": 0.0215,
     "out_of_sample": {
       "r2_oos_vs_baseline": -0.027,
       "n_test": 668
@@ -3834,8 +4194,8 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.092,
-              "ci95_low": -0.3935,
+              "coef_pp_per_event_day": -0.0921,
+              "ci95_low": -0.3936,
               "ci95_high": 0.2094,
               "prob_positive": 0.275,
               "prob_direction": 0.725,
@@ -3852,7 +4212,7 @@
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0894,
               "ci95_low": -0.0889,
-              "ci95_high": 0.2676,
+              "ci95_high": 0.2677,
               "prob_positive": 0.837,
               "prob_direction": 0.837,
               "significant": false,
@@ -3898,11 +4258,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.026,
-              "ci95_low": -0.0123,
-              "ci95_high": 0.0643,
-              "prob_positive": 0.908,
-              "prob_direction": 0.908,
+              "coef_pp_per_event_day": 0.0264,
+              "ci95_low": -0.0119,
+              "ci95_high": 0.0647,
+              "prob_positive": 0.912,
+              "prob_direction": 0.912,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0055,
@@ -3915,9 +4275,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.0187,
-              "ci95_low": -0.3235,
-              "ci95_high": 0.361,
+              "coef_pp_per_event_day": 0.0189,
+              "ci95_low": -0.3234,
+              "ci95_high": 0.3611,
               "prob_positive": 0.543,
               "prob_direction": 0.543,
               "significant": false,
@@ -4268,7 +4628,7 @@
             "review_change": {
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": 0.2243,
-              "ci95_low": 0.0469,
+              "ci95_low": 0.0468,
               "ci95_high": 0.4018,
               "prob_positive": 0.993,
               "prob_direction": 0.993,
@@ -4299,9 +4659,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0644,
-              "ci95_low": -0.2659,
-              "ci95_high": 0.1371,
+              "coef_pp_per_event_day": -0.0643,
+              "ci95_low": -0.2658,
+              "ci95_high": 0.1373,
               "prob_positive": 0.266,
               "prob_direction": 0.734,
               "significant": false,
@@ -4363,11 +4723,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0049,
-              "ci95_low": -0.0177,
-              "ci95_high": 0.0274,
-              "prob_positive": 0.664,
-              "prob_direction": 0.664,
+              "coef_pp_per_event_day": 0.0053,
+              "ci95_low": -0.0173,
+              "ci95_high": 0.0278,
+              "prob_positive": 0.676,
+              "prob_direction": 0.676,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0073,
@@ -4689,9 +5049,9 @@
           "coefficients": {
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": 0.1398,
-              "ci95_low": 0.0273,
-              "ci95_high": 0.2523,
+              "coef_pp_per_event_day": 0.1399,
+              "ci95_low": 0.0274,
+              "ci95_high": 0.2524,
               "prob_positive": 0.993,
               "prob_direction": 0.993,
               "significant": false,
@@ -4705,11 +5065,11 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0827,
-              "ci95_low": -0.1086,
-              "ci95_high": 0.2741,
-              "prob_positive": 0.802,
-              "prob_direction": 0.802,
+              "coef_pp_per_event_day": 0.0826,
+              "ci95_low": -0.1087,
+              "ci95_high": 0.274,
+              "prob_positive": 0.801,
+              "prob_direction": 0.801,
               "significant": false,
               "n_with_event": 24,
               "cluster_se": 0.1045,
@@ -4721,11 +5081,11 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0649,
-              "ci95_low": -0.2889,
-              "ci95_high": 0.1592,
-              "prob_positive": 0.285,
-              "prob_direction": 0.715,
+              "coef_pp_per_event_day": -0.0647,
+              "ci95_low": -0.2888,
+              "ci95_high": 0.1593,
+              "prob_positive": 0.286,
+              "prob_direction": 0.714,
               "significant": false,
               "n_with_event": 19,
               "cluster_se": 0.0555,
@@ -4801,11 +5161,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": -0.0022,
-              "ci95_low": -0.0259,
-              "ci95_high": 0.0216,
-              "prob_positive": 0.429,
-              "prob_direction": 0.571,
+              "coef_pp_per_event_day": -0.0018,
+              "ci95_low": -0.0255,
+              "ci95_high": 0.022,
+              "prob_positive": 0.442,
+              "prob_direction": 0.558,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0028,
@@ -4820,8 +5180,8 @@
               "coef_pp_per_event_day": -0.0007,
               "ci95_low": -0.0023,
               "ci95_high": 0.0008,
-              "prob_positive": 0.186,
-              "prob_direction": 0.814,
+              "prob_positive": 0.185,
+              "prob_direction": 0.815,
               "significant": false,
               "n_with_event": 244,
               "cluster_se": 0.0003,
@@ -5122,7 +5482,7 @@
             "review_change": {
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": -0.4901,
-              "ci95_low": -1.157,
+              "ci95_low": -1.1571,
               "ci95_high": 0.1768,
               "prob_positive": 0.075,
               "prob_direction": 0.925,
@@ -5137,9 +5497,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1805,
-              "ci95_low": -0.9377,
-              "ci95_high": 0.5766,
+              "coef_pp_per_event_day": -0.1804,
+              "ci95_low": -0.9376,
+              "ci95_high": 0.5767,
               "prob_positive": 0.32,
               "prob_direction": 0.68,
               "significant": false,
@@ -5171,7 +5531,7 @@
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": -0.0654,
               "ci95_low": -0.4598,
-              "ci95_high": 0.3289,
+              "ci95_high": 0.329,
               "prob_positive": 0.373,
               "prob_direction": 0.627,
               "significant": false,
@@ -5185,11 +5545,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": -0.0616,
-              "ci95_low": -0.1463,
-              "ci95_high": 0.0231,
-              "prob_positive": 0.077,
-              "prob_direction": 0.923,
+              "coef_pp_per_event_day": -0.0612,
+              "ci95_low": -0.1459,
+              "ci95_high": 0.0235,
+              "prob_positive": 0.078,
+              "prob_direction": 0.922,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0254,
@@ -5203,7 +5563,7 @@
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": 0.0451,
               "ci95_low": -0.1139,
-              "ci95_high": 0.2041,
+              "ci95_high": 0.204,
               "prob_positive": 0.711,
               "prob_direction": 0.711,
               "significant": false,
@@ -5233,7 +5593,7 @@
             },
             "page_new": {
               "label": "Neue Seiten",
-              "coef_pp_per_event_day": -0.0125,
+              "coef_pp_per_event_day": -0.0126,
               "ci95_low": -0.0398,
               "ci95_high": 0.0147,
               "prob_positive": 0.183,
@@ -5559,9 +5919,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0802,
-              "ci95_low": -0.3478,
-              "ci95_high": 0.1875,
+              "coef_pp_per_event_day": -0.08,
+              "ci95_low": -0.3477,
+              "ci95_high": 0.1876,
               "prob_positive": 0.279,
               "prob_direction": 0.721,
               "significant": false,
@@ -5578,8 +5938,8 @@
               "coef_pp_per_event_day": -0.0734,
               "ci95_low": -0.302,
               "ci95_high": 0.1552,
-              "prob_positive": 0.265,
-              "prob_direction": 0.735,
+              "prob_positive": 0.264,
+              "prob_direction": 0.736,
               "significant": false,
               "n_with_event": 24,
               "cluster_se": 0.0522,
@@ -5623,11 +5983,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0246,
-              "ci95_low": -0.0037,
-              "ci95_high": 0.053,
-              "prob_positive": 0.956,
-              "prob_direction": 0.956,
+              "coef_pp_per_event_day": 0.025,
+              "ci95_low": -0.0033,
+              "ci95_high": 0.0534,
+              "prob_positive": 0.958,
+              "prob_direction": 0.958,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.012,
@@ -5658,8 +6018,8 @@
               "coef_pp_per_event_day": -0.0002,
               "ci95_low": -0.0093,
               "ci95_high": 0.0089,
-              "prob_positive": 0.486,
-              "prob_direction": 0.514,
+              "prob_positive": 0.485,
+              "prob_direction": 0.515,
               "significant": false,
               "n_with_event": 45,
               "cluster_se": 0.0055,
@@ -5976,8 +6336,8 @@
             "review_change": {
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": -0.6637,
-              "ci95_low": -1.2655,
-              "ci95_high": -0.0618,
+              "ci95_low": -1.2656,
+              "ci95_high": -0.0619,
               "prob_positive": 0.015,
               "prob_direction": 0.985,
               "significant": true,
@@ -5993,7 +6353,7 @@
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": -0.1189,
               "ci95_low": -0.4748,
-              "ci95_high": 0.2369,
+              "ci95_high": 0.237,
               "prob_positive": 0.256,
               "prob_direction": 0.744,
               "significant": false,
@@ -6023,9 +6383,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0628,
-              "ci95_low": -0.7461,
-              "ci95_high": 0.6205,
+              "coef_pp_per_event_day": -0.0627,
+              "ci95_low": -0.746,
+              "ci95_high": 0.6206,
               "prob_positive": 0.429,
               "prob_direction": 0.571,
               "significant": false,
@@ -6055,11 +6415,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0215,
-              "ci95_low": -0.0549,
-              "ci95_high": 0.098,
-              "prob_positive": 0.71,
-              "prob_direction": 0.71,
+              "coef_pp_per_event_day": 0.0219,
+              "ci95_low": -0.0545,
+              "ci95_high": 0.0984,
+              "prob_positive": 0.713,
+              "prob_direction": 0.713,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0188,
@@ -6407,9 +6767,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1865,
-              "ci95_low": -0.4769,
-              "ci95_high": 0.104,
+              "coef_pp_per_event_day": -0.1864,
+              "ci95_low": -0.4768,
+              "ci95_high": 0.1041,
               "prob_positive": 0.104,
               "prob_direction": 0.896,
               "significant": false,
@@ -6458,7 +6818,7 @@
             "linkedin_post": {
               "label": "LinkedIn-Posts",
               "coef_pp_per_event_day": 0.0314,
-              "ci95_low": -0.0718,
+              "ci95_low": -0.0719,
               "ci95_high": 0.1346,
               "prob_positive": 0.724,
               "prob_direction": 0.724,
@@ -6473,11 +6833,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": -0.0215,
-              "ci95_low": -0.054,
-              "ci95_high": 0.011,
-              "prob_positive": 0.098,
-              "prob_direction": 0.902,
+              "coef_pp_per_event_day": -0.0211,
+              "ci95_low": -0.0536,
+              "ci95_high": 0.0114,
+              "prob_positive": 0.102,
+              "prob_direction": 0.898,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0068,
@@ -6506,8 +6866,8 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0068,
-              "ci95_low": -0.249,
+              "coef_pp_per_event_day": 0.0067,
+              "ci95_low": -0.2491,
               "ci95_high": 0.2626,
               "prob_positive": 0.521,
               "prob_direction": 0.521,
@@ -6842,9 +7202,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -1.2178,
-              "ci95_low": -2.1254,
-              "ci95_high": -0.3102,
+              "coef_pp_per_event_day": -1.2177,
+              "ci95_low": -2.1253,
+              "ci95_high": -0.3101,
               "prob_positive": 0.004,
               "prob_direction": 0.996,
               "significant": false,
@@ -6859,8 +7219,8 @@
             "review_change": {
               "label": "Bewertungs-Trend (±)",
               "coef_pp_per_event_day": 0.7553,
-              "ci95_low": -0.0441,
-              "ci95_high": 1.5548,
+              "ci95_low": -0.0442,
+              "ci95_high": 1.5547,
               "prob_positive": 0.968,
               "prob_direction": 0.968,
               "significant": false,
@@ -6892,7 +7252,7 @@
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": 0.0981,
               "ci95_low": -0.0925,
-              "ci95_high": 0.2887,
+              "ci95_high": 0.2886,
               "prob_positive": 0.843,
               "prob_direction": 0.843,
               "significant": false,
@@ -6938,11 +7298,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0207,
-              "ci95_low": -0.0809,
-              "ci95_high": 0.1222,
-              "prob_positive": 0.655,
-              "prob_direction": 0.655,
+              "coef_pp_per_event_day": 0.0211,
+              "ci95_low": -0.0805,
+              "ci95_high": 0.1226,
+              "prob_positive": 0.658,
+              "prob_direction": 0.658,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0131,
@@ -7274,9 +7634,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.2279,
-              "ci95_low": -0.1939,
-              "ci95_high": 0.6497,
+              "coef_pp_per_event_day": 0.2278,
+              "ci95_low": -0.194,
+              "ci95_high": 0.6496,
               "prob_positive": 0.855,
               "prob_direction": 0.855,
               "significant": false,
@@ -7307,9 +7667,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.062,
-              "ci95_low": -0.4169,
-              "ci95_high": 0.5409,
+              "coef_pp_per_event_day": 0.0621,
+              "ci95_low": -0.4168,
+              "ci95_high": 0.541,
               "prob_positive": 0.6,
               "prob_direction": 0.6,
               "significant": false,
@@ -7369,6 +7729,22 @@
               "fdr_n_tests": 162,
               "fdr_family": "die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung"
             },
+            "instagram_post": {
+              "label": "Instagram-Posts",
+              "coef_pp_per_event_day": 0.002,
+              "ci95_low": -0.0516,
+              "ci95_high": 0.0556,
+              "prob_positive": 0.529,
+              "prob_direction": 0.529,
+              "significant": false,
+              "n_with_event": 57,
+              "cluster_se": 0.0041,
+              "cluster_p": 0.4348,
+              "cluster_p_fdr": 0.7195,
+              "fdr_note": "Benjamini-Hochberg ueber die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Schichten teilen sich dieselben Messtage und Marken und sind nicht unabhaengig. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
+              "fdr_n_tests": 162,
+              "fdr_family": "die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung"
+            },
             "page_change": {
               "label": "Seitenaenderungen (Wettbewerb)",
               "coef_pp_per_event_day": -0.0017,
@@ -7397,22 +7773,6 @@
               "cluster_se": 0.0021,
               "cluster_p": 0.0283,
               "cluster_p_fdr": 0.2084,
-              "fdr_note": "Benjamini-Hochberg ueber die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Schichten teilen sich dieselben Messtage und Marken und sind nicht unabhaengig. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
-              "fdr_n_tests": 162,
-              "fdr_family": "die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung"
-            },
-            "instagram_post": {
-              "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0016,
-              "ci95_low": -0.052,
-              "ci95_high": 0.0552,
-              "prob_positive": 0.523,
-              "prob_direction": 0.523,
-              "significant": false,
-              "n_with_event": 57,
-              "cluster_se": 0.0041,
-              "cluster_p": 0.4348,
-              "cluster_p_fdr": 0.7195,
               "fdr_note": "Benjamini-Hochberg ueber die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Schichten teilen sich dieselben Messtage und Marken und sind nicht unabhaengig. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 162,
               "fdr_family": "die 162 Treiber-x-Schicht-Tests der Prompt-Schichtung"
@@ -7697,11 +8057,11 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0637,
-              "ci95_low": -0.3162,
+              "coef_pp_per_event_day": -0.0638,
+              "ci95_low": -0.3163,
               "ci95_high": 0.1888,
-              "prob_positive": 0.311,
-              "prob_direction": 0.689,
+              "prob_positive": 0.31,
+              "prob_direction": 0.69,
               "significant": false,
               "n_with_event": 24,
               "cluster_se": 0.0847,
@@ -7713,7 +8073,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": 0.0601,
+              "coef_pp_per_event_day": 0.0602,
               "ci95_low": -0.0883,
               "ci95_high": 0.2086,
               "prob_positive": 0.786,
@@ -7793,9 +8153,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0027,
-              "ci95_low": -0.2983,
-              "ci95_high": 0.293,
+              "coef_pp_per_event_day": -0.0025,
+              "ci95_low": -0.2982,
+              "ci95_high": 0.2931,
               "prob_positive": 0.493,
               "prob_direction": 0.507,
               "significant": false,
@@ -7812,8 +8172,8 @@
               "coef_pp_per_event_day": -0.001,
               "ci95_low": -0.0031,
               "ci95_high": 0.001,
-              "prob_positive": 0.16,
-              "prob_direction": 0.84,
+              "prob_positive": 0.159,
+              "prob_direction": 0.841,
               "significant": false,
               "n_with_event": 244,
               "cluster_se": 0.0007,
@@ -7825,11 +8185,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0005,
-              "ci95_low": -0.0307,
-              "ci95_high": 0.0318,
-              "prob_positive": 0.514,
-              "prob_direction": 0.514,
+              "coef_pp_per_event_day": 0.0009,
+              "ci95_low": -0.0303,
+              "ci95_high": 0.0322,
+              "prob_positive": 0.524,
+              "prob_direction": 0.524,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0062,
@@ -8129,9 +8489,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.3063,
-              "ci95_low": -1.2093,
-              "ci95_high": 0.5967,
+              "coef_pp_per_event_day": -0.3064,
+              "ci95_low": -1.2094,
+              "ci95_high": 0.5966,
               "prob_positive": 0.253,
               "prob_direction": 0.747,
               "significant": false,
@@ -8145,9 +8505,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.1587,
-              "ci95_low": -0.8665,
-              "ci95_high": 1.1839,
+              "coef_pp_per_event_day": 0.1588,
+              "ci95_low": -0.8664,
+              "ci95_high": 1.184,
               "prob_positive": 0.619,
               "prob_direction": 0.619,
               "significant": false,
@@ -8161,9 +8521,9 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0978,
-              "ci95_low": -0.0169,
-              "ci95_high": 0.2125,
+              "coef_pp_per_event_day": 0.0982,
+              "ci95_low": -0.0165,
+              "ci95_high": 0.2129,
               "prob_positive": 0.953,
               "prob_direction": 0.953,
               "significant": false,
@@ -8241,7 +8601,7 @@
             },
             "page_new": {
               "label": "Neue Seiten",
-              "coef_pp_per_event_day": -0.0034,
+              "coef_pp_per_event_day": -0.0035,
               "ci95_low": -0.0403,
               "ci95_high": 0.0334,
               "prob_positive": 0.427,
@@ -8561,11 +8921,11 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0874,
-              "ci95_low": -0.0531,
-              "ci95_high": 0.2279,
-              "prob_positive": 0.889,
-              "prob_direction": 0.889,
+              "coef_pp_per_event_day": 0.0873,
+              "ci95_low": -0.0532,
+              "ci95_high": 0.2278,
+              "prob_positive": 0.888,
+              "prob_direction": 0.888,
               "significant": false,
               "n_with_event": 26,
               "cluster_se": 0.085,
@@ -8578,7 +8938,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0722,
-              "ci95_low": -0.0109,
+              "ci95_low": -0.0108,
               "ci95_high": 0.1553,
               "prob_positive": 0.956,
               "prob_direction": 0.956,
@@ -8593,9 +8953,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0646,
-              "ci95_low": -0.2241,
-              "ci95_high": 0.0949,
+              "coef_pp_per_event_day": -0.0645,
+              "ci95_low": -0.224,
+              "ci95_high": 0.095,
               "prob_positive": 0.214,
               "prob_direction": 0.786,
               "significant": false,
@@ -8642,7 +9002,7 @@
             },
             "news_mention": {
               "label": "News-Erwaehnungen",
-              "coef_pp_per_event_day": 0.0125,
+              "coef_pp_per_event_day": 0.0124,
               "ci95_low": -0.021,
               "ci95_high": 0.0459,
               "prob_positive": 0.767,
@@ -8674,11 +9034,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0024,
-              "ci95_low": -0.0154,
-              "ci95_high": 0.0203,
-              "prob_positive": 0.606,
-              "prob_direction": 0.606,
+              "coef_pp_per_event_day": 0.0028,
+              "ci95_low": -0.015,
+              "ci95_high": 0.0207,
+              "prob_positive": 0.623,
+              "prob_direction": 0.623,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0057,
@@ -9010,9 +9370,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.2082,
-              "ci95_low": -0.8605,
-              "ci95_high": 0.444,
+              "coef_pp_per_event_day": -0.2081,
+              "ci95_low": -0.8604,
+              "ci95_high": 0.4441,
               "prob_positive": 0.266,
               "prob_direction": 0.734,
               "significant": false,
@@ -9042,11 +9402,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": -0.0133,
-              "ci95_low": -0.0863,
-              "ci95_high": 0.0597,
-              "prob_positive": 0.361,
-              "prob_direction": 0.639,
+              "coef_pp_per_event_day": -0.0129,
+              "ci95_low": -0.0859,
+              "ci95_high": 0.0601,
+              "prob_positive": 0.365,
+              "prob_direction": 0.635,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0117,
@@ -9074,7 +9434,7 @@
             },
             "press_mention": {
               "label": "Pressemitteilungen",
-              "coef_pp_per_event_day": 0.0042,
+              "coef_pp_per_event_day": 0.0043,
               "ci95_low": -0.3355,
               "ci95_high": 0.344,
               "prob_positive": 0.51,
@@ -9108,7 +9468,7 @@
               "label": "Geloeschte Seiten",
               "coef_pp_per_event_day": -0.002,
               "ci95_low": -0.1757,
-              "ci95_high": 0.1717,
+              "ci95_high": 0.1718,
               "prob_positive": 0.491,
               "prob_direction": 0.509,
               "significant": false,
@@ -9419,8 +9779,8 @@
               "coef_pp_per_event_day": 0.0613,
               "ci95_low": -0.0318,
               "ci95_high": 0.1544,
-              "prob_positive": 0.901,
-              "prob_direction": 0.901,
+              "prob_positive": 0.902,
+              "prob_direction": 0.902,
               "significant": false,
               "n_with_event": 29,
               "cluster_se": 0.0556,
@@ -9449,11 +9809,11 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0286,
-              "ci95_low": -0.214,
-              "ci95_high": 0.1568,
-              "prob_positive": 0.381,
-              "prob_direction": 0.619,
+              "coef_pp_per_event_day": -0.0285,
+              "ci95_low": -0.2139,
+              "ci95_high": 0.1569,
+              "prob_positive": 0.382,
+              "prob_direction": 0.618,
               "significant": false,
               "n_with_event": 19,
               "cluster_se": 0.025,
@@ -9481,7 +9841,7 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.0129,
+              "coef_pp_per_event_day": -0.013,
               "ci95_low": -0.1713,
               "ci95_high": 0.1454,
               "prob_positive": 0.436,
@@ -9514,11 +9874,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0046,
-              "ci95_low": -0.015,
-              "ci95_high": 0.0242,
-              "prob_positive": 0.678,
-              "prob_direction": 0.678,
+              "coef_pp_per_event_day": 0.005,
+              "ci95_low": -0.0146,
+              "ci95_high": 0.0246,
+              "prob_positive": 0.692,
+              "prob_direction": 0.692,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0044,
@@ -9549,8 +9909,8 @@
               "coef_pp_per_event_day": -0.0009,
               "ci95_low": -0.0022,
               "ci95_high": 0.0004,
-              "prob_positive": 0.08,
-              "prob_direction": 0.92,
+              "prob_positive": 0.079,
+              "prob_direction": 0.921,
               "significant": false,
               "n_with_event": 244,
               "cluster_se": 0.0003,
@@ -9850,8 +10210,8 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.1507,
-              "ci95_low": -0.0562,
+              "coef_pp_per_event_day": 0.1506,
+              "ci95_low": -0.0563,
               "ci95_high": 0.3575,
               "prob_positive": 0.923,
               "prob_direction": 0.923,
@@ -9866,9 +10226,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.1347,
-              "ci95_low": -0.3695,
-              "ci95_high": 0.1002,
+              "coef_pp_per_event_day": -0.1345,
+              "ci95_low": -0.3694,
+              "ci95_high": 0.1003,
               "prob_positive": 0.131,
               "prob_direction": 0.869,
               "significant": false,
@@ -9883,7 +10243,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.1219,
-              "ci95_low": -0.0005,
+              "ci95_low": -0.0004,
               "ci95_high": 0.2442,
               "prob_positive": 0.975,
               "prob_direction": 0.975,
@@ -9914,7 +10274,7 @@
             },
             "page_removed": {
               "label": "Geloeschte Seiten",
-              "coef_pp_per_event_day": 0.0085,
+              "coef_pp_per_event_day": 0.0086,
               "ci95_low": -0.054,
               "ci95_high": 0.0711,
               "prob_positive": 0.606,
@@ -9932,7 +10292,7 @@
               "label": "News-Erwaehnungen",
               "coef_pp_per_event_day": -0.0079,
               "ci95_low": -0.0572,
-              "ci95_high": 0.0415,
+              "ci95_high": 0.0414,
               "prob_positive": 0.377,
               "prob_direction": 0.623,
               "significant": false,
@@ -9946,11 +10306,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0044,
-              "ci95_low": -0.0219,
-              "ci95_high": 0.0306,
-              "prob_positive": 0.627,
-              "prob_direction": 0.627,
+              "coef_pp_per_event_day": 0.0048,
+              "ci95_low": -0.0215,
+              "ci95_high": 0.031,
+              "prob_positive": 0.639,
+              "prob_direction": 0.639,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.006,
@@ -10282,9 +10642,9 @@
           "coefficients": {
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.4141,
-              "ci95_low": -0.1007,
-              "ci95_high": 0.9289,
+              "coef_pp_per_event_day": 0.4142,
+              "ci95_low": -0.1006,
+              "ci95_high": 0.929,
               "prob_positive": 0.943,
               "prob_direction": 0.943,
               "significant": false,
@@ -10299,7 +10659,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.1169,
-              "ci95_low": -0.1513,
+              "ci95_low": -0.1512,
               "ci95_high": 0.385,
               "prob_positive": 0.804,
               "prob_direction": 0.804,
@@ -10314,9 +10674,9 @@
             },
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0535,
-              "ci95_low": -0.4,
-              "ci95_high": 0.5069,
+              "coef_pp_per_event_day": 0.0534,
+              "ci95_low": -0.4001,
+              "ci95_high": 0.5068,
               "prob_positive": 0.591,
               "prob_direction": 0.591,
               "significant": false,
@@ -10346,11 +10706,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": -0.0243,
-              "ci95_low": -0.0819,
-              "ci95_high": 0.0333,
-              "prob_positive": 0.204,
-              "prob_direction": 0.796,
+              "coef_pp_per_event_day": -0.0239,
+              "ci95_low": -0.0815,
+              "ci95_high": 0.0337,
+              "prob_positive": 0.208,
+              "prob_direction": 0.792,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0187,
@@ -10365,8 +10725,8 @@
               "coef_pp_per_event_day": 0.0215,
               "ci95_low": -0.1156,
               "ci95_high": 0.1586,
-              "prob_positive": 0.62,
-              "prob_direction": 0.62,
+              "prob_positive": 0.621,
+              "prob_direction": 0.621,
               "significant": false,
               "n_with_event": 6,
               "cluster_se": 0.0506,
@@ -10378,7 +10738,7 @@
             },
             "linkedin_post": {
               "label": "LinkedIn-Posts",
-              "coef_pp_per_event_day": -0.0076,
+              "coef_pp_per_event_day": -0.0077,
               "ci95_low": -0.1906,
               "ci95_high": 0.1753,
               "prob_positive": 0.467,
@@ -10714,11 +11074,11 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": 0.0874,
-              "ci95_low": -0.0531,
-              "ci95_high": 0.2279,
-              "prob_positive": 0.889,
-              "prob_direction": 0.889,
+              "coef_pp_per_event_day": 0.0873,
+              "ci95_low": -0.0532,
+              "ci95_high": 0.2278,
+              "prob_positive": 0.888,
+              "prob_direction": 0.888,
               "significant": false,
               "n_with_event": 26,
               "cluster_se": 0.085,
@@ -10731,7 +11091,7 @@
             "press_mention": {
               "label": "Pressemitteilungen",
               "coef_pp_per_event_day": 0.0722,
-              "ci95_low": -0.0109,
+              "ci95_low": -0.0108,
               "ci95_high": 0.1553,
               "prob_positive": 0.956,
               "prob_direction": 0.956,
@@ -10746,9 +11106,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": -0.0646,
-              "ci95_low": -0.2241,
-              "ci95_high": 0.0949,
+              "coef_pp_per_event_day": -0.0645,
+              "ci95_low": -0.224,
+              "ci95_high": 0.095,
               "prob_positive": 0.214,
               "prob_direction": 0.786,
               "significant": false,
@@ -10795,7 +11155,7 @@
             },
             "news_mention": {
               "label": "News-Erwaehnungen",
-              "coef_pp_per_event_day": 0.0125,
+              "coef_pp_per_event_day": 0.0124,
               "ci95_low": -0.021,
               "ci95_high": 0.0459,
               "prob_positive": 0.767,
@@ -10827,11 +11187,11 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": 0.0024,
-              "ci95_low": -0.0154,
-              "ci95_high": 0.0203,
-              "prob_positive": 0.606,
-              "prob_direction": 0.606,
+              "coef_pp_per_event_day": 0.0028,
+              "ci95_low": -0.015,
+              "ci95_high": 0.0207,
+              "prob_positive": 0.623,
+              "prob_direction": 0.623,
               "significant": false,
               "n_with_event": 57,
               "cluster_se": 0.0057,
@@ -11147,9 +11507,9 @@
           "coefficients": {
             "review_change": {
               "label": "Bewertungs-Trend (±)",
-              "coef_pp_per_event_day": -0.2165,
-              "ci95_low": -0.8324,
-              "ci95_high": 0.3995,
+              "coef_pp_per_event_day": -0.2166,
+              "ci95_low": -0.8325,
+              "ci95_high": 0.3994,
               "prob_positive": 0.245,
               "prob_direction": 0.755,
               "significant": false,
@@ -11163,9 +11523,9 @@
             },
             "review_volume": {
               "label": "Bewertungs-Volumen",
-              "coef_pp_per_event_day": 0.19,
-              "ci95_low": -0.5093,
-              "ci95_high": 0.8893,
+              "coef_pp_per_event_day": 0.1901,
+              "ci95_low": -0.5092,
+              "ci95_high": 0.8894,
               "prob_positive": 0.703,
               "prob_direction": 0.703,
               "significant": false,
@@ -11211,9 +11571,9 @@
             },
             "instagram_post": {
               "label": "Instagram-Posts",
-              "coef_pp_per_event_day": -0.0926,
-              "ci95_low": -0.1709,
-              "ci95_high": -0.0144,
+              "coef_pp_per_event_day": -0.0922,
+              "ci95_low": -0.1705,
+              "ci95_high": -0.014,
               "prob_positive": 0.01,
               "prob_direction": 0.99,
               "significant": true,
@@ -11881,10 +12241,10 @@
       }
     ],
     "event_deckung": {
-      "n_presse_news_events": 2813,
+      "n_presse_news_events": 2820,
       "auf_zitierten_quellen": 196,
-      "anteil_auf_zitierten_quellen": 0.0697,
-      "nicht_zitiert": 2617
+      "anteil_auf_zitierten_quellen": 0.0695,
+      "nicht_zitiert": 2624
     },
     "top_autoritaetsquellen_ohne_event": [
       "ergo.de",
@@ -12669,17 +13029,17 @@
           },
           {
             "lag": 14,
-            "r": -0.012,
-            "effekt_pp": -0.098,
-            "p": 0.47506,
+            "r": -0.009,
+            "effekt_pp": -0.082,
+            "p": 0.548363,
             "gesichert": false,
             "lead": false
           },
           {
             "lag": 28,
             "r": 0.041,
-            "effekt_pp": 0.153,
-            "p": 0.348519,
+            "effekt_pp": 0.152,
+            "p": 0.348608,
             "gesichert": false,
             "lead": false
           }
@@ -12957,7 +13317,7 @@
         "verlauf": [
           {
             "lag": -14,
-            "r": 0.028,
+            "r": 0.026,
             "effekt_pp": 0.192,
             "p": 0.457002,
             "gesichert": false,
@@ -13023,8 +13383,8 @@
         "vorzeichenwechsel": 1,
         "musterbewertung": "ein Vorzeichenwechsel — uneindeutig",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.028 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.095 (7 Tage).",
-        "max_abs_r_lead": 0.028,
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.026 (-14 Tage) bleibt unter dem besten echten Versatz |r|=0.095 (7 Tage).",
+        "max_abs_r_lead": 0.026,
         "max_abs_r_ab_lag0": 0.095,
         "r_bei_lag0": -0.056
       },
@@ -13334,12 +13694,12 @@
     }
   },
   "press_by_citation": {
-    "n_presse_events": 2813,
+    "n_presse_events": 2820,
     "je_klasse": {
-      "unbekannt": 1775,
-      "zitiert_marke": 217,
-      "nicht_zitiert": 677,
-      "zitiert_redaktionell": 144
+      "zitiert_marke": 618,
+      "nicht_zitiert": 1277,
+      "zitiert_redaktionell": 581,
+      "unbekannt": 344
     },
     "klassen_label": {
       "zitiert_redaktionell": "Presse in zitierten Redaktionsmedien",
@@ -13348,22 +13708,22 @@
     },
     "methode": "Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle der Einordnung: data/content_citations.json, gesetzt von scripts/enrich_press_events.py als detail.zitat_klasse.",
     "grenzen": "Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht zuordnen liess - nicht, dass es nicht zitiert wird.",
-    "abdeckung": 0.369,
+    "abdeckung": 0.878,
     "available": true,
     "wirkung_je_klasse": {
       "zitiert_redaktionell": {
         "available": true,
         "label": "Presse in zitierten Redaktionsmedien",
-        "avg_sov_effect_pp": -0.384,
+        "avg_sov_effect_pp": -0.382,
         "n_intervals": 668,
-        "n_with_event": 33,
-        "n_events": 144,
+        "n_with_event": 34,
+        "n_events": 581,
         "significant_iid": false,
-        "p_iid": 0.239698,
-        "effect_se_cluster_pp": 0.326,
-        "ci95_low_cluster_pp": -1.216,
-        "ci95_high_cluster_pp": 0.326,
-        "p_cluster": 0.214593,
+        "p_iid": 0.227846,
+        "effect_se_cluster_pp": 0.317,
+        "ci95_low_cluster_pp": -1.187,
+        "ci95_high_cluster_pp": 0.312,
+        "p_cluster": 0.210198,
         "n_clusters": 8,
         "cluster_df": 7,
         "significance_basis": "cluster",
@@ -13372,16 +13732,16 @@
       "nicht_zitiert": {
         "available": true,
         "label": "Presse in nicht zitierten Medien",
-        "avg_sov_effect_pp": 0.047,
+        "avg_sov_effect_pp": 0.148,
         "n_intervals": 668,
-        "n_with_event": 108,
-        "n_events": 677,
+        "n_with_event": 117,
+        "n_events": 1277,
         "significant_iid": false,
-        "p_iid": 0.836062,
-        "effect_se_cluster_pp": 0.227,
-        "ci95_low_cluster_pp": -0.488,
-        "ci95_high_cluster_pp": 0.623,
-        "p_cluster": 0.777529,
+        "p_iid": 0.52207,
+        "effect_se_cluster_pp": 0.27814026463388847,
+        "ci95_low_cluster_pp": -0.48,
+        "ci95_high_cluster_pp": 0.881,
+        "p_cluster": 0.49887,
         "n_clusters": 7,
         "cluster_df": 6,
         "significance_basis": "cluster",
@@ -13390,16 +13750,16 @@
       "zitiert_marke": {
         "available": true,
         "label": "Beitraege auf zitierten Markenseiten (Newsrooms)",
-        "avg_sov_effect_pp": 0.474,
+        "avg_sov_effect_pp": 0.416,
         "n_intervals": 668,
-        "n_with_event": 50,
-        "n_events": 217,
+        "n_with_event": 51,
+        "n_events": 618,
         "significant_iid": false,
-        "p_iid": 0.210494,
-        "effect_se_cluster_pp": 0.378,
-        "ci95_low_cluster_pp": -0.398,
-        "ci95_high_cluster_pp": 1.346,
-        "p_cluster": 0.245382,
+        "p_iid": 0.266546,
+        "effect_se_cluster_pp": 0.375,
+        "ci95_low_cluster_pp": -0.449,
+        "ci95_high_cluster_pp": 1.28,
+        "p_cluster": 0.300261,
         "n_clusters": 9,
         "cluster_df": 8,
         "significance_basis": "cluster",
@@ -13409,57 +13769,57 @@
     "top_domains": [
       {
         "domain": "test.de",
-        "n_artikel": 3,
+        "n_artikel": 8,
         "zitate": 26734
       },
       {
         "domain": "handelsblatt.com",
-        "n_artikel": 4,
+        "n_artikel": 43,
         "zitate": 8298
       },
       {
         "domain": "faz.net",
-        "n_artikel": 6,
+        "n_artikel": 13,
         "zitate": 5339
       },
       {
         "domain": "versicherungsbote.de",
-        "n_artikel": 43,
+        "n_artikel": 174,
         "zitate": 4285
       },
       {
         "domain": "versicherungsjournal.de",
-        "n_artikel": 35,
+        "n_artikel": 50,
         "zitate": 2639
       },
       {
         "domain": "pfefferminzia.de",
-        "n_artikel": 5,
+        "n_artikel": 12,
         "zitate": 1931
       },
       {
         "domain": "dasinvestment.com",
-        "n_artikel": 13,
+        "n_artikel": 111,
         "zitate": 1625
       },
       {
         "domain": "cash-online.de",
-        "n_artikel": 16,
+        "n_artikel": 85,
         "zitate": 1468
       },
       {
         "domain": "welt.de",
-        "n_artikel": 1,
+        "n_artikel": 7,
         "zitate": 1185
       },
       {
         "domain": "procontra-online.de",
-        "n_artikel": 18,
+        "n_artikel": 78,
         "zitate": 1025
       }
     ],
     "vergleich": {
-      "differenz_pp": -0.431,
+      "differenz_pp": -0.53,
       "hinweis": "Differenz der beiden Punktschaetzer. Bewusst ohne Test: die Schaetzer stammen aus demselben Intervall-Datensatz und sind nicht unabhaengig - ein Zweistichprobentest waere hier falsch. Die Zahl zeigt die Richtung, nicht mehr."
     }
   },
@@ -14046,9 +14406,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0242,
-            "ci95_low": 0.5055,
-            "ci95_high": 1.5429,
+            "coef_pp_per_event_day": 1.0259,
+            "ci95_low": 0.5067,
+            "ci95_high": 1.5451,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -14056,9 +14416,9 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1042,
-            "ci95_low": -0.3725,
-            "ci95_high": 0.5809,
+            "coef_pp_per_event_day": 0.1045,
+            "ci95_low": -0.3722,
+            "ci95_high": 0.5813,
             "prob_positive": 0.666,
             "prob_direction": 0.666,
             "significant": false,
@@ -14066,33 +14426,23 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0735,
-            "ci95_low": -0.225,
-            "ci95_high": 0.0779,
-            "prob_positive": 0.171,
-            "prob_direction": 0.829,
+            "coef_pp_per_event_day": -0.0736,
+            "ci95_low": -0.2251,
+            "ci95_high": 0.0778,
+            "prob_positive": 0.17,
+            "prob_direction": 0.83,
             "significant": false,
             "n_with_event": 41
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0226,
-            "ci95_low": -0.4204,
-            "ci95_high": 0.4655,
-            "prob_positive": 0.54,
-            "prob_direction": 0.54,
-            "significant": false,
-            "n_with_event": 8
-          },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0175,
-            "ci95_low": -0.1157,
-            "ci95_high": 0.0807,
-            "prob_positive": 0.363,
-            "prob_direction": 0.637,
+            "coef_pp_per_event_day": -0.0195,
+            "ci95_low": -0.1322,
+            "ci95_high": 0.0932,
+            "prob_positive": 0.367,
+            "prob_direction": 0.633,
             "significant": false,
-            "n_with_event": 9
+            "n_with_event": 8
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -14114,23 +14464,33 @@
             "significant": false,
             "n_with_event": 6
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.0094,
+            "ci95_low": -0.6524,
+            "ci95_high": 0.6711,
+            "prob_positive": 0.511,
+            "prob_direction": 0.511,
+            "significant": false,
+            "n_with_event": 7
+          },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0084,
-            "ci95_low": -0.1536,
-            "ci95_high": 0.1368,
-            "prob_positive": 0.455,
-            "prob_direction": 0.545,
+            "coef_pp_per_event_day": -0.0085,
+            "ci95_low": -0.1538,
+            "ci95_high": 0.1367,
+            "prob_positive": 0.454,
+            "prob_direction": 0.546,
             "significant": false,
             "n_with_event": 49
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.0063,
-            "ci95_low": -0.1148,
-            "ci95_high": 0.1275,
-            "prob_positive": 0.541,
-            "prob_direction": 0.541,
+            "coef_pp_per_event_day": 0.0079,
+            "ci95_low": -0.113,
+            "ci95_high": 0.1287,
+            "prob_positive": 0.551,
+            "prob_direction": 0.551,
             "significant": false,
             "n_with_event": 46
           },
@@ -14774,67 +15134,67 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.6457,
-            "ci95_low": 0.0065,
-            "ci95_high": 1.2848,
-            "prob_positive": 0.976,
-            "prob_direction": 0.976,
+            "coef_pp_per_event_day": 0.6492,
+            "ci95_low": 0.0095,
+            "ci95_high": 1.2889,
+            "prob_positive": 0.977,
+            "prob_direction": 0.977,
             "significant": false,
             "n_with_event": 12
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2524,
-            "ci95_low": -0.2877,
-            "ci95_high": 0.7925,
-            "prob_positive": 0.82,
-            "prob_direction": 0.82,
+            "coef_pp_per_event_day": 0.253,
+            "ci95_low": -0.2871,
+            "ci95_high": 0.7931,
+            "prob_positive": 0.821,
+            "prob_direction": 0.821,
             "significant": false,
             "n_with_event": 16
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1407,
-            "ci95_low": -0.0462,
-            "ci95_high": 0.3277,
+            "coef_pp_per_event_day": 0.1405,
+            "ci95_low": -0.0465,
+            "ci95_high": 0.3274,
             "prob_positive": 0.93,
             "prob_direction": 0.93,
             "significant": false,
             "n_with_event": 41
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0493,
+            "ci95_low": -0.8661,
+            "ci95_high": 0.7676,
+            "prob_positive": 0.453,
+            "prob_direction": 0.547,
+            "significant": false,
+            "n_with_event": 7
+          },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0368,
-            "ci95_low": -0.216,
-            "ci95_high": 0.1424,
-            "prob_positive": 0.344,
-            "prob_direction": 0.656,
+            "coef_pp_per_event_day": -0.038,
+            "ci95_low": -0.2172,
+            "ci95_high": 0.1412,
+            "prob_positive": 0.339,
+            "prob_direction": 0.661,
             "significant": false,
             "n_with_event": 49
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0365,
-            "ci95_low": -0.5103,
-            "ci95_high": 0.5833,
-            "prob_positive": 0.552,
-            "prob_direction": 0.552,
-            "significant": false,
-            "n_with_event": 8
-          },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.029,
-            "ci95_low": -0.1206,
-            "ci95_high": 0.1787,
-            "prob_positive": 0.648,
-            "prob_direction": 0.648,
+            "coef_pp_per_event_day": 0.0317,
+            "ci95_low": -0.1175,
+            "ci95_high": 0.1809,
+            "prob_positive": 0.662,
+            "prob_direction": 0.662,
             "significant": false,
             "n_with_event": 46
           },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": -0.0262,
+            "coef_pp_per_event_day": -0.0261,
             "ci95_low": -0.149,
             "ci95_high": 0.0967,
             "prob_positive": 0.338,
@@ -14852,16 +15212,6 @@
             "significant": true,
             "n_with_event": 60
           },
-          "review_positive": {
-            "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0082,
-            "ci95_low": -0.1294,
-            "ci95_high": 0.113,
-            "prob_positive": 0.447,
-            "prob_direction": 0.553,
-            "significant": false,
-            "n_with_event": 9
-          },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0025,
@@ -14871,6 +15221,16 @@
             "prob_direction": 0.856,
             "significant": false,
             "n_with_event": 276
+          },
+          "review_positive": {
+            "label": "Positive Bewertungen",
+            "coef_pp_per_event_day": -0.0023,
+            "ci95_low": -0.1415,
+            "ci95_high": 0.1368,
+            "prob_positive": 0.487,
+            "prob_direction": 0.513,
+            "significant": false,
+            "n_with_event": 8
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -15239,7 +15599,7 @@
             "label": "Presse/News: Produkt/Strategie",
             "coef_pp_per_event_day": 0.2004,
             "ci95_low": -0.494,
-            "ci95_high": 0.8948,
+            "ci95_high": 0.8949,
             "prob_positive": 0.714,
             "prob_direction": 0.714,
             "significant": false,
@@ -15247,9 +15607,9 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.0845,
+            "coef_pp_per_event_day": 0.0844,
             "ci95_low": -0.167,
-            "ci95_high": 0.3359,
+            "ci95_high": 0.3358,
             "prob_positive": 0.745,
             "prob_direction": 0.745,
             "significant": false,
@@ -15257,33 +15617,33 @@
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.0527,
-            "ci95_low": -0.8151,
-            "ci95_high": 0.9206,
-            "prob_positive": 0.547,
-            "prob_direction": 0.547,
+            "coef_pp_per_event_day": 0.0532,
+            "ci95_low": -0.8161,
+            "ci95_high": 0.9224,
+            "prob_positive": 0.548,
+            "prob_direction": 0.548,
             "significant": false,
             "n_with_event": 9
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0397,
-            "ci95_low": -0.5574,
-            "ci95_high": 0.6367,
-            "prob_positive": 0.552,
-            "prob_direction": 0.552,
+            "coef_pp_per_event_day": 0.0509,
+            "ci95_low": -0.8407,
+            "ci95_high": 0.9424,
+            "prob_positive": 0.545,
+            "prob_direction": 0.545,
             "significant": false,
-            "n_with_event": 8
+            "n_with_event": 7
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0215,
-            "ci95_low": -0.1538,
-            "ci95_high": 0.1108,
-            "prob_positive": 0.375,
-            "prob_direction": 0.625,
+            "coef_pp_per_event_day": -0.0245,
+            "ci95_low": -0.1763,
+            "ci95_high": 0.1273,
+            "prob_positive": 0.376,
+            "prob_direction": 0.624,
             "significant": false,
-            "n_with_event": 9
+            "n_with_event": 8
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
@@ -15309,19 +15669,19 @@
             "label": "Geloeschte Seiten",
             "coef_pp_per_event_day": 0.0032,
             "ci95_low": -0.1308,
-            "ci95_high": 0.1371,
-            "prob_positive": 0.518,
-            "prob_direction": 0.518,
+            "ci95_high": 0.1372,
+            "prob_positive": 0.519,
+            "prob_direction": 0.519,
             "significant": false,
             "n_with_event": 6
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": -0.0028,
-            "ci95_low": -0.1665,
-            "ci95_high": 0.1609,
-            "prob_positive": 0.487,
-            "prob_direction": 0.513,
+            "coef_pp_per_event_day": -0.0015,
+            "ci95_low": -0.1647,
+            "ci95_high": 0.1618,
+            "prob_positive": 0.493,
+            "prob_direction": 0.507,
             "significant": false,
             "n_with_event": 46
           },
@@ -15330,8 +15690,8 @@
             "coef_pp_per_event_day": -0.0004,
             "ci95_low": -0.0072,
             "ci95_high": 0.0064,
-            "prob_positive": 0.454,
-            "prob_direction": 0.546,
+            "prob_positive": 0.455,
+            "prob_direction": 0.545,
             "significant": false,
             "n_with_event": 238
           }
@@ -15867,9 +16227,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.5581,
-            "ci95_low": 0.5581,
-            "ci95_high": 0.5581,
+            "coef_pp_per_event_day": 0.5584,
+            "ci95_low": 0.5584,
+            "ci95_high": 0.5584,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -15877,9 +16237,9 @@
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16282,9 +16642,9 @@
         "coefficients": {
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": -0.2747,
-            "ci95_low": -0.2747,
-            "ci95_high": -0.2747,
+            "coef_pp_per_event_day": -0.2746,
+            "ci95_low": -0.2746,
+            "ci95_high": -0.2746,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16292,9 +16652,9 @@
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16302,9 +16662,9 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16728,9 +17088,9 @@
         "coefficients": {
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16738,9 +17098,9 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -16994,9 +17354,9 @@
         "coefficients": {
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17454,9 +17814,9 @@
         "coefficients": {
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17464,9 +17824,9 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17719,9 +18079,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1515,
-            "ci95_low": 0.1515,
-            "ci95_high": 0.1515,
+            "coef_pp_per_event_day": 0.1514,
+            "ci95_low": 0.1514,
+            "ci95_high": 0.1514,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17729,9 +18089,9 @@
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -17739,9 +18099,9 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18171,9 +18531,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1515,
-            "ci95_low": 0.1515,
-            "ci95_high": 0.1515,
+            "coef_pp_per_event_day": 0.1514,
+            "ci95_low": 0.1514,
+            "ci95_high": 0.1514,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": true,
@@ -18181,9 +18541,9 @@
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18348,9 +18708,9 @@
         "coefficients": {
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1515,
-            "ci95_low": 0.1515,
-            "ci95_high": 0.1515,
+            "coef_pp_per_event_day": 0.1514,
+            "ci95_low": 0.1514,
+            "ci95_high": 0.1514,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18358,9 +18718,9 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18797,9 +19157,9 @@
         "coefficients": {
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0269,
-            "ci95_low": -0.0269,
-            "ci95_high": -0.0269,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.027,
+            "ci95_high": -0.027,
             "prob_positive": 0.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18807,9 +19167,9 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -19088,9 +19448,9 @@
         "coefficients": {
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.015,
-            "ci95_low": 0.015,
-            "ci95_high": 0.015,
+            "coef_pp_per_event_day": 0.0162,
+            "ci95_low": 0.0162,
+            "ci95_high": 0.0162,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -19833,19 +20193,19 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.3884,
-            "ci95_low": -0.2209,
-            "ci95_high": 0.9976,
-            "prob_positive": 0.894,
-            "prob_direction": 0.894,
+            "coef_pp_per_event_day": 0.39,
+            "ci95_low": -0.2199,
+            "ci95_high": 0.9998,
+            "prob_positive": 0.895,
+            "prob_direction": 0.895,
             "significant": false,
             "n_with_event": 12
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.2152,
-            "ci95_low": -0.2996,
-            "ci95_high": 0.73,
+            "coef_pp_per_event_day": 0.2155,
+            "ci95_low": -0.2994,
+            "ci95_high": 0.7303,
             "prob_positive": 0.794,
             "prob_direction": 0.794,
             "significant": false,
@@ -19853,53 +20213,43 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": 0.1364,
-            "ci95_low": -0.0419,
-            "ci95_high": 0.3146,
+            "coef_pp_per_event_day": 0.1363,
+            "ci95_low": -0.042,
+            "ci95_high": 0.3145,
             "prob_positive": 0.933,
             "prob_direction": 0.933,
             "significant": false,
             "n_with_event": 41
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0277,
-            "ci95_low": -0.4935,
-            "ci95_high": 0.549,
-            "prob_positive": 0.542,
-            "prob_direction": 0.542,
-            "significant": false,
-            "n_with_event": 8
-          },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0229,
-            "ci95_low": -0.1937,
-            "ci95_high": 0.1479,
-            "prob_positive": 0.396,
-            "prob_direction": 0.604,
+            "coef_pp_per_event_day": -0.0234,
+            "ci95_low": -0.1942,
+            "ci95_high": 0.1475,
+            "prob_positive": 0.394,
+            "prob_direction": 0.606,
             "significant": false,
             "n_with_event": 49
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.0204,
-            "ci95_low": -0.1222,
-            "ci95_high": 0.1631,
-            "prob_positive": 0.611,
-            "prob_direction": 0.611,
+            "coef_pp_per_event_day": 0.0221,
+            "ci95_low": -0.1202,
+            "ci95_high": 0.1643,
+            "prob_positive": 0.619,
+            "prob_direction": 0.619,
             "significant": false,
             "n_with_event": 46
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.011,
-            "ci95_low": -0.1266,
-            "ci95_high": 0.1045,
-            "prob_positive": 0.426,
-            "prob_direction": 0.574,
+            "coef_pp_per_event_day": -0.0101,
+            "ci95_low": -0.1428,
+            "ci95_high": 0.1225,
+            "prob_positive": 0.441,
+            "prob_direction": 0.559,
             "significant": false,
-            "n_with_event": 9
+            "n_with_event": 8
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -19930,6 +20280,16 @@
             "prob_direction": 0.637,
             "significant": false,
             "n_with_event": 276
+          },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": -0.0008,
+            "ci95_low": -0.7795,
+            "ci95_high": 0.7779,
+            "prob_positive": 0.499,
+            "prob_direction": 0.501,
+            "significant": false,
+            "n_with_event": 7
           }
         },
         "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
@@ -20326,9 +20686,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0178,
-            "ci95_low": 0.4979,
-            "ci95_high": 1.5377,
+            "coef_pp_per_event_day": 1.0195,
+            "ci95_low": 0.4992,
+            "ci95_high": 1.5399,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -20336,9 +20696,9 @@
           },
           "media_positive": {
             "label": "Presse/News: Produkt/Strategie",
-            "coef_pp_per_event_day": 0.1208,
-            "ci95_low": -0.3571,
-            "ci95_high": 0.5986,
+            "coef_pp_per_event_day": 0.1211,
+            "ci95_low": -0.3567,
+            "ci95_high": 0.599,
             "prob_positive": 0.69,
             "prob_direction": 0.69,
             "significant": false,
@@ -20346,33 +20706,23 @@
           },
           "review_change": {
             "label": "Bewertungs-Trend (±)",
-            "coef_pp_per_event_day": -0.0757,
-            "ci95_low": -0.2275,
-            "ci95_high": 0.0761,
+            "coef_pp_per_event_day": -0.0758,
+            "ci95_low": -0.2276,
+            "ci95_high": 0.076,
             "prob_positive": 0.164,
             "prob_direction": 0.836,
             "significant": false,
             "n_with_event": 41
           },
-          "review_negative": {
-            "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": 0.0248,
-            "ci95_low": -0.4192,
-            "ci95_high": 0.4688,
-            "prob_positive": 0.544,
-            "prob_direction": 0.544,
-            "significant": false,
-            "n_with_event": 8
-          },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0169,
-            "ci95_low": -0.1153,
-            "ci95_high": 0.0816,
-            "prob_positive": 0.368,
-            "prob_direction": 0.632,
+            "coef_pp_per_event_day": -0.0187,
+            "ci95_low": -0.1317,
+            "ci95_high": 0.0943,
+            "prob_positive": 0.373,
+            "prob_direction": 0.627,
             "significant": false,
-            "n_with_event": 9
+            "n_with_event": 8
           },
           "page_new": {
             "label": "Neue Seiten",
@@ -20386,19 +20736,29 @@
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.013,
-            "ci95_low": -0.1586,
-            "ci95_high": 0.1325,
-            "prob_positive": 0.43,
-            "prob_direction": 0.57,
+            "coef_pp_per_event_day": -0.0132,
+            "ci95_low": -0.1588,
+            "ci95_high": 0.1323,
+            "prob_positive": 0.429,
+            "prob_direction": 0.571,
             "significant": false,
             "n_with_event": 49
           },
+          "review_negative": {
+            "label": "Negative Bewertungen",
+            "coef_pp_per_event_day": 0.01,
+            "ci95_low": -0.6533,
+            "ci95_high": 0.6733,
+            "prob_positive": 0.512,
+            "prob_direction": 0.512,
+            "significant": false,
+            "n_with_event": 7
+          },
           "page_removed": {
             "label": "Geloeschte Seiten",
-            "coef_pp_per_event_day": 0.0091,
+            "coef_pp_per_event_day": 0.0092,
             "ci95_low": -0.0906,
-            "ci95_high": 0.1088,
+            "ci95_high": 0.1089,
             "prob_positive": 0.571,
             "prob_direction": 0.571,
             "significant": false,
@@ -20406,21 +20766,21 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.0069,
-            "ci95_low": -0.1146,
-            "ci95_high": 0.1283,
-            "prob_positive": 0.544,
-            "prob_direction": 0.544,
+            "coef_pp_per_event_day": 0.0084,
+            "ci95_low": -0.1127,
+            "ci95_high": 0.1296,
+            "prob_positive": 0.554,
+            "prob_direction": 0.554,
             "significant": false,
             "n_with_event": 46
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0015,
-            "ci95_low": -0.0053,
+            "ci95_low": -0.0052,
             "ci95_high": 0.0023,
-            "prob_positive": 0.226,
-            "prob_direction": 0.774,
+            "prob_positive": 0.227,
+            "prob_direction": 0.773,
             "significant": false,
             "n_with_event": 275
           }

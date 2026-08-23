@@ -5010,6 +5010,57 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
   }
 
   /* ---------- Block 2: Bewegen einzelne Ereignisse sie kurzfristig? ---------- */
+  /* ---------- t-Verteilung und Normal-CDF (23.08.2026) ----------
+     _tQuantil kommt aus der Nachweisgrenzen-Tabelle (dort seit 10.08. geprueft,
+     df 1 und 2 exakt, ab df=3 Cornish-Fisher auf 0,12 % genau). _tCdf entsteht
+     per Bisektion UEBER _tQuantil - eine zweite, unabhaengige Naeherung fuer
+     dieselbe Verteilung waere eine zweite Fehlerquelle. */
+  function _tQuantil(p, df){
+    // df 1 und 2 exakt (Cauchy bzw. geschlossene Form) - dort ist die
+    // Cornish-Fisher-Entwicklung unbrauchbar: sie lieferte fuer df=1 rund 3,4
+    // statt 12,71 und haette die Nachweisgrenze genau bei dem Treiber wieder
+    // zu klein gemacht, um den es hier geht. Ab df=3 stimmt die Entwicklung
+    // gegen die exakten t-Quantile auf 0,12 % genau (geprueft df 3 bis 60).
+    if(df===1) return Math.tan(Math.PI*(p-0.5));
+    if(df===2) return (2*p-1)*Math.sqrt(2/(4*p*(1-p)));
+    var z=(function(pp){ // inverse Standardnormalverteilung (Acklam, gekuerzt)
+      var a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239];
+      var b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
+      var c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
+      var d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+      var pl=0.02425, q, r;
+      if(pp<pl){ q=Math.sqrt(-2*Math.log(pp));
+        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+      if(pp>1-pl){ q=Math.sqrt(-2*Math.log(1-pp));
+        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+      q=pp-0.5; r=q*q;
+      return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  })(p);
+    if(!(df>0)) return z;
+    var g1=(z*z*z+z)/4, g2=(5*Math.pow(z,5)+16*z*z*z+3*z)/96,
+        g3=(3*Math.pow(z,7)+19*Math.pow(z,5)+17*z*z*z-15*z)/384,
+        g4=(79*Math.pow(z,9)+776*Math.pow(z,7)+1482*Math.pow(z,5)-1920*z*z*z-945*z)/92160;
+    return z + g1/df + g2/(df*df) + g3/(df*df*df) + g4/Math.pow(df,4);
+  }
+
+  function _tCdf(t, df){
+    if(!(df>0)||t==null||isNaN(t)) return null;
+    if(t===0) return 0.5;
+    var neg=(t<0); t=Math.abs(t);
+    var lo=0.5, hi=0.5+0.5*(1-1e-12);
+    if(_tQuantil(hi,df)<t) return neg?1e-12:(1-1e-12);
+    for(var i=0;i<80;i++){ var m=(lo+hi)/2; if(_tQuantil(m,df)<t) lo=m; else hi=m; }
+    var p=(lo+hi)/2;
+    return neg?(1-p):p;
+  }
+  function _phi(x){ // Normal-CDF, Abramowitz-Stegun 7.1.26, |Fehler| < 1e-7
+    var neg=(x<0); x=Math.abs(x)/Math.SQRT2;
+    var t=1/(1+0.3275911*x);
+    var y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+    var p=0.5*(1+y);
+    return neg?(1-p):p;
+  }
+
   function kBlock2(ci, fanCsv){
     var imp=ci.impact||{};
     var la=ci.lag_analysis||{};
@@ -5060,6 +5111,78 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
         ? (iidOnly.length+' weitere wären nur unter der optimistischeren <i>iid</i>-Annahme signifikant ('+iidOnly.map(function(k){return _esc((imp[k].label||k));}).join(', ')+') und werden hier nicht als Befund geführt.')
         : 'Kein Treiber ist unter der optimistischeren <i>iid</i>-Annahme signifikant, ohne es auch cluster-robust zu sein.')
       +'</div>';
+
+
+    /* ---------- Die 90-%-Sicht (23.08.2026, Auftrag Paul) ----------
+       Richtungswahrscheinlichkeit je Treiber (roh aus der t-Verteilung; gedaempft
+       ueber ein empirisches Bayes-Modell, das alle Treiber gemeinsam betrachtet),
+       90-%-Intervall und die Obergrenze "betragsmaessig hoechstens". Die
+       Zufalls-Erwartung steht fest darunter: bei n Treibern erwartet Rauschen
+       allein im Schnitt 0,2*n Treiber mit >= 90 %. Ohne diese Zeile wuerde die
+       Tabelle Befunde vortaeuschen, die sie nicht enthaelt. */
+    (function(){
+      function _sgn(v,d){ var t=_kv(v,d); return (typeof t==='string'&&v>0&&t.charAt(0)!=='+')?('+'+t):t; }
+      var est=[];
+      Object.keys(imp).forEach(function(k){
+        var r=imp[k]||{};
+        var e=r.avg_sov_effect_pp, se=r.effect_se_cluster_pp, df=r.cluster_df;
+        if(e==null||se==null||!(se>0)||!(df>0)) return;
+        est.push({k:k, label:(r.label||k).replace(/\(Wettbewerb\)/,'').trim(), e:e, se:se, df:df,
+                  nc:r.n_clusters, nw:r.n_with_event});
+      });
+      if(est.length<3) return;
+      // Empirisches Bayes: tau^2 per ML (Gittersuche auf log-Skala; die
+      // Likelihood ist in 1D gutmuetig, ein Gitter reicht und ist nachlesbar).
+      var best=null;
+      for(var g=-12; g<=2; g+=0.05){
+        var t2=Math.exp(g), nll=0;
+        est.forEach(function(x){ var v=x.se*x.se+t2; nll+=0.5*(Math.log(v)+x.e*x.e/v); });
+        if(best===null||nll<best.nll) best={nll:nll,t2:t2};
+      }
+      var tau2=best.t2;
+      est.forEach(function(x){
+        var q90=_tQuantil(0.95,x.df);
+        x.lo90=x.e-q90*x.se; x.hi90=x.e+q90*x.se;
+        x.pRoh=_tCdf(Math.abs(x.e/x.se),x.df);
+        var w=tau2/(tau2+x.se*x.se), mu=w*x.e, sd=Math.sqrt(w*x.se*x.se);
+        x.pEb=(sd>0)?_phi(Math.abs(mu)/sd):0.5;
+        x.hoechst=Math.max(Math.abs(x.lo90),Math.abs(x.hi90));
+        x.straddle=(x.lo90<0&&x.hi90>0);
+      });
+      est.sort(function(a,b){ return b.pRoh-a.pRoh; });
+      var erwartet=est.length*0.2;
+      var beob=est.filter(function(x){ return x.pRoh>=0.90; }).length;
+      var h2='<div class="mt-4 border-t pt-3">'
+        +'<div class="text-sm font-bold text-ergo-dark mb-1">Die 90-%-Sicht: Wie sicher ist die Richtung — und wie groß kann der Effekt höchstens sein?</div>'
+        +'<p class="text-xs text-gray-500 mb-2">Für Entscheidungen reicht oft weniger als die 95-%-Schwelle oben. Diese Tabelle sagt je Treiber, mit welcher Wahrscheinlichkeit das Vorzeichen des gemessenen Effekts stimmt — einmal für den Treiber allein (<b>roh</b>), einmal wenn man alle '+est.length+' Treiber gemeinsam betrachtet und die Schätzungen entsprechend dämpft (<b>gedämpft</b>; empirisches Bayes, die Streuung echter Effekte wird aus der Gruppe selbst geschätzt: τ = '+_kv(Math.sqrt(tau2),2)+' pp). Schließt das 90-%-Intervall die Null ein, steht rechts, wie groß der Effekt <b>höchstens</b> sein kann — auch das eine Aussage mit 90 % Sicherheit, und oft die nützlichere.</p>'
+        +'<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'
+        +'<thead><tr class="text-xs text-gray-400 text-left border-b"><th class="px-2 py-1">Treiber</th>'
+        +'<th class="px-2 text-right">Effekt</th><th class="px-2 text-right">Richtung roh</th>'
+        +'<th class="px-2 text-right">gedämpft</th><th class="px-2 text-right">90-%-Intervall</th><th class="px-2">Lesart (90 % Sicherheit)</th></tr></thead><tbody>';
+      est.forEach(function(x){
+        var lesart;
+        if(!x.straddle){
+          lesart='Richtung '+(x.e>0?'positiv':'negativ')+', Effekt zwischen '+_sgn(x.lo90,2)+' und '+_sgn(x.hi90,2)+' pp';
+        } else {
+          lesart='betragsmäßig höchstens '+_kv(x.hoechst,2)+' pp je Intervall'+(x.hoechst<0.2?' — praktisch ohne messbaren SoV-Effekt':'');
+        }
+        var warnDf=(x.df<=2)?' <span class="text-amber-600" title="nur '+x.df+' Freiheitsgrad(e) — die Prozentzahl steht auf sehr wenigen Marken">⚠</span>':'';
+        h2+='<tr style="border-bottom:1px solid #f1f5f9">'
+          +'<td class="px-2 py-1 text-gray-800">'+_esc(x.label)+warnDf+'<div class="text-xs text-gray-400">'+(x.nc!=null?(x.nc+' Marken'):'')+(x.nw!=null?(' · '+x.nw+' Intervalle'):'')+'</div></td>'
+          +'<td class="px-2 text-right font-semibold">'+_sgn(x.e,2)+'</td>'
+          +'<td class="px-2 text-right'+(x.pRoh>=0.9?' font-semibold':'')+'">'+_kv(100*x.pRoh,0)+'&nbsp;%</td>'
+          +'<td class="px-2 text-right text-gray-600">'+_kv(100*x.pEb,0)+'&nbsp;%</td>'
+          +'<td class="px-2 text-right text-gray-500">'+_sgn(x.lo90,2)+' … '+_sgn(x.hi90,2)+'</td>'
+          +'<td class="px-2 text-xs text-gray-600">'+lesart+'</td></tr>';
+      });
+      h2+='</tbody></table></div>'
+        +'<div class="bg-gray-50 rounded p-2.5 text-xs text-gray-600 leading-relaxed mt-2">'
+        +'<b>Damit die Prozentzahlen nicht mehr versprechen, als sie halten:</b> Bei '+est.length+' Treibern erzeugt <b>reines Rauschen</b> im Schnitt '+_kv(erwartet,1)+' Treiber mit ≥&nbsp;90&nbsp;% Richtungswahrscheinlichkeit — beobachtet: '+beob+'. '
+        +'Eine hohe Richtungswahrscheinlichkeit allein ist deshalb <b>kein Befund</b>, sondern eine Priorisierungshilfe: Sie sagt, wo sich genaueres Hinsehen zuerst lohnt. '
+        +'Belastbar bleiben die Obergrenzen (die gelten je Treiber für sich) und alles, was oben die cluster-robuste 95-%-Schwelle nimmt.</div>'
+        +'</div>';
+      h+=h2;
+    })();
 
     /* 22.08.2026: Ab hier sammelt h die Gegenproben in einen eigenen Puffer.
        Zurueckgeschaltet wird direkt vor der Zitat-Kette; der gesammelte Text
@@ -5831,33 +5954,8 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
        Jetzt wird K je Treiber aus seinen Freiheitsgraden gebildet: t(0,975; df) +
        t(0,80; df) statt 1,96 + 0,84. Ohne df bleibt die Normalnaeherung, dann aber
        ausdruecklich gekennzeichnet. */
-    function _tQuantil(p, df){
-      // df 1 und 2 exakt (Cauchy bzw. geschlossene Form) - dort ist die
-      // Cornish-Fisher-Entwicklung unbrauchbar: sie lieferte fuer df=1 rund 3,4
-      // statt 12,71 und haette die Nachweisgrenze genau bei dem Treiber wieder
-      // zu klein gemacht, um den es hier geht. Ab df=3 stimmt die Entwicklung
-      // gegen die exakten t-Quantile auf 0,12 % genau (geprueft df 3 bis 60).
-      if(df===1) return Math.tan(Math.PI*(p-0.5));
-      if(df===2) return (2*p-1)*Math.sqrt(2/(4*p*(1-p)));
-      var z=(function(pp){ // inverse Standardnormalverteilung (Acklam, gekuerzt)
-        var a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239];
-        var b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
-        var c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
-        var d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
-        var pl=0.02425, q, r;
-        if(pp<pl){ q=Math.sqrt(-2*Math.log(pp));
-          return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
-        if(pp>1-pl){ q=Math.sqrt(-2*Math.log(1-pp));
-          return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
-        q=pp-0.5; r=q*q;
-        return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
-      })(p);
-      if(!(df>0)) return z;
-      var g1=(z*z*z+z)/4, g2=(5*Math.pow(z,5)+16*z*z*z+3*z)/96,
-          g3=(3*Math.pow(z,7)+19*Math.pow(z,5)+17*z*z*z-15*z)/384,
-          g4=(79*Math.pow(z,9)+776*Math.pow(z,7)+1482*Math.pow(z,5)-1920*z*z*z-945*z)/92160;
-      return z + g1/df + g2/(df*df) + g3/(df*df*df) + g4/Math.pow(df,4);
-    }
+    /* _tQuantil: 23.08.2026 auf Modulebene umgezogen (steht jetzt vor kBlock2),
+       weil die 90-%-Sicht in Abschnitt 2 dieselben t-Quantile braucht. */
     var K_NORMAL=2.8;                       // 1,96 + 0,84, nur noch Rueckfall
     var mrows=Object.keys(imp).map(function(k){
       var r=imp[k], se=r.effect_se_cluster_pp, df=r.cluster_df;
@@ -6262,6 +6360,10 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
        'Ein Nullbefund heißt: <b>nicht gefunden</b>. Ob ein Effekt existiert, der kleiner ist als die Nachweisgrenze, kann diese Messung nicht beantworten. Für die meisten Einzelmaßnahmen gilt genau das — sie sind zu klein, um in einer markenweiten Messung sichtbar zu werden.'],
       ['keine Angabe statt Null',
        'Fehlt ein Wert in den Nightly-Daten, steht im Reiter „keine Angabe“ mit dem Grund — nie eine 0 und nie ein eingefrorener Ersatzwert. Eine 0 wäre eine Aussage; ein fehlender Wert ist keine.'],
+      ['Richtungswahrscheinlichkeit',
+       'Die Wahrscheinlichkeit, dass das <b>Vorzeichen</b> des gemessenen Effekts stimmt — gerechnet aus der t-Verteilung des Schätzers (bei flacher Vorannahme). 90 % heißt: In 9 von 10 solcher Messlagen zeigt der wahre Effekt in die angezeigte Richtung. Wichtig: Bei vielen gleichzeitig getesteten Treibern erzeugt Zufall allein hohe Werte — die Tabelle in Abschnitt 2 rechnet diese Erwartung deshalb immer mit aus.'],
+      ['Dämpfung (empirisches Bayes)',
+       'Alle Treiber werden als Gruppe betrachtet: Aus der Gruppe selbst wird geschätzt, wie stark echte Effekte überhaupt streuen (τ). Jeder Einzeleffekt wird dann in Richtung Null gezogen — stark, wenn sein Standardfehler groß gegen τ ist. Das ist die ehrlichere Zahl, wenn man elf Dinge gleichzeitig testet: Sie bestraft genau die Ausreißer, die bei Einzelbetrachtung am beeindruckendsten aussehen.'],
       ['Fensterüberlappung / Zirkularität',
        'Manche Zielgrößen stammen aus rollierenden Fenstern (etwa 30 Tage), während die Messpunkte nur einen Tag auseinanderliegen. Zwei aufeinanderfolgende Messungen teilen dann fast ihren ganzen Inhalt — die „Veränderung“ zwischen ihnen ist überwiegend dieselbe Messung. Befunde aus solchen Konstellationen sind im Reiter als Artefaktverdacht gekennzeichnet und gehen nicht in die Kernaussage ein.']
     ];

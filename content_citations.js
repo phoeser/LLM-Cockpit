@@ -410,6 +410,54 @@
 
   /* ---------- Aufbau ---------- */
 
+  /* 24.08.2026 (Frage Paul: "welche Berichte ueber uns werden wie oft zitiert?"):
+     Die Daten lagen laengst in data/content_citations.json (seiten[] mit
+     peec_brands je URL), aber das Dashboard zeigte externe Quellen nur auf
+     Domain-Ebene. Diese Tabelle schliesst die Luecke: externe zitierte Seiten,
+     in deren Antworten ERGO vorkommt - je URL mit Zitatzahl und Verlauf.
+     Dieselben Kappungs-Regeln wie bei den eigenen Seiten: "nicht in Auswahl"
+     heisst unbekannt, nie 0. */
+  function blockUeberUns(d) {
+    var staende = ((d.meta.quellen || {}).peec_snapshots || {}).staende || [];
+    var rows = (d.seiten || []).filter(function (r) {
+      return !r.ist_eigene_seite && (r.peec_brands || []).indexOf("ERGO") >= 0 && (r.peec_cit || 0) > 0;
+    });
+    var html = h3("Berichte über ERGO: meistzitierte externe Seiten (" + rows.length + ")");
+    if (!rows.length) {
+      return html + missing("Keine externe zitierte Seite nennt ERGO in den zugehörigen Antworten.");
+    }
+    rows.sort(function (a, b) { return (b.peec_cit || 0) - (a.peec_cit || 0); });
+    html += '<div style="font-size:11px;color:#6b7280;margin-bottom:6px">Externe Quellen aus der Peec-Auswahl, ' +
+      "in deren KI-Antworten ERGO erwähnt wird — das sind die Seiten, aus denen die Modelle ihr ERGO-Bild beziehen. " +
+      "Sortiert nach Zitaten im rollierenden 30-Tage-Fenster.</div>";
+    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+      '<thead><tr style="text-align:left;color:#6b7280">' +
+      '<th style="padding:5px 6px">Seite</th>' +
+      '<th style="padding:5px 6px">Typ</th>' +
+      '<th style="padding:5px 6px;text-align:right">Zitate</th>' +
+      '<th style="padding:5px 6px">Verlauf ' + esc((staende[0] || "").slice(5)) + "–" + esc((staende[staende.length - 1] || "").slice(5)) + "</th>" +
+      '<th style="padding:5px 6px">weitere Marken in den Antworten</th></tr></thead><tbody>';
+    rows.slice(0, 25).forEach(function (r) {
+      var andere = (r.peec_brands || []).filter(function (b) { return b !== "ERGO"; });
+      var typ = r.peec_cls ? esc(r.peec_cls) : (r.seitentyp ? esc(r.seitentyp) : '<span style="color:#b0b4bb">–</span>');
+      html += '<tr style="border-top:1px solid #f0f0f0">' +
+        '<td style="padding:6px"><a href="' + esc(r.url_raw) + '" target="_blank" rel="noopener" style="color:' + COL.text + ';text-decoration:none">' +
+        esc(shortUrl(r.url_norm)) + "</a>" +
+        (r.peec_title ? '<div style="color:#9ca3af;font-size:10px">' + esc(r.peec_title) + "</div>" : "") + "</td>" +
+        '<td style="padding:6px">' + typ + "</td>" +
+        '<td style="padding:6px;text-align:right;font-weight:700">' + num(r.peec_cit) + "</td>" +
+        '<td style="padding:6px">' + sparkline(r.peec_cit_verlauf, staende) + "</td>" +
+        '<td style="padding:6px;color:#6b7280">' + (andere.length ? esc(andere.slice(0, 4).join(", ")) + (andere.length > 4 ? " +" + (andere.length - 4) : "") : "nur ERGO") + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+    if (rows.length > 25) {
+      html += note("Angezeigt: die 25 meistzitierten von " + num(rows.length) + " externen Seiten mit ERGO-Erwähnung.");
+    }
+    html += note("»ERGO wird erwähnt« heisst: In den KI-Antworten, die diese Seite zitieren, kommt die Marke vor (Feld peec_brands) — " +
+      "nicht zwingend, dass die Seite selbst von ERGO handelt. Trustpilot-/Bewertungsseiten und Vergleichsportale zählen dazu.");
+    return html;
+  }
+
   function build(d) {
     var host = document.querySelector('section[data-content="contentgeo"]');
     if (!host || document.getElementById("ccCard")) return true;
@@ -424,7 +472,7 @@
           "Es werden bewusst keine Ersatzwerte angezeigt.");
     } else {
       card.innerHTML = blockKopf(d) + blockTabelle(d) + blockErgoAllianz(d) + blockSeitentypMarkt(d) +
-        blockTrefferquote(d) + blockVerlauf(d) + blockPresse(d) + blockEngines(d) +
+        blockTrefferquote(d) + blockVerlauf(d) + blockUeberUns(d) + blockPresse(d) + blockEngines(d) +
         '<div style="font-size:10.5px;color:#8a8f98;margin-top:14px;border-top:1px solid #f0f0f0;padding-top:8px">' +
         "Quelle: data/content_citations.json (" + esc((d.meta || {}).erzeugt_am || "Stand unbekannt") + "), erzeugt von scripts/content_citations.py. " +
         esc(((d.kennzahlen || {})._hinweis) || "") + "</div>";

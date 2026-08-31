@@ -4957,14 +4957,50 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var p=ci.price_level_pooled||{};
     var ev=(ci.impact||{}).price_change||null;
     var h='<div class="mt-5 border-t pt-4">'
-      +'<div class="text-sm font-bold text-ergo-dark mb-1">Preisniveau — beide Schnitte in einer Tabelle</div>';
+      +'<div class="text-sm font-bold text-ergo-dark mb-1">Preisniveau: Was bringt der Preis?</div>';
     if(!p.available){
       h+='<p class="text-xs text-gray-500">'+_kmiss(p.grund||'Das gepoolte Preis-Modell ist im aktuellen Nightly nicht verfügbar.')+'</p>';
     } else {
       var ge=((p.gap_explorer||{}).grounded)||{};
-      h+='<p class="text-xs text-gray-500 mb-3">Nicht das Ereignis „Preis geändert“, sondern das <b>Preisniveau relativ zum Wettbewerb</b>. Gepoolt über '
-        +nfmt(p.n_days)+' saubere Tage ('+_esc((p.days_range||[]).join(' bis '))+', seit Strukturbruch '+_esc(p.since_break||'—')+')'
-        +(ge.brands?(' · '+ge.brands.length+' Preis-Marken'):'')+'. Negativer Koeffizient heißt: teurer = weniger. '
+      var st=p.stability||{};
+      /* 29.08.2026: Konsolidierung. Vorher standen hier bis zu 12 Tabellenzeilen
+         (2 Zielgroessen x 3 Kanaele x 2 Schnitte) als Einstieg - zu viel. Jetzt:
+         EIN abgeleiteter Antwortsatz plus zwei Karten (rohes Marktmuster /
+         sauberer Within-Schnitt), die volle Tabelle samt Lesart und Stabilitaet
+         unveraendert im Aufklapper. Jede Zahl weiter zur Laufzeit aus der JSON. */
+      var rpC=((((p.price_to_sov||{}).combined||{}).drivers_eff||{}).relprice)||{};
+      var rpG=((((p.price_to_sov||{}).grounded||{}).drivers_eff||{}).relprice)||{};
+      var W=rpC.within||rpG.within||{};
+      var B=rpC.between||rpG.between||{};
+      var qW=W.wild_cluster_p_fdr, qB=B.wild_cluster_p_fdr;
+      var wOk=(qW!=null&&qW<0.05), bOk=(qB!=null&&qB<0.05);
+      var gWp=((rpG.within||{}).wild_cluster_p);
+      var kern;
+      if(wOk) kern='Der Preis wirkt nachweisbar: Dieselbe Marke ist bei höherem Relativpreis über ihre Produkte hinweg weniger sichtbar — das übersteht die FDR-Korrektur.';
+      else if(bOk) kern='Günstigere Marken sind sichtbarer — aber nur im Vergleich <i>zwischen</i> Marken. Der kann alles aufsammeln, was teure von günstigen Anbietern sonst noch unterscheidet.';
+      else if(st.sign_stable) kern='„Günstiger = sichtbarer“ ist als Marktmuster an jedem Messtag da — als <b>eigener, belegbarer</b> Preis-Effekt trägt es nach Abzug von Größe und Zitierhäufigkeit bisher nicht.'+((gWp!=null&&gWp<0.05&&!wOk)?' Ein Kanal (mit Web-Suche) zeigt einen unkorrigierten Hinweis — mehr Messtage müssen das klären.':'');
+      else kern='Ein eigener Preis-Effekt ist mit den bisherigen Messtagen nicht belegbar.';
+      h+='<p class="text-xs text-gray-700 leading-relaxed mb-3"><b>Kurz:</b> '+kern
+        +' <span class="text-gray-400">(gepoolt über '+nfmt(p.n_days)+' saubere Tage, '+_esc((p.days_range||[]).join(' bis '))+(ge.brands?(', '+ge.brands.length+' Preis-Marken'):'')+')</span></p>';
+      h+='<div class="grid md:grid-cols-2 gap-3">';
+      if(st.mean!=null){
+        h+=_kcard('Marktmuster — roh, ohne Kontrollen', _kv(st.mean,1)+' <span class="text-sm font-normal text-gray-500">SoV-Punkte je Preiseinheit</span>',
+          'Günstigere Marken sind sichtbarer: je Messtag einzeln geschätzt zwischen '+_kv(st.min,1)+' und '+_kv(st.max,1)
+          +(st.sign_stable!=null?(st.sign_stable?', durchgehend im selben Vorzeichen.':', mit Vorzeichenwechsel.'):'.')
+          +' Stabiles Muster — aber günstige Anbieter unterscheiden sich auch in Größe und Bekanntheit. Kein Kausalnachweis.',
+          'Quelle: price_level_pooled.stability (bivariat, mit Web-Suche)', st.sign_stable?'blau':'grau');
+      } else {
+        h+=_kcard('Marktmuster — roh, ohne Kontrollen','<span class="text-gray-400 text-base">keine Angabe</span>','Feld <code>stability</code> im aktuellen Nightly nicht gefüllt — deshalb steht hier kein Wert und keine Null.','','grau');
+      }
+      var vW=_kverdict(W.wild_cluster_p, qW);
+      h+=_kcard('Eigener Preis-Effekt — Marke mit sich selbst',
+        (W.effect_std_pp!=null?(_kpp(W.effect_std_pp,2)+' <span class="text-sm font-normal text-gray-500">je 1 SD Relativpreis</span>'):'<span class="text-gray-400 text-base">keine Angabe</span>'),
+        'Der saubere Schnitt: dieselbe Marke über ihre Produkte, Größe und Bekanntheit fallen heraus. '+_pill(vW.t,vW.tone)
+        +(W.wild_cluster_p!=null?(' <span class="text-gray-400">p = '+_kp(W.wild_cluster_p,W.wild_cluster_note)+(qW!=null?(', q = '+_kp(qW)):'')+'</span>'):''),
+        'Quelle: price_to_sov (alle Engines) · alles Weitere im Aufklapper', wOk?'gruen':'grau');
+      h+='</div>';
+      h+='<details class="mt-3" data-preisdetail><summary class="cursor-pointer text-xs font-semibold text-gray-500 hover:text-ergo-red">Alle Kanäle und Schnitte im Detail (12 Modellzeilen, Lesart, Stabilität)</summary><div class="mt-2">';
+      h+='<p class="text-xs text-gray-500 mb-3">Nicht das Ereignis „Preis geändert“, sondern das <b>Preisniveau relativ zum Wettbewerb</b> (gepoolt seit Strukturbruch '+_esc(p.since_break||'—')+'). Negativer Koeffizient heißt: teurer = weniger. '
         +'Mittelung senkt das Tagesrauschen, erzeugt aber keine zusätzlichen unabhängigen Beobachtungen — Cluster bleibt die Marke.</p>';
       h+='<div class="overflow-x-auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'
         +'<thead><tr style="text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0">'
@@ -4977,22 +5013,22 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
       // Verdikt rein aus den Zahlen abgeleitet
       var gW=((((p.price_to_sov||{}).grounded||{}).drivers_eff||{}).relprice||{}).within||{};
       var gB=((((p.price_to_sov||{}).grounded||{}).drivers_eff||{}).relprice||{}).between||{};
-      var qW=gW.wild_cluster_p_fdr, qB=gB.wild_cluster_p_fdr;
+      var qWg=gW.wild_cluster_p_fdr, qBg=gB.wild_cluster_p_fdr;
       var txt;
-      if(qW!=null||qB!=null){
-        var wOk=(qW!=null&&qW<0.05), bOk=(qB!=null&&qB<0.05);
-        txt = wOk&&bOk ? 'Beide Schnitte überstehen die FDR-Korrektur.'
-            : (wOk ? 'Nach FDR-Korrektur trägt der <b>Within</b>-Schnitt (Marke mit sich selbst) — der Vergleich <i>zwischen</i> Marken nicht.'
-            : (bOk ? 'Nach FDR-Korrektur trägt nur der <b>Between</b>-Schnitt; der kann aber alles aufsammeln, was teure von günstigen Anbietern unterscheidet.'
-            : 'Nach FDR-Korrektur übersteht <b>kein</b> Schnitt die Schwelle — der Within-Wert (q = '+_kp(qW)+') liegt näher daran als der Between-Wert (q = '+_kp(qB)+'). Richtung ja, Nachweis nein.'));
+      if(qWg!=null||qBg!=null){
+        var wOkg=(qWg!=null&&qWg<0.05), bOkg=(qBg!=null&&qBg<0.05);
+        txt = wOkg&&bOkg ? 'Beide Schnitte überstehen die FDR-Korrektur.'
+            : (wOkg ? 'Nach FDR-Korrektur trägt der <b>Within</b>-Schnitt (Marke mit sich selbst) — der Vergleich <i>zwischen</i> Marken nicht.'
+            : (bOkg ? 'Nach FDR-Korrektur trägt nur der <b>Between</b>-Schnitt; der kann aber alles aufsammeln, was teure von günstigen Anbietern unterscheidet.'
+            : 'Nach FDR-Korrektur übersteht <b>kein</b> Schnitt die Schwelle — der Within-Wert (q = '+_kp(qWg)+') liegt näher daran als der Between-Wert (q = '+_kp(qBg)+'). Richtung ja, Nachweis nein.'));
       } else { txt='Für den Preis liegen keine FDR-korrigierten Werte vor.'; }
-      h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed mt-3"><b>Lesart:</b> '+txt+'</div>';
-      var st=p.stability||{};
+      h+='<div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-700 leading-relaxed mt-3"><b>Lesart (Kanal mit Web-Suche):</b> '+txt+'</div>';
       if(st.mean!=null){
         h+='<div class="text-xs text-gray-500 mt-2"><b>Stabilität:</b> Der markenübergreifende Preis-Effekt liegt an jedem der '+nfmt(p.n_days)+' Tage zwischen '
           +_kv(st.min,2)+' und '+_kv(st.max,2)+' (Mittel '+_kv(st.mean,2)+', Streuung '+_kv(st.sd,2)+')'
           +(st.sign_stable!=null?(st.sign_stable?' — durchgehend im selben Vorzeichen.':' — mit Vorzeichenwechsel.'):'.')+'</div>';
       }
+      h+='</div></details>';
     }
     if(ev){
       h+='<div class="text-xs text-gray-600 mt-2 leading-relaxed"><b>Als Ereignis betrachtet:</b> ';

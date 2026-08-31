@@ -27,7 +27,7 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 31.08.2026 um 08:45 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-08-31.
+Dieses Faktenblatt wurde am 31.08.2026 um 09:50 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-08-31.
 
 Gemessen wird seit 66 Messtagen, von 2026-05-14 bis 2026-08-26. Daraus entstehen 684 Intervall-Beobachtungen ueber 26 Marken.
 
@@ -102,7 +102,7 @@ Nicht schaetzbar, mit Grund — diese Arten verschwinden nicht aus der Auswertun
 - Domain-/Subdomain-Aenderungen: Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
 - Preis-Aenderungen (gemessen): 21 der 23 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen.
 
-Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,027 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,2 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
+Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,027 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,3 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
 
 
 ## Was es in die Zitate schafft
@@ -143,10 +143,10 @@ Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung.
 
 - ERGO: 4 Beitraege in den letzten 30 Tagen, 26 in 90 Tagen. Davon insgesamt 31 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-20. Haeufigste Themen: Allgemein (68), Digitalisierung & KI (28), Gesundheit & Pflege (11).
 - Allianz: 2 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 91 eigene Mitteilungen und 96 externe Berichte. Juengster Beitrag 2026-08-10. Haeufigste Themen: Allgemein (127), Digitalisierung & KI (19), Finanzen & Vorsorge (12).
-- AXA: 3 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 95 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-27. Haeufigste Themen: Allgemein (118), Digitalisierung & KI (21), Finanzen & Vorsorge (21).
-- HUK-Coburg: 23 Beitraege in den letzten 30 Tagen, 39 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-08-28. Haeufigste Themen: Allgemein (113), KFZ & Mobilität (45), Digitalisierung & KI (11).
+- AXA: 3 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 94 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-27. Haeufigste Themen: Allgemein (118), Digitalisierung & KI (21), Finanzen & Vorsorge (20).
+- HUK-Coburg: 24 Beitraege in den letzten 30 Tagen, 40 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-08-28. Haeufigste Themen: Allgemein (112), KFZ & Mobilität (46), Digitalisierung & KI (11).
 - Generali: 5 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 85 externe Berichte. Juengster Beitrag 2026-08-20. Haeufigste Themen: Allgemein (117), Finanzen & Vorsorge (19), Digitalisierung & KI (15).
-- Signal Iduna: 6 Beitraege in den letzten 30 Tagen, 25 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-08-28. Haeufigste Themen: Allgemein (113), Digitalisierung & KI (26), Finanzen & Vorsorge (17).
+- Signal Iduna: 6 Beitraege in den letzten 30 Tagen, 26 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-08-28. Haeufigste Themen: Allgemein (112), Digitalisierung & KI (26), Finanzen & Vorsorge (18).
 - R+V: 14 Beitraege in den letzten 30 Tagen, 25 in 90 Tagen. Davon insgesamt 99 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-28. Haeufigste Themen: Allgemein (129), Finanzen & Vorsorge (28), Unternehmen & Strategie (16).
 - DEVK: 5 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 6 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-24. Haeufigste Themen: Allgemein (63), Digitalisierung & KI (10), KFZ & Mobilität (9).
 - Hannoversche: 1 Beitraege in den letzten 30 Tagen, 6 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 61 externe Berichte. Juengster Beitrag 2026-08-21. Haeufigste Themen: Allgemein (94), Finanzen & Vorsorge (36), Gesundheit & Pflege (10).

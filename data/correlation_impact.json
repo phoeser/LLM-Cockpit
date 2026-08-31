@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-31T08:43:44Z",
+  "generated_at": "2026-08-31T09:47:59Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -306,6 +306,11 @@
         "anteil_mit_anderen": 0.778,
         "haeufigste_begleiter": [
           {
+            "type": "instagram_post",
+            "label": "Instagram-Posts",
+            "n_gemeinsam": 4
+          },
+          {
             "type": "news_mention",
             "label": "News-Erwaehnungen",
             "n_gemeinsam": 4
@@ -313,11 +318,6 @@
           {
             "type": "linkedin_post",
             "label": "LinkedIn-Posts",
-            "n_gemeinsam": 4
-          },
-          {
-            "type": "instagram_post",
-            "label": "Instagram-Posts",
             "n_gemeinsam": 4
           }
         ]
@@ -492,9 +492,9 @@
     "coefficients": {
       "media_negative": {
         "label": "Presse/News: Schaden/Leistung",
-        "coef_pp_per_event_day": 0.5541,
-        "ci95_low": -0.2842,
-        "ci95_high": 1.3924,
+        "coef_pp_per_event_day": 0.554,
+        "ci95_low": -0.2843,
+        "ci95_high": 1.3922,
         "prob_positive": 0.902,
         "prob_direction": 0.902,
         "significant": false,
@@ -554,7 +554,7 @@
         "label": "Instagram-Posts",
         "coef_pp_per_event_day": 0.0126,
         "ci95_low": -0.1221,
-        "ci95_high": 0.1473,
+        "ci95_high": 0.1472,
         "prob_positive": 0.573,
         "prob_direction": 0.573,
         "significant": false,
@@ -566,7 +566,7 @@
         "label": "LinkedIn-Posts",
         "coef_pp_per_event_day": -0.0114,
         "ci95_low": -0.2076,
-        "ci95_high": 0.1848,
+        "ci95_high": 0.1849,
         "prob_positive": 0.455,
         "prob_direction": 0.545,
         "significant": false,
@@ -614,7 +614,7 @@
     "note": "Isolierter Effekt je Kategorie (Bayes, alle gleichzeitig). P(Effekt>0) ist die Wahrscheinlichkeit eines positiven Effekts. 'Gesichert' = P(Richtung) >= 97,5 %, >=15 Intervalle mit Event, >=20 Intervalle und >=12 Messtage. Segment-Schaetzer per Partial Pooling zum Gesamteffekt stabilisiert."
   },
   "validation": {
-    "placebo_false_positive_rate": 0.0225,
+    "placebo_false_positive_rate": 0.023,
     "out_of_sample": {
       "r2_oos_vs_baseline": -0.027,
       "n_test": 684
@@ -15457,118 +15457,13 @@
     "methode": "Vergleicht die Event-Study je Funnel-Stufe auf ALLEN Tagen gegen die Teilmenge der Tage mit hoher Web-Such-Rate. Ein Treiber, der nur ueber Webinhalte wirken kann, sollte dort staerker sichtbar sein.",
     "reichweite": "Gilt fuer die Peec-Sichtbarkeit. Die SoV-Reihe des eigenen Crawls bleibt unberuehrt — dort gilt das Grounding-Verhalten der eigenen API-Abrufe, das hier nicht gemessen wird.",
     "n_tage": 31,
-    "n_tage_web": 13,
-    "n_tage_ohne_web": 18,
-    "rate_min": 0.0,
-    "rate_max": 0.2448,
-    "phasen_ohne_web": [
-      "2026-08-13",
-      "2026-08-14",
-      "2026-08-15",
-      "2026-08-16",
-      "2026-08-17",
-      "2026-08-18",
-      "2026-08-19",
-      "2026-08-20",
-      "2026-08-21",
-      "2026-08-22",
-      "2026-08-23",
-      "2026-08-24",
-      "2026-08-25",
-      "2026-08-26",
-      "2026-08-27",
-      "2026-08-28",
-      "2026-08-29",
-      "2026-08-30"
-    ],
-    "available": true,
-    "sensitivitaet_seitenaenderungen": {
-      "Awareness": {
-        "alle_tage": {
-          "available": true,
-          "n_punkte": 810,
-          "n_mit_event": 147,
-          "pearson_r": -0.025,
-          "effekt_pp": -0.067,
-          "ci95": [
-            -0.212,
-            0.079
-          ],
-          "p_value": 0.370076,
-          "gesichert": false
-        },
-        "nur_web_tage": {
-          "available": true,
-          "n_punkte": 360,
-          "n_mit_event": 114,
-          "pearson_r": -0.042,
-          "effekt_pp": -0.067,
-          "ci95": [
-            -0.237,
-            0.104
-          ],
-          "p_value": 0.442771,
-          "gesichert": false
-        }
-      },
-      "Consideration": {
-        "alle_tage": {
-          "available": true,
-          "n_punkte": 810,
-          "n_mit_event": 147,
-          "pearson_r": 0.059,
-          "effekt_pp": -0.044,
-          "ci95": [
-            -0.12,
-            0.033
-          ],
-          "p_value": 0.259779,
-          "gesichert": false
-        },
-        "nur_web_tage": {
-          "available": true,
-          "n_punkte": 360,
-          "n_mit_event": 114,
-          "pearson_r": 0.083,
-          "effekt_pp": -0.061,
-          "ci95": [
-            -0.155,
-            0.033
-          ],
-          "p_value": 0.202055,
-          "gesichert": false
-        }
-      },
-      "Decision": {
-        "alle_tage": {
-          "available": true,
-          "n_punkte": 810,
-          "n_mit_event": 147,
-          "pearson_r": -0.039,
-          "effekt_pp": -0.041,
-          "ci95": [
-            -0.175,
-            0.093
-          ],
-          "p_value": 0.548922,
-          "gesichert": false
-        },
-        "nur_web_tage": {
-          "available": true,
-          "n_punkte": 360,
-          "n_mit_event": 114,
-          "pearson_r": -0.047,
-          "effekt_pp": -0.083,
-          "ci95": [
-            -0.219,
-            0.053
-          ],
-          "p_value": 0.232557,
-          "gesichert": false
-        }
-      }
-    },
-    "grenzen": "Die Einschraenkung auf web-gestuetzte Tage ist eine Teilmengen-Analyse, kein Experiment: Die Tage unterscheiden sich womoeglich noch in anderem als der Web-Such-Rate. Ausserdem verkleinert sie die Datenbasis, was die Konfidenzintervalle verbreitert — ein ausbleibender Effekt kann auch daran liegen. Sie zeigt eine Richtung, sie beweist nichts."
+    "n_tage_web": 31,
+    "n_tage_ohne_web": 0,
+    "rate_min": 0.1307,
+    "rate_max": 0.249,
+    "phasen_ohne_web": [],
+    "available": false,
+    "grund": "Zu wenige Tage je Regime (web: 31, ohne web: 0) fuer einen belastbaren Vergleich."
   },
   "event_impact_denoised": {
     "available": true,
@@ -18321,9 +18216,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0135,
-            "ci95_low": 0.5028,
-            "ci95_high": 1.5242,
+            "coef_pp_per_event_day": 1.0131,
+            "ci95_low": 0.5025,
+            "ci95_high": 1.5238,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -18333,7 +18228,7 @@
             "label": "Presse/News: Produkt/Strategie",
             "coef_pp_per_event_day": 0.1215,
             "ci95_low": -0.3218,
-            "ci95_high": 0.5648,
+            "ci95_high": 0.5647,
             "prob_positive": 0.704,
             "prob_direction": 0.704,
             "significant": false,
@@ -18352,20 +18247,20 @@
           "review_negative": {
             "label": "Negative Bewertungen",
             "coef_pp_per_event_day": 0.0464,
-            "ci95_low": -0.1637,
+            "ci95_low": -0.1638,
             "ci95_high": 0.2566,
-            "prob_positive": 0.668,
-            "prob_direction": 0.668,
+            "prob_positive": 0.667,
+            "prob_direction": 0.667,
             "significant": false,
             "n_with_event": 13
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0271,
-            "ci95_low": -0.0829,
-            "ci95_high": 0.0286,
-            "prob_positive": 0.17,
-            "prob_direction": 0.83,
+            "coef_pp_per_event_day": -0.027,
+            "ci95_low": -0.0827,
+            "ci95_high": 0.0287,
+            "prob_positive": 0.171,
+            "prob_direction": 0.829,
             "significant": false,
             "n_with_event": 12
           },
@@ -18391,11 +18286,11 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.0025,
-            "ci95_low": -0.0774,
-            "ci95_high": 0.0824,
-            "prob_positive": 0.525,
-            "prob_direction": 0.525,
+            "coef_pp_per_event_day": 0.0024,
+            "ci95_low": -0.0775,
+            "ci95_high": 0.0823,
+            "prob_positive": 0.524,
+            "prob_direction": 0.524,
             "significant": false,
             "n_with_event": 58
           },
@@ -18403,7 +18298,7 @@
             "label": "LinkedIn-Posts",
             "coef_pp_per_event_day": 0.0015,
             "ci95_low": -0.1154,
-            "ci95_high": 0.1184,
+            "ci95_high": 0.1183,
             "prob_positive": 0.51,
             "prob_direction": 0.51,
             "significant": false,
@@ -19051,8 +18946,8 @@
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
             "coef_pp_per_event_day": 0.658,
-            "ci95_low": 0.0253,
-            "ci95_high": 1.2908,
+            "ci95_low": 0.0252,
+            "ci95_high": 1.2907,
             "prob_positive": 0.979,
             "prob_direction": 0.979,
             "significant": false,
@@ -19093,8 +18988,8 @@
             "coef_pp_per_event_day": -0.0264,
             "ci95_low": -0.1714,
             "ci95_high": 0.1186,
-            "prob_positive": 0.361,
-            "prob_direction": 0.639,
+            "prob_positive": 0.36,
+            "prob_direction": 0.64,
             "significant": false,
             "n_with_event": 56
           },
@@ -19110,11 +19005,11 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.0228,
+            "coef_pp_per_event_day": 0.0227,
             "ci95_low": -0.0764,
             "ci95_high": 0.1219,
-            "prob_positive": 0.674,
-            "prob_direction": 0.674,
+            "prob_positive": 0.673,
+            "prob_direction": 0.673,
             "significant": false,
             "n_with_event": 58
           },
@@ -19140,11 +19035,11 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0018,
-            "ci95_low": -0.071,
-            "ci95_high": 0.0673,
-            "prob_positive": 0.479,
-            "prob_direction": 0.521,
+            "coef_pp_per_event_day": -0.0017,
+            "ci95_low": -0.0709,
+            "ci95_high": 0.0674,
+            "prob_positive": 0.481,
+            "prob_direction": 0.519,
             "significant": false,
             "n_with_event": 12
           }
@@ -19560,21 +19455,21 @@
           },
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.031,
-            "ci95_low": -0.8165,
-            "ci95_high": 0.8785,
-            "prob_positive": 0.529,
-            "prob_direction": 0.529,
+            "coef_pp_per_event_day": 0.0305,
+            "ci95_low": -0.817,
+            "ci95_high": 0.8779,
+            "prob_positive": 0.528,
+            "prob_direction": 0.528,
             "significant": false,
             "n_with_event": 9
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0305,
-            "ci95_low": -0.1053,
-            "ci95_high": 0.0443,
-            "prob_positive": 0.212,
-            "prob_direction": 0.788,
+            "coef_pp_per_event_day": -0.0304,
+            "ci95_low": -0.1052,
+            "ci95_high": 0.0444,
+            "prob_positive": 0.213,
+            "prob_direction": 0.787,
             "significant": false,
             "n_with_event": 12
           },
@@ -19582,7 +19477,7 @@
             "label": "Negative Bewertungen",
             "coef_pp_per_event_day": -0.0107,
             "ci95_low": -0.2918,
-            "ci95_high": 0.2705,
+            "ci95_high": 0.2704,
             "prob_positive": 0.47,
             "prob_direction": 0.53,
             "significant": false,
@@ -19590,11 +19485,11 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.0073,
-            "ci95_low": -0.0997,
-            "ci95_high": 0.1143,
-            "prob_positive": 0.553,
-            "prob_direction": 0.553,
+            "coef_pp_per_event_day": 0.0072,
+            "ci95_low": -0.0998,
+            "ci95_high": 0.1141,
+            "prob_positive": 0.552,
+            "prob_direction": 0.552,
             "significant": false,
             "n_with_event": 58
           },
@@ -20197,9 +20092,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.5541,
-            "ci95_low": 0.5541,
-            "ci95_high": 0.5541,
+            "coef_pp_per_event_day": 0.554,
+            "ci95_low": 0.554,
+            "ci95_high": 0.554,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -24321,9 +24216,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 0.3929,
-            "ci95_low": -0.2073,
-            "ci95_high": 0.9931,
+            "coef_pp_per_event_day": 0.3927,
+            "ci95_low": -0.2075,
+            "ci95_high": 0.9929,
             "prob_positive": 0.9,
             "prob_direction": 0.9,
             "significant": false,
@@ -24351,11 +24246,11 @@
           },
           "review_negative": {
             "label": "Negative Bewertungen",
-            "coef_pp_per_event_day": -0.0711,
-            "ci95_low": -0.3186,
+            "coef_pp_per_event_day": -0.0712,
+            "ci95_low": -0.3187,
             "ci95_high": 0.1763,
-            "prob_positive": 0.287,
-            "prob_direction": 0.713,
+            "prob_positive": 0.286,
+            "prob_direction": 0.714,
             "significant": false,
             "n_with_event": 13
           },
@@ -24363,7 +24258,7 @@
             "label": "Instagram-Posts",
             "coef_pp_per_event_day": 0.0168,
             "ci95_low": -0.0773,
-            "ci95_high": 0.1109,
+            "ci95_high": 0.1108,
             "prob_positive": 0.637,
             "prob_direction": 0.637,
             "significant": false,
@@ -24371,11 +24266,11 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0136,
-            "ci95_low": -0.0792,
-            "ci95_high": 0.052,
-            "prob_positive": 0.343,
-            "prob_direction": 0.657,
+            "coef_pp_per_event_day": -0.0135,
+            "ci95_low": -0.0791,
+            "ci95_high": 0.0521,
+            "prob_positive": 0.344,
+            "prob_direction": 0.656,
             "significant": false,
             "n_with_event": 12
           },
@@ -24402,7 +24297,7 @@
           "linkedin_post": {
             "label": "LinkedIn-Posts",
             "coef_pp_per_event_day": -0.0067,
-            "ci95_low": -0.1442,
+            "ci95_low": -0.1443,
             "ci95_high": 0.1309,
             "prob_positive": 0.462,
             "prob_direction": 0.538,
@@ -24815,9 +24710,9 @@
         "coefficients": {
           "media_negative": {
             "label": "Presse/News: Schaden/Leistung",
-            "coef_pp_per_event_day": 1.0078,
-            "ci95_low": 0.4959,
-            "ci95_high": 1.5196,
+            "coef_pp_per_event_day": 1.0074,
+            "ci95_low": 0.4956,
+            "ci95_high": 1.5193,
             "prob_positive": 1.0,
             "prob_direction": 1.0,
             "significant": false,
@@ -24837,7 +24732,7 @@
             "label": "Bewertungs-Trend (±)",
             "coef_pp_per_event_day": -0.0859,
             "ci95_low": -0.2326,
-            "ci95_high": 0.0608,
+            "ci95_high": 0.0607,
             "prob_positive": 0.125,
             "prob_direction": 0.875,
             "significant": false,
@@ -24846,8 +24741,8 @@
           "review_negative": {
             "label": "Negative Bewertungen",
             "coef_pp_per_event_day": 0.0447,
-            "ci95_low": -0.1659,
-            "ci95_high": 0.2554,
+            "ci95_low": -0.166,
+            "ci95_high": 0.2553,
             "prob_positive": 0.661,
             "prob_direction": 0.661,
             "significant": false,
@@ -24855,11 +24750,11 @@
           },
           "review_positive": {
             "label": "Positive Bewertungen",
-            "coef_pp_per_event_day": -0.0264,
-            "ci95_low": -0.0822,
-            "ci95_high": 0.0295,
-            "prob_positive": 0.177,
-            "prob_direction": 0.823,
+            "coef_pp_per_event_day": -0.0262,
+            "ci95_low": -0.0821,
+            "ci95_high": 0.0296,
+            "prob_positive": 0.179,
+            "prob_direction": 0.821,
             "significant": false,
             "n_with_event": 12
           },
@@ -24885,18 +24780,18 @@
           },
           "instagram_post": {
             "label": "Instagram-Posts",
-            "coef_pp_per_event_day": 0.003,
-            "ci95_low": -0.0771,
-            "ci95_high": 0.0831,
-            "prob_positive": 0.529,
-            "prob_direction": 0.529,
+            "coef_pp_per_event_day": 0.0029,
+            "ci95_low": -0.0772,
+            "ci95_high": 0.083,
+            "prob_positive": 0.528,
+            "prob_direction": 0.528,
             "significant": false,
             "n_with_event": 58
           },
           "page_change": {
             "label": "Seitenaenderungen (Wettbewerb)",
             "coef_pp_per_event_day": -0.0014,
-            "ci95_low": -0.0051,
+            "ci95_low": -0.0052,
             "ci95_high": 0.0024,
             "prob_positive": 0.234,
             "prob_direction": 0.766,
@@ -24905,11 +24800,11 @@
           },
           "linkedin_post": {
             "label": "LinkedIn-Posts",
-            "coef_pp_per_event_day": -0.0012,
+            "coef_pp_per_event_day": -0.0013,
             "ci95_low": -0.1184,
             "ci95_high": 0.1159,
-            "prob_positive": 0.492,
-            "prob_direction": 0.508,
+            "prob_positive": 0.491,
+            "prob_direction": 0.509,
             "significant": false,
             "n_with_event": 56
           }

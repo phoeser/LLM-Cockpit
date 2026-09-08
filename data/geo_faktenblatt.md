@@ -27,7 +27,7 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 08.09.2026 um 10:31 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-09-08.
+Dieses Faktenblatt wurde am 08.09.2026 um 15:40 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-09-08.
 
 Gemessen wird seit 68 Messtagen, von 2026-05-14 bis 2026-09-08. Daraus entstehen 700 Intervall-Beobachtungen ueber 26 Marken.
 
@@ -56,23 +56,23 @@ Drei Einschraenkungen gehoeren zu diesem Befund und muessen mitgenannt werden, w
 
 ## Wo ERGO verliert: die Themen im Einzelnen
 
-Ueber alle Themen und Marken hinweg gilt: je Prozentpunkt hoeherem Anteil an den zitierten Quellen liegt die Sichtbarkeit im Schnitt um 1,03 Prozentpunkte hoeher (Korrelation r 0,64 ueber 104 Marken-Thema-Zellen). Das ist ein beschreibender Zusammenhang aus dem Querschnitt, kein Versprechen fuer den Fall, dass ERGO seinen Zitatanteil erhoeht.
+Ueber alle Themen und Marken hinweg gilt: je Prozentpunkt hoeherem Anteil an den zitierten Quellen liegt die Sichtbarkeit im Schnitt um 1,71 Prozentpunkte hoeher (Korrelation r 0,79 ueber 104 Marken-Thema-Zellen). Das ist ein beschreibender Zusammenhang aus dem Querschnitt, kein Versprechen fuer den Fall, dass ERGO seinen Zitatanteil erhoeht.
 
 Je Thema, sortiert nach dem groessten Rueckstand zu Allianz:
 
-- Firmen-Rechtsschutzversicherung: ERGO 14,3 Prozent Sichtbarkeit, Allianz 49,2 Prozent — Rueckstand 34,9 Prozentpunkte. Zitatanteil ERGO 1,0 Prozent, Allianz 24,7 Prozent.
-- Berufsunfähigkeitsversicherung: ERGO 3,1 Prozent Sichtbarkeit, Allianz 34,9 Prozent — Rueckstand 31,8 Prozentpunkte. Zitatanteil ERGO 12,5 Prozent, Allianz 17,2 Prozent.
-- Kfz-Versicherung: ERGO 2,6 Prozent Sichtbarkeit, Allianz 31,9 Prozent — Rueckstand 29,3 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 15,8 Prozent.
-- Rechtsschutzversicherung: ERGO 11,1 Prozent Sichtbarkeit, Allianz 38,9 Prozent — Rueckstand 27,8 Prozentpunkte. Zitatanteil ERGO 1,5 Prozent, Allianz 20,7 Prozent.
-- Privathaftpflichtversicherung: ERGO 0,6 Prozent Sichtbarkeit, Allianz 26,2 Prozent — Rueckstand 25,6 Prozentpunkte. Zitatanteil ERGO 2,6 Prozent, Allianz 16,4 Prozent.
-- Betriebshaftpflichtversicherung: ERGO 25,3 Prozent Sichtbarkeit, Allianz 44,8 Prozent — Rueckstand 19,5 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 22,1 Prozent.
-- Hausratversicherung: ERGO 5,0 Prozent Sichtbarkeit, Allianz 22,5 Prozent — Rueckstand 17,5 Prozentpunkte. Zitatanteil ERGO 0,8 Prozent, Allianz 20,3 Prozent.
-- Unfallversicherung: ERGO 15,7 Prozent Sichtbarkeit, Allianz 29,8 Prozent — Rueckstand 14,2 Prozentpunkte. Zitatanteil ERGO 5,8 Prozent, Allianz 18,1 Prozent.
-- Risikolebensversicherung: ERGO 16,6 Prozent Sichtbarkeit, Allianz 25,1 Prozent — Rueckstand 8,6 Prozentpunkte. Zitatanteil ERGO 13,6 Prozent, Allianz 17,9 Prozent.
-- Sterbegeldversicherung: ERGO 27,3 Prozent Sichtbarkeit, Allianz 33,5 Prozent — Rueckstand 6,2 Prozentpunkte. Zitatanteil ERGO 5,5 Prozent, Allianz 21,1 Prozent.
-- Krankenhauszusatzversicherung: ERGO 13,8 Prozent Sichtbarkeit, Allianz 14,8 Prozent — Rueckstand 1,0 Prozentpunkte. Zitatanteil ERGO 0,7 Prozent, Allianz 18,2 Prozent.
-- Reiseversicherung: ERGO 31,5 Prozent Sichtbarkeit, Allianz 32,4 Prozent — Rueckstand 0,9 Prozentpunkte. Zitatanteil ERGO 19,3 Prozent, Allianz 0,0 Prozent.
-- Zahnzusatzversicherung: ERGO 38,2 Prozent Sichtbarkeit, Allianz 36,8 Prozent — ERGO liegt 1,3 Prozentpunkte vorn. Zitatanteil ERGO 0,0 Prozent, Allianz 19,7 Prozent.
+- Firmen-Rechtsschutzversicherung: ERGO 13,3 Prozent Sichtbarkeit, Allianz 53,3 Prozent — Rueckstand 40,0 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 22,3 Prozent.
+- Berufsunfähigkeitsversicherung: ERGO 5,6 Prozent Sichtbarkeit, Allianz 40,8 Prozent — Rueckstand 35,2 Prozentpunkte. Zitatanteil ERGO 5,6 Prozent, Allianz 12,2 Prozent.
+- Betriebshaftpflichtversicherung: ERGO 16,9 Prozent Sichtbarkeit, Allianz 50,8 Prozent — Rueckstand 33,9 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 16,9 Prozent.
+- Kfz-Versicherung: ERGO 3,7 Prozent Sichtbarkeit, Allianz 34,3 Prozent — Rueckstand 30,6 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 13,9 Prozent.
+- Rechtsschutzversicherung: ERGO 12,9 Prozent Sichtbarkeit, Allianz 42,1 Prozent — Rueckstand 29,3 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 12,3 Prozent.
+- Risikolebensversicherung: ERGO 10,7 Prozent Sichtbarkeit, Allianz 35,1 Prozent — Rueckstand 24,4 Prozentpunkte. Zitatanteil ERGO 11,7 Prozent, Allianz 18,2 Prozent.
+- Unfallversicherung: ERGO 11,0 Prozent Sichtbarkeit, Allianz 34,6 Prozent — Rueckstand 23,5 Prozentpunkte. Zitatanteil ERGO 5,8 Prozent, Allianz 16,8 Prozent.
+- Privathaftpflichtversicherung: ERGO 4,2 Prozent Sichtbarkeit, Allianz 27,7 Prozent — Rueckstand 23,5 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 15,6 Prozent.
+- Hausratversicherung: ERGO 6,9 Prozent Sichtbarkeit, Allianz 26,0 Prozent — Rueckstand 19,2 Prozentpunkte. Zitatanteil ERGO 3,3 Prozent, Allianz 16,9 Prozent.
+- Zahnzusatzversicherung: ERGO 31,2 Prozent Sichtbarkeit, Allianz 37,2 Prozent — Rueckstand 6,0 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 16,4 Prozent.
+- Sterbegeldversicherung: ERGO 27,5 Prozent Sichtbarkeit, Allianz 31,0 Prozent — Rueckstand 3,5 Prozentpunkte. Zitatanteil ERGO 10,9 Prozent, Allianz 21,2 Prozent.
+- Reiseversicherung: ERGO 25,0 Prozent Sichtbarkeit, Allianz 27,1 Prozent — Rueckstand 2,1 Prozentpunkte. Zitatanteil ERGO 14,5 Prozent, Allianz 4,5 Prozent.
+- Krankenhauszusatzversicherung: ERGO 14,2 Prozent Sichtbarkeit, Allianz 15,7 Prozent — Rueckstand 1,5 Prozentpunkte. Zitatanteil ERGO 4,7 Prozent, Allianz 11,0 Prozent.
 
 Die Lesart dieser Tabelle: Ein grosser Rueckstand bei zugleich sehr kleinem eigenem Zitatanteil deutet auf eine Content- und Quellenluecke hin — dort wird ERGO in den Quellen, aus denen die Modelle schoepfen, schlicht nicht gefunden. Ein Rueckstand bei bereits ordentlichem Zitatanteil hat eher andere Ursachen.
 
@@ -108,14 +108,14 @@ Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -
 
 ## Was es in die Zitate schafft
 
-- ERGO: 43 von 1.159 getrackten Seiten sind in Zitaten aufgetaucht, also 3,71 Prozent. Das ist die eigene Marke.
-- Allianz: 70 von 894 getrackten Seiten sind in Zitaten aufgetaucht, also 7,83 Prozent.
-- ADAC: 8 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 1,24 Prozent.
-- LV 1871: 18 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 3,35 Prozent.
-- ARAG: 13 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,77 Prozent.
-- HDI: 1 von 288 getrackten Seiten sind in Zitaten aufgetaucht, also 0,35 Prozent.
-- Die Bayerische: 5 von 285 getrackten Seiten sind in Zitaten aufgetaucht, also 1,75 Prozent.
-- R+V: 1 von 240 getrackten Seiten sind in Zitaten aufgetaucht, also 0,42 Prozent.
+- ERGO: 65 von 1.159 getrackten Seiten sind in Zitaten aufgetaucht, also 5,61 Prozent. Das ist die eigene Marke.
+- Allianz: 132 von 895 getrackten Seiten sind in Zitaten aufgetaucht, also 14,75 Prozent.
+- ADAC: 20 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 3,09 Prozent.
+- LV 1871: 35 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 6,52 Prozent.
+- ARAG: 42 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 8,96 Prozent.
+- HDI: 3 von 288 getrackten Seiten sind in Zitaten aufgetaucht, also 1,04 Prozent.
+- Die Bayerische: 15 von 285 getrackten Seiten sind in Zitaten aufgetaucht, also 5,26 Prozent.
+- R+V: 15 von 240 getrackten Seiten sind in Zitaten aufgetaucht, also 6,25 Prozent.
 
 Drei Einschraenkungen zu diesen Quoten. Der Datenlieferant gibt nur die meistzitierten Seiten eines rollierenden Fensters heraus, der lange Schwanz selten zitierter Seiten fehlt — die Quoten sind deshalb Untergrenzen. Der Nenner ist die vom Crawl verfolgte Seitenauswahl je Marke, nicht die vollstaendige Website. Und dass eine Seite zitiert und eine Marke genannt wird, ist ein gemeinsames Auftreten, kein Nachweis, dass das eine das andere verursacht.
 
@@ -143,15 +143,15 @@ Stand der Presseauswertung: 2026-09-08.
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
 - ERGO: 4 Beitraege in den letzten 30 Tagen, 24 in 90 Tagen. Davon insgesamt 43 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-08. Haeufigste Themen: Allgemein (72), Digitalisierung & KI (30), Gesundheit & Pflege (18).
-- Allianz: 5 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-09-02. Haeufigste Themen: Allgemein (121), Digitalisierung & KI (19), Finanzen & Vorsorge (16).
-- AXA: 5 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 94 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-08. Haeufigste Themen: Allgemein (113), Finanzen & Vorsorge (26), Gesundheit & Pflege (19).
-- HUK-Coburg: 22 Beitraege in den letzten 30 Tagen, 35 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-02. Haeufigste Themen: Allgemein (108), KFZ & Mobilität (47), Digitalisierung & KI (15).
-- Generali: 3 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 98 eigene Mitteilungen und 85 externe Berichte. Juengster Beitrag 2026-08-31. Haeufigste Themen: Allgemein (119), Finanzen & Vorsorge (20), Digitalisierung & KI (14).
-- Signal Iduna: 7 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (116), Digitalisierung & KI (24), Finanzen & Vorsorge (16).
-- R+V: 8 Beitraege in den letzten 30 Tagen, 22 in 90 Tagen. Davon insgesamt 98 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (129), Finanzen & Vorsorge (27), Unternehmen & Strategie (19).
-- DEVK: 4 Beitraege in den letzten 30 Tagen, 12 in 90 Tagen. Davon insgesamt 6 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-24. Haeufigste Themen: Allgemein (67), Digitalisierung & KI (12), KFZ & Mobilität (9).
-- Hannoversche: 0 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 71 externe Berichte. Juengster Beitrag 2026-07-21. Haeufigste Themen: Allgemein (89), Finanzen & Vorsorge (40), Digitalisierung & KI (12).
-- Cosmos Direkt: 2 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 99 eigene Mitteilungen und 51 externe Berichte. Juengster Beitrag 2026-09-01. Haeufigste Themen: Allgemein (100), KFZ & Mobilität (20), Finanzen & Vorsorge (15).
+- Allianz: 5 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-09-02. Haeufigste Themen: Allgemein (122), Digitalisierung & KI (20), Finanzen & Vorsorge (17).
+- AXA: 4 Beitraege in den letzten 30 Tagen, 8 in 90 Tagen. Davon insgesamt 93 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-08. Haeufigste Themen: Allgemein (112), Finanzen & Vorsorge (26), Gesundheit & Pflege (19).
+- HUK-Coburg: 21 Beitraege in den letzten 30 Tagen, 35 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-02. Haeufigste Themen: Allgemein (109), KFZ & Mobilität (47), Digitalisierung & KI (15).
+- Generali: 3 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 98 eigene Mitteilungen und 87 externe Berichte. Juengster Beitrag 2026-08-31. Haeufigste Themen: Allgemein (118), Finanzen & Vorsorge (22), Digitalisierung & KI (14).
+- Signal Iduna: 7 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (115), Digitalisierung & KI (25), Finanzen & Vorsorge (15).
+- R+V: 8 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 98 eigene Mitteilungen und 14 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (83), Finanzen & Vorsorge (6), Gesundheit & Pflege (5).
+- DEVK: 4 Beitraege in den letzten 30 Tagen, 12 in 90 Tagen. Davon insgesamt 7 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-08-24. Haeufigste Themen: Allgemein (68), Digitalisierung & KI (11), KFZ & Mobilität (9).
+- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 70 externe Berichte. Juengster Beitrag 2026-09-06. Haeufigste Themen: Allgemein (89), Finanzen & Vorsorge (40), Digitalisierung & KI (12).
+- Cosmos Direkt: 2 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 99 eigene Mitteilungen und 51 externe Berichte. Juengster Beitrag 2026-09-01. Haeufigste Themen: Allgemein (100), KFZ & Mobilität (22), Finanzen & Vorsorge (13).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 
@@ -165,7 +165,7 @@ Stimmungsbild aus den erfassten Kundenbewertungen, in Prozent der Bewertungen je
 - Generali: 51 Prozent positiv, 22 Prozent neutral, 27 Prozent kritisch.
 - Signal Iduna: 56 Prozent positiv, 20 Prozent neutral, 24 Prozent kritisch.
 - R+V: 41 Prozent positiv, 27 Prozent neutral, 32 Prozent kritisch.
-- DEVK: 71 Prozent positiv, 13 Prozent neutral, 16 Prozent kritisch.
+- DEVK: 61 Prozent positiv, 17 Prozent neutral, 21 Prozent kritisch.
 - Hannoversche: 69 Prozent positiv, 14 Prozent neutral, 17 Prozent kritisch.
 - Cosmos Direkt: 61 Prozent positiv, 18 Prozent neutral, 22 Prozent kritisch.
 

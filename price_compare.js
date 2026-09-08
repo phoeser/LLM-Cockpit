@@ -290,7 +290,7 @@
       '<h3 style="font-size:16px;font-weight:600;margin:0">'+pname+' <span style="font-size:12px;font-weight:500;color:#6b7280">— Referenzkunde '+
         (data.profiles.filter(function(p){return p.key===profile;})[0]||{label:"50 Jahre"}).label+'</span></h3>'+
       params+
-      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'+
+      '<style>.pcScrollTab thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 #e5e7eb}</style><div style="overflow:auto;max-height:560px;border:1px solid #eef0f3;border-radius:8px"><table class="pcScrollTab" style="width:100%;border-collapse:collapse;font-size:12.5px">'+
         '<thead><tr style="text-align:left;color:#6b7280;font-size:11px">'+
           '<th style="padding:6px 8px">Anbieter</th><th style="padding:6px 8px">Preis / Monat</th>'+
           '<th style="padding:6px 8px">Check24-Tarifnote</th><th style="padding:6px 8px">Kernmerkmale</th></tr></thead>'+

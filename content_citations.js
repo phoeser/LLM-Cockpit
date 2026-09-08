@@ -214,7 +214,7 @@
     rows.sort(function (a, b) {
       return (b.peec_cit || 0) - (a.peec_cit || 0) || (b.own_cit_perplexity || 0) - (a.own_cit_perplexity || 0);
     });
-    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+    html += '<style>.ccScrollTab thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 #e5e7eb}</style><div style="overflow:auto;max-height:520px;border:1px solid #eef0f3;border-radius:8px"><table class="ccScrollTab" style="width:100%;border-collapse:collapse;font-size:11.5px">' +
       '<thead><tr style="text-align:left;color:#6b7280">' +
       '<th style="padding:5px 6px">Seite</th>' +
       '<th style="padding:5px 6px">Seitentyp</th>' +
@@ -324,7 +324,7 @@
       num(pqTop.artikel_mit_echter_url) + " von " + num(pqTop.artikel_gesamt) + " Artikeln, " +
       (pqTop.aufloesungsquote_pct != null ? pqTop.aufloesungsquote_pct + "&nbsp;%" : "–") +
       "), der Abgleich läuft damit auch artikelgenau.</div>";
-    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+    html += '<style>.ccScrollTab thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 #e5e7eb}</style><div style="overflow:auto;max-height:520px;border:1px solid #eef0f3;border-radius:8px"><table class="ccScrollTab" style="width:100%;border-collapse:collapse;font-size:11.5px">' +
       '<thead><tr style="text-align:left;color:#6b7280">' +
       '<th style="padding:5px 6px">Redaktionelle Domain</th>' +
       '<th style="padding:5px 6px;text-align:right">Zitate</th>' +
@@ -354,7 +354,7 @@
         'border-radius:8px;padding:8px 10px">Kein einziger Presseartikel taucht in den zitierten ' +
         "Quellen auf. Wirkung entsteht über die Domain, nicht über die einzelne Meldung.</div>";
     } else {
-      html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+      html += '<style>.ccScrollTab thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 #e5e7eb}</style><div style="overflow:auto;max-height:520px;border:1px solid #eef0f3;border-radius:8px"><table class="ccScrollTab" style="width:100%;border-collapse:collapse;font-size:11.5px">' +
         '<thead><tr style="text-align:left;color:#6b7280">' +
         '<th style="padding:5px 6px">Artikel</th>' +
         '<th style="padding:5px 6px">Domain</th>' +
@@ -430,7 +430,7 @@
     html += '<div style="font-size:11px;color:#6b7280;margin-bottom:6px">Externe Quellen aus der Peec-Auswahl, ' +
       "in deren KI-Antworten ERGO erwähnt wird — das sind die Seiten, aus denen die Modelle ihr ERGO-Bild beziehen. " +
       "Sortiert nach Zitaten im rollierenden 30-Tage-Fenster.</div>";
-    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+    html += '<style>.ccScrollTab thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 #e5e7eb}</style><div style="overflow:auto;max-height:520px;border:1px solid #eef0f3;border-radius:8px"><table class="ccScrollTab" style="width:100%;border-collapse:collapse;font-size:11.5px">' +
       '<thead><tr style="text-align:left;color:#6b7280">' +
       '<th style="padding:5px 6px">Seite</th>' +
       '<th style="padding:5px 6px">Typ</th>' +

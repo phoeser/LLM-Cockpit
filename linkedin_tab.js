@@ -325,7 +325,7 @@
 
     // Neueste Posts + Archiv
     var sortiert=POSTS.slice().sort(function(a,b){ return (tagVon(b)||"").localeCompare(tagVon(a)||""); });
-    h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-2">Neueste Posts</h3>';
+    h+='<div class="bg-white rounded-xl p-5 shadow mb-6"><h3 class="text-lg font-bold text-ergo-dark mb-2">Neueste Posts</h3><div style="max-height:520px;overflow-y:auto">';
     sortiert.slice(0,15).forEach(function(p){
       h+='<div class="border-b py-2"><div class="flex items-center gap-2 flex-wrap">'
         +'<span class="px-2 py-0.5 rounded-full text-xs font-semibold text-white" style="background:'+(BM[p.brand]||'#94a3b8')+'">'+esc(p.brand)+'</span>'
@@ -335,7 +335,7 @@
         +(p.snippet?('<div class="text-xs text-gray-500 mt-0.5">'+esc(p.snippet)+'</div>'):'')
         +'</div>';
     });
-    h+='</div>';
+    h+='</div></div>';
 
     // ---- Was wirkt? Engagement je Post-Typ ----
     var jeTyp={};

@@ -497,7 +497,7 @@
   <div class="bg-white rounded-xl p-6 shadow mb-6">
     <h3 class="text-lg font-bold text-ergo-dark mb-3">Pro-Produkt-Sicht</h3>
     <p class="text-xs text-gray-500 mb-4">Wie ERGO und Wettbewerber bei den 11 getesteten Produkten in ChatGPT, Gemini und Perplexity abschneiden</p>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4" id="geoProductCards"></div>
+    <div style="max-height:720px;overflow-y:auto;padding-right:4px"><div class="grid grid-cols-1 lg:grid-cols-3 gap-4" id="geoProductCards"></div></div>
   </div>
 
   <div class="bg-white rounded-xl p-6 shadow mb-6">
@@ -702,10 +702,10 @@
       <button onclick="switchArticleMode('all')" id="pressModeBtnAll" class="px-4 py-1.5 text-sm font-semibold rounded-t border-b-2 border-ergo-red text-ergo-red">Alle Artikel</button>
       <button onclick="switchArticleMode('brand')" id="pressModeBtnBrand" class="px-4 py-1.5 text-sm font-semibold rounded-t border-b-2 border-transparent text-gray-500 hover:text-ergo-red">Nach Versicherer</button>
     </div>
-    <div id="pressArticleAllList" class="space-y-2"></div>
+    <div id="pressArticleAllList" class="space-y-2" style="max-height:560px;overflow-y:auto;padding-right:4px"></div>
     <div id="pressArticleBrandSection" class="hidden">
       <div class="flex flex-wrap gap-2 mb-4" id="pressArticleBrandFilter"></div>
-      <div id="pressArticleList" class="space-y-2"></div>
+      <div id="pressArticleList" class="space-y-2" style="max-height:560px;overflow-y:auto;padding-right:4px"></div>
     </div>
   </div>
 
@@ -6446,21 +6446,33 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var host=document.getElementById('korrErgebnis'); if(!host) return;
     if(!ci){ host.innerHTML='<div class="text-sm text-gray-400">Korrelationsdaten (data/correlation_impact.json) nicht geladen — es werden bewusst keine Ersatzwerte gezeigt.</div>'; return; }
     var h='';
-    /* 22.08.2026 Reihenfolge geaendert: Die Kernaussage steckt jetzt IN der Tafel
-       (kAntwort), und die Hebel-Rechnung steht nicht mehr vor den Befunden, sondern
-       hinter ihnen - direkt vor Abschnitt 6, der denselben Abstand zerlegt. */
+    /* 08.09.2026 Klartext-Umbau: Sichtbar sind nur noch die Antwort-Tafel und
+       die Hebel-Rechnung. Die fuenf Analyse-Abschnitte (Struktur, Ereignisse,
+       Zitate, Presse, Messguete) stehen vollstaendig und unveraendert in
+       benannten Aufklappern darunter - nichts geloescht, nur eingeklappt.
+       Diagramme in zugeklappten Abschnitten werden beim Oeffnen nachgezeichnet
+       (toggle-Listener nach host.innerHTML). */
     try { h+=kAntwort(ci); } catch(e){ console.warn('kAntwort:', e.message); }
-    try { h+=kBlock1(ci); } catch(e){ console.warn('kBlock1:', e.message); }
-    try { h+=kBlock2(ci, fanCsv); } catch(e){ console.warn('kBlock2:', e.message); }
-    try { h+=kBlock3(ci, cc); } catch(e){ console.warn('kBlock3:', e.message); }
-    try { h+=kPresse(ci); } catch(e){ console.warn('kPresse:', e.message); }
-    try { h+=kBlock4(ci); } catch(e){ console.warn('kBlock4:', e.message); }
     try { h+=kHebel(ci); } catch(e){ console.warn('kHebel:', e.message); }
+    var _teile=[];
+    function _teil(t,fn,args){ try{ var s=fn.apply(null,args); if(s) _teile.push([t,s]); }catch(e){ console.warn(t+':', e.message); } }
+    _teil('Strukturelle Treiber — was die Sichtbarkeit erklärt', kBlock1, [ci]);
+    _teil('Einzel-Ereignisse — Wirkung im Detail (inkl. 90-%-Sicht)', kBlock2, [ci, fanCsv]);
+    _teil('Der Weg in die Zitate', kBlock3, [ci, cc]);
+    _teil('Presse-Wirkung', kPresse, [ci]);
+    _teil('Messgüte & Nachweisgrenzen', kBlock4, [ci]);
+    _teile.forEach(function(p){
+      h+='<details class="bg-white rounded-xl shadow mb-3" data-korrteil><summary class="px-4 py-3 text-sm font-bold text-ergo-dark hover:text-ergo-red">'+p[0]+'</summary><div class="px-4 pb-4">'+p[1]+'</div></details>';
+    });
     try { h+=kGlossar(); } catch(e){ console.warn('kGlossar:', e.message); }
     h+='<div class="text-xs text-gray-400 mb-4">Stand der Auswertung: '+_esc(String(ci.generated_at||'').slice(0,10))+' · Quelle: data/correlation_impact.json'+(cc&&cc.meta?(' · data/content_citations.json ('+_esc(String(cc.meta.erzeugt_am||'').slice(0,10))+')'):'')+'</div>';
     host.innerHTML=h;
     // Interaktive Bausteine (Scatter, Quellen-Vergleich) aus korrelation_upgrade.js nachziehen
     try { if(typeof window.__korrKuMount==='function') window.__korrKuMount(); } catch(e){ console.warn('korrKuMount:', e.message); }
+    // Diagramme im gerade geoeffneten Aufklapper nachzeichnen (idempotent)
+    host.querySelectorAll('details[data-korrteil]').forEach(function(dt){
+      dt.addEventListener('toggle', function(){ if(dt.open){ try { if(typeof window.__korrKuMount==='function') window.__korrKuMount(); } catch(e){} } });
+    });
   };
 
   window.__korrDetails=function(){

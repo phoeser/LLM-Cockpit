@@ -186,8 +186,8 @@ im Reiter „LLM-Sichtbarkeit" zwischen beiden Quellen.
 
 | Workflow | Zweck | Takt (UTC) |
 |---|---|---|
-| `nightly-update.yml` | Alle Sammler, Auswertung, Dashboard-Neubau | täglich 05:30 (läuft real ~06:29, 30–45 min) |
-| `peec-daily-sources.yml` | Peec-Quellen und Snapshot | täglich 04:00 |
+| `nightly-update.yml` | Alle Sammler, Auswertung, Dashboard-Neubau | geplant 05:30, **fertig real 10:00–11:50** |
+| `peec-daily-sources.yml` | Peec-Quellen und Snapshot | geplant 04:00, fertig real 08:30–09:45 |
 | `pipeline-waechter.yml` | Frischeprüfung, füllt `pipeline_health.json` | täglich 09:00 |
 | `weekly-prices.yml` | Check24-Preise und Bewertungen | montags 05:45 |
 | `berater-reviews.yml` | Google Reviews der Berater | sonntags 05:00 |
@@ -205,7 +205,7 @@ im Reiter „LLM-Sichtbarkeit" zwischen beiden Quellen.
 | `backfill.yml`, `revert-backfill.yml` | Historische Nachträge | manuell |
 | `search-ab-test.yml` | Websuche-A/B-Experiment | manuell |
 
-### 5.3 Drei Regeln zur Taktung, die immer wieder Ärger machen
+### 5.3 Vier Regeln zur Taktung, die immer wieder Ärger machen
 
 1. **Der Messlauf ist wöchentlich, nicht täglich.** Entscheidung Pauls vom
    18.07.2026 aus Kostengründen. Das Dashboard aktualisiert sich täglich —
@@ -216,6 +216,11 @@ im Reiter „LLM-Sichtbarkeit" zwischen beiden Quellen.
 3. **Der Deploy löst nicht automatisch aus.** Bot-Commits triggern ihn nicht.
    Nach jedem Patch muss „Dashboard ausliefern" von Hand gestartet werden,
    sonst sieht niemand die Änderung.
+4. **Die geplanten Zeiten sind nicht die tatsächlichen.** GitHub stellt
+   Cron-Läufe hinten an; der Nightly ist für 05:30 UTC eingetragen und wird
+   real zwischen 10:00 und 11:50 UTC fertig (gemessen über die Commit-Zeiten
+   09.–14.09.2026). Wer den Tagesstand automatisiert prüft, muss die Prüfung
+   **nach Mittag** legen — sonst misst er den Vortag.
 
 ---
 
@@ -639,8 +644,8 @@ Die wichtigsten Weichenstellungen, jeweils mit dem Grund:
 
 | Punkt | Stand 13.09.2026 | Nächster Schritt |
 |---|---|---|
-| **Executive-Summary-Fix** | 11.09. gepusht, lokal mit Fake-Client getestet; echter API-Aufruf steht aus | Verifikation am Montagslauf (Nacht zum 14.09.), Prüfung terminiert für 15.09. |
-| **6. Messtag im Preis-Modell** | Wochenlauf in der Nacht zum 14.09. | Hält der grounded-Kanal unter q = 0,05? |
+| **Executive-Summary-Fix** | 11.09. gepusht, lokal mit Fake-Client getestet; echter API-Aufruf steht aus | Verifikation am Montagslauf (Nacht zum 15.09.), Prüfung terminiert für Di 15.09. mittags |
+| **6. Messtag im Preis-Modell** | Wochenlauf in der Nacht zum 15.09. (Mo 23:10 UTC) | Hält der grounded-Kanal unter q = 0,05? |
 | **Produktlinien-Welle 1** | vier „Was kostet …"-Seiten empfohlen | liegt beim Content-Team |
 | **Presse-Ersatzmetrik** | Befund dokumentiert (7,1 % Deckung), Umsetzung offen | Externe Ereignisse aus den Zitat-Snapshots ableiten statt aus dem Presse-Feed |
 | **Wettbewerber-Erweiterung** | offene Entscheidung seit dem Rückbau am 13.08. | Bewusst entscheiden, ob 7 oder mehr Marken gecrawlt werden — jede Änderung ist ein Strukturbruch |

@@ -202,7 +202,7 @@ behält die CDN-Links — sonst deployt man eine kaputte Seite.
 
 | Punkt | Stand | Nächster Schritt |
 |---|---|---|
-| **Executive-Summary-Fix** | 11.09. gepusht (Commit `526cb679` im GEO-Repo), lokal mit Fake-Client getestet, echter API-Call steht aus | Verifikation ist für Di 15.09. 06:30 UTC terminiert — prüft den Montagslauf |
+| **Executive-Summary-Fix** | 11.09. gepusht (Commit `526cb679` im GEO-Repo), lokal mit Fake-Client getestet, echter API-Call steht aus | Verifikation ist für Di 15.09. 12:30 UTC terminiert — nach dem Nightly, der erst gegen Mittag fertig wird |
 | **6. Messtag Preis-Modell** | Wochenlauf Nacht zum 15.09. (Mo 23:10 UTC) | danach `n_days` = 6; hält der Grounded-Kanal unter q = 0,05? |
 | **Produktlinien-Analyse** | fertig, als Artefakt „Wer beantwortet die Preisfrage?" veröffentlicht | Welle 1 (vier „Was kostet …"-Seiten) liegt beim Content-Team |
 | **WhatsApp-GEOrg** | blockiert | wartet auf Meta-Business-Zugang, den Paul derzeit nicht bekommt |

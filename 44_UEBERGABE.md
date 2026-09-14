@@ -21,7 +21,7 @@ ausgefallene Engine, tägliche Läufe seit dem 01.09. lückenlos. Die zuletzt
 offene Baustelle — der Perplexity-Ausfall Anfang September — ist behoben und
 verifiziert. Die einzige noch unbestätigte Änderung ist der Fix an der
 Executive Summary vom 11.09.; sein Beweis kommt mit dem Wochenlauf in der
-Nacht zum 14.09.
+Nacht zum 15.09. (Montag 23:10 UTC), ausgewertet im Nightly am Dienstagvormittag.
 
 ---
 
@@ -119,8 +119,12 @@ Seitenänderung …) ist weiterhin **keiner** unter p = 0,05 — konsistent seit
 - **GEO-Crawl:** wöchentlich, Montag 23:10 UTC (`analyze.yml`). Entscheidung
   Pauls vom 18.07. aus Kostengründen. Ein Zusatzlauf am selben Kalendertag
   bringt **keinen** neuen Messtag — Messtage zählen je Kalendertag.
-- **Nightly** (`nightly-update.yml`): täglich ~06:29 UTC, Laufzeit 30–45 min.
-- **Peec Quellen täglich** (`peec-daily-sources.yml`): täglich ~04:46 UTC.
+- **Nightly** (`nightly-update.yml`): geplant 05:30 UTC, **fertig aber erst
+  gegen 10:00–11:50 UTC** — GitHub verzögert geplante Läufe erheblich
+  (gemessen 09.–14.09.). Wer den Tagesstand prüft, darf das nicht vor Mittag
+  tun.
+- **Peec Quellen täglich** (`peec-daily-sources.yml`): geplant 04:00 UTC,
+  fertig gegen 08:30–09:45 UTC.
 - **Deploy** (`dashboard-deploy.yml`): **nur manuell.** Bot-Commits aus
   apply-patch lösen ihn nicht aus — nach jedem Patch selbst anstoßen.
 
@@ -199,7 +203,7 @@ behält die CDN-Links — sonst deployt man eine kaputte Seite.
 | Punkt | Stand | Nächster Schritt |
 |---|---|---|
 | **Executive-Summary-Fix** | 11.09. gepusht (Commit `526cb679` im GEO-Repo), lokal mit Fake-Client getestet, echter API-Call steht aus | Verifikation ist für Di 15.09. 06:30 UTC terminiert — prüft den Montagslauf |
-| **6. Messtag Preis-Modell** | Wochenlauf Nacht zum 14.09. | danach `n_days` = 6; hält der Grounded-Kanal unter q = 0,05? |
+| **6. Messtag Preis-Modell** | Wochenlauf Nacht zum 15.09. (Mo 23:10 UTC) | danach `n_days` = 6; hält der Grounded-Kanal unter q = 0,05? |
 | **Produktlinien-Analyse** | fertig, als Artefakt „Wer beantwortet die Preisfrage?" veröffentlicht | Welle 1 (vier „Was kostet …"-Seiten) liegt beim Content-Team |
 | **WhatsApp-GEOrg** | blockiert | wartet auf Meta-Business-Zugang, den Paul derzeit nicht bekommt |
 | **Deploy-Seite Kosmetik** | HTTP 409 wird rot statt grün angezeigt | unkritisch, kein Termin |

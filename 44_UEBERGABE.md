@@ -1,6 +1,6 @@
 # 44 — Übergabe: Betriebsstand LLM-Cockpit
 
-**Stand 13.09.2026.** Diese Datei ist der **Betriebsstand** — sie sagt, wo das
+**Stand 15.09.2026.** Diese Datei ist der **Betriebsstand** — sie sagt, wo das
 System gerade steht, wie man es bedient und wo es beißt. Sie wiederholt die
 beiden anderen Dokumente nicht:
 
@@ -17,52 +17,55 @@ Wer übernimmt, liest 45, dann diese Datei, und 43 nur bei Bedarf.
 ## 1 · Status in drei Sätzen
 
 Das System läuft störungsfrei: alle sechs Datenquellen frisch, keine
-ausgefallene Engine, tägliche Läufe seit dem 01.09. lückenlos. Die zuletzt
-offene Baustelle — der Perplexity-Ausfall Anfang September — ist behoben und
-verifiziert. Die einzige noch unbestätigte Änderung ist der Fix an der
-Executive Summary vom 11.09.; sein Beweis kommt mit dem Wochenlauf in der
-Nacht zum 15.09. (Montag 23:10 UTC), ausgewertet im Nightly am Dienstagvormittag.
+ausgefallene Engine, tägliche Läufe seit dem 01.09. lückenlos. Der Wochenlauf
+`2026-09-15T01-24-13Z` ist grün durch (Score 100, alle drei Engines), und mit
+ihm sind die beiden letzten offenen Punkte erledigt: Der Executive-Summary-Fix
+vom 11.09. ist mit einem echten API-Aufruf bestätigt, und das Preis-Modell
+steht beim sechsten Messtag. **Derzeit keine offene Baustelle.**
 
 ---
 
 ## 2 · Zahlen, auf denen der aktuelle Stand steht
 
-Alle Werte aus dem Lauf `2026-09-08T13-14-40Z` (Qualität green, Score 100,
+Alle Werte aus dem Lauf `2026-09-15T01-24-13Z` (Qualität green, Score 100,
 alle drei Engines mit frischen Daten) und aus `data/correlation_impact.json`
-vom 13.09.
+vom 15.09.
 
 ### Sichtbarkeit
 
 | Marke | Share of Voice | Zitatrate |
 |---|---:|---:|
-| Allianz | 33,76 % | 46,4 % |
-| HUK-Coburg | 22,64 % | 32,1 % |
-| **ERGO** | **12,06 %** | **15,2 %** |
-| AXA | 11,99 % | 17,2 % |
-| Signal Iduna | 7,60 % | 13,3 % |
+| Allianz | 33,80 % | 46,7 % |
+| HUK-Coburg | 23,94 % | 30,9 % |
+| **ERGO** | **12,49 %** | **15,6 %** |
+| AXA | 11,09 % | 17,5 % |
+| Signal Iduna | 7,19 % | 14,5 % |
 
-**Wichtig für die Lesart:** ERGO steht formal auf Platz 3 vor AXA — der
-Abstand sind 4 Nennungen (657 zu 653). Das ist Tagesrauschen, kein Überholen,
-und zustande kommt es durch einen AXA-Rückgang, nicht durch ERGO-Zuwachs. So
-und nicht anders weitergeben.
+**Wichtig für die Lesart:** ERGO steht auf Platz 3 vor AXA. Am 08.09. waren das
+4 Nennungen Abstand (657 zu 653) und damit reines Tagesrauschen; am 15.09. sind
+es 77 (688 zu 611). Der Abstand ist also nicht mehr zufällig klein — aber er
+steht auf **zwei** Messtagen, und ERGO hat dabei um 0,43 Punkte zugelegt,
+während AXA um 0,90 verloren hat. Als „ERGO wächst" weiterzugeben wäre falsch.
 
 ### Preis-Modell (`price_level_pooled`)
 
-Fünf saubere Messtage seit dem Strukturbruch vom 19.08. (23.08. bis 08.09.):
+Sechs saubere Messtage seit dem Strukturbruch vom 19.08. (23.08. bis 15.09.):
 
-- **Marktmuster, roh:** −8,63 SoV-Punkte je Preiseinheit, Streuung 0,68, an
-  allen fünf Tagen gleiches Vorzeichen. Stabil, aber ohne Kontrollen — kein
+- **Marktmuster, roh:** −7,86 SoV-Punkte je Preiseinheit, Streuung 1,05, an
+  allen sechs Tagen gleiches Vorzeichen. Stabil, aber ohne Kontrollen — kein
   Kausalnachweis.
-- **Eigener Effekt, alle Engines:** −0,75 pp je 1 SD, p = 0,2205, q = 0,3307 —
-  trägt nicht.
-- **Eigener Effekt, Kanal mit Web-Suche:** −1,49 pp je 1 SD, p = 0,0154,
-  **q = 0,0462** — seit dem 5. Messtag (08.09.) erstmals auch nach
-  FDR-Korrektur gesichert.
+- **Eigener Effekt, alle Engines:** −0,82 pp je 1 SD, p = 0,1697, q = 0,2545 —
+  trägt weiterhin nicht.
+- **Eigener Effekt, Kanal mit Web-Suche:** −1,53 pp je 1 SD, p = 0,0107,
+  **q = 0,0321** — zweiter Messtag in Folge unter der FDR-Schwelle, und der
+  Wert ist leicht fester geworden (08.09.: q = 0,0462).
 
-Das Dashboard formuliert diesen Zwischenzustand seit dem Patch vom 08.09.
-selbst: ein gesicherter Einzelkanal, keine Bestätigung im Mittel, „ein Kanal
-allein ist ein starker Hinweis, kein Beweis". Kippt einer der Werte, kippt der
-Satz mit — er ist aus der JSON abgeleitet, nicht getextet.
+**Die Lesart ändert sich dadurch nicht.** Ein Kanal hält, der Durchschnitt über
+alle Engines nicht. Zwei Treffer in Folge sind ein besseres Indiz als einer,
+aber kein Beweis. Genau so formuliert es das Dashboard seit dem Patch vom
+08.09. auch selbst: ein gesicherter Einzelkanal, keine Bestätigung im Mittel,
+„ein Kanal allein ist ein starker Hinweis, kein Beweis". Kippt einer der Werte,
+kippt der Satz mit — er ist aus der JSON abgeleitet, nicht getextet.
 
 ### Der Hebel, der trägt
 
@@ -71,16 +74,18 @@ gehört bei jeder Weitergabe dazu:
 
 | Kanal | Effekt je 1 SD | p | q (FDR) |
 |---|---:|---:|---:|
-| ungrounded (ohne Websuche), within | +6,22 pp | 0,0085 | **0,0319** |
-| ungrounded, between | +6,76 pp | 0,0046 | **0,0230** |
-| combined, within | +2,96 pp | 0,0554 | 0,0871 |
-| grounded (mit Websuche), within | +1,75 pp | 0,0398 | 0,0746 |
+| ungrounded (ohne Websuche), within | +6,24 pp | 0,0083 | **0,0311** |
+| grounded (mit Websuche), within | +1,80 pp | 0,0405 | 0,0829 |
 
 Der gerne zitierte Wert „rund +6 pp je Standardabweichung" ist der
 **ungrounded**-Kanal. Im grounded-Kanal ist derselbe Treiber deutlich kleiner
-und nach FDR-Korrektur **nicht** gesichert. (Prüfung 13.09. an
-`level_model.full_joint`; eine frühere Fassung dieser Datei nannte die Zahl
-ohne Kanal.)
+und nach FDR-Korrektur **nicht** gesichert. (Geprüft am 13.09. und erneut am
+15.09. an `level_model.full_joint`; eine frühere Fassung dieser Datei nannte
+die Zahl ohne Kanal.)
+
+Die Zerlegung des Abstands zur Allianz ist über die Woche praktisch unverändert
+geblieben: 18,81 pp gesamt, davon 15,40 Autorität (Quellpräsenz 4,37 +
+Markengröße 11,03), Preis 0,80, Rest 2,61.
 
 Bei den Ereignis-Treibern (Pressemitteilung, neue Seite, Bewertung,
 Seitenänderung …) ist weiterhin **keiner** unter p = 0,05 — konsistent seit der
@@ -102,6 +107,9 @@ Seitenänderung …) ist weiterhin **keiner** unter p = 0,05 — konsistent seit
 | 08.09. | Korrelations-Reiter auf Klartext: Antwort + Hebel sichtbar, fünf Analyse-Abschnitte in benannte Aufklapper | 9.400 → 4.300 px, nichts gelöscht |
 | 08.09. | Preis-Kernaussage um den FDR-gesicherten Einzelkanal erweitert | der 5. Messtag riss die Schwelle, der alte Text untertrieb den Befund |
 | 11.09. | **GEO-Repo:** Executive Summary nutzt den konfigurierten Auswerte-LLM statt des abgeschalteten Claude-Clients | siehe Abschnitt 6 |
+| 13.09. | Projektdokumentation (45) angelegt, README auf die Doku-Reihe umgestellt | es gab keinen Einstieg ins Projekt, nur technische Tiefe |
+| 14.09. | Laufzeiten in der Doku korrigiert: geplante ≠ tatsächliche Zeiten, Nightly wird erst gegen Mittag fertig | die Selbstprüfung lag dadurch fünf Stunden zu früh |
+| 15.09. | Executive-Summary-Fix am echten Lauf bestätigt; 6. Messtag im Preis-Modell | siehe Abschnitte 1 und 2 |
 
 ---
 
@@ -202,8 +210,8 @@ behält die CDN-Links — sonst deployt man eine kaputte Seite.
 
 | Punkt | Stand | Nächster Schritt |
 |---|---|---|
-| **Executive-Summary-Fix** | 11.09. gepusht (Commit `526cb679` im GEO-Repo), lokal mit Fake-Client getestet, echter API-Call steht aus | Verifikation ist für Di 15.09. 12:30 UTC terminiert — nach dem Nightly, der erst gegen Mittag fertig wird |
-| **6. Messtag Preis-Modell** | Wochenlauf Nacht zum 15.09. (Mo 23:10 UTC) | danach `n_days` = 6; hält der Grounded-Kanal unter q = 0,05? |
+| **Executive-Summary-Fix** | ✅ **erledigt.** Am 15.09. im Lauf `2026-09-15T01-24-13Z` mit echtem API-Aufruf bestätigt; `why_analysis_meta.llm = chatgpt`, zehn Punkte Klartext statt Fehlermeldung | keiner — beim Lesen aber beachten: die Summary formuliert Einzel-Engine-Werte als Gesamtaussagen und benutzt „signifikant" umgangssprachlich |
+| **6. Messtag Preis-Modell** | ✅ **erledigt.** `n_days` = 6; grounded q = 0,0321, zweiter Treffer in Folge | 7. Messtag am 22.09. — hält der Kanal ein drittes Mal? |
 | **Produktlinien-Analyse** | fertig, als Artefakt „Wer beantwortet die Preisfrage?" veröffentlicht | Welle 1 (vier „Was kostet …"-Seiten) liegt beim Content-Team |
 | **WhatsApp-GEOrg** | blockiert | wartet auf Meta-Business-Zugang, den Paul derzeit nicht bekommt |
 | **Deploy-Seite Kosmetik** | HTTP 409 wird rot statt grün angezeigt | unkritisch, kein Termin |

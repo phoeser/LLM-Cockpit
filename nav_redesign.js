@@ -1,4 +1,36 @@
 /* ============================================================
+   21.09.2026 (Wunsch Paul): ERGO-Schriftzug im Kopfbereich entfernen.
+   Der "Logo" ist kein Bild, sondern ein roter Kasten mit dem Text ERGO
+   in dashboard_template.html. Das Template hat 13,8 MB und laesst sich
+   ueber den Konnektor nicht schreiben — deshalb hier zur Laufzeit,
+   wie bei den uebrigen Kopf-/Navigationsaenderungen auch.
+   Zuerst eine CSS-Regel (greift sofort, kein Aufblitzen), danach wird
+   der Knoten entfernt, sobald das DOM steht.
+   ============================================================ */
+(function(){
+  try{
+    if(document.getElementById("ergoLogoWegStyle")) return;
+    var st=document.createElement("style");
+    st.id="ergoLogoWegStyle";
+    st.textContent="header .bg-ergo-red{display:none!important}";
+    (document.head||document.documentElement).appendChild(st);
+  }catch(e){}
+  function weg(){
+    try{
+      var k=document.querySelectorAll("header .bg-ergo-red");
+      for(var i=0;i<k.length;i++){
+        // Sicherheitsnetz: nur den Schriftzug-Kasten, nichts anderes Rotes.
+        if((k[i].textContent||"").trim()==="ERGO" && k[i].parentNode){
+          k[i].parentNode.removeChild(k[i]);
+        }
+      }
+    }catch(e){}
+  }
+  if(document.readyState!=="loading") weg();
+  else document.addEventListener("DOMContentLoaded",weg);
+})();
+
+/* ============================================================
    ERGO LLM-Cockpit — Navigations-Redesign (15.07.2026)
    Runtime-Modul (kein Template-Edit noetig):
    1. Reiter-Umbenennung: LLM-Sichtbarkeit, Empfehlungen, Presse,

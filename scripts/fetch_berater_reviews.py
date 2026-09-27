@@ -118,7 +118,48 @@ def format_review(review):
 
 # ─── Main ─────────────────────────────────────────────────────────
 
+def nur_monatlich_ueberspringen():
+    """Kostenbremse (26.09.2026, Entscheidung Paul): monatlich statt woechentlich.
+
+    Die Berater-Bewertungen waren der groesste Einzelposten des Cockpits:
+    rund 3.400 Place-Details-Abfragen JEDE Woche (~14.700 im Monat). Sie
+    fliessen nicht in die Sichtbarkeitsauswertung ein - correlation_impact.py
+    schliesst die Quelle "Google (Berater)" ausdruecklich aus. Monatlich reicht.
+
+    Der Workflow laeuft weiter jeden Sonntag (Workflow-Dateien kann der
+    Konnektor nicht aendern). Die Bremse sitzt deshalb hier:
+      - geplanter Lauf am ERSTEN Sonntag des Monats (Tag 1-7): laeuft
+      - geplanter Lauf an den uebrigen Sonntagen: ueberspringt
+      - von Hand gestartet (workflow_dispatch): laeuft immer
+      - Sicherheitsnetz: Daten aelter als 35 Tage -> laeuft trotzdem
+        (sonst waeren sie nach einem ausgefallenen Monatslauf acht Wochen alt)
+    Erzwingen: BERATER_ERZWINGEN=1
+    """
+    from datetime import datetime, timezone
+    if os.environ.get("BERATER_ERZWINGEN") == "1":
+        return False
+    if os.environ.get("GITHUB_EVENT_NAME") != "schedule":
+        return False
+    jetzt = datetime.now(timezone.utc)
+    if jetzt.day <= 7:
+        return False
+    try:
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            stand = json.load(f).get("generated_at", "")
+        alter = (jetzt - datetime.fromisoformat(stand.replace("Z", "+00:00"))).days
+    except Exception:
+        return False  # kein lesbarer Stand -> lieber laufen
+    if alter > 35:
+        print(f"Sicherheitsnetz: Berater-Daten sind {alter} Tage alt - Lauf wird ausgefuehrt.")
+        return False
+    print(f"Kostenbremse: Berater-Bewertungen laufen nur am ersten Sonntag des Monats "
+          f"(heute Tag {jetzt.day}, Daten {alter} Tage alt). Uebersprungen.")
+    return True
+
+
 def main():
+    if nur_monatlich_ueberspringen():
+        return
     if not API_KEY:
         print("ERROR: GOOGLE_PLACES_API_KEY nicht gesetzt!")
         sys.exit(1)

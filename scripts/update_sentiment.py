@@ -1284,7 +1284,49 @@ def extract_review_topics(reviews, brand_key, brand_name="", days=14):
 
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
+def _nur_woechentlich_ueberspringen():
+    """Kostenbremse (26.09.2026, Entscheidung Paul): woechentlich statt taeglich.
+
+    Google Places und Gemini liefen hier fuer 27 Marken JEDEN Tag. Die
+    Sichtbarkeit wird aber nur woechentlich gemessen - taegliche Bewertungs-
+    Ereignisse bringen der Auswertung kaum etwas und kosten 30x im Monat.
+
+    Der woechentliche Lauf ist der Montags-Lauf von "Weekly Check24 Prices &
+    Reviews" (der ruft dieses Skript ohnehin im Wochenlauf auf). Der taegliche
+    Nightly ueberspringt deshalb, AUSSER:
+      - er wurde von Hand gestartet (workflow_dispatch), oder
+      - die letzte Auswertung (as_of) ist aelter als 7 Tage - Sicherheitsnetz,
+        falls der Montagslauf ausfiel. Der Pipeline-Waechter meldet erst ab 9.
+    Erzwingen: SENTIMENT_ERZWINGEN=1
+
+    ACHTUNG fuer die Auswertung: Ab diesem Tag entstehen review_change /
+    review_volume-Ereignisse woechentlich (kumuliert) statt taeglich. Das ist
+    ein Regimewechsel in der Ereigniszahl, kein Messbruch der Sichtbarkeit.
+    """
+    if os.environ.get("SENTIMENT_ERZWINGEN") == "1":
+        return False
+    if os.environ.get("GITHUB_EVENT_NAME") != "schedule":
+        return False
+    if "Nightly" not in os.environ.get("GITHUB_WORKFLOW", ""):
+        return False
+    try:
+        pfad = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "sentiment_dashboard.json")
+        with open(pfad, "r", encoding="utf-8") as f:
+            stand = json.load(f).get("as_of", "")
+        alter = (datetime.now(timezone.utc).date() - datetime.strptime(stand, "%Y-%m-%d").date()).days
+    except Exception:
+        return False  # kein lesbarer Stand -> lieber laufen
+    if alter > 7:
+        print("Sicherheitsnetz: Stimmungsdaten sind %d Tage alt - Lauf wird ausgefuehrt." % alter)
+        return False
+    print("Kostenbremse: Stimmungs-Auswertung laeuft woechentlich (Montag, Preis-Workflow). "
+          "Letzte Auswertung vor %d Tagen - Nightly ueberspringt." % alter)
+    return True
+
+
 def main():
+    if _nur_woechentlich_ueberspringen():
+        return
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     google_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
     if not google_key:

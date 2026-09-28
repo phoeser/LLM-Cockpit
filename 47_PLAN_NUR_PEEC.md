@@ -1,6 +1,6 @@
 # 47 — Plan: Sichtbarkeit nur noch über Peec (Option C)
 
-**Stand 27.09.2026 · Entwurf, nicht beschlossen.** Nichts davon ist umgesetzt.
+**Stand 28.09.2026 (Abschnitt 5 korrigiert) · Entwurf, nicht beschlossen.** Nichts davon ist umgesetzt.
 
 ## Kernaussage
 
@@ -68,16 +68,28 @@ nutzt keine bezahlten Dienste und kann **unabhängig weiterlaufen**.
 4. **Strukturbruch.** Der Wechsel ist der siebte dokumentierte Bruch; Vergleiche
    über das Datum hinweg nur mit Brücke.
 
-## 5 · Variante C-light (Empfehlung)
+## 5 · Variante C-light (Empfehlung, korrigiert 28.09.)
 
-Grounded ganz Peec überlassen, **nur GPT-4o mini ohne Websuche behalten** —
-den Kanal, den Peec nicht misst. Gemini und Perplexity im eigenen Crawl aus.
+**Korrektur:** Die erste Fassung schaltete Gemini **und** Perplexity im eigenen
+Crawl ab. Weil Peec Perplexity seit Juni nicht mehr misst, wäre Perplexity damit
+ganz verschwunden. Richtig ist: nur abschalten, was Peec doppelt misst.
 
-- spart die beiden Engines mit dem größten Verbrauch (Gemini hat die meisten
-  Ausgabetokens, Perplexity zusätzlich eine Gebühr je Anfrage)
-- behält die Zwei-Kanal-Logik und eine Teil-Gegenprobe (ChatGPT gegen Peec-ChatGPT)
-- SOHO-Themen bleiben im ungegroundeten Kanal erhalten
-- Umbau kleiner: Treibermodell grounded auf Peec, ungrounded wie bisher
+| Engine | Eigener Crawl | Peec | C-light |
+|---|---|---|---|
+| Gemini (grounded) | ja | ja | **aus** — Peec übernimmt |
+| GPT-4o mini ohne Websuche | ja | nein | **bleibt** |
+| Perplexity (grounded) | ja | nein (seit Juni) | **bleibt** |
+
+- spart die Engine mit dem größten Verbrauch (Gemini, 613.000 Ausgabetokens je Lauf)
+- behält die Zwei-Kanal-Logik, Perplexity und die SOHO-Themen
+- Teil-Gegenprobe bleibt: eigenes ChatGPT gegen Peec-ChatGPT; die
+  Gemini-Gegenprobe gibt es danach nur noch für die Zeit bis zur Umstellung
+- Umbau kleiner: grounded-Anteil im Treibermodell rechnet dann auf Perplexity
+  plus Peec-Gemini; Strukturbruch am Umstellungsdatum eintragen
+
+**Alternative:** Perplexity bei Peec wieder zubuchen und im eigenen Crawl
+abschalten. Lohnt nur, wenn der Peec-Aufpreis unter rund 10–14 $ im Monat
+liegt — das kostet Perplexity im eigenen Crawl.
 
 ## 6 · Entscheidung
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T11:01:23Z",
+  "generated_at": "2026-09-28T12:20:49Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -84,8 +84,8 @@
       "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors"
     },
     "presse_datierung": {
-      "umdatiert": 4605,
-      "bereits_gleich": 153,
+      "umdatiert": 4607,
+      "bereits_gleich": 154,
       "fallback_timestamp": 0,
       "hinweis": "Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, zukuenftigem oder nach dem Crawl liegendem Datum."
     },
@@ -100,7 +100,7 @@
   },
   "event_co_occurrence": {
     "available": true,
-    "n_zellen_mit_ereignis": 2575,
+    "n_zellen_mit_ereignis": 2577,
     "je_typ": {
       "domain_change": {
         "label": "Domain-/Subdomain-Aenderungen",
@@ -170,18 +170,18 @@
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "n_zellen": 1431,
+        "n_zellen": 1433,
         "anteil_mit_anderen": 0.256,
         "haeufigste_begleiter": [
           {
             "type": "press_mention",
             "label": "Pressemitteilungen",
-            "n_gemeinsam": 189
+            "n_gemeinsam": 190
           },
           {
             "type": "page_change",
             "label": "Seitenaenderungen (Wettbewerb)",
-            "n_gemeinsam": 103
+            "n_gemeinsam": 104
           },
           {
             "type": "linkedin_post",
@@ -198,7 +198,7 @@
           {
             "type": "news_mention",
             "label": "News-Erwaehnungen",
-            "n_gemeinsam": 103
+            "n_gemeinsam": 104
           },
           {
             "type": "page_new",
@@ -286,7 +286,7 @@
           {
             "type": "news_mention",
             "label": "News-Erwaehnungen",
-            "n_gemeinsam": 189
+            "n_gemeinsam": 190
           },
           {
             "type": "page_change",
@@ -333,13 +333,13 @@
             "n_gemeinsam": 2
           },
           {
-            "type": "linkedin_post",
-            "label": "LinkedIn-Posts",
+            "type": "press_mention",
+            "label": "Pressemitteilungen",
             "n_gemeinsam": 2
           },
           {
-            "type": "press_mention",
-            "label": "Pressemitteilungen",
+            "type": "linkedin_post",
+            "label": "LinkedIn-Posts",
             "n_gemeinsam": 2
           }
         ]
@@ -379,7 +379,7 @@
           {
             "type": "news_mention",
             "label": "News-Erwaehnungen",
-            "n_gemeinsam": 37
+            "n_gemeinsam": 38
           },
           {
             "type": "linkedin_post",
@@ -390,8 +390,8 @@
       },
       "wikipedia_change": {
         "label": "Wikipedia-Ausbau (±)",
-        "n_zellen": 11,
-        "anteil_mit_anderen": 0.727,
+        "n_zellen": 12,
+        "anteil_mit_anderen": 0.667,
         "haeufigste_begleiter": [
           {
             "type": "news_mention",
@@ -428,13 +428,13 @@
         "a": "news_mention",
         "b": "press_mention",
         "phi": -0.33,
-        "n_gemeinsam": 189
+        "n_gemeinsam": 190
       },
       {
         "a": "news_mention",
         "b": "page_change",
         "phi": -0.28,
-        "n_gemeinsam": 103
+        "n_gemeinsam": 104
       },
       {
         "a": "instagram_post",
@@ -453,12 +453,6 @@
         "b": "page_new",
         "phi": 0.19,
         "n_gemeinsam": 62
-      },
-      {
-        "a": "page_change",
-        "b": "press_mention",
-        "phi": -0.15,
-        "n_gemeinsam": 50
       }
     ],
     "hinweis": "Anteil der Ereigniszellen (Marke x Tag) eines Typs, in denen gleichzeitig mindestens ein anderer Typ auftritt. Ein hoher Wert heisst: der Einzeleffekt dieses Treibers in der impact-Tabelle traegt die Wirkung der Begleiter mit - nur das multivariate Modell trennt sie."
@@ -7399,7 +7393,7 @@
   "citation_target": {
     "ziel": "Zitate je Marke (Peec citation_count, Summe ueber die Domains der Marke)",
     "quelle": "data/peec_snapshots/<ENDE>_sources.json",
-    "n_messpunkte": 56,
+    "n_messpunkte": 57,
     "messpunkte": [
       "2026-07-19",
       "2026-07-29",
@@ -7456,14 +7450,15 @@
       "2026-09-23",
       "2026-09-24",
       "2026-09-25",
-      "2026-09-26"
+      "2026-09-26",
+      "2026-09-27"
     ],
     "min_messpunkte": 3,
     "methode": "Je Intervall zwischen zwei Snapshots: delta_Zitate je Marke gegen die Ereigniszahl je Typ im selben Fenster — dieselbe Event-Study-Logik wie beim SoV-Modell, nur mit der frueheren Zielgroesse in der Wirkungskette.",
     "grenzen": "Peec-Zitatzahlen stammen aus einem rollierenden 30-Tage-Fenster; zwei aufeinanderfolgende Snapshots ueberlappen sich also stark. Die Reihe ist gegluettet und traege — Effekte zeigen sich verzoegert und daempft. Ausserdem deckt der Export nur die Top-Domains ab, nicht den Long Tail.",
     "intervalle_uebersprungen_bruch": 77,
     "available": true,
-    "n_intervalle": 1023,
+    "n_intervalle": 1043,
     "marken": [
       "ADAC",
       "ARAG",
@@ -7490,98 +7485,98 @@
     "impact": {
       "page_change": {
         "label": "Seitenaenderungen (Wettbewerb)",
-        "pearson_r": 0.10870405918892509,
-        "avg_citation_effect": 149.217,
-        "effect_se": 29.466,
-        "ci95_low": 91.464,
-        "ci95_high": 206.971,
+        "pearson_r": 0.10934302125603987,
+        "avg_citation_effect": 149.728,
+        "effect_se": 29.448,
+        "ci95_low": 92.011,
+        "ci95_high": 207.445,
         "significant": true,
         "p_value": 0.0,
-        "n_intervals": 1023,
+        "n_intervals": 1043,
         "n_with_event": 132,
         "type_confidence": "belastbar",
         "available": true
       },
       "page_new": {
         "label": "Neue Seiten",
-        "pearson_r": 0.17259415994384092,
-        "avg_citation_effect": 148.448,
-        "effect_se": 63.898,
-        "ci95_low": 17.968,
-        "ci95_high": 278.928,
+        "pearson_r": 0.17274576973958725,
+        "avg_citation_effect": 149.199,
+        "effect_se": 63.888,
+        "ci95_low": 18.74,
+        "ci95_high": 279.658,
         "significant": true,
-        "p_value": 0.020168,
-        "n_intervals": 1023,
+        "p_value": 0.019526,
+        "n_intervals": 1043,
         "n_with_event": 31,
         "type_confidence": "belastbar",
         "available": true
       },
       "page_removed": {
         "label": "Geloeschte Seiten",
-        "pearson_r": -0.035705901873578555,
-        "avg_citation_effect": 42.824,
-        "effect_se": 95.217,
-        "ci95_low": -201.979,
-        "ci95_high": 287.628,
+        "pearson_r": -0.03553921114541346,
+        "avg_citation_effect": 43.639,
+        "effect_se": 95.21,
+        "ci95_low": -201.146,
+        "ci95_high": 288.425,
         "significant": false,
-        "p_value": 0.652888,
-        "n_intervals": 1023,
+        "p_value": 0.646703,
+        "n_intervals": 1043,
         "n_with_event": 6,
         "type_confidence": "vorlaeufig",
         "available": true
       },
       "press_mention": {
         "label": "Pressemitteilungen",
-        "pearson_r": -0.024771088991292958,
-        "avg_citation_effect": -10.041,
-        "effect_se": 68.725,
-        "ci95_low": -144.741,
-        "ci95_high": 124.66,
+        "pearson_r": -0.023900357736346797,
+        "avg_citation_effect": -9.178,
+        "effect_se": 68.717,
+        "ci95_low": -143.863,
+        "ci95_high": 125.507,
         "significant": false,
-        "p_value": 0.883844,
-        "n_intervals": 1023,
+        "p_value": 0.893752,
+        "n_intervals": 1043,
         "n_with_event": 47,
         "type_confidence": "belastbar",
         "available": true
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "pearson_r": 0.08160269787551637,
-        "avg_citation_effect": 48.361,
-        "effect_se": 22.849,
-        "ci95_low": 3.577,
-        "ci95_high": 93.145,
+        "pearson_r": 0.0823064465971378,
+        "avg_citation_effect": 49.161,
+        "effect_se": 22.815,
+        "ci95_low": 4.444,
+        "ci95_high": 93.878,
         "significant": true,
-        "p_value": 0.034298,
-        "n_intervals": 1023,
+        "p_value": 0.031178,
+        "n_intervals": 1043,
         "n_with_event": 108,
         "type_confidence": "belastbar",
         "available": true
       },
       "linkedin_post": {
         "label": "LinkedIn-Posts",
-        "pearson_r": 0.12755020793957708,
-        "avg_citation_effect": 83.683,
-        "effect_se": 22.768,
-        "ci95_low": 39.058,
-        "ci95_high": 128.309,
+        "pearson_r": 0.1288340597250084,
+        "avg_citation_effect": 84.298,
+        "effect_se": 22.745,
+        "ci95_low": 39.718,
+        "ci95_high": 128.877,
         "significant": true,
-        "p_value": 0.000237,
-        "n_intervals": 1023,
+        "p_value": 0.00021,
+        "n_intervals": 1043,
         "n_with_event": 205,
         "type_confidence": "belastbar",
         "available": true
       },
       "instagram_post": {
         "label": "Instagram-Posts",
-        "pearson_r": 0.19623245083822266,
-        "avg_citation_effect": 109.337,
-        "effect_se": 23.074,
-        "ci95_low": 64.113,
-        "ci95_high": 154.562,
+        "pearson_r": 0.19718440054518402,
+        "avg_citation_effect": 109.789,
+        "effect_se": 23.059,
+        "ci95_low": 64.593,
+        "ci95_high": 154.984,
         "significant": true,
         "p_value": 2e-06,
-        "n_intervals": 1023,
+        "n_intervals": 1043,
         "n_with_event": 225,
         "type_confidence": "belastbar",
         "available": true
@@ -7594,70 +7589,70 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "pearson_r": 0.044393973822966566,
-        "avg_citation_effect": 37.385,
-        "effect_se": 19.914,
-        "ci95_low": -1.647,
-        "ci95_high": 76.416,
+        "pearson_r": 0.04386756016803035,
+        "avg_citation_effect": 36.284,
+        "effect_se": 19.647,
+        "ci95_low": -2.224,
+        "ci95_high": 74.792,
         "significant": false,
-        "p_value": 0.060476,
-        "n_intervals": 1023,
-        "n_with_event": 56,
+        "p_value": 0.064779,
+        "n_intervals": 1043,
+        "n_with_event": 57,
         "type_confidence": "belastbar",
         "available": true
       },
       "review_volume": {
         "label": "Bewertungs-Volumen",
-        "pearson_r": 0.10380078748741002,
-        "avg_citation_effect": 106.733,
-        "effect_se": 25.64,
-        "ci95_low": 56.479,
-        "ci95_high": 156.987,
+        "pearson_r": 0.10134298803126168,
+        "avg_citation_effect": 102.337,
+        "effect_se": 25.409,
+        "ci95_low": 52.535,
+        "ci95_high": 152.139,
         "significant": true,
-        "p_value": 3.1e-05,
-        "n_intervals": 1023,
-        "n_with_event": 33,
+        "p_value": 5.6e-05,
+        "n_intervals": 1043,
+        "n_with_event": 34,
         "type_confidence": "belastbar",
         "available": true
       },
       "price_change": {
         "label": "Preis-Aenderungen (gemessen)",
-        "pearson_r": -0.0047022041538454015,
-        "avg_citation_effect": -16.642,
-        "effect_se": 7.968,
-        "ci95_low": -50.929,
-        "ci95_high": 17.645,
+        "pearson_r": -0.004468238905650349,
+        "avg_citation_effect": -15.824,
+        "effect_se": 7.884,
+        "ci95_low": -49.75,
+        "ci95_high": 18.103,
         "significant": false,
-        "p_value": 0.036746,
-        "n_intervals": 1023,
+        "p_value": 0.044751,
+        "n_intervals": 1043,
         "n_with_event": 3,
         "type_confidence": "unzureichend",
         "available": true
       },
       "wikipedia_change": {
         "label": "Wikipedia-Ausbau (±)",
-        "pearson_r": -0.03237872947025458,
-        "avg_citation_effect": -114.596,
-        "effect_se": 48.604,
-        "ci95_low": -323.738,
-        "ci95_high": 94.546,
+        "pearson_r": -0.03212638001953656,
+        "avg_citation_effect": -113.772,
+        "effect_se": 48.59,
+        "ci95_low": -322.856,
+        "ci95_high": 95.311,
         "significant": false,
-        "p_value": 0.018386,
-        "n_intervals": 1023,
+        "p_value": 0.019208,
+        "n_intervals": 1043,
         "n_with_event": 3,
         "type_confidence": "unzureichend",
         "available": true
       },
       "portal_rank_change": {
         "label": "Portal-Rang Check24 (±)",
-        "pearson_r": -0.03256343060123318,
-        "avg_citation_effect": -66.736,
-        "effect_se": 29.078,
-        "ci95_low": -133.789,
-        "ci95_high": 0.317,
+        "pearson_r": -0.03213896083609129,
+        "avg_citation_effect": -65.903,
+        "effect_se": 29.054,
+        "ci95_low": -132.902,
+        "ci95_high": 1.097,
         "significant": false,
-        "p_value": 0.021727,
-        "n_intervals": 1023,
+        "p_value": 0.023314,
+        "n_intervals": 1043,
         "n_with_event": 9,
         "type_confidence": "vorlaeufig",
         "available": true
@@ -7670,14 +7665,14 @@
       },
       "price_announcement": {
         "label": "Beitragsanpassung (angekuendigt)",
-        "pearson_r": 0.021774053699674126,
-        "avg_citation_effect": 20.492,
-        "effect_se": 40.963,
-        "ci95_low": -66.349,
-        "ci95_high": 107.333,
+        "pearson_r": 0.02229671247447428,
+        "avg_citation_effect": 21.314,
+        "effect_se": 40.946,
+        "ci95_low": -65.491,
+        "ci95_high": 108.12,
         "significant": false,
-        "p_value": 0.616889,
-        "n_intervals": 1023,
+        "p_value": 0.602684,
+        "n_intervals": 1043,
         "n_with_event": 17,
         "type_confidence": "moderat",
         "available": true
@@ -17128,59 +17123,59 @@
   },
   "external_source_authority": {
     "available": true,
-    "quelle": "2026-09-26_sources.json",
+    "quelle": "2026-09-27_sources.json",
     "autoritaetstabelle": [
       {
         "domain": "ergo.de",
-        "citations": 48923,
+        "citations": 48909,
         "klasse": "You",
         "zitiert_marken": 16
       },
       {
         "domain": "finanztip.de",
-        "citations": 45616,
+        "citations": 45541,
         "klasse": "Editorial",
         "zitiert_marken": 30
       },
       {
         "domain": "test.de",
-        "citations": 31505,
+        "citations": 31200,
         "klasse": "Editorial",
         "zitiert_marken": 29
       },
       {
         "domain": "allianz.de",
-        "citations": 30696,
+        "citations": 30648,
         "klasse": "Competitor",
         "zitiert_marken": 24
       },
       {
         "domain": "check24.de",
-        "citations": 20919,
+        "citations": 20884,
         "klasse": "Aggregator",
         "zitiert_marken": 30
       },
       {
         "domain": "transparent-beraten.de",
-        "citations": 14490,
+        "citations": 14480,
         "klasse": "Broker",
         "zitiert_marken": 28
       },
       {
         "domain": "youtube.com",
-        "citations": 11055,
+        "citations": 11100,
         "klasse": "UGC",
         "zitiert_marken": 29
       },
       {
         "domain": "cosmosdirekt.de",
-        "citations": 9649,
+        "citations": 9622,
         "klasse": "Competitor",
         "zitiert_marken": 22
       },
       {
         "domain": "huk.de",
-        "citations": 9596,
+        "citations": 9540,
         "klasse": "Competitor",
         "zitiert_marken": 21
       },
@@ -17192,40 +17187,40 @@
       },
       {
         "domain": "testsieger-berichte.de",
-        "citations": 8852,
+        "citations": 8814,
         "klasse": "Editorial",
         "zitiert_marken": 27
       },
       {
         "domain": "verbraucherzentrale.de",
-        "citations": 8558,
+        "citations": 8529,
         "klasse": "Institutional",
-        "zitiert_marken": 10
+        "zitiert_marken": 9
       },
       {
         "domain": "handelsblatt.com",
-        "citations": 8370,
+        "citations": 8373,
         "klasse": "Editorial",
         "zitiert_marken": 30
       },
       {
         "domain": "disq.de",
-        "citations": 8033,
+        "citations": 7985,
         "klasse": "Institutional",
         "zitiert_marken": 29
       },
       {
         "domain": "adac.de",
-        "citations": 6745,
+        "citations": 6785,
         "klasse": "Competitor",
         "zitiert_marken": 6
       }
     ],
     "event_deckung": {
-      "n_presse_news_events": 3107,
+      "n_presse_news_events": 3110,
       "auf_zitierten_quellen": 225,
-      "anteil_auf_zitierten_quellen": 0.0724,
-      "nicht_zitiert": 2882
+      "anteil_auf_zitierten_quellen": 0.0723,
+      "nicht_zitiert": 2885
     },
     "top_autoritaetsquellen_ohne_event": [
       "ergo.de",
@@ -17242,7 +17237,7 @@
   },
   "citation_authority_signal": {
     "available": true,
-    "n_snapshots": 56,
+    "n_snapshots": 57,
     "snapshots": [
       "2026-07-19",
       "2026-07-29",
@@ -17299,131 +17294,132 @@
       "2026-09-23",
       "2026-09-24",
       "2026-09-25",
-      "2026-09-26"
+      "2026-09-26",
+      "2026-09-27"
     ],
     "zielgroesse": "autoritaetsgewichteter Zitations-Anteil je Marke (Seitentyp-gewichtet: Comparison/Category hoch, Homepage/Profile niedrig)",
     "ranking_aktuell": [
       {
         "brand": "ERGO",
-        "anteil_pct": 8.405,
+        "anteil_pct": 8.401,
         "delta_pp": 1.33
       },
       {
         "brand": "Allianz",
-        "anteil_pct": 8.311,
-        "delta_pp": -1.38
+        "anteil_pct": 8.289,
+        "delta_pp": -1.41
       },
       {
         "brand": "HUK-Coburg",
-        "anteil_pct": 5.046,
-        "delta_pp": -0.53
+        "anteil_pct": 5.07,
+        "delta_pp": -0.51
       },
       {
         "brand": "AXA",
-        "anteil_pct": 4.818,
-        "delta_pp": -0.15
+        "anteil_pct": 4.773,
+        "delta_pp": -0.2
       },
       {
         "brand": "WGV",
-        "anteil_pct": 3.83,
-        "delta_pp": -1.56
+        "anteil_pct": 3.884,
+        "delta_pp": -1.5
       },
       {
         "brand": "Signal Iduna",
-        "anteil_pct": 3.817,
-        "delta_pp": -0.43
+        "anteil_pct": 3.84,
+        "delta_pp": -0.41
+      },
+      {
+        "brand": "Württembergische",
+        "anteil_pct": 3.777,
+        "delta_pp": 0.13
       },
       {
         "brand": "HanseMerkur",
-        "anteil_pct": 3.769,
+        "anteil_pct": 3.774,
         "delta_pp": -0.45
       },
       {
         "brand": "R+V",
-        "anteil_pct": 3.645,
-        "delta_pp": -0.36
+        "anteil_pct": 3.624,
+        "delta_pp": -0.38
       },
       {
         "brand": "Gothaer",
-        "anteil_pct": 3.638,
-        "delta_pp": -0.5
-      },
-      {
-        "brand": "Württembergische",
-        "anteil_pct": 3.634,
-        "delta_pp": -0.01
-      },
-      {
-        "brand": "Debeka",
-        "anteil_pct": 3.603,
-        "delta_pp": 0.19
+        "anteil_pct": 3.623,
+        "delta_pp": -0.52
       },
       {
         "brand": "ARAG",
-        "anteil_pct": 3.567,
-        "delta_pp": -0.47
+        "anteil_pct": 3.621,
+        "delta_pp": -0.42
+      },
+      {
+        "brand": "Debeka",
+        "anteil_pct": 3.609,
+        "delta_pp": 0.2
       },
       {
         "brand": "Barmenia",
-        "anteil_pct": 3.434,
-        "delta_pp": 0.19
+        "anteil_pct": 3.454,
+        "delta_pp": 0.21
       },
       {
         "brand": "CosmosDirekt",
-        "anteil_pct": 3.273,
-        "delta_pp": 0.64
+        "anteil_pct": 3.284,
+        "delta_pp": 0.65
       },
       {
         "brand": "Die Bayerische",
-        "anteil_pct": 3.113,
-        "delta_pp": 0.26
+        "anteil_pct": 3.129,
+        "delta_pp": 0.27
       }
     ],
     "groesste_bewegungen": [
       {
         "brand": "WGV",
-        "anteil_pct": 3.83,
-        "delta_pp": -1.56
+        "anteil_pct": 3.884,
+        "delta_pp": -1.5
       },
       {
         "brand": "Allianz",
-        "anteil_pct": 8.311,
-        "delta_pp": -1.38
+        "anteil_pct": 8.289,
+        "delta_pp": -1.41
       },
       {
         "brand": "ERGO",
-        "anteil_pct": 8.405,
+        "anteil_pct": 8.401,
         "delta_pp": 1.33
       },
       {
         "brand": "VHV",
-        "anteil_pct": 2.286,
+        "anteil_pct": 2.291,
         "delta_pp": -0.92
       },
       {
-        "brand": "Alte Leipziger",
-        "anteil_pct": 2.535,
-        "delta_pp": -0.7
+        "brand": "Zurich",
+        "anteil_pct": 2.929,
+        "delta_pp": -0.71
       },
       {
-        "brand": "Zurich",
-        "anteil_pct": 2.964,
-        "delta_pp": -0.67
+        "brand": "Generali",
+        "anteil_pct": 2.931,
+        "delta_pp": -0.69
+      },
+      {
+        "brand": "Alte Leipziger",
+        "anteil_pct": 2.568,
+        "delta_pp": -0.66
       },
       {
         "brand": "CosmosDirekt",
-        "anteil_pct": 3.273,
-        "delta_pp": 0.64
-      },
-      {
-        "brand": "DA Direkt",
-        "anteil_pct": 1.908,
-        "delta_pp": -0.64
+        "anteil_pct": 3.284,
+        "delta_pp": 0.65
       }
     ],
     "sov_kopplung": {
       "available": false,
-      "grund": "Nur 56 Snapshots, und die Peec-30-Tage-Fenster ueberlappen stark -> die Reihe ist traege. Fuer die Kopplung Zitat-Anteil -> SoV braucht es mehrere NICHT-ueberlappende Snapshots (ab ca. 5-6 Wochen)."
+      "grund": "Nur 57 Snapshots, und die Peec-30-Tage-Fenster ueberlappen stark -> die Reihe ist traege. Fuer die Kopplung Zitat-Anteil -> SoV braucht es mehrere NICHT-ueberlappende Snapshots (ab ca. 5-6 Wochen)."
     },
     "note": "Externe Sichtbarkeit als autoritaetsgewichtete Zitat-Reihe. Anteile statt Absolutzahlen (Snapshot-Abdeckung schwankt); Marken, die nicht in allen Snapshots vorkommen, sind ausgeblendet (Eintritts-Artefakt). Waechst und schaerft sich mit jedem Montags-Snapshot; wird dann zum autoritaetsgewichteten externen Event-Kanal statt der wirkungslosen Presse-Erwaehnungen."
   },
@@ -18022,9 +18018,9 @@
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "bester_lag": 28,
-        "r_bei_bestem_lag": 0.053,
-        "effekt_pp": 0.148,
+        "bester_lag": 3,
+        "r_bei_bestem_lag": 0.059,
+        "effekt_pp": 0.087,
         "gesichert": false,
         "verlauf": [
           {
@@ -18061,33 +18057,33 @@
           },
           {
             "lag": 3,
-            "r": 0.052,
-            "effekt_pp": 0.043,
-            "p": 0.818993,
+            "r": 0.059,
+            "effekt_pp": 0.087,
+            "p": 0.644625,
             "gesichert": false,
             "lead": false
           },
           {
             "lag": 7,
-            "r": 0.01,
-            "effekt_pp": 0.017,
-            "p": 0.894382,
+            "r": 0.014,
+            "effekt_pp": 0.036,
+            "p": 0.779927,
             "gesichert": false,
             "lead": false
           },
           {
             "lag": 14,
             "r": 0.002,
-            "effekt_pp": -0.063,
-            "p": 0.589767,
+            "effekt_pp": -0.068,
+            "p": 0.560753,
             "gesichert": false,
             "lead": false
           },
           {
             "lag": 28,
             "r": 0.053,
-            "effekt_pp": 0.148,
-            "p": 0.287832,
+            "effekt_pp": 0.153,
+            "p": 0.267564,
             "gesichert": false,
             "lead": false
           }
@@ -18095,9 +18091,9 @@
         "vorzeichenwechsel": 1,
         "musterbewertung": "ein Vorzeichenwechsel — uneindeutig",
         "lead_warnung": false,
-        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.042 (-3 Tage) bleibt unter dem besten echten Versatz |r|=0.053 (28 Tage).",
+        "lead_begruendung": "Kein Scheinbefund-Indikator: staerkster negativer Lead |r|=0.042 (-3 Tage) bleibt unter dem besten echten Versatz |r|=0.059 (3 Tage).",
         "max_abs_r_lead": 0.042,
-        "max_abs_r_ab_lag0": 0.053,
+        "max_abs_r_ab_lag0": 0.059,
         "r_bei_lag0": -0.014
       },
       "linkedin_post": {
@@ -18850,10 +18846,10 @@
     }
   },
   "press_by_citation": {
-    "n_presse_events": 3107,
+    "n_presse_events": 3110,
     "je_klasse": {
       "zitiert_marke": 681,
-      "nicht_zitiert": 1379,
+      "nicht_zitiert": 1382,
       "zitiert_redaktionell": 626,
       "unbekannt": 421
     },
@@ -18864,7 +18860,7 @@
     },
     "methode": "Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle der Einordnung: data/content_citations.json, gesetzt von scripts/enrich_press_events.py als detail.zitat_klasse.",
     "grenzen": "Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht zuordnen liess - nicht, dass es nicht zitiert wird.",
-    "abdeckung": 0.8645,
+    "abdeckung": 0.8646,
     "available": true,
     "wirkung_je_klasse": {
       "zitiert_redaktionell": {
@@ -18888,16 +18884,16 @@
       "nicht_zitiert": {
         "available": true,
         "label": "Presse in nicht zitierten Medien",
-        "avg_sov_effect_pp": 0.133,
+        "avg_sov_effect_pp": 0.135,
         "n_intervals": 716,
-        "n_with_event": 141,
-        "n_events": 1379,
+        "n_with_event": 142,
+        "n_events": 1382,
         "significant_iid": false,
-        "p_iid": 0.489809,
-        "effect_se_cluster_pp": 0.25054106630596673,
-        "ci95_low_cluster_pp": -0.404,
-        "ci95_high_cluster_pp": 0.823,
-        "p_cluster": 0.435129,
+        "p_iid": 0.480938,
+        "effect_se_cluster_pp": 0.2476437547395096,
+        "ci95_low_cluster_pp": -0.392,
+        "ci95_high_cluster_pp": 0.82,
+        "p_cluster": 0.421518,
         "n_clusters": 7,
         "cluster_df": 6,
         "significance_basis": "cluster",
@@ -18926,51 +18922,51 @@
       {
         "domain": "test.de",
         "n_artikel": 8,
-        "zitate": 31505
+        "zitate": 31200
       },
       {
         "domain": "handelsblatt.com",
         "n_artikel": 48,
-        "zitate": 8370
+        "zitate": 8373
       },
       {
         "domain": "versicherungsbote.de",
         "n_artikel": 192,
-        "zitate": 4520
+        "zitate": 4548
       },
       {
         "domain": "faz.net",
         "n_artikel": 15,
-        "zitate": 3984
+        "zitate": 3895
       },
       {
         "domain": "versicherungsjournal.de",
         "n_artikel": 59,
-        "zitate": 2469
+        "zitate": 2450
       },
       {
         "domain": "pfefferminzia.de",
         "n_artikel": 13,
-        "zitate": 2021
+        "zitate": 2022
       },
       {
         "domain": "dasinvestment.com",
         "n_artikel": 113,
-        "zitate": 1832
+        "zitate": 1837
       },
       {
         "domain": "cash-online.de",
         "n_artikel": 90,
-        "zitate": 1792
+        "zitate": 1816
       },
       {
         "domain": "procontra-online.de",
         "n_artikel": 88,
-        "zitate": 1462
+        "zitate": 1459
       }
     ],
     "vergleich": {
-      "differenz_pp": -0.441,
+      "differenz_pp": -0.443,
       "hinweis": "Differenz der beiden Punktschaetzer. Bewusst ohne Test: die Schaetzer stammen aus demselben Intervall-Datensatz und sind nicht unabhaengig - ein Zweistichprobentest waere hier falsch. Die Zahl zeigt die Richtung, nicht mehr."
     }
   },
@@ -19065,21 +19061,21 @@
       "news_mention": {
         "available": true,
         "label": "News-Erwaehnungen",
-        "steigung_pp_je_ereignis_tag": -0.0298,
+        "steigung_pp_je_ereignis_tag": -0.0297,
         "n_intervals": 716,
         "n_with_event": 151,
         "dosis_min": 0.0909,
         "dosis_max": 7.0,
         "dosis_median": 1.0,
-        "steigung_within_fe": -0.02905515911459162,
-        "se_cluster": 0.1321475953332224,
-        "ci95_low": -0.334,
+        "steigung_within_fe": -0.02886409164608908,
+        "se_cluster": 0.13203877590448623,
+        "ci95_low": -0.333,
         "ci95_high": 0.276,
-        "p_cluster": 0.83148,
+        "p_cluster": 0.832433,
         "n_clusters": 9,
         "significant": false,
         "significance_basis": "cluster",
-        "wirkung_ueber_beobachtete_spanne_pp": -0.201,
+        "wirkung_ueber_beobachtete_spanne_pp": -0.199,
         "p_fdr": 0.98748,
         "significant_unkorrigiert": false
       },
@@ -23844,7 +23840,7 @@
           "label": "News-Erwaehnungen",
           "available": true,
           "pearson_r": -0.237,
-          "spearman_r": -0.11,
+          "spearman_r": -0.109,
           "avg_sov_effect_pp": -0.779,
           "effect_se_pp": 0.53,
           "ci95_low_pp": -1.87,

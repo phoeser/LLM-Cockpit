@@ -27,9 +27,9 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 28.09.2026 um 12:22 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-09-28.
+Dieses Faktenblatt wurde am 29.09.2026 um 11:50 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-09-29.
 
-Gemessen wird seit 70 Messtagen, von 2026-05-14 bis 2026-09-22. Daraus entstehen 716 Intervall-Beobachtungen ueber 26 Marken.
+Gemessen wird seit 71 Messtagen, von 2026-05-14 bis 2026-09-29. Daraus entstehen 724 Intervall-Beobachtungen ueber 26 Marken.
 
 Der eigene Crawl laeuft seit dem 10.08.2026 woechentlich statt taeglich, sonntags gegen 23:10 UTC. Presse, News und Bewertungen werden weiterhin taeglich erhoben. Wenn also in einer Tagesuebersicht an mehreren Tagen kaum Seiten-Ereignisse stehen, ist das der Normalzustand zwischen zwei Laeufen und kein Ausfall.
 
@@ -40,9 +40,9 @@ Alle 6 ueberwachten Bestandteile der Pipeline sind aktuell; keiner gilt als vera
 
 Die kuerzeste ehrliche Zusammenfassung lautet: Ein einziger Treiber traegt fast alles, und er heisst Quellpraesenz. Damit ist nicht die Zahl der eigenen Seiten gemeint, sondern wie oft die Marke in dem vorkommt, was Sprachmodelle zitieren. Alle einzelnen operativen Massnahmen sind dagegen zu klein, um in dieser Messung ueberhaupt sichtbar zu werden.
 
-**Quellpraesenz.** Marken mit hoeherer Quellpraesenz sind sichtbarer: +5,69 Prozentpunkte Sichtbarkeit je einer Standardabweichung mehr Zitations-Footprint, gerechnet ueber 26 Marken. Der Befund ist nach Korrektur fuer Mehrfachtests gesichert (Wild-Cluster-p 0,0032, q 0,0064). Es bleibt ein beobachteter Zusammenhang, kein Kausalnachweis: gemessen wurde, nicht eingegriffen.
+**Quellpraesenz.** Marken mit hoeherer Quellpraesenz sind sichtbarer: +5,71 Prozentpunkte Sichtbarkeit je einer Standardabweichung mehr Zitations-Footprint, gerechnet ueber 26 Marken. Der Befund ist nach Korrektur fuer Mehrfachtests gesichert (Wild-Cluster-p 0,0039, q 0,0078). Es bleibt ein beobachteter Zusammenhang, kein Kausalnachweis: gemessen wurde, nicht eingegriffen.
 
-**Der Abstand zum Marktfuehrer.** ERGO liegt bei 13,3 Prozent Sichtbarkeit, Allianz bei 32,0 Prozent. Der Abstand von 18,7 Prozentpunkten zerlegt sich naeherungsweise so: Bekanntheit und Groesse +10,9 Prozentpunkte (rund 58 Prozent des Abstands); Quellpraesenz +4,7 Prozentpunkte (rund 25 Prozent des Abstands); Preisniveau +0,8 Prozentpunkte (rund 4 Prozent des Abstands). Das ist eine Zerlegung, kein Kausalnachweis. Wichtig fuer die Einordnung: ein zweites Modell im selben Nightly teilt denselben Abstand etwas anders auf und schreibt der Groesse einen kleineren Anteil zu. Der Anteil der Groesse ist deshalb als Spanne zu verstehen, nicht als Punktwert. An der Kernaussage aendert das nichts: die Quellpraesenz traegt in beiden Modellen den weitaus groessten Teil.
+**Der Abstand zum Marktfuehrer.** ERGO liegt bei 12,6 Prozent Sichtbarkeit, Allianz bei 32,5 Prozent. Der Abstand von 19,9 Prozentpunkten zerlegt sich naeherungsweise so: Bekanntheit und Groesse +10,8 Prozentpunkte (rund 54 Prozent des Abstands); Quellpraesenz +5,2 Prozentpunkte (rund 26 Prozent des Abstands); Preisniveau +0,8 Prozentpunkte (rund 4 Prozent des Abstands). Das ist eine Zerlegung, kein Kausalnachweis. Wichtig fuer die Einordnung: ein zweites Modell im selben Nightly teilt denselben Abstand etwas anders auf und schreibt der Groesse einen kleineren Anteil zu. Der Anteil der Groesse ist deshalb als Spanne zu verstehen, nicht als Punktwert. An der Kernaussage aendert das nichts: die Quellpraesenz traegt in beiden Modellen den weitaus groessten Teil.
 
 
 ## Der einzige kausal belegte Befund: die Websuche
@@ -56,23 +56,23 @@ Drei Einschraenkungen gehoeren zu diesem Befund und muessen mitgenannt werden, w
 
 ## Wo ERGO verliert: die Themen im Einzelnen
 
-Ueber alle Themen und Marken hinweg gilt: je Prozentpunkt hoeherem Anteil an den zitierten Quellen liegt die Sichtbarkeit im Schnitt um 1,84 Prozentpunkte hoeher (Korrelation r 0,78 ueber 104 Marken-Thema-Zellen). Das ist ein beschreibender Zusammenhang aus dem Querschnitt, kein Versprechen fuer den Fall, dass ERGO seinen Zitatanteil erhoeht.
+Ueber alle Themen und Marken hinweg gilt: je Prozentpunkt hoeherem Anteil an den zitierten Quellen liegt die Sichtbarkeit im Schnitt um 1,80 Prozentpunkte hoeher (Korrelation r 0,79 ueber 104 Marken-Thema-Zellen). Das ist ein beschreibender Zusammenhang aus dem Querschnitt, kein Versprechen fuer den Fall, dass ERGO seinen Zitatanteil erhoeht.
 
 Je Thema, sortiert nach dem groessten Rueckstand zu Allianz:
 
-- Firmen-Rechtsschutzversicherung: ERGO 10,3 Prozent Sichtbarkeit, Allianz 59,0 Prozent — Rueckstand 48,7 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 22,2 Prozent.
-- Rechtsschutzversicherung: ERGO 5,9 Prozent Sichtbarkeit, Allianz 49,1 Prozent — Rueckstand 43,2 Prozentpunkte. Zitatanteil ERGO 3,1 Prozent, Allianz 13,2 Prozent.
-- Berufsunfähigkeitsversicherung: ERGO 4,8 Prozent Sichtbarkeit, Allianz 42,5 Prozent — Rueckstand 37,7 Prozentpunkte. Zitatanteil ERGO 6,8 Prozent, Allianz 12,4 Prozent.
-- Betriebshaftpflichtversicherung: ERGO 19,4 Prozent Sichtbarkeit, Allianz 52,2 Prozent — Rueckstand 32,8 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 16,9 Prozent.
-- Kfz-Versicherung: ERGO 5,3 Prozent Sichtbarkeit, Allianz 33,0 Prozent — Rueckstand 27,8 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 14,5 Prozent.
-- Privathaftpflichtversicherung: ERGO 4,7 Prozent Sichtbarkeit, Allianz 27,9 Prozent — Rueckstand 23,3 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 16,2 Prozent.
-- Unfallversicherung: ERGO 13,5 Prozent Sichtbarkeit, Allianz 33,1 Prozent — Rueckstand 19,5 Prozentpunkte. Zitatanteil ERGO 6,4 Prozent, Allianz 16,2 Prozent.
-- Hausratversicherung: ERGO 8,7 Prozent Sichtbarkeit, Allianz 25,5 Prozent — Rueckstand 16,8 Prozentpunkte. Zitatanteil ERGO 3,7 Prozent, Allianz 14,3 Prozent.
-- Risikolebensversicherung: ERGO 13,7 Prozent Sichtbarkeit, Allianz 29,8 Prozent — Rueckstand 16,1 Prozentpunkte. Zitatanteil ERGO 12,3 Prozent, Allianz 17,3 Prozent.
-- Sterbegeldversicherung: ERGO 25,7 Prozent Sichtbarkeit, Allianz 33,0 Prozent — Rueckstand 7,3 Prozentpunkte. Zitatanteil ERGO 10,4 Prozent, Allianz 20,8 Prozent.
-- Zahnzusatzversicherung: ERGO 34,3 Prozent Sichtbarkeit, Allianz 40,8 Prozent — Rueckstand 6,5 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 15,5 Prozent.
-- Krankenhauszusatzversicherung: ERGO 11,6 Prozent Sichtbarkeit, Allianz 17,6 Prozent — Rueckstand 6,0 Prozentpunkte. Zitatanteil ERGO 8,2 Prozent, Allianz 12,6 Prozent.
-- Reiseversicherung: ERGO 30,7 Prozent Sichtbarkeit, Allianz 22,9 Prozent — ERGO liegt 7,8 Prozentpunkte vorn. Zitatanteil ERGO 14,3 Prozent, Allianz 4,9 Prozent.
+- Rechtsschutzversicherung: ERGO 6,5 Prozent Sichtbarkeit, Allianz 50,0 Prozent — Rueckstand 43,5 Prozentpunkte. Zitatanteil ERGO 3,0 Prozent, Allianz 13,4 Prozent.
+- Betriebshaftpflichtversicherung: ERGO 12,5 Prozent Sichtbarkeit, Allianz 53,1 Prozent — Rueckstand 40,6 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 16,4 Prozent.
+- Berufsunfähigkeitsversicherung: ERGO 5,5 Prozent Sichtbarkeit, Allianz 44,5 Prozent — Rueckstand 39,1 Prozentpunkte. Zitatanteil ERGO 6,3 Prozent, Allianz 13,1 Prozent.
+- Firmen-Rechtsschutzversicherung: ERGO 14,5 Prozent Sichtbarkeit, Allianz 50,0 Prozent — Rueckstand 35,5 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 22,5 Prozent.
+- Kfz-Versicherung: ERGO 7,0 Prozent Sichtbarkeit, Allianz 32,7 Prozent — Rueckstand 25,7 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 15,0 Prozent.
+- Privathaftpflichtversicherung: ERGO 7,0 Prozent Sichtbarkeit, Allianz 27,3 Prozent — Rueckstand 20,3 Prozentpunkte. Zitatanteil ERGO 0,0 Prozent, Allianz 16,1 Prozent.
+- Risikolebensversicherung: ERGO 10,7 Prozent Sichtbarkeit, Allianz 31,0 Prozent — Rueckstand 20,3 Prozentpunkte. Zitatanteil ERGO 13,0 Prozent, Allianz 17,3 Prozent.
+- Hausratversicherung: ERGO 6,9 Prozent Sichtbarkeit, Allianz 26,0 Prozent — Rueckstand 19,2 Prozentpunkte. Zitatanteil ERGO 3,4 Prozent, Allianz 14,2 Prozent.
+- Unfallversicherung: ERGO 12,4 Prozent Sichtbarkeit, Allianz 28,7 Prozent — Rueckstand 16,3 Prozentpunkte. Zitatanteil ERGO 7,9 Prozent, Allianz 16,0 Prozent.
+- Sterbegeldversicherung: ERGO 25,0 Prozent Sichtbarkeit, Allianz 37,1 Prozent — Rueckstand 12,1 Prozentpunkte. Zitatanteil ERGO 10,3 Prozent, Allianz 20,4 Prozent.
+- Krankenhauszusatzversicherung: ERGO 11,5 Prozent Sichtbarkeit, Allianz 13,8 Prozent — Rueckstand 2,3 Prozentpunkte. Zitatanteil ERGO 8,5 Prozent, Allianz 12,7 Prozent.
+- Reiseversicherung: ERGO 30,0 Prozent Sichtbarkeit, Allianz 26,8 Prozent — ERGO liegt 3,3 Prozentpunkte vorn. Zitatanteil ERGO 13,5 Prozent, Allianz 6,0 Prozent.
+- Zahnzusatzversicherung: ERGO 39,6 Prozent Sichtbarkeit, Allianz 29,1 Prozent — ERGO liegt 10,4 Prozentpunkte vorn. Zitatanteil ERGO 2,6 Prozent, Allianz 15,6 Prozent.
 
 Die Lesart dieser Tabelle: Ein grosser Rueckstand bei zugleich sehr kleinem eigenem Zitatanteil deutet auf eine Content- und Quellenluecke hin — dort wird ERGO in den Quellen, aus denen die Modelle schoepfen, schlicht nicht gefunden. Ein Rueckstand bei bereits ordentlichem Zitatanteil hat eher andere Ursachen.
 
@@ -85,33 +85,33 @@ Der Grund dafuer ist rechnerisch und war vorher absehbar. Zu jeder Ereignisart g
 
 Die Einzelwerte, jeweils mit ihrem Urteil:
 
-- Pressemitteilungen: nicht nachweisbar. Punktschaetzer +0,28 Prozentpunkte, 95-Prozent-Intervall von -0,21 bis +0,83 Prozentpunkten, beobachtet in 89 von 716 Intervallen ueber 9 Marken.
-- Bewertungs-Trend (±): nicht nachweisbar. Punktschaetzer -0,27 Prozentpunkte, 95-Prozent-Intervall von -0,84 bis +0,07 Prozentpunkten, beobachtet in 63 von 716 Intervallen ueber 9 Marken.
-- Portal-Rang Check24 (±): nicht nachweisbar. Punktschaetzer -0,22 Prozentpunkte, 95-Prozent-Intervall von -1,11 bis +0,66 Prozentpunkten, beobachtet in 10 von 716 Intervallen ueber 4 Marken.
-- Neue Seiten: nicht nachweisbar. Punktschaetzer -0,22 Prozentpunkte, 95-Prozent-Intervall von -0,56 bis +0,08 Prozentpunkten, beobachtet in 75 von 716 Intervallen ueber 17 Marken.
-- Bewertungs-Volumen: nicht nachweisbar. Punktschaetzer -0,20 Prozentpunkte, 95-Prozent-Intervall von -1,13 bis +0,32 Prozentpunkten, beobachtet in 53 von 716 Intervallen ueber 7 Marken.
-- Seitenaenderungen (Wettbewerb): nicht nachweisbar. Punktschaetzer -0,10 Prozentpunkte, 95-Prozent-Intervall von -0,41 bis +0,09 Prozentpunkten, beobachtet in 328 von 716 Intervallen ueber 23 Marken.
-- News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,09 Prozentpunkte, 95-Prozent-Intervall von -0,48 bis +0,72 Prozentpunkten, beobachtet in 151 von 716 Intervallen ueber 9 Marken.
-- Wikipedia-Ausbau (±): nicht nachweisbar. Punktschaetzer -0,07 Prozentpunkte, 95-Prozent-Intervall von -0,34 bis +0,19 Prozentpunkten, beobachtet in 8 von 716 Intervallen ueber 5 Marken.
-- Geloeschte Seiten: nicht nachweisbar. Punktschaetzer +0,04 Prozentpunkte, 95-Prozent-Intervall von -0,30 bis +0,38 Prozentpunkten, beobachtet in 8 von 716 Intervallen ueber 4 Marken.
-- LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,02 Prozentpunkte, 95-Prozent-Intervall von -0,22 bis +0,17 Prozentpunkten, beobachtet in 82 von 716 Intervallen ueber 9 Marken.
-- Instagram-Posts: nicht nachweisbar. Punktschaetzer +0,00 Prozentpunkte, 95-Prozent-Intervall von -0,16 bis +0,17 Prozentpunkten, beobachtet in 86 von 716 Intervallen ueber 10 Marken.
+- Pressemitteilungen: nicht nachweisbar. Punktschaetzer +0,27 Prozentpunkte, 95-Prozent-Intervall von -0,20 bis +0,81 Prozentpunkten, beobachtet in 92 von 724 Intervallen ueber 9 Marken.
+- Bewertungs-Trend (±): nicht nachweisbar. Punktschaetzer -0,25 Prozentpunkte, 95-Prozent-Intervall von -0,78 bis +0,09 Prozentpunkten, beobachtet in 66 von 724 Intervallen ueber 9 Marken.
+- Portal-Rang Check24 (±): nicht nachweisbar. Punktschaetzer -0,22 Prozentpunkte, 95-Prozent-Intervall von -1,11 bis +0,66 Prozentpunkten, beobachtet in 10 von 724 Intervallen ueber 4 Marken.
+- Neue Seiten: nicht nachweisbar. Punktschaetzer -0,22 Prozentpunkte, 95-Prozent-Intervall von -0,55 bis +0,07 Prozentpunkten, beobachtet in 75 von 724 Intervallen ueber 17 Marken.
+- Bewertungs-Volumen: nicht nachweisbar. Punktschaetzer -0,20 Prozentpunkte, 95-Prozent-Intervall von -1,11 bis +0,31 Prozentpunkten, beobachtet in 54 von 724 Intervallen ueber 7 Marken.
+- Seitenaenderungen (Wettbewerb): nicht nachweisbar. Punktschaetzer -0,11 Prozentpunkte, 95-Prozent-Intervall von -0,41 bis +0,08 Prozentpunkten, beobachtet in 331 von 724 Intervallen ueber 23 Marken.
+- News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,09 Prozentpunkte, 95-Prozent-Intervall von -0,45 bis +0,69 Prozentpunkten, beobachtet in 155 von 724 Intervallen ueber 9 Marken.
+- Wikipedia-Ausbau (±): nicht nachweisbar. Punktschaetzer -0,08 Prozentpunkte, 95-Prozent-Intervall von -0,32 bis +0,16 Prozentpunkten, beobachtet in 9 von 724 Intervallen ueber 5 Marken.
+- Geloeschte Seiten: nicht nachweisbar. Punktschaetzer +0,07 Prozentpunkte, 95-Prozent-Intervall von -0,25 bis +0,40 Prozentpunkten, beobachtet in 9 von 724 Intervallen ueber 4 Marken.
+- LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,01 Prozentpunkte, 95-Prozent-Intervall von -0,20 bis +0,17 Prozentpunkten, beobachtet in 86 von 724 Intervallen ueber 9 Marken.
+- Instagram-Posts: nicht nachweisbar. Punktschaetzer -0,00 Prozentpunkte, 95-Prozent-Intervall von -0,18 bis +0,18 Prozentpunkten, beobachtet in 90 von 724 Intervallen ueber 10 Marken.
 
 Nicht schaetzbar, mit Grund — diese Arten verschwinden nicht aus der Auswertung, sondern stehen mit ihrer Begruendung da:
 
 - Domain-/Subdomain-Aenderungen: Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
 - Beitragsanpassung (angekuendigt): Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
-- Preis-Aenderungen (gemessen): 23 der 27 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen.
+- Preis-Aenderungen (gemessen): 25 der 29 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen.
 
-Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,024 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,9 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
+Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,023 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,0 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
 
 
 ## Was es in die Zitate schafft
 
-- ERGO: 69 von 1.159 getrackten Seiten sind in Zitaten aufgetaucht, also 5,95 Prozent. Das ist die eigene Marke.
+- ERGO: 69 von 1.163 getrackten Seiten sind in Zitaten aufgetaucht, also 5,93 Prozent. Das ist die eigene Marke.
 - Allianz: 130 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 14,51 Prozent.
 - ADAC: 23 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 3,55 Prozent.
-- LV 1871: 30 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 5,59 Prozent.
+- LV 1871: 31 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 5,77 Prozent.
 - ARAG: 34 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 7,25 Prozent.
 - HDI: 5 von 288 getrackten Seiten sind in Zitaten aufgetaucht, also 1,74 Prozent.
 - Die Bayerische: 15 von 285 getrackten Seiten sind in Zitaten aufgetaucht, also 5,26 Prozent.
@@ -133,25 +133,25 @@ ERGO im Vergleich zur jeweils guenstigsten erhobenen Marke:
 
 Zur Wirkung des Preises auf die Sichtbarkeit: Gemeint ist nicht das Ereignis 'Preis geaendert', sondern das Preisniveau im Vergleich zum Wettbewerb. Die Richtung ist ueber alle Messtage stabil — teurer geht mit weniger Sichtbarkeit einher —, aber nach Korrektur fuer Mehrfachtests uebersteht kein Schnitt die Signifikanzschwelle. Richtung ja, Nachweis nein. Als Ereignis betrachtet ist der Preis gar nicht schaetzbar: an den meisten Tagen aendert sich keine einzige Zelle, und die wenigen Aenderungen waren ueberwiegend ein Hin- und Zurueckspringen auf den Vorwert, also ein Messartefakt des Erhebungsverfahrens.
 
-Zahlenbeleg dazu: Wild-Cluster-p 0,4484, Richtungswahrscheinlichkeit 82,0 Prozent.
+Zahlenbeleg dazu: Wild-Cluster-p 0,4916, Richtungswahrscheinlichkeit 80,2 Prozent.
 
 
 ## Presse, News und Bewertungen
 
-Stand der Presseauswertung: 2026-09-28.
+Stand der Presseauswertung: 2026-09-29.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
-- ERGO: 1 Beitraege in den letzten 30 Tagen, 6 in 90 Tagen. Davon insgesamt 43 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-25. Haeufigste Themen: Allgemein (78), Digitalisierung & KI (29), Gesundheit & Pflege (16).
-- Allianz: 9 Beitraege in den letzten 30 Tagen, 20 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 97 externe Berichte. Juengster Beitrag 2026-09-25. Haeufigste Themen: Allgemein (123), Digitalisierung & KI (18), Finanzen & Vorsorge (13).
-- AXA: 2 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (115), Digitalisierung & KI (21), Finanzen & Vorsorge (20).
-- HUK-Coburg: 7 Beitraege in den letzten 30 Tagen, 36 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (112), KFZ & Mobilität (43), Digitalisierung & KI (17).
-- Generali: 5 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 97 externe Berichte. Juengster Beitrag 2026-09-23. Haeufigste Themen: Allgemein (126), Finanzen & Vorsorge (23), Digitalisierung & KI (17).
-- Signal Iduna: 6 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-27. Haeufigste Themen: Allgemein (118), Digitalisierung & KI (23), Finanzen & Vorsorge (16).
-- R+V: 10 Beitraege in den letzten 30 Tagen, 36 in 90 Tagen. Davon insgesamt 76 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (113), Finanzen & Vorsorge (27), Digitalisierung & KI (15).
-- DEVK: 6 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 5 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-28. Haeufigste Themen: Allgemein (64), Digitalisierung & KI (11), KFZ & Mobilität (9).
-- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 62 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (91), Finanzen & Vorsorge (35), Digitalisierung & KI (14).
-- Cosmos Direkt: 5 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 52 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (94), KFZ & Mobilität (22), Finanzen & Vorsorge (16).
+- ERGO: 1 Beitraege in den letzten 30 Tagen, 6 in 90 Tagen. Davon insgesamt 42 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-25. Haeufigste Themen: Allgemein (78), Digitalisierung & KI (25), Gesundheit & Pflege (15).
+- Allianz: 10 Beitraege in den letzten 30 Tagen, 20 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 96 externe Berichte. Juengster Beitrag 2026-09-28. Haeufigste Themen: Allgemein (122), Digitalisierung & KI (17), Finanzen & Vorsorge (13).
+- AXA: 2 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (118), Digitalisierung & KI (18), Finanzen & Vorsorge (18).
+- HUK-Coburg: 6 Beitraege in den letzten 30 Tagen, 31 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-22. Haeufigste Themen: Allgemein (115), KFZ & Mobilität (48), Digitalisierung & KI (10).
+- Generali: 6 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-09-23. Haeufigste Themen: Allgemein (125), Finanzen & Vorsorge (24), Digitalisierung & KI (14).
+- Signal Iduna: 6 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-27. Haeufigste Themen: Allgemein (121), Digitalisierung & KI (19), Gesundheit & Pflege (15).
+- R+V: 10 Beitraege in den letzten 30 Tagen, 34 in 90 Tagen. Davon insgesamt 76 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (114), Finanzen & Vorsorge (27), Digitalisierung & KI (13).
+- DEVK: 7 Beitraege in den letzten 30 Tagen, 15 in 90 Tagen. Davon insgesamt 5 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-29. Haeufigste Themen: Allgemein (65), KFZ & Mobilität (9), Digitalisierung & KI (8).
+- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 62 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (88), Finanzen & Vorsorge (39), Digitalisierung & KI (11).
+- Cosmos Direkt: 4 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 53 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (94), KFZ & Mobilität (23), Finanzen & Vorsorge (16).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 
@@ -180,7 +180,7 @@ Die beiden Quellen kommen bei den absoluten Niveaus zu deutlich verschiedenen We
 Ein wichtiger Unterschied betrifft die Prompts selbst: Enthaelt ein Prompt bereits den Markennamen, faellt die gemessene Sichtbarkeit der Marke naturgemaess viel hoeher aus. Als Marktbild gilt deshalb ausschliesslich die branding-neutrale Auswertung — nur Prompts ohne Markennamen. Zahlen aus der Ansicht mit Markennennung beantworten die Frage 'wie sichtbar sind wir, wenn gezielt nach uns gefragt wird' und duerfen nicht als Marktanteil ausgegeben werden.
 
 
-Stand der Zweitquellen-Auswertung: 2026-09-20, Fenster 2026-08-22..2026-09-20.
+Stand der Zweitquellen-Auswertung: 2026-09-27, Fenster 2026-08-29..2026-09-27.
 
 
 ## Was daraus folgt — die abgeleiteten Empfehlungen

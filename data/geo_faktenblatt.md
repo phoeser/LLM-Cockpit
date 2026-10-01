@@ -27,7 +27,7 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 30.09.2026 um 12:02 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-09-30.
+Dieses Faktenblatt wurde am 01.10.2026 um 12:35 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-10-01.
 
 Gemessen wird seit 71 Messtagen, von 2026-05-14 bis 2026-09-29. Daraus entstehen 724 Intervall-Beobachtungen ueber 26 Marken.
 
@@ -94,8 +94,8 @@ Die Einzelwerte, jeweils mit ihrem Urteil:
 - News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,10 Prozentpunkte, 95-Prozent-Intervall von -0,43 bis +0,70 Prozentpunkten, beobachtet in 157 von 724 Intervallen ueber 9 Marken.
 - Wikipedia-Ausbau (±): nicht nachweisbar. Punktschaetzer -0,08 Prozentpunkte, 95-Prozent-Intervall von -0,32 bis +0,16 Prozentpunkten, beobachtet in 9 von 724 Intervallen ueber 5 Marken.
 - Geloeschte Seiten: nicht nachweisbar. Punktschaetzer +0,07 Prozentpunkte, 95-Prozent-Intervall von -0,25 bis +0,40 Prozentpunkten, beobachtet in 9 von 724 Intervallen ueber 4 Marken.
-- LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,01 Prozentpunkte, 95-Prozent-Intervall von -0,20 bis +0,17 Prozentpunkten, beobachtet in 86 von 724 Intervallen ueber 9 Marken.
-- Instagram-Posts: nicht nachweisbar. Punktschaetzer -0,00 Prozentpunkte, 95-Prozent-Intervall von -0,18 bis +0,18 Prozentpunkten, beobachtet in 90 von 724 Intervallen ueber 10 Marken.
+- LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,02 Prozentpunkte, 95-Prozent-Intervall von -0,23 bis +0,18 Prozentpunkten, beobachtet in 87 von 724 Intervallen ueber 9 Marken.
+- Instagram-Posts: nicht nachweisbar. Punktschaetzer 0,00 Prozentpunkte, 95-Prozent-Intervall von -0,18 bis +0,18 Prozentpunkten, beobachtet in 91 von 724 Intervallen ueber 10 Marken.
 
 Nicht schaetzbar, mit Grund — diese Arten verschwinden nicht aus der Auswertung, sondern stehen mit ihrer Begruendung da:
 
@@ -138,20 +138,20 @@ Zahlenbeleg dazu: Wild-Cluster-p 0,4916, Richtungswahrscheinlichkeit 80,2 Prozen
 
 ## Presse, News und Bewertungen
 
-Stand der Presseauswertung: 2026-09-30.
+Stand der Presseauswertung: 2026-10-01.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
-- ERGO: 1 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 42 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-25. Haeufigste Themen: Allgemein (79), Digitalisierung & KI (24), Gesundheit & Pflege (15).
-- Allianz: 11 Beitraege in den letzten 30 Tagen, 21 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-09-30. Haeufigste Themen: Allgemein (127), Digitalisierung & KI (16), Finanzen & Vorsorge (13).
-- AXA: 2 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 90 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (117), Digitalisierung & KI (19), Finanzen & Vorsorge (19).
-- HUK-Coburg: 6 Beitraege in den letzten 30 Tagen, 29 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-30. Haeufigste Themen: Allgemein (119), KFZ & Mobilität (45), Digitalisierung & KI (11).
-- Generali: 5 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-23. Haeufigste Themen: Allgemein (127), Finanzen & Vorsorge (22), Digitalisierung & KI (14).
-- Signal Iduna: 6 Beitraege in den letzten 30 Tagen, 11 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-27. Haeufigste Themen: Allgemein (122), Digitalisierung & KI (19), Finanzen & Vorsorge (15).
-- R+V: 8 Beitraege in den letzten 30 Tagen, 32 in 90 Tagen. Davon insgesamt 84 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-30. Haeufigste Themen: Allgemein (119), Finanzen & Vorsorge (27), Digitalisierung & KI (14).
-- DEVK: 5 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 5 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-29. Haeufigste Themen: Allgemein (65), Digitalisierung & KI (9), KFZ & Mobilität (9).
-- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 65 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (92), Finanzen & Vorsorge (36), Digitalisierung & KI (11).
-- Cosmos Direkt: 3 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 52 externe Berichte. Juengster Beitrag 2026-09-17. Haeufigste Themen: Allgemein (96), KFZ & Mobilität (23), Finanzen & Vorsorge (16).
+- ERGO: 1 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 43 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-25. Haeufigste Themen: Allgemein (80), Digitalisierung & KI (24), Gesundheit & Pflege (15).
+- Allianz: 10 Beitraege in den letzten 30 Tagen, 19 in 90 Tagen. Davon insgesamt 88 eigene Mitteilungen und 97 externe Berichte. Juengster Beitrag 2026-09-30. Haeufigste Themen: Allgemein (129), Digitalisierung & KI (18), KFZ & Mobilität (13).
+- AXA: 2 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 89 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-07. Haeufigste Themen: Allgemein (115), Digitalisierung & KI (20), Finanzen & Vorsorge (20).
+- HUK-Coburg: 7 Beitraege in den letzten 30 Tagen, 29 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-09-30. Haeufigste Themen: Allgemein (116), KFZ & Mobilität (47), Digitalisierung & KI (12).
+- Generali: 3 Beitraege in den letzten 30 Tagen, 11 in 90 Tagen. Davon insgesamt 98 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-09-23. Haeufigste Themen: Allgemein (131), Finanzen & Vorsorge (23), Unternehmen & Strategie (13).
+- Signal Iduna: 8 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-01. Haeufigste Themen: Allgemein (121), Digitalisierung & KI (21), Finanzen & Vorsorge (16).
+- R+V: 11 Beitraege in den letzten 30 Tagen, 35 in 90 Tagen. Davon insgesamt 87 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-01. Haeufigste Themen: Allgemein (119), Finanzen & Vorsorge (27), Unternehmen & Strategie (14).
+- DEVK: 6 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 5 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-01. Haeufigste Themen: Allgemein (65), Digitalisierung & KI (9), KFZ & Mobilität (9).
+- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 67 externe Berichte. Juengster Beitrag 2026-09-24. Haeufigste Themen: Allgemein (93), Finanzen & Vorsorge (37), Digitalisierung & KI (12).
+- Cosmos Direkt: 3 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 51 externe Berichte. Juengster Beitrag 2026-09-17. Haeufigste Themen: Allgemein (96), KFZ & Mobilität (23), Finanzen & Vorsorge (17).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 

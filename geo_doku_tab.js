@@ -218,8 +218,8 @@
       h("Zwei-Quellen-Prinzip")+
       'Zwei unabhaengige Messsysteme messen dieselbe Sache — das ist die zentrale Absicherung gegen Zirkularitaet:'+
       tbl(["Quelle","Rolle","Marken","Engines","Erhebung"],[
-        ['<b>Peec AI</b> (fuehrend)','Primaerquelle LLM-Sichtbarkeit',num(R.P.n_brands,0),'5 (inkl. Google AI Overview / AI Mode)','UI-Scraping, woechentlich'],
-        ['Eigener API-Crawl','Backup & Konsistenzpruefung','25','3 (Gemini und Perplexity mit Websuche, ChatGPT ohne)','eigene API, woechentlich (seit 10.08.2026)']
+        ['<b>Peec AI</b> (fuehrend)','Primaerquelle LLM-Sichtbarkeit',num(R.P.n_brands,0),'4: ChatGPT, Gemini, AI Overview, AI Mode (Perplexity bis 15.06.2026)','UI-Scraping, woechentlich'],
+        ['Eigener API-Crawl','Backup & Konsistenzpruefung','8 (ERGO + 7 Wettbewerber, seit 13.08.2026)','1: ChatGPT ohne Websuche (bis 29.09.2026 zusaetzlich Gemini und Perplexity mit Websuche)','eigene API, woechentlich (seit 10.08.2026); Websuche-Engines seit 05.10.2026 aus (Kostenbremse)']
       ])+
       note("Peec fuehrt, weil es mehr Marken und mehr Engines abdeckt; der eigene Crawl liefert den zirkularitaetsarmen externen Gegentest (Kapitel 4, Verfahren 5).")+
       h("Wirkungs- vs. Hebelmetrik")+

@@ -294,12 +294,21 @@
       window.__KORR_PEEC_CELLS3=out; return out;
     }).catch(function(){ return null; });
   }
+  /* 02.10.2026: Kostenbremse (Entscheidung Paul). Der eigene Crawl fragt ab dem Lauf
+     vom 05./06.10.2026 nur noch ChatGPT ohne Websuche ab; Gemini und Perplexity sind aus.
+     Grounded misst danach nur noch Peec. Liegt ein Snapshot vor, in dem Gemini fehlt,
+     ist "keine Daten" kein Ladefehler, sondern Absicht - das wird so gesagt. */
+  function ownGroundedAus(){
+    try{ var g=snapData(); var L=(g&&g.llms)||null; if(!L||!L.length) return false;
+         return L.indexOf("gemini")<0 && L.indexOf("perplexity")<0; }catch(e){ return false; }
+  }
+  var OWN_AUS_TXT="<b>Eigener Crawl ohne Websuche-Kanal</b> — seit 05.10.2026 fragt der eigene Crawl nur noch ChatGPT ohne Websuche ab (Kostenbremse). Den grounded-Kanal misst nur noch Peec. Keine Ersatz-Nullen.";
   function b3ModeLbl(){ return b3Mode==="g"?"grounded (Web-Suche)":(b3Mode==="u"?"UI / ungrounded (ChatGPT)":"alle Engines"); }
   function b3Btns(){
     function btn(id,lbl){ var on=b3Mode===id; return '<button data-m="'+id+'" class="b3m" style="font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid '+(on?"#dc0028":"#ccc")+';background:'+(on?"#dc0028":"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+lbl+'</button>'; }
     return '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:9px"><span style="font-size:11px;font-weight:600;color:#6b7280">Kanal:</span>'+
       btn("g","Grounded (Web-Suche)")+btn("u","UI / ChatGPT")+btn("all","Alle Engines")+
-      '<span style="font-size:10.5px;color:#9ca3af">Peec: Gemini, Perplexity, AI Overview, AI Mode = grounded · ChatGPT = UI. Eigener Crawl: Gemini = grounded · ChatGPT = ungrounded.</span></div>';
+      '<span style="font-size:10.5px;color:#9ca3af">Peec: Gemini, AI Overview, AI Mode = grounded (Perplexity bis 15.06.2026) · ChatGPT = UI. Eigener Crawl: ChatGPT = ungrounded; Gemini (grounded) nur bis 29.09.2026.</span></div>';
   }
   function block3Skeleton(){
     var P=window.PEEC_DATA;
@@ -326,6 +335,9 @@
   function fillBlock3(){
     var box=document.getElementById("korrDiffBox"); if(!box) return;
     var own=ownSov(b3Mode);
+    if(!own && b3Mode==="g" && ownGroundedAus()){
+      box.innerHTML=b3Btns()+'<div style="font-size:12px;color:#9ca3af">'+OWN_AUS_TXT+'</div>'; b3Wire(box); return;
+    }
     if(!own){
       if(fb3Timer) return;
       if(fb3Wait++<40){ fb3Timer=setTimeout(function(){ fb3Timer=null; fillBlock3(); },500); return; }
@@ -359,9 +371,9 @@
       });
       if(!nRows){ box.innerHTML=b3Btns()+'<div style="font-size:12px;color:#9ca3af">Kein Thema hat in beiden Quellen genug Kernmarken — <b>keine Ersatz-Nullen</b>.</div>'; b3Wire(box); return; }
       var rAll=pearson(allOwn,allPeec);
-      var srcTxt = b3Mode==="g" ? "<b>Peec</b> (grounded: Gemini, Perplexity, AI Overview, AI Mode) gegen <b>eigenen Crawl</b> (Gemini-API, grounded)"
+      var srcTxt = b3Mode==="g" ? "<b>Peec</b> (grounded: Gemini, AI Overview, AI Mode) gegen <b>eigenen Crawl</b> (Gemini-API, grounded)"
                  : (b3Mode==="u" ? "<b>Peec</b> (ChatGPT-UI) gegen <b>eigenen Crawl</b> (ChatGPT-API, ungrounded)"
-                                 : "<b>Peec</b> (alle Engines) gegen <b>eigenen Crawl</b> (Mittel aus Gemini und ChatGPT)");
+                                 : "<b>Peec</b> (alle Engines) gegen <b>eigenen Crawl</b> ("+(ownGroundedAus()?"seit 05.10.2026 nur ChatGPT":"Mittel aus Gemini und ChatGPT")+")");
       box.innerHTML=b3Btns()+'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:8px">'+
         '<div style="font-size:12px;color:#4b5563;max-width:640px">SoV je Thema für die vier Kernmarken, Zellenformat <b>Peec / eigener Crawl</b> (jeweils %): '+srcTxt+'. Rechte Spalte: Rang-Konvergenz über genau diese vier Marken (Spearman-ρ).</div>'+
         '<span style="font-size:11px;font-weight:700;color:#067d3a;background:#e6f5ec;border-radius:6px;padding:4px 10px;white-space:nowrap">Gesamt-Korrelation r = '+(rAll==null?"—":num(rAll,2))+'</span></div>'+

@@ -229,8 +229,17 @@
     function b(id,lbl){ var on=gwMode===id; return '<button data-gm="'+id+'" class="gwm" style="font-size:11px;padding:3px 11px;border-radius:8px;border:1px solid '+(on?ERGO_RED:"#ccc")+';background:'+(on?ERGO_RED:"#fff")+';color:'+(on?"#fff":"#282d37")+';cursor:pointer">'+lbl+'</button>'; }
     return '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 12px"><span style="font-size:11px;font-weight:600;color:'+GREY+'">Kanal:</span>'+
       b("g","Grounded (Web-Suche)")+b("u","UI / ChatGPT")+b("all","Alle Engines")+
-      '<span style="font-size:10.5px;color:'+MUTE+'">Peec: Gemini, Perplexity, AI&nbsp;Overview, AI&nbsp;Mode = grounded · ChatGPT = UI. Eigener Crawl: Gemini = grounded · ChatGPT = UI.</span></div>';
+      '<span style="font-size:10.5px;color:'+MUTE+'">Peec: Gemini, AI&nbsp;Overview, AI&nbsp;Mode = grounded (Perplexity bis 15.06.2026) · ChatGPT = UI. Eigener Crawl: ChatGPT = UI; Gemini (grounded) nur bis 29.09.2026.</span></div>';
   }
+  /* 02.10.2026: Kostenbremse (Entscheidung Paul). Der eigene Crawl fragt ab dem Lauf
+     vom 05./06.10.2026 nur noch ChatGPT ohne Websuche ab; Gemini und Perplexity sind aus.
+     Grounded misst danach nur noch Peec. Liegt ein Snapshot vor, in dem Gemini fehlt,
+     ist "keine Daten" kein Ladefehler, sondern Absicht - das wird so gesagt. */
+  function ownGroundedAus(){
+    try{ var g=snapData(); var L=(g&&g.llms)||null; if(!L||!L.length) return false;
+         return L.indexOf("gemini")<0 && L.indexOf("perplexity")<0; }catch(e){ return false; }
+  }
+  var OWN_AUS_TXT="<b>Eigener Crawl ohne Websuche-Kanal</b> — seit 05.10.2026 fragt der eigene Crawl nur noch ChatGPT ohne Websuche ab (Kostenbremse). Den grounded-Kanal misst nur noch Peec. Keine Ersatz-Nullen.";
   function chanLbl(){ return gwMode==="g"?"Grounded (Web-Suche)":(gwMode==="u"?"UI / ChatGPT":"Alle Engines"); }
   function h(n,txt){ return '<div style="font-size:14px;font-weight:700;color:'+INK+';margin:18px 0 2px">'+n+' · '+txt+'</div>'; }
   function sub(txt){ return '<div style="font-size:11.5px;color:'+MUTE+';margin:1px 0 10px">'+txt+'</div>'; }
@@ -297,7 +306,7 @@
       value: O&&O.app!=null? pctS(O.app,1) : null,
       accent:INK, sub: O&&O.app!=null?("ø ueber "+O.nProd+" Themen"):"",
       plain: (O&&O.app!=null)? "ERGO-Appearance-Rate im eigenen API-Crawl (Kanal "+chanLbl()+"), Themen mit leerem Kanal ausgelassen."
-             : "<b>Eigener Crawl (geo_snapshot.json) fuer diesen Kanal nicht ladbar</b> — erscheint nach Reload. Keine Ersatz-Null.",
+             : ((gwMode!=="u" && ownGroundedAus() && gwMode==="g") ? OWN_AUS_TXT : "<b>Eigener Crawl (geo_snapshot.json) fuer diesen Kanal nicht ladbar</b> — erscheint nach Reload. Keine Ersatz-Null."),
       foot:"Quelle: eigener Crawl · appearance_rate, Produkte mit Kanal-Summe 0 uebersprungen" }));
     // 3) Position in der Antwort
     var posTxt = (P&&P.pos!=null)? num(P.pos,1) : "—";
@@ -373,7 +382,7 @@
   function blockB(cells,od){
     var C=cells&&cells[gwMode];
     if(!C){ return '<div id="gwBBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'"><b>Peec-Zellen nicht ladbar</b> — Themen-Detail erscheint nach Reload. Keine Ersatz-Nullen.</div>'; }
-    if(!od){ return '<div id="gwBBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'"><b>Eigener Crawl nicht ladbar</b> — Themen-Detail erscheint nach Reload. Keine Ersatz-Nullen.</div>'; }
+    if(!od){ return '<div id="gwBBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'">'+((gwMode==="g"&&ownGroundedAus())?OWN_AUS_TXT:'<b>Eigener Crawl nicht ladbar</b> — Themen-Detail erscheint nach Reload. Keine Ersatz-Nullen.')+'</div>'; }
     var pids=blockBData(cells,od)||[];
     if(!pids.length){ return '<div id="gwBBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'">Fuer den Kanal <b>'+chanLbl()+'</b> keine gemeinsamen Themen. Keine Ersatz-Nullen.</div>'; }
     var rows="";
@@ -421,7 +430,7 @@
      ============================================================ */
   function blockC(cells,od){
     var C=cells&&cells[gwMode];
-    if(!C||!od){ return '<div id="gwCBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'"><b>Kreuz-Matrix benoetigt eigenen Crawl und Peec-Themenliste</b> — erscheint nach Reload. Keine Ersatz-Nullen.</div>'; }
+    if(!C||!od){ return '<div id="gwCBox" style="border:1px solid '+LINE+';border-radius:11px;padding:14px 16px;font-size:12px;color:'+MUTE+'">'+((!od&&gwMode==="g"&&ownGroundedAus())?OWN_AUS_TXT:'<b>Kreuz-Matrix benoetigt eigenen Crawl und Peec-Themenliste</b> — erscheint nach Reload. Keine Ersatz-Nullen.')+'</div>'; }
     // Universum = B-Datenbasis des Kanals (gemeinsame Themen)
     var pids=blockBData(cells,od)||[];
     var q={mc:[],mn:[],nc:[],nn:[]}, noData=[], noCite=[];

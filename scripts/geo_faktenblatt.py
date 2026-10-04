@@ -539,6 +539,15 @@ def kap_zweitquelle(fp):
         "offengelegt und bis zur einzelnen Antwort nachvollziehbar. Der eigene Crawl dient als "
         "Gegenprobe und Auditgrundlage.\n"
     )
+    # 02.10.2026: Kostenbremse (Entscheidung Paul) - der eigene Crawl fragt ab dem Lauf
+    # vom 05./06.10.2026 nur noch ChatGPT ohne Websuche ab.
+    t.append(
+        "Seit dem 05.10.2026 fragt der eigene Crawl aus Kostengruenden nur noch ChatGPT ohne "
+        "Websuche ab. Den Kanal mit Websuche (Gemini, Google AI Overview, AI Mode) misst seither "
+        "nur noch der kommerzielle Dienst; Perplexity misst keine der beiden Quellen mehr. Die "
+        "Gegenprobe gibt es damit nur noch im Kanal ohne Websuche, fuer den Kanal mit Websuche "
+        "reicht sie bis zum Lauf vom 29.09.2026.\n"
+    )
     t.append(
         "Die beiden Quellen kommen bei den absoluten Niveaus zu deutlich verschiedenen Werten. "
         "Das ist erwartbar und kein Fehler: Sie messen ueber unterschiedliche Engines, mit "

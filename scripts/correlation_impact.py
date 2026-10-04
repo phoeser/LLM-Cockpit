@@ -155,6 +155,24 @@ STRUCTURAL_BREAKS = [
         "warum_nicht": ("Der Engine-Mix vor dem 15.08. laesst sich nicht nachtraeglich "
                         "um Perplexity ergaenzen - die Antworten wurden nie erhoben."),
     },
+    # ---- 02.10.2026: Kostenbremse (Entscheidung Paul). Gemini und Perplexity im
+    # eigenen Crawl abgeschaltet; grounded misst danach nur noch Peec.
+    {
+        "brand": "*",
+        "date": "2026-10-05",
+        "grund": ("Eigener Crawl ab dem Lauf vom 05./06.10.2026 nur noch mit ChatGPT ohne "
+                  "Websuche (Gemini und Perplexity abgeschaltet, Kostenbremse, Entscheidung "
+                  "Paul 01.10.). Der Gesamt-SoV des eigenen Crawls ist ab hier der "
+                  "ChatGPT-Wert allein, vorher das Mittel aus drei Engines: ERGO am 29.09. "
+                  "gesamt 13,1 %, ChatGPT allein 9,6 %. Der grounded-Kanal des eigenen "
+                  "Crawls endet mit dem Lauf vom 29.09. (Perplexity dort bereits "
+                  "fortgeschrieben vom 22.09.)."),
+        "nachrechenbar": True,
+        "warum_nicht": ("Rueckwaerts vergleichbar ist die ChatGPT-Reihe (sov_history "
+                        "source=snapshot_llm, llm=chatgpt; level_cells sov_u): sie laeuft "
+                        "ueber das Datum hinweg unveraendert weiter. Gesamt- und grounded-"
+                        "Werte sind ueber das Datum nicht vergleichbar."),
+    },
 ]
 
 

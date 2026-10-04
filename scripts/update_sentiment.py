@@ -1291,15 +1291,22 @@ def _nur_woechentlich_ueberspringen():
     Sichtbarkeit wird aber nur woechentlich gemessen - taegliche Bewertungs-
     Ereignisse bringen der Auswertung kaum etwas und kosten 30x im Monat.
 
-    Der woechentliche Lauf ist der Montags-Lauf von "Weekly Check24 Prices &
-    Reviews" (der ruft dieses Skript ohnehin im Wochenlauf auf). Der taegliche
-    Nightly ueberspringt deshalb, AUSSER:
-      - er wurde von Hand gestartet (workflow_dispatch), oder
-      - die letzte Auswertung (as_of) ist aelter als 7 Tage - Sicherheitsnetz,
-        falls der Montagslauf ausfiel. Der Pipeline-Waechter meldet erst ab 9.
-    Erzwingen: SENTIMENT_ERZWINGEN=1
+    02.10.2026, Korrektur: Der woechentliche Lauf ist jetzt der MONTAGS-NIGHTLY,
+    nicht mehr der Preis-Workflow. Grund (Pruefung 29.09.): Dieses Skript
+    schreibt die Dashboard-Werte in dashboard_template.html; der Preis-Workflow
+    committet aber nur data/ und shared/ - die Template-Aenderung ging verloren,
+    das Dashboard blieb auf dem alten Stand, und das Sicherheitsnetz liess den
+    Nightly zusaetzlich laufen (rund 8 statt 4 Laeufe im Monat).
 
-    ACHTUNG fuer die Auswertung: Ab diesem Tag entstehen review_change /
+    Regeln fuer geplante Laeufe:
+      - Nightly: laeuft montags (UTC). An anderen Tagen nur, wenn die letzte
+        Auswertung (as_of) aelter als 7 Tage ist - Sicherheitsnetz, falls der
+        Montagslauf ausfiel. Der Pipeline-Waechter meldet erst ab 9.
+      - Jeder andere geplante Workflow (z. B. "Weekly Check24 Prices &
+        Reviews"): ueberspringt immer - sonst doppelte Kosten am Montag.
+    Handstart (workflow_dispatch) laeuft immer. Erzwingen: SENTIMENT_ERZWINGEN=1
+
+    ACHTUNG fuer die Auswertung: Ab 27.09. entstehen review_change /
     review_volume-Ereignisse woechentlich (kumuliert) statt taeglich. Das ist
     ein Regimewechsel in der Ereigniszahl, kein Messbruch der Sichtbarkeit.
     """
@@ -1308,19 +1315,25 @@ def _nur_woechentlich_ueberspringen():
     if os.environ.get("GITHUB_EVENT_NAME") != "schedule":
         return False
     if "Nightly" not in os.environ.get("GITHUB_WORKFLOW", ""):
+        print("Kostenbremse: Stimmungs-Auswertung laeuft im Montags-Nightly - "
+              "dieser Workflow ueberspringt.")
+        return True
+    jetzt = datetime.now(timezone.utc)
+    if jetzt.weekday() == 0:
+        print("Kostenbremse: Montag - woechentliche Stimmungs-Auswertung laeuft.")
         return False
     try:
         pfad = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "sentiment_dashboard.json")
         with open(pfad, "r", encoding="utf-8") as f:
             stand = json.load(f).get("as_of", "")
-        alter = (datetime.now(timezone.utc).date() - datetime.strptime(stand, "%Y-%m-%d").date()).days
+        alter = (jetzt.date() - datetime.strptime(stand, "%Y-%m-%d").date()).days
     except Exception:
         return False  # kein lesbarer Stand -> lieber laufen
     if alter > 7:
         print("Sicherheitsnetz: Stimmungsdaten sind %d Tage alt - Lauf wird ausgefuehrt." % alter)
         return False
-    print("Kostenbremse: Stimmungs-Auswertung laeuft woechentlich (Montag, Preis-Workflow). "
-          "Letzte Auswertung vor %d Tagen - Nightly ueberspringt." % alter)
+    print("Kostenbremse: Stimmungs-Auswertung laeuft montags im Nightly. "
+          "Letzte Auswertung vor %d Tagen - heute uebersprungen." % alter)
     return True
 
 

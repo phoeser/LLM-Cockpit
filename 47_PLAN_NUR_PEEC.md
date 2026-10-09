@@ -1,6 +1,18 @@
 # 47 — Plan: Sichtbarkeit nur noch über Peec (Option C)
 
-**Stand 28.09.2026 (Abschnitt 5 korrigiert) · Entwurf, nicht beschlossen.** Nichts davon ist umgesetzt.
+**Stand 28.09.2026 (Abschnitt 5 korrigiert) · Umgesetzt 04.10.2026 in einer
+schärferen Form als C-light** (Nachtrag 09.10., Entscheidung Paul 01.10.):
+
+| Engine | Eigener Crawl ab 05.10.2026 |
+|---|---|
+| Gemini (grounded) | **aus** — Peec misst Gemini, AI Overview, AI Mode |
+| Perplexity (grounded) | **aus** — aus Kostengründen, obwohl Peec Perplexity nicht misst. Perplexity wird damit von niemandem mehr gemessen. |
+| GPT-4o mini ohne Websuche | **bleibt** |
+
+Seiten-, Preis-, Presse- und alle übrigen Crawls laufen unverändert. Umsetzung
+und erster Lauf (06.10.): `46_NACHTRAG_2026-09-25.md`, Abschnitt 8. Der Text
+unten ist der Planungsstand vom 28.09. und bleibt zur Nachvollziehbarkeit
+stehen.
 
 ## Kernaussage
 
@@ -94,3 +106,5 @@ liegt — das kostet Perplexity im eigenen Crawl.
 ## 6 · Entscheidung
 
 A so lassen · C-light · C vollständig — Paul entscheidet.
+
+**Entschieden 01.10.2026:** C-light ohne Perplexity (siehe Kopf).

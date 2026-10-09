@@ -12,6 +12,9 @@ großer Sprachmodelle ist, und wertet aus, welche Maßnahmen darauf wirken.
 | Datei | Inhalt |
 |---|---|
 | **[45_PROJEKTDOKUMENTATION.md](45_PROJEKTDOKUMENTATION.md)** | **Der Einstieg.** Auftrag, Aufbau, Datenquellen, Auswertung, Befunde, Grenzen, Glossar, Dateiverzeichnis |
+| [48_BEFUNDE_2026-10-09.md](48_BEFUNDE_2026-10-09.md) | Neuester Stand (09.10.2026): Sperre durch allianz.de mit Optionen, Abkündigungen der genutzten KI-Modelle, offene Punkte |
+| [46_NACHTRAG_2026-09-25.md](46_NACHTRAG_2026-09-25.md) | Nachtrag ab 25.09.: MCP-Server, Kostenbremse, Umstellung des eigenen Crawls auf ChatGPT ohne Websuche |
+| [47_PLAN_NUR_PEEC.md](47_PLAN_NUR_PEEC.md) | Plan und Abwägung „Sichtbarkeit mit Websuche nur über Peec" (umgesetzt 04.10.2026) |
 | [44_UEBERGABE.md](44_UEBERGABE.md) | Betriebsstand: wo das System heute steht, wie man es bedient, wo es beißt |
 | [43_TECHNISCHE_DOKUMENTATION.md](43_TECHNISCHE_DOKUMENTATION.md) | Technische Tiefe: wie die Modelle rechnen (Stand 18.08.2026) |
 | [42_TREIBER_SCHAERFEN_2026-08-17.md](42_TREIBER_SCHAERFEN_2026-08-17.md) | Vorgeschichte der Treiber-Analyse |
@@ -23,16 +26,18 @@ großer Sprachmodelle ist, und wertet aus, welche Maßnahmen darauf wirken.
 
 | Workflow | Takt (UTC) |
 |---|---|
-| `nightly-update.yml` — Sammler, Auswertung, Dashboard-Neubau | täglich 05:30 (real ~06:29) |
+| `nightly-update.yml` — Sammler, Auswertung, Dashboard-Neubau | täglich 05:30 (fertig real 10:00–12:50); Marken-Stimmung nur montags |
 | `peec-daily-sources.yml` — Peec-Quellen | täglich 04:00 |
 | `pipeline-waechter.yml` — Frischeprüfung | täglich 09:00 |
-| `weekly-prices.yml` — Check24 | montags 05:45 |
-| `analyze.yml` (Repo `geo-visibility-tool`) — **der eigentliche Messlauf** | montags 23:10 |
+| `weekly-prices.yml` — Check24 | montags 05:45; Oktober/November täglich |
+| `berater-reviews.yml` — Google Reviews der Berater | erster Sonntag im Monat 05:00 (seit 27.09.2026) |
+| `analyze.yml` (Repo `geo-visibility-tool`) — **der eigentliche Messlauf**, seit 05.10.2026 nur ChatGPT ohne Websuche | montags 23:10 (Start real ~02:30 Di) |
 | `dashboard-deploy.yml` — Auslieferung | **nur manuell** |
 
 Die vollständige Liste steht in Kapitel 5 der Projektdokumentation. Wichtig:
 Der Messlauf ist **wöchentlich**; das Dashboard aktualisiert sich täglich, die
-Messung dahinter nicht. Und der Deploy löst nicht automatisch aus — nach jeder
+Messung dahinter nicht. Sichtbarkeit **mit** Websuche misst seit 05.10.2026
+nur noch Peec. Und der Deploy löst nicht automatisch aus — nach jeder
 Anzeige-Änderung muss „Dashboard ausliefern" von Hand gestartet werden.
 
 ---

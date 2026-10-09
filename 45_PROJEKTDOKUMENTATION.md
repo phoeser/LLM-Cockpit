@@ -1,6 +1,8 @@
 # 45 — Projektdokumentation: ERGO LLM-Sichtbarkeits-Cockpit
 
-**Stand 13.09.2026.** Dieses Dokument beschreibt das Projekt als Ganzes: warum
+**Stand 13.09.2026, fortgeschrieben 09.10.2026** (Kostenbremse 26.09.,
+Umstellung des eigenen Crawls auf ChatGPT ohne Websuche ab 05.10.).
+Geänderte Aussagen tragen ihr Datum. Dieses Dokument beschreibt das Projekt als Ganzes: warum
 es existiert, was es misst, wie es gebaut ist, was es bisher herausgefunden hat
 und wie man es betreibt. Es ist der Einstieg — die beiden anderen Dokumente
 gehen tiefer beziehungsweise näher an den Tagesbetrieb.
@@ -70,8 +72,8 @@ Antworten aus. Umfang des laufenden Messaufbaus:
 |---|---|
 | Produktlinien | 13 (Zahnzusatz, Berufsunfähigkeit, Kfz, Hausrat, Haftpflicht, Rechtsschutz, Reise, Risikoleben, Unfall, Sterbegeld, Krankenhauszusatz, Betriebshaftpflicht, Firmenrechtsschutz) |
 | Fragen (Prompts) | 383, je Produktlinie 28–30 |
-| Aktive Engines | 3: Gemini 2.5 Flash, GPT-4o mini, Perplexity Sonar |
-| Konfiguriert, aber aus | Claude, Grok, Google AI Overview, Google AI Mode |
+| Aktive Engines | **seit 05.10.2026: 1** — GPT-4o mini ohne Websuche. Bis 29.09.2026 drei: zusätzlich Gemini 2.5 Flash und Perplexity Sonar (abgeschaltet aus Kostengründen, Entscheidung Paul 01.10.) |
+| Konfiguriert, aber aus | Gemini, Perplexity (seit 05.10.2026), Claude, Grok, Google AI Overview, Google AI Mode |
 | Beobachtete Marken (Crawl) | ERGO + 7 Wettbewerber (Allianz, AXA, Generali, HUK-Coburg, Signal Iduna, CosmosDirekt, DKV) |
 | Marken im Auswertungs-Panel | 26 (inkl. der über Peec erfassten) |
 | Geprüfte URLs je Lauf | rund 2.660 |
@@ -92,7 +94,10 @@ Die Engines verhalten sich grundverschieden, je nachdem ob sie während der
 Antwort im Web suchen:
 
 - **grounded** (Gemini, Perplexity): sucht live, zitiert Quellen. Hier zählt,
-  was im Netz auffindbar und zitierfähig ist.
+  was im Netz auffindbar und zitierfähig ist. **Seit 05.10.2026 misst diesen
+  Kanal nur noch Peec** (Gemini, AI Overview, AI Mode; Perplexity misst Peec
+  seit 15.06.2026 nicht mehr). Der eigene Crawl liefert grounded-Werte nur bis
+  29.09.2026.
 - **ungrounded** (ChatGPT ohne Websuche): antwortet aus dem Modellwissen. Hier
   zählt, was zum Trainingszeitpunkt im Netz stand und wie oft.
 
@@ -160,12 +165,12 @@ ausreichend; die Aussagekraft entsteht aus dem Abgleich.
 
 | Quelle | Was sie liefert | Takt | Ablage |
 |---|---|---|---|
-| **Eigener GEO-Crawl** | SoV, Zitate, Antworttexte, Seitenänderungen | wöchentlich Mo | `data/geo_snapshot.json`, `sov_history.jsonl` |
+| **Eigener GEO-Crawl** | SoV, Zitate, Antworttexte, Seitenänderungen (seit 05.10.2026 nur noch ChatGPT ohne Websuche; Seiten-Crawl unverändert) | wöchentlich Mo | `data/geo_snapshot.json`, `sov_history.jsonl` |
 | **Peec** | zweite, unabhängige Sichtbarkeitsmessung; Quellen-Snapshots, Funnel-Segmente | täglich | `data/peec_*.json/.csv`, `data/peec_snapshots/` |
 | **Check24** | Marktpreise und Portal-Bewertungen der Wettbewerber | wöchentlich Mo | `data/price_comparison.json`, `price_history.jsonl` |
 | **Presse-Feed** | Presse- und News-Erwähnungen je Marke | täglich | `data/press_data.json`, `press_history.json` |
 | **LinkedIn / Instagram** | eigene Social-Aktivität als Ereignisstrom | täglich | `data/linkedin_posts.jsonl`, `instagram_posts.jsonl` |
-| **Google Reviews (Berater)** | Bewertungen der Vertriebsorganisation | wöchentlich So | `data/berater_reviews.json` |
+| **Google Reviews (Berater)** | Bewertungen der Vertriebsorganisation | monatlich, 1. Sonntag (seit 27.09.2026; vorher wöchentlich) | `data/berater_reviews.json` |
 | **Externe Ratings** | Testurteile und Siegel | monatlich | `data/ratings_external.json` |
 
 Dazu ein monatlicher Sitemap-Crawl aller Anbieter-Domains
@@ -178,6 +183,11 @@ beide in dieselbe Richtung zeigen, ist ein Befund belastbar; wenn nicht, ist
 zuerst die Messung verdächtig, nicht der Markt. Der Abweichungsvergleich steht
 im Reiter „LLM-Sichtbarkeit" zwischen beiden Quellen.
 
+**Seit 05.10.2026 eingeschränkt:** Der eigene Crawl misst nur noch ChatGPT
+ohne Websuche, Peec nur noch Kanäle mit Websuche (ChatGPT dort gemischt).
+Eine Gegenprobe mit gleicher Methode gibt es für den grounded-Kanal nur für
+die Zeit bis 29.09.2026. Plan und Abwägung: `47_PLAN_NUR_PEEC.md`.
+
 ---
 
 ## 5 · Taktung und Workflows
@@ -186,11 +196,11 @@ im Reiter „LLM-Sichtbarkeit" zwischen beiden Quellen.
 
 | Workflow | Zweck | Takt (UTC) |
 |---|---|---|
-| `nightly-update.yml` | Alle Sammler, Auswertung, Dashboard-Neubau | geplant 05:30, **fertig real 10:00–11:50** |
+| `nightly-update.yml` | Alle Sammler, Auswertung, Dashboard-Neubau. Marken-Stimmung (`update_sentiment.py`) seit 27.09.2026 nur wöchentlich — seit 04.10. im Montags-Nightly, Sicherheitsnetz ab 7 Tagen Datenalter | geplant 05:30, **fertig real 10:00–11:50** |
 | `peec-daily-sources.yml` | Peec-Quellen und Snapshot | geplant 04:00, fertig real 08:30–09:45 |
 | `pipeline-waechter.yml` | Frischeprüfung, füllt `pipeline_health.json` | täglich 09:00 |
-| `weekly-prices.yml` | Check24-Preise und Bewertungen | montags 05:45 |
-| `berater-reviews.yml` | Google Reviews der Berater | sonntags 05:00 |
+| `weekly-prices.yml` | Check24-Preise und Bewertungen | montags 05:45; im Oktober und November täglich 05:45 (Kfz-Wechselsaison, kein bezahlter Dienst) |
+| `berater-reviews.yml` | Google Reviews der Berater | startet sonntags 05:00, arbeitet seit 27.09.2026 nur am **ersten Sonntag des Monats** (Sperre im Skript; Handstart immer) |
 | `monthly-urls.yml` | Sitemap-Crawl der Anbieter | 1. des Monats 06:45 |
 | `monthly-ratings-research.yml` | Ratings-Recherche | 1. des Monats 02:00 |
 | `dashboard-deploy.yml` | Auslieferung | **nur manuell** |
@@ -201,7 +211,7 @@ im Reiter „LLM-Sichtbarkeit" zwischen beiden Quellen.
 
 | Workflow | Zweck | Takt (UTC) |
 |---|---|---|
-| `analyze.yml` | Der eigentliche Messlauf | **wöchentlich, Montag 23:10** |
+| `analyze.yml` | Der eigentliche Messlauf (seit 05.10.2026 nur ChatGPT ohne Websuche) | **wöchentlich, Montag 23:10**; startet real gegen 02:30–03:00 UTC am Dienstag |
 | `backfill.yml`, `revert-backfill.yml` | Historische Nachträge | manuell |
 | `search-ab-test.yml` | Websuche-A/B-Experiment | manuell |
 
@@ -292,6 +302,12 @@ siehe Kapitel 7.
 ---
 
 ## 7 · Der Befundstand
+
+> **Hinweis 09.10.2026:** Die Zahlen dieses Kapitels beruhen auf Daten bis
+> 13.09.2026 mit drei Engines. Am 05.10.2026 liegt ein Strukturbruch
+> (nur noch ChatGPT ohne Websuche im eigenen Crawl); Vergleiche über dieses
+> Datum hinweg nur innerhalb der ChatGPT-Reihe. Das Treibermodell lässt das
+> Intervall 29.09.→06.10. aus.
 
 Alle Zahlen dieses Kapitels stammen aus `data/correlation_impact.json`
 (erzeugt 13.09.2026, 11:16 UTC) und dem Messlauf `2026-09-08T13-14-40Z`
@@ -608,6 +624,8 @@ Diese Regeln sind nicht dekorativ. Jede einzelne stammt aus einem Vorfall.
 | **Wöchentlicher Messtakt** | Ein Messtag je Woche | Statistische Aussagen wachsen langsam. Das Preis-Modell brauchte vom Strukturbruch bis zum ersten gesicherten Kanal fünf Wochen. |
 | **Keine Kontrollgruppe** | Beobachtungsstudie in einem Markt | Kein Design der Welt macht daraus einen Kausalnachweis. Deshalb Placebo, Out-of-Sample und Leave-one-out. |
 | **Explorative Versatz-Suche** | Wer acht Zeitversätze testet und den stärksten meldet, findet auch in reinem Rauschen etwas. | Der Block ist als explorativ gekennzeichnet und FDR-korrigiert. |
+| **Nur noch ein Kanal im eigenen Crawl** (seit 05.10.2026) | Mit Websuche misst nur noch Peec; Perplexity misst seither niemand mehr. | Keine methodengleiche Gegenprobe mehr für den grounded-Kanal; Befunde dort hängen an einem Anbieter. |
+| **allianz.de sperrt den Seiten-Crawl** (seit 22.09.2026) | Rund 670 Allianz-Adressen antworten aus GitHub Actions nicht; Ursache nicht belegt. | Die Seiten-Erreichbarkeit fällt unter die Schwelle, die Laufampel steht deshalb auf Rot. Die Analysen nutzen die Ampel nicht. Optionen in `48_BEFUNDE_2026-10-09.md`. |
 | **Robots-Treue** | Der Crawl respektiert `robots.txt` (`respect_robots_txt: true`). | Gesperrte Strecken erscheinen nicht — das ist gewollt und zugleich der Grund, warum der Tarifrechner-Befund überhaupt sichtbar wurde. |
 
 ---
@@ -637,10 +655,25 @@ Die wichtigsten Weichenstellungen, jeweils mit dem Grund:
 | 08.09. | Guthaben aufgeladen, Perplexity wieder grün (Lauf `2026-09-08T13-14-40Z`, Score 100) |
 | 11.09. | **GEO-Repo:** Executive Summary nutzt den konfigurierten Auswerte-LLM statt des abgeschalteten Claude-Clients (Commit `526cb679`) |
 | 13.09. | Diese Projektdokumentation und die Übergabe-Datei |
+| 22.09. | Lauf auf Rot: allianz.de sperrt den Seiten-Crawl (Erreichbarkeit 72,4 %) |
+| 25.09. | MCP-Server auf den Cockpit-Daten (v1.0, Review → v1.0.1) |
+| 26./27.09. | **Kostenbremse 1** (Entscheidung Paul): Berater-Bewertungen monatlich, Marken-Stimmung wöchentlich |
+| 29.09. | Lauf wieder rot; Perplexity 0 Nennungen; Fortschreibungsfehler filtert ERGO heraus (8,83 % statt 13,1 %) |
+| 01.10. | **Entscheidung Paul:** Gemini und Perplexity im eigenen Crawl aus, Sichtbarkeit mit Websuche nur noch über Peec, ChatGPT ohne Websuche bleibt |
+| 02.10. | Fortschreibungsfehler behoben, Lauf 29.09. nachgerechnet (geo-visibility-tool `eb50be7`) |
+| 04.10. | Umstellung live: Config `9090c1d`, Cockpit-Patch `4746421`, Strukturbruch 05.10. registriert |
+| 06.10. | Erster Lauf nur mit ChatGPT: ERGO 9,27 % (29.09. ChatGPT allein 9,59 %), Treibermodell und Wächter fehlerfrei |
+| 09.10. | Doku fortgeschrieben; Allianz-Sperre und Modell-Abkündigungen geprüft; MCP-Server v1.1 (Lesart „nur ChatGPT seit 05.10."); Voll-Zerlegung pausiert bis drei Messtage nach dem Bruch (`48_BEFUNDE_2026-10-09.md`) |
 
 ---
 
 ## 13 · Offene Punkte
+
+**Stand 09.10.2026** — aktuelle Liste in `48_BEFUNDE_2026-10-09.md`:
+allianz.de-Sperre (Optionen liegen bei Paul), Voll-Zerlegung im Treibermodell
+pausiert bis voraussichtlich 20.10. (drei Messtage nach dem Bruch), Modellpflege `gpt-5-mini` (Abschaltung
+11.12.2026) und `gemini-2.5-flash`, öffentliche Datendateien. MCP-Server v1.1 ist seit 09.10. live. Die Tabelle unten ist der Stand vom 13.09.
+und bleibt zur Nachvollziehbarkeit stehen.
 
 | Punkt | Stand 13.09.2026 | Nächster Schritt |
 |---|---|---|
@@ -726,7 +759,9 @@ Die Befundlage ist eindeutig genug für eine Priorisierung:
 
 Nummerierte Markdown-Dateien im Cockpit-Repo. 42 ist die Treiber-Schärfung vom
 August, 43 die technische Dokumentation, 44 die laufende Übergabe, 45 dieses
-Dokument.
+Dokument, 46 der Nachtrag ab 25.09. (MCP-Server, Kostenbremse, Umstellung),
+47 der Plan „nur Peec", 48 die Befunde vom 09.10. (Allianz-Sperre,
+Modell-Abkündigungen).
 
 ---
 

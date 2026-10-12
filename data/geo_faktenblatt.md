@@ -27,7 +27,7 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 12.10.2026 um 06:33 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-10-12.
+Dieses Faktenblatt wurde am 12.10.2026 um 13:54 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-10-12.
 
 Gemessen wird seit 72 Messtagen, von 2026-05-14 bis 2026-10-06. Daraus entstehen 724 Intervall-Beobachtungen ueber 26 Marken.
 
@@ -86,7 +86,7 @@ Nicht schaetzbar, mit Grund — diese Arten verschwinden nicht aus der Auswertun
 - Domain-/Subdomain-Aenderungen: Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
 - Beitragsanpassung (angekuendigt): Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
 
-Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,023 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,0 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
+Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,023 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,1 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
 
 
 ## Was es in die Zitate schafft
@@ -123,16 +123,16 @@ Stand der Presseauswertung: 2026-10-12.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
-- ERGO: 3 Beitraege in den letzten 30 Tagen, 12 in 90 Tagen. Davon insgesamt 50 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (83), Digitalisierung & KI (26), Gesundheit & Pflege (19).
-- Allianz: 14 Beitraege in den letzten 30 Tagen, 23 in 90 Tagen. Davon insgesamt 87 eigene Mitteilungen und 97 externe Berichte. Juengster Beitrag 2026-10-11. Haeufigste Themen: Allgemein (126), Digitalisierung & KI (15), Finanzen & Vorsorge (12).
-- AXA: 4 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 98 eigene Mitteilungen und 97 externe Berichte. Juengster Beitrag 2026-10-09. Haeufigste Themen: Allgemein (120), Finanzen & Vorsorge (22), Digitalisierung & KI (21).
-- HUK-Coburg: 12 Beitraege in den letzten 30 Tagen, 42 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-10-10. Haeufigste Themen: Allgemein (115), KFZ & Mobilität (43), Digitalisierung & KI (12).
-- Generali: 6 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 97 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (136), Finanzen & Vorsorge (19), Unternehmen & Strategie (13).
-- Signal Iduna: 8 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-10-09. Haeufigste Themen: Allgemein (118), Digitalisierung & KI (18), Produkt & Innovation (16).
-- R+V: 13 Beitraege in den letzten 30 Tagen, 35 in 90 Tagen. Davon insgesamt 94 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-10-08. Haeufigste Themen: Allgemein (124), Finanzen & Vorsorge (27), Unternehmen & Strategie (15).
-- DEVK: 7 Beitraege in den letzten 30 Tagen, 12 in 90 Tagen. Davon insgesamt 5 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-01. Haeufigste Themen: Allgemein (61), Finanzen & Vorsorge (11), KFZ & Mobilität (10).
-- Hannoversche: 3 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 69 externe Berichte. Juengster Beitrag 2026-10-10. Haeufigste Themen: Allgemein (97), Finanzen & Vorsorge (37), Gesundheit & Pflege (10).
-- Cosmos Direkt: 4 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 96 eigene Mitteilungen und 54 externe Berichte. Juengster Beitrag 2026-10-01. Haeufigste Themen: Allgemein (97), KFZ & Mobilität (21), Finanzen & Vorsorge (17).
+- ERGO: 1 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 51 eigene Mitteilungen und 0 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (31), Gesundheit & Pflege (12), Finanzen & Vorsorge (4).
+- Allianz: 11 Beitraege in den letzten 30 Tagen, 19 in 90 Tagen. Davon insgesamt 87 eigene Mitteilungen und 96 externe Berichte. Juengster Beitrag 2026-10-12. Haeufigste Themen: Allgemein (126), Digitalisierung & KI (16), KFZ & Mobilität (12).
+- AXA: 3 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 0 eigene Mitteilungen und 97 externe Berichte. Juengster Beitrag 2026-10-06. Haeufigste Themen: Allgemein (56), Digitalisierung & KI (17), Finanzen & Vorsorge (10).
+- HUK-Coburg: 12 Beitraege in den letzten 30 Tagen, 44 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-10-10. Haeufigste Themen: Allgemein (116), KFZ & Mobilität (43), Digitalisierung & KI (12).
+- Generali: 6 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 96 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (134), Finanzen & Vorsorge (20), Unternehmen & Strategie (13).
+- Signal Iduna: 8 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 0 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-10-09. Haeufigste Themen: Allgemein (56), Digitalisierung & KI (14), Unternehmen & Strategie (12).
+- R+V: 14 Beitraege in den letzten 30 Tagen, 37 in 90 Tagen. Davon insgesamt 94 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-10-08. Haeufigste Themen: Allgemein (122), Finanzen & Vorsorge (29), Unternehmen & Strategie (15).
+- DEVK: 8 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 5 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-10-12. Haeufigste Themen: Allgemein (61), Finanzen & Vorsorge (12), Digitalisierung & KI (9).
+- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 100 eigene Mitteilungen und 0 externe Berichte. Juengster Beitrag 2026-10-10. Haeufigste Themen: Allgemein (62), Finanzen & Vorsorge (17), Gesundheit & Pflege (8).
+- Cosmos Direkt: 4 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 96 eigene Mitteilungen und 54 externe Berichte. Juengster Beitrag 2026-10-01. Haeufigste Themen: Allgemein (97), KFZ & Mobilität (20), Finanzen & Vorsorge (18).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 
@@ -142,11 +142,11 @@ Stimmungsbild aus den erfassten Kundenbewertungen, in Prozent der Bewertungen je
 - ERGO: 65 Prozent positiv, 16 Prozent neutral, 19 Prozent kritisch.
 - Allianz: 76 Prozent positiv, 11 Prozent neutral, 13 Prozent kritisch.
 - AXA: 52 Prozent positiv, 22 Prozent neutral, 27 Prozent kritisch.
-- HUK-Coburg: 71 Prozent positiv, 13 Prozent neutral, 16 Prozent kritisch.
+- HUK-Coburg: 51 Prozent positiv, 22 Prozent neutral, 27 Prozent kritisch.
 - Generali: 52 Prozent positiv, 22 Prozent neutral, 26 Prozent kritisch.
 - Signal Iduna: 55 Prozent positiv, 20 Prozent neutral, 25 Prozent kritisch.
 - R+V: 42 Prozent positiv, 26 Prozent neutral, 32 Prozent kritisch.
-- DEVK: 72 Prozent positiv, 12 Prozent neutral, 15 Prozent kritisch.
+- DEVK: 72 Prozent positiv, 13 Prozent neutral, 15 Prozent kritisch.
 - Hannoversche: 69 Prozent positiv, 14 Prozent neutral, 17 Prozent kritisch.
 - Cosmos Direkt: 61 Prozent positiv, 18 Prozent neutral, 22 Prozent kritisch.
 

@@ -625,7 +625,7 @@ Diese Regeln sind nicht dekorativ. Jede einzelne stammt aus einem Vorfall.
 | **Keine Kontrollgruppe** | Beobachtungsstudie in einem Markt | Kein Design der Welt macht daraus einen Kausalnachweis. Deshalb Placebo, Out-of-Sample und Leave-one-out. |
 | **Explorative Versatz-Suche** | Wer acht Zeitversätze testet und den stärksten meldet, findet auch in reinem Rauschen etwas. | Der Block ist als explorativ gekennzeichnet und FDR-korrigiert. |
 | **Nur noch ein Kanal im eigenen Crawl** (seit 05.10.2026) | Mit Websuche misst nur noch Peec; Perplexity misst seither niemand mehr. | Keine methodengleiche Gegenprobe mehr für den grounded-Kanal; Befunde dort hängen an einem Anbieter. |
-| **allianz.de sperrt den Seiten-Crawl** (seit 22.09.2026) | Rund 670 Allianz-Adressen antworten aus GitHub Actions nicht; Ursache nicht belegt. | Die Seiten-Erreichbarkeit fällt unter die Schwelle, die Laufampel steht deshalb auf Rot. Die Analysen nutzen die Ampel nicht. Optionen in `48_BEFUNDE_2026-10-09.md`. |
+| **allianz.de sperrt den Seiten-Crawl** (seit 22.09.2026) | Rund 700 Allianz-Adressen antworten aus GitHub Actions mit HTTP 403; Ursache nicht belegt. Nächster automatischer Versuch ≈ 10.11. | Seit 13.10.2026 (Entscheidung Paul) zählt allianz.de nicht in die Erreichbarkeits-Quote der Laufampel und wird dort als Warnung mit eigenen Zahlen ausgewiesen. Seitenänderungen der Allianz fehlen. Details `48_BEFUNDE_2026-10-09.md`, Abschnitt 1a. |
 | **Robots-Treue** | Der Crawl respektiert `robots.txt` (`respect_robots_txt: true`). | Gesperrte Strecken erscheinen nicht — das ist gewollt und zugleich der Grund, warum der Tarifrechner-Befund überhaupt sichtbar wurde. |
 
 ---
@@ -664,6 +664,7 @@ Die wichtigsten Weichenstellungen, jeweils mit dem Grund:
 | 04.10. | Umstellung live: Config `9090c1d`, Cockpit-Patch `4746421`, Strukturbruch 05.10. registriert |
 | 06.10. | Erster Lauf nur mit ChatGPT: ERGO 9,27 % (29.09. ChatGPT allein 9,59 %), Treibermodell und Wächter fehlerfrei |
 | 09.10. | Doku fortgeschrieben; Allianz-Sperre und Modell-Abkündigungen geprüft; MCP-Server v1.1 (Lesart „nur ChatGPT seit 05.10."); Voll-Zerlegung pausiert bis drei Messtage nach dem Bruch (`48_BEFUNDE_2026-10-09.md`) |
+| 13.10. | Allianz-Versuch gescheitert; **Entscheidung Paul:** allianz.de aus der Erreichbarkeits-Quote der Ampel (geo-visibility-tool `e7f7f77`, wirkt ab Lauf 20.10.) |
 
 ---
 

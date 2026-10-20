@@ -39,6 +39,13 @@ def _parse_dt(s):
     except Exception:
         return None
 
+def _erstes_datum(s):
+    """'2026-10-12 05:39 UTC' -> '2026-10-12T05:39:00+00:00'; reines Datum bleibt Datum."""
+    m = re.search(r"(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?", str(s or ""))
+    if not m:
+        return None
+    return m.group(1) + ("T" + m.group(2) + ":00+00:00" if m.group(2) else "")
+
 def _age_days(dt):
     return None if dt is None else round((NOW - dt).total_seconds() / 86400, 1)
 
@@ -137,6 +144,22 @@ def build():
                 dtp = d
     ELEMENTS.append({"name": "Preise (Check24)", "file": "data/price_comparison.json",
                      "last": dtp.date().isoformat() if dtp else None, "age_days": _age_days(dtp), "max_age": 9})
+
+    # 20.10.2026: Peec aufgenommen. Vom 12. bis 20.10. lehnte Peec den Zugangs-
+    # schluessel ab (HTTP 401) - der Tagesabruf scheiterte acht Tage lang und der
+    # Wochen-Export vom 19.10. fehlte, ohne dass es irgendwo auffiel, weil dieser
+    # Waechter Peec nicht kannte. Peec traegt die Sichtbarkeit MIT Websuche seit
+    # dem 05.10. allein - ein Ausfall dort ist kein Randthema mehr.
+    ps = _load_json(DATA / "peec_sources.json") or {}
+    dts = _parse_dt(_erstes_datum(ps.get("as_of")))
+    ELEMENTS.append({"name": "Peec-Quellen (taeglich)", "file": "data/peec_sources.json",
+                     "last": dts.date().isoformat() if dts else None, "age_days": _age_days(dts), "max_age": 3})
+    pf = _load_json(DATA / "peec_footprint.json") or {}
+    dtf = _parse_dt(_erstes_datum(pf.get("as_of")))
+    # Wochen-Export laeuft montags auf Pauls Rechner (Cowork-Task); as_of ist das
+    # Fensterende (Sonntag). Regulaer also bis gut 8 Tage alt.
+    ELEMENTS.append({"name": "Peec-Wochenexport", "file": "data/peec_footprint.json",
+                     "last": dtf.date().isoformat() if dtf else None, "age_days": _age_days(dtf), "max_age": 9})
 
     for e in ELEMENTS:
         a = e.get("age_days")

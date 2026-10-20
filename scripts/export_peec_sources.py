@@ -20,7 +20,10 @@ Enterprise-Keys beschraenkt ("Personal API keys are not supported on this API
 yet"). Deshalb spricht dieses Skript JSON-RPC gegen api.peec.ai/mcp und braucht
 keinen laufenden lokalen MCP-Server — nur den Token.
 
-Aufruf:  PEEC_TOKEN=<pat> python3 scripts/export_peec_sources.py [--days 30]
+Aufruf:  PEEC_TOKEN=<pat> python3 scripts/export_peec_sources.py [--days 30] [--nachholen 14]
+
+Nachholen (seit 20.10.2026): fehlende Tages-Snapshots in data/peec_snapshots/ der
+letzten 14 Tage werden nach dem regulaeren Stand automatisch angelegt.
 
 Datenquelle: MCP-Tools get_domain_report / get_url_report (Projekt "ERGO Germany").
 
@@ -165,32 +168,13 @@ def _fetch_ranked(tool, base_args, want, label):
     return rows, {"angefordert": want, "erhalten": len(rows), "paginiert": paginiert}
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=30, help="Fensterlaenge in Tagen (Default 30)")
-    ap.add_argument("--top-urls", type=int, default=TOP_URLS,
-                    help="Zahl der URLs nach Zitaten (Default %(default)s, env PEEC_TOP_URLS)")
-    ap.add_argument("--top-domains", type=int, default=TOP_DOMAINS,
-                    help="Zahl der Domains nach Zitaten (Default %(default)s, env PEEC_TOP_DOMAINS)")
-    args = ap.parse_args()
-
-    end = datetime.now(timezone.utc).date() - timedelta(days=1)
-    start = end - timedelta(days=args.days)
-    S, E = start.isoformat(), end.isoformat()
-    print(f"[peec_sources] Fenster {S} .. {E} (Projekt {PROJECT_ID})")
-
-    _connect()
-
-    brands = _tab(_call("list_brands", {"project_id": PROJECT_ID, "limit": 100}))
-    brand_name = {b["id"]: b["name"] for b in brands}
-    own = [b["name"] for b in brands if b.get("is_own")]
-    print(f"[peec_sources] {len(brands)} Marken, eigene: {own}")
-
+def _bericht(S, E, days, brand_name, own, top_domains, top_urls):
+    """Ein Quellen-Report fuer das Fenster S..E als Dict (Schema von peec_sources.json)."""
     basis = {"project_id": PROJECT_ID, "start_date": S, "end_date": E}
-    domains, dom_abruf = _fetch_ranked("get_domain_report", basis, args.top_domains, "Domains")
+    domains, dom_abruf = _fetch_ranked("get_domain_report", basis, top_domains, "Domains")
     print(f"[peec_sources] {len(domains)} Domains")
 
-    urls, url_abruf = _fetch_ranked("get_url_report", basis, args.top_urls, "URLs")
+    urls, url_abruf = _fetch_ranked("get_url_report", basis, top_urls, "URLs")
     print(f"[peec_sources] {len(urls)} URLs")
 
     def slim_domain(d):
@@ -228,7 +212,7 @@ def main():
 
     out = {
         "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-        "window": {"start": S, "end": E, "days": args.days},
+        "window": {"start": S, "end": E, "days": days},
         "source": "Peec AI MCP (get_domain_report / get_url_report), Projekt ERGO Germany",
         "own_brands": own,
         "methode": (
@@ -246,12 +230,99 @@ def main():
             "nicht die Grundgesamtheit — der Long Tail fehlt"
             + (", die serverseitige Obergrenze war niedriger als angefordert"
                if url_abruf["erhalten"] < url_abruf["angefordert"] else "")
-            + ". Fenster: rollierende " + str(args.days) + " Tage."
+            + ". Fenster: rollierende " + str(days) + " Tage."
         ),
         "domains": dom_rows,
         "urls": url_rows,
         "brand_class_mix": by_brand_class,
     }
+
+    return out
+
+
+# 20.10.2026: Luecken automatisch nachholen. Vom 12. bis 19.10. lehnte Peec den
+# Token ab, sieben Tages-Snapshots fehlten. Bis heute stand in
+# data/peec_snapshots/README.md, fehlende Tage liessen sich NICHT nachholen. Das
+# war ungeprueft: Peec bekommt Start- und Enddatum explizit (get_domain_report /
+# get_url_report mit start_date/end_date), also laesst sich auch ein Fenster
+# anfragen, das in der Vergangenheit endet. Jeder erfolgreiche Lauf schaut deshalb die letzten
+# NACHHOL_TAGE Fensterenden durch und legt fehlende Snapshots an - nur fehlende,
+# vorhandene werden nie angefasst. Ein Fehler beim Nachholen bricht den
+# regulaeren Lauf nicht ab.
+# Grenze: Ein nachgeholter Stand spiegelt die Projekteinstellung bei Peec (Prompts,
+# Marken) zum Zeitpunkt des Nachholens, nicht die vom Fensterende. Deshalb traegt
+# er das Feld "nachgeholt".
+SNAP_DIR = Path("data/peec_snapshots")
+NACHHOL_TAGE = int(os.environ.get("PEEC_NACHHOL_TAGE", "14"))
+
+
+def _plausibel(out):
+    return len(out.get("domains") or []) >= 30 and len(out.get("urls") or []) >= 100
+
+
+def _nachholen(end, days, brand_name, own, top_domains, top_urls, tage):
+    if tage <= 0 or not SNAP_DIR.is_dir():
+        return
+    fehlend = []
+    for k in range(tage, 0, -1):
+        d = (end - timedelta(days=k)).isoformat()
+        if not (SNAP_DIR / f"{d}_sources.json").exists():
+            fehlend.append(d)
+    if not fehlend:
+        print(f"[peec_sources] Nachholen: keine Luecke in den letzten {tage} Tagen.")
+        return
+    print(f"[peec_sources] Nachholen: {len(fehlend)} fehlende Snapshots: {', '.join(fehlend)}")
+    for d in fehlend:
+        e = datetime.fromisoformat(d).date()
+        s = (e - timedelta(days=days)).isoformat()
+        try:
+            out = _bericht(s, d, days, brand_name, own, top_domains, top_urls)
+        except Exception as ex:  # noqa: BLE001
+            print(f"[peec_sources] Nachholen {d}: Abruf fehlgeschlagen ({str(ex)[:120]}) - uebersprungen.")
+            continue
+        if not _plausibel(out):
+            print(f"[peec_sources] Nachholen {d}: unplausibel ({len(out.get('domains') or [])} Domains, "
+                  f"{len(out.get('urls') or [])} URLs) - nicht gespeichert.")
+            continue
+        out["nachgeholt"] = {
+            "am": out["as_of"],
+            "hinweis": ("Nachtraeglich abgerufen, nicht am Fensterende. Projekteinstellung "
+                        "bei Peec (Prompts, Marken) vom Abrufzeitpunkt."),
+        }
+        ziel = SNAP_DIR / f"{d}_sources.json"
+        if ziel.exists():
+            continue
+        ziel.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+        tot = sum(x["cit"] for x in out["domains"])
+        print(f"[peec_sources] Nachgeholt: {ziel.name} ({len(out['domains'])} Domains, "
+              f"{len(out['urls'])} URLs, {tot} Zitate in den Top-Domains)")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--days", type=int, default=30, help="Fensterlaenge in Tagen (Default 30)")
+    ap.add_argument("--top-urls", type=int, default=TOP_URLS,
+                    help="Zahl der URLs nach Zitaten (Default %(default)s, env PEEC_TOP_URLS)")
+    ap.add_argument("--top-domains", type=int, default=TOP_DOMAINS,
+                    help="Zahl der Domains nach Zitaten (Default %(default)s, env PEEC_TOP_DOMAINS)")
+    ap.add_argument("--nachholen", type=int, default=NACHHOL_TAGE,
+                    help="Fehlende Snapshots der letzten N Tage nachholen (Default %(default)s, 0 = aus)")
+    args = ap.parse_args()
+
+    end = datetime.now(timezone.utc).date() - timedelta(days=1)
+    start = end - timedelta(days=args.days)
+    S, E = start.isoformat(), end.isoformat()
+    print(f"[peec_sources] Fenster {S} .. {E} (Projekt {PROJECT_ID})")
+
+    _connect()
+
+    brands = _tab(_call("list_brands", {"project_id": PROJECT_ID, "limit": 100}))
+    brand_name = {b["id"]: b["name"] for b in brands}
+    own = [b["name"] for b in brands if b.get("is_own")]
+    print(f"[peec_sources] {len(brands)} Marken, eigene: {own}")
+
+    out = _bericht(S, E, args.days, brand_name, own, args.top_domains, args.top_urls)
+    dom_rows = out["domains"]
 
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -260,6 +331,10 @@ def main():
     for d in dom_rows[:5]:
         print(f"  {d['domain']:<28} {str(d['cls']):<14} {d['cit']:>6} Zitate "
               f"({d['cit']/tot*100:.1f} % der Top-{len(dom_rows)})")
+
+    # Erst NACH dem regulaeren Stand: der ist das Wichtigste und darf nicht an
+    # einem Nachhol-Fehler haengen.
+    _nachholen(end, args.days, brand_name, own, args.top_domains, args.top_urls, args.nachholen)
 
 
 if __name__ == "__main__":

@@ -35,5 +35,14 @@ Zitat" ist auf diese Staende gerastert.
 nicht Peec.** Seit 05.08.2026 legt ein taeglicher Cowork-Task (`peec-daily-snapshot`,
 laeuft auf Pauls Rechner, weil der persoenliche Peec-Token nicht in GitHub-Secrets
 gehoert) den Tages-Snapshot an; der Montags-Task bleibt fuer das volle Wochenpanel
-zustaendig. Fehlende Tage lassen sich NICHT nachholen — ein rollierendes Fenster gibt
-es nur zum Abrufzeitpunkt.
+zustaendig. ~~Fehlende Tage lassen sich NICHT nachholen — ein rollierendes Fenster gibt
+es nur zum Abrufzeitpunkt.~~ **Korrektur 20.10.2026:** Das war ungeprueft. Der Export schickt Start- und Enddatum explizit an Peec; ein Fenster, das
+in der Vergangenheit endet, laesst sich genauso anfragen. Seit 20.10. holt
+`scripts/export_peec_sources.py` nach jedem erfolgreichen Tageslauf fehlende
+`*_sources.json` der letzten 14 Tage automatisch nach (nur fehlende, vorhandene
+werden nie ueberschrieben). Nachgeholte Dateien tragen das Feld `nachgeholt` —
+sie spiegeln die Peec-Projekteinstellung (Prompts, Marken) vom Abrufzeitpunkt.
+
+Hinweis zur Zustaendigkeit (Stand 20.10.): Die Tages-Snapshots legt inzwischen der
+GitHub-Workflow `peec-daily-sources.yml` an (04:00 UTC, Secret PEEC_TOKEN), nicht
+mehr ein Cowork-Task.

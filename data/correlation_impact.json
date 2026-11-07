@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T13:36:26Z",
+  "generated_at": "2026-11-07T12:36:42Z",
   "method": "interval-event-study v2 (Raten/Tag, brand-demeaned, Spearman, SE) + Panel-Ridge multivariat; ab 04.08.2026 zusaetzlich cluster-robuste Inferenz je Treiber (Cluster = Marke, CR1, t-Verteilung mit min(Marken mit/ohne Ereignis)-1 Freiheitsgraden). 'significant' wird aus der cluster-robusten Variante abgeleitet (significance_basis).",
   "significance_basis_global": "cluster",
   "sov_source_audit": {
@@ -84,23 +84,23 @@
       "quelle_zielschreibweise": "data/geo_snapshot.json -> competitors"
     },
     "presse_datierung": {
-      "umdatiert": 5246,
-      "bereits_gleich": 223,
+      "umdatiert": 5250,
+      "bereits_gleich": 226,
       "fallback_timestamp": 0,
       "hinweis": "Datum aus detail.date (Erscheinungstag); Crawl-Tag steht in detail.crawl_date. Fallback greift bei fehlendem, unparsebarem, zukuenftigem oder nach dem Crawl liegendem Datum."
     },
     "preis_artefakte": {
-      "n_price_change_gesamt": 57,
-      "n_rueckkehr_erkannt": 33,
-      "n_als_artefakt_markiert": 45,
-      "n_verbleibend": 12,
+      "n_price_change_gesamt": 59,
+      "n_rueckkehr_erkannt": 34,
+      "n_als_artefakt_markiert": 46,
+      "n_verbleibend": 13,
       "toleranz_eur": 0.01,
       "regel": "Je (Marke, Produkt, Altersprofil): new_price == old_price des Vorgaengers (+-0,01 EUR) -> Rueckkehr; Rueckkehr UND Hinbewegung werden ausgeschlossen. Bei einer durchgehenden Oszillation ist jedes Event zugleich Rueckkehr und Hinbewegung eines Paars — deshalb liegt die Zahl der Markierungen ueber der der Rueckkehren."
     }
   },
   "event_co_occurrence": {
     "available": true,
-    "n_zellen_mit_ereignis": 2870,
+    "n_zellen_mit_ereignis": 2874,
     "je_typ": {
       "domain_change": {
         "label": "Domain-/Subdomain-Aenderungen",
@@ -170,13 +170,13 @@
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "n_zellen": 1572,
+        "n_zellen": 1575,
         "anteil_mit_anderen": 0.295,
         "haeufigste_begleiter": [
           {
             "type": "press_mention",
             "label": "Pressemitteilungen",
-            "n_gemeinsam": 217
+            "n_gemeinsam": 218
           },
           {
             "type": "page_change",
@@ -280,13 +280,13 @@
       },
       "press_mention": {
         "label": "Pressemitteilungen",
-        "n_zellen": 737,
-        "anteil_mit_anderen": 0.412,
+        "n_zellen": 738,
+        "anteil_mit_anderen": 0.413,
         "haeufigste_begleiter": [
           {
             "type": "news_mention",
             "label": "News-Erwaehnungen",
-            "n_gemeinsam": 217
+            "n_gemeinsam": 218
           },
           {
             "type": "page_change",
@@ -316,16 +316,16 @@
             "n_gemeinsam": 14
           },
           {
-            "type": "instagram_post",
-            "label": "Instagram-Posts",
+            "type": "review_change",
+            "label": "Bewertungs-Trend (±)",
             "n_gemeinsam": 6
           }
         ]
       },
       "price_change": {
         "label": "Preis-Aenderungen (gemessen)",
-        "n_zellen": 12,
-        "anteil_mit_anderen": 0.667,
+        "n_zellen": 13,
+        "anteil_mit_anderen": 0.615,
         "haeufigste_begleiter": [
           {
             "type": "page_change",
@@ -428,7 +428,7 @@
         "a": "news_mention",
         "b": "press_mention",
         "phi": -0.3,
-        "n_gemeinsam": 217
+        "n_gemeinsam": 218
       },
       {
         "a": "news_mention",
@@ -2184,65 +2184,65 @@
         "exploratory": true,
         "raw_pearson_r": -0.165,
         "within_effect": {
-          "coef_pp_sov_per_pp_citeshare": 0.453,
-          "ci95_low": -5.779,
-          "ci95_high": 6.685,
-          "prob_direction": 0.557,
+          "coef_pp_sov_per_pp_citeshare": 0.464,
+          "ci95_low": -5.761,
+          "ci95_high": 6.688,
+          "prob_direction": 0.558,
           "prob_direction_only": false,
           "inferenz_hinweis": "Nur Bayes-Richtungswahrscheinlichkeit aus dem iid-Posterior — KEIN Signifikanztest. Fuer belastbare Aussagen den Block price_footprint_joint heranziehen, der cluster-robuste SE und Wild-Cluster-Bootstrap rechnet.",
-          "effect_std_pp": 0.33
+          "effect_std_pp": 0.34
         },
         "between_effect": {
-          "coef_pp_sov_per_pp_citeshare": -23.018,
-          "ci95_low": -37.416,
-          "ci95_high": -8.62,
+          "coef_pp_sov_per_pp_citeshare": -23.127,
+          "ci95_low": -37.511,
+          "ci95_high": -8.743,
           "prob_direction": 0.999,
           "prob_direction_only": true,
           "inferenz_hinweis": "Nur Bayes-Richtungswahrscheinlichkeit aus dem iid-Posterior — KEIN Signifikanztest. Fuer belastbare Aussagen den Block price_footprint_joint heranziehen, der cluster-robuste SE und Wild-Cluster-Bootstrap rechnet.",
-          "effect_std_pp": -6.2
+          "effect_std_pp": -6.23
         },
-        "r2_within_topics": 0.171,
+        "r2_within_topics": 0.173,
         "leader": "Allianz",
         "between_loo": {
-          "min": -33.201,
-          "max": -15.808,
+          "min": -33.236,
+          "max": -15.831,
           "sign_stable": true
         },
         "gap_decomposition": {
           "AXA": {
             "vs": "Allianz",
             "actual_gap_pp": 23.5,
-            "explained_by_footprint_pp": -2.95,
-            "share_explained": -0.13
+            "explained_by_footprint_pp": -2.9,
+            "share_explained": -0.12
           },
           "CosmosDirekt": {
             "vs": "Allianz",
             "actual_gap_pp": 35.51,
-            "explained_by_footprint_pp": 4.59,
+            "explained_by_footprint_pp": 4.65,
             "share_explained": 0.13
           },
           "ERGO": {
             "vs": "Allianz",
             "actual_gap_pp": 24.95,
-            "explained_by_footprint_pp": 6.17,
+            "explained_by_footprint_pp": 6.24,
             "share_explained": 0.25
           },
           "Generali": {
             "vs": "Allianz",
             "actual_gap_pp": 36.78,
-            "explained_by_footprint_pp": 26.29,
-            "share_explained": 0.71
+            "explained_by_footprint_pp": 26.45,
+            "share_explained": 0.72
           },
           "HUK-Coburg": {
             "vs": "Allianz",
             "actual_gap_pp": 10.19,
-            "explained_by_footprint_pp": -7.35,
+            "explained_by_footprint_pp": -7.34,
             "share_explained": -0.72
           },
           "Signal Iduna": {
             "vs": "Allianz",
             "actual_gap_pp": 25.99,
-            "explained_by_footprint_pp": 8.73,
+            "explained_by_footprint_pp": 8.81,
             "share_explained": 0.34
           }
         },
@@ -2292,65 +2292,65 @@
         "exploratory": true,
         "raw_pearson_r": -0.165,
         "within_effect": {
-          "coef_pp_sov_per_pp_citeshare": 0.453,
-          "ci95_low": -5.779,
-          "ci95_high": 6.685,
-          "prob_direction": 0.557,
+          "coef_pp_sov_per_pp_citeshare": 0.464,
+          "ci95_low": -5.761,
+          "ci95_high": 6.688,
+          "prob_direction": 0.558,
           "prob_direction_only": false,
           "inferenz_hinweis": "Nur Bayes-Richtungswahrscheinlichkeit aus dem iid-Posterior — KEIN Signifikanztest. Fuer belastbare Aussagen den Block price_footprint_joint heranziehen, der cluster-robuste SE und Wild-Cluster-Bootstrap rechnet.",
-          "effect_std_pp": 0.33
+          "effect_std_pp": 0.34
         },
         "between_effect": {
-          "coef_pp_sov_per_pp_citeshare": -23.018,
-          "ci95_low": -37.416,
-          "ci95_high": -8.62,
+          "coef_pp_sov_per_pp_citeshare": -23.127,
+          "ci95_low": -37.511,
+          "ci95_high": -8.743,
           "prob_direction": 0.999,
           "prob_direction_only": true,
           "inferenz_hinweis": "Nur Bayes-Richtungswahrscheinlichkeit aus dem iid-Posterior — KEIN Signifikanztest. Fuer belastbare Aussagen den Block price_footprint_joint heranziehen, der cluster-robuste SE und Wild-Cluster-Bootstrap rechnet.",
-          "effect_std_pp": -6.2
+          "effect_std_pp": -6.23
         },
-        "r2_within_topics": 0.171,
+        "r2_within_topics": 0.173,
         "leader": "Allianz",
         "between_loo": {
-          "min": -33.201,
-          "max": -15.808,
+          "min": -33.236,
+          "max": -15.831,
           "sign_stable": true
         },
         "gap_decomposition": {
           "AXA": {
             "vs": "Allianz",
             "actual_gap_pp": 23.5,
-            "explained_by_footprint_pp": -2.95,
-            "share_explained": -0.13
+            "explained_by_footprint_pp": -2.9,
+            "share_explained": -0.12
           },
           "CosmosDirekt": {
             "vs": "Allianz",
             "actual_gap_pp": 35.51,
-            "explained_by_footprint_pp": 4.59,
+            "explained_by_footprint_pp": 4.65,
             "share_explained": 0.13
           },
           "ERGO": {
             "vs": "Allianz",
             "actual_gap_pp": 24.95,
-            "explained_by_footprint_pp": 6.17,
+            "explained_by_footprint_pp": 6.24,
             "share_explained": 0.25
           },
           "Generali": {
             "vs": "Allianz",
             "actual_gap_pp": 36.78,
-            "explained_by_footprint_pp": 26.29,
-            "share_explained": 0.71
+            "explained_by_footprint_pp": 26.45,
+            "share_explained": 0.72
           },
           "HUK-Coburg": {
             "vs": "Allianz",
             "actual_gap_pp": 10.19,
-            "explained_by_footprint_pp": -7.35,
+            "explained_by_footprint_pp": -7.34,
             "share_explained": -0.72
           },
           "Signal Iduna": {
             "vs": "Allianz",
             "actual_gap_pp": 25.99,
-            "explained_by_footprint_pp": 8.73,
+            "explained_by_footprint_pp": 8.81,
             "share_explained": 0.34
           }
         },
@@ -2767,11 +2767,11 @@
               "prob_direction": 1.0,
               "effect_std_pp": 9.07,
               "se_iid": 0.0845,
-              "se_cluster": 0.1379,
+              "se_cluster": 0.138,
               "se_inflation": 1.63,
               "n_clusters": 7,
               "wild_cluster_p": 0.0312,
-              "wild_cluster_t": 13.846,
+              "wild_cluster_t": 13.84,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
               "wild_cluster_p_fdr": 0.0624,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
@@ -2779,15 +2779,15 @@
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": 1.823,
+              "coef": 1.822,
               "prob_direction": 1.0,
               "effect_std_pp": 10.74,
-              "se_iid": 0.0791,
-              "se_cluster": 0.203,
+              "se_iid": 0.0793,
+              "se_cluster": 0.2033,
               "se_inflation": 2.57,
               "n_clusters": 7,
               "wild_cluster_p": 0.0078,
-              "wild_cluster_t": 8.981,
+              "wild_cluster_t": 8.963,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
               "between_loo": {
                 "min": 1.566,
@@ -2795,11 +2795,11 @@
                 "sign_stable": true,
                 "n_refits": 7,
                 "per_brand": {
-                  "AXA": 1.746,
+                  "AXA": 1.745,
                   "Allianz": 1.566,
-                  "CosmosDirekt": 1.86,
+                  "CosmosDirekt": 1.859,
                   "ERGO": 1.826,
-                  "Generali": 1.843,
+                  "Generali": 1.842,
                   "HUK-Coburg": 1.865,
                   "Signal Iduna": 1.844
                 },
@@ -2813,45 +2813,45 @@
           },
           "relprice": {
             "within": {
-              "coef": 1.146,
-              "prob_direction": 0.896,
-              "effect_std_pp": 0.84,
+              "coef": 1.149,
+              "prob_direction": 0.897,
+              "effect_std_pp": 0.85,
               "se_iid": 0.6673,
-              "se_cluster": 0.9085,
+              "se_cluster": 0.9087,
               "se_inflation": 1.36,
               "n_clusters": 7,
-              "wild_cluster_p": 0.3438,
-              "wild_cluster_t": 1.262,
+              "wild_cluster_p": 0.3359,
+              "wild_cluster_t": 1.265,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
-              "wild_cluster_p_fdr": 0.4584,
+              "wild_cluster_p_fdr": 0.4479,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 8,
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -0.039,
-              "prob_direction": 0.506,
-              "effect_std_pp": -0.01,
-              "se_iid": 1.8221,
-              "se_cluster": 2.4556,
+              "coef": -0.065,
+              "prob_direction": 0.511,
+              "effect_std_pp": -0.02,
+              "se_iid": 1.8257,
+              "se_cluster": 2.4592,
               "se_inflation": 1.35,
               "n_clusters": 7,
               "wild_cluster_p": 0.9922,
-              "wild_cluster_t": -0.016,
+              "wild_cluster_t": -0.027,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
               "between_loo": {
-                "min": -2.293,
-                "max": 1.347,
+                "min": -2.325,
+                "max": 1.318,
                 "sign_stable": false,
                 "n_refits": 7,
                 "per_brand": {
-                  "AXA": -2.293,
-                  "Allianz": -1.164,
-                  "CosmosDirekt": 0.509,
-                  "ERGO": -0.165,
-                  "Generali": 1.347,
-                  "HUK-Coburg": -1.184,
-                  "Signal Iduna": 0.508
+                  "AXA": -2.325,
+                  "Allianz": -1.169,
+                  "CosmosDirekt": 0.486,
+                  "ERGO": -0.192,
+                  "Generali": 1.318,
+                  "HUK-Coburg": -1.215,
+                  "Signal Iduna": 0.477
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
@@ -2868,53 +2868,53 @@
             "vs": "Allianz",
             "actual_gap_pp": 23.5,
             "contrib_pp": {
-              "cite_share": 19.56,
+              "cite_share": 19.55,
               "relprice": -0.01
             },
-            "explained_pp": 19.55
+            "explained_pp": 19.54
           },
           "CosmosDirekt": {
             "vs": "Allianz",
             "actual_gap_pp": 35.51,
             "contrib_pp": {
-              "cite_share": 30.83,
+              "cite_share": 30.81,
               "relprice": 0.01
             },
-            "explained_pp": 30.84
+            "explained_pp": 30.82
           },
           "ERGO": {
             "vs": "Allianz",
             "actual_gap_pp": 24.95,
             "contrib_pp": {
-              "cite_share": 22.04,
-              "relprice": 0.01
+              "cite_share": 22.02,
+              "relprice": 0.02
             },
-            "explained_pp": 22.05
+            "explained_pp": 22.04
           },
           "Generali": {
             "vs": "Allianz",
             "actual_gap_pp": 36.78,
             "contrib_pp": {
-              "cite_share": 32.82,
-              "relprice": 0.04
+              "cite_share": 32.8,
+              "relprice": 0.07
             },
-            "explained_pp": 32.86
+            "explained_pp": 32.87
           },
           "HUK-Coburg": {
             "vs": "Allianz",
             "actual_gap_pp": 10.19,
             "contrib_pp": {
-              "cite_share": 6.09,
-              "relprice": -0.01
+              "cite_share": 6.08,
+              "relprice": -0.02
             },
-            "explained_pp": 6.08
+            "explained_pp": 6.06
           },
           "Signal Iduna": {
             "vs": "Allianz",
             "actual_gap_pp": 25.99,
             "contrib_pp": {
-              "cite_share": 22.69,
-              "relprice": 0.01
+              "cite_share": 22.68,
+              "relprice": 0.02
             },
             "explained_pp": 22.7
           }
@@ -2946,11 +2946,11 @@
               "prob_direction": 1.0,
               "effect_std_pp": 9.07,
               "se_iid": 0.0845,
-              "se_cluster": 0.1379,
+              "se_cluster": 0.138,
               "se_inflation": 1.63,
               "n_clusters": 7,
               "wild_cluster_p": 0.0312,
-              "wild_cluster_t": 13.846,
+              "wild_cluster_t": 13.84,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
               "wild_cluster_p_fdr": 0.0624,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
@@ -2958,15 +2958,15 @@
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": 1.823,
+              "coef": 1.822,
               "prob_direction": 1.0,
               "effect_std_pp": 10.74,
-              "se_iid": 0.0791,
-              "se_cluster": 0.203,
+              "se_iid": 0.0793,
+              "se_cluster": 0.2033,
               "se_inflation": 2.57,
               "n_clusters": 7,
               "wild_cluster_p": 0.0078,
-              "wild_cluster_t": 8.981,
+              "wild_cluster_t": 8.963,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
               "between_loo": {
                 "min": 1.566,
@@ -2974,11 +2974,11 @@
                 "sign_stable": true,
                 "n_refits": 7,
                 "per_brand": {
-                  "AXA": 1.746,
+                  "AXA": 1.745,
                   "Allianz": 1.566,
-                  "CosmosDirekt": 1.86,
+                  "CosmosDirekt": 1.859,
                   "ERGO": 1.826,
-                  "Generali": 1.843,
+                  "Generali": 1.842,
                   "HUK-Coburg": 1.865,
                   "Signal Iduna": 1.844
                 },
@@ -2992,45 +2992,45 @@
           },
           "relprice": {
             "within": {
-              "coef": 1.146,
-              "prob_direction": 0.896,
-              "effect_std_pp": 0.84,
+              "coef": 1.149,
+              "prob_direction": 0.897,
+              "effect_std_pp": 0.85,
               "se_iid": 0.6673,
-              "se_cluster": 0.9085,
+              "se_cluster": 0.9087,
               "se_inflation": 1.36,
               "n_clusters": 7,
-              "wild_cluster_p": 0.3438,
-              "wild_cluster_t": 1.262,
+              "wild_cluster_p": 0.3359,
+              "wild_cluster_t": 1.265,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
-              "wild_cluster_p_fdr": 0.4584,
+              "wild_cluster_p_fdr": 0.4479,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 8,
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -0.039,
-              "prob_direction": 0.506,
-              "effect_std_pp": -0.01,
-              "se_iid": 1.8221,
-              "se_cluster": 2.4556,
+              "coef": -0.065,
+              "prob_direction": 0.511,
+              "effect_std_pp": -0.02,
+              "se_iid": 1.8257,
+              "se_cluster": 2.4592,
               "se_inflation": 1.35,
               "n_clusters": 7,
               "wild_cluster_p": 0.9922,
-              "wild_cluster_t": -0.016,
+              "wild_cluster_t": -0.027,
               "wild_cluster_note": "Exakter Wild-Cluster-Bootstrap ueber alle 128 Vorzeichen-Vektoren (G=7 Marken). Kleinstmoeglicher p-Wert bei dieser Fallzahl: 0.0078.",
               "between_loo": {
-                "min": -2.293,
-                "max": 1.347,
+                "min": -2.325,
+                "max": 1.318,
                 "sign_stable": false,
                 "n_refits": 7,
                 "per_brand": {
-                  "AXA": -2.293,
-                  "Allianz": -1.164,
-                  "CosmosDirekt": 0.509,
-                  "ERGO": -0.165,
-                  "Generali": 1.347,
-                  "HUK-Coburg": -1.184,
-                  "Signal Iduna": 0.508
+                  "AXA": -2.325,
+                  "Allianz": -1.169,
+                  "CosmosDirekt": 0.486,
+                  "ERGO": -0.192,
+                  "Generali": 1.318,
+                  "HUK-Coburg": -1.215,
+                  "Signal Iduna": 0.477
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
@@ -3047,53 +3047,53 @@
             "vs": "Allianz",
             "actual_gap_pp": 23.5,
             "contrib_pp": {
-              "cite_share": 19.56,
+              "cite_share": 19.55,
               "relprice": -0.01
             },
-            "explained_pp": 19.55
+            "explained_pp": 19.54
           },
           "CosmosDirekt": {
             "vs": "Allianz",
             "actual_gap_pp": 35.51,
             "contrib_pp": {
-              "cite_share": 30.83,
+              "cite_share": 30.81,
               "relprice": 0.01
             },
-            "explained_pp": 30.84
+            "explained_pp": 30.82
           },
           "ERGO": {
             "vs": "Allianz",
             "actual_gap_pp": 24.95,
             "contrib_pp": {
-              "cite_share": 22.04,
-              "relprice": 0.01
+              "cite_share": 22.02,
+              "relprice": 0.02
             },
-            "explained_pp": 22.05
+            "explained_pp": 22.04
           },
           "Generali": {
             "vs": "Allianz",
             "actual_gap_pp": 36.78,
             "contrib_pp": {
-              "cite_share": 32.82,
-              "relprice": 0.04
+              "cite_share": 32.8,
+              "relprice": 0.07
             },
-            "explained_pp": 32.86
+            "explained_pp": 32.87
           },
           "HUK-Coburg": {
             "vs": "Allianz",
             "actual_gap_pp": 10.19,
             "contrib_pp": {
-              "cite_share": 6.09,
-              "relprice": -0.01
+              "cite_share": 6.08,
+              "relprice": -0.02
             },
-            "explained_pp": 6.08
+            "explained_pp": 6.06
           },
           "Signal Iduna": {
             "vs": "Allianz",
             "actual_gap_pp": 25.99,
             "contrib_pp": {
-              "cite_share": 22.69,
-              "relprice": 0.01
+              "cite_share": 22.68,
+              "relprice": 0.02
             },
             "explained_pp": 22.7
           }
@@ -3158,32 +3158,32 @@
               "prob_direction": 1.0,
               "effect_std_pp": 5.26,
               "se_iid": 0.1971,
-              "se_cluster": 0.2257,
+              "se_cluster": 0.2258,
               "se_inflation": 1.15,
               "n_clusters": 15,
               "wild_cluster_p": 0.0244,
-              "wild_cluster_t": 3.996,
+              "wild_cluster_t": 3.994,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 0.775,
+                "min": 0.774,
                 "max": 1.073,
                 "sign_stable": true,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": 0.896,
+                  "ADAC": 0.895,
                   "ARAG": 1.073,
                   "AXA": 0.868,
                   "Allianz": 0.948,
                   "Barmenia": 0.898,
                   "CosmosDirekt": 0.969,
                   "DEVK": 0.883,
-                  "Die Bayerische": 0.898,
+                  "Die Bayerische": 0.897,
                   "ERGO": 0.813,
                   "Generali": 0.882,
                   "HUK-Coburg": 0.79,
                   "HanseMerkur": 1.065,
-                  "Signal Iduna": 0.775,
-                  "VHV": 0.903,
+                  "Signal Iduna": 0.774,
+                  "VHV": 0.902,
                   "Württembergische": 0.885
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
@@ -3199,7 +3199,7 @@
               "coef": 0.0,
               "prob_direction": 0.5,
               "effect_std_pp": 0.0,
-              "se_iid": 2.4949,
+              "se_iid": 2.4948,
               "se_cluster": null,
               "se_inflation": null,
               "n_clusters": 15
@@ -3207,8 +3207,8 @@
             "between": {
               "coef": 0.248,
               "prob_direction": 1.0,
-              "effect_std_pp": 6.19,
-              "se_iid": 0.0439,
+              "effect_std_pp": 6.18,
+              "se_iid": 0.0438,
               "se_cluster": 0.059,
               "se_inflation": 1.34,
               "n_clusters": 15,
@@ -3223,7 +3223,7 @@
                 "per_brand": {
                   "ADAC": 0.237,
                   "ARAG": 0.207,
-                  "AXA": 0.25,
+                  "AXA": 0.249,
                   "Allianz": 0.248,
                   "Barmenia": 0.248,
                   "CosmosDirekt": 0.247,
@@ -3247,57 +3247,57 @@
           },
           "relprice": {
             "within": {
-              "coef": 1.119,
-              "prob_direction": 0.821,
+              "coef": 1.122,
+              "prob_direction": 0.822,
               "effect_std_pp": 0.76,
-              "se_iid": 1.3473,
-              "se_cluster": 1.2167,
+              "se_iid": 1.3468,
+              "se_cluster": 1.2172,
               "se_inflation": 0.9,
               "n_clusters": 15,
-              "wild_cluster_p": 0.4867,
-              "wild_cluster_t": 0.92,
+              "wild_cluster_p": 0.4862,
+              "wild_cluster_t": 0.922,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.5617,
+              "wild_cluster_p_fdr": 0.5609,
               "fdr_note": "Benjamini-Hochberg ueber die 10 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 10,
               "fdr_family": "die 10 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -2.25,
+              "coef": -2.255,
               "prob_direction": 0.769,
               "effect_std_pp": -0.8,
-              "se_iid": 2.4945,
-              "se_cluster": 3.0608,
+              "se_iid": 2.4958,
+              "se_cluster": 3.0623,
               "se_inflation": 1.23,
               "n_clusters": 15,
-              "wild_cluster_p": 0.5617,
-              "wild_cluster_t": -0.735,
+              "wild_cluster_p": 0.5609,
+              "wild_cluster_t": -0.736,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -3.834,
-                "max": 0.945,
+                "min": -3.839,
+                "max": 0.943,
                 "sign_stable": false,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": -3.813,
-                  "ARAG": -2.744,
-                  "AXA": -3.072,
-                  "Allianz": -2.592,
-                  "Barmenia": -2.356,
-                  "CosmosDirekt": -1.963,
-                  "DEVK": -1.595,
-                  "Die Bayerische": -2.255,
-                  "ERGO": -1.792,
-                  "Generali": -1.752,
-                  "HUK-Coburg": -1.078,
-                  "HanseMerkur": 0.945,
-                  "Signal Iduna": -3.834,
-                  "VHV": -2.574,
-                  "Württembergische": -2.607
+                  "ADAC": -3.821,
+                  "ARAG": -2.749,
+                  "AXA": -3.076,
+                  "Allianz": -2.594,
+                  "Barmenia": -2.362,
+                  "CosmosDirekt": -1.966,
+                  "DEVK": -1.601,
+                  "Die Bayerische": -2.26,
+                  "ERGO": -1.795,
+                  "Generali": -1.756,
+                  "HUK-Coburg": -1.084,
+                  "HanseMerkur": 0.943,
+                  "Signal Iduna": -3.839,
+                  "VHV": -2.579,
+                  "Württembergische": -2.612
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.5617,
+              "wild_cluster_p_fdr": 0.5609,
               "fdr_note": "Benjamini-Hochberg ueber die 10 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 10,
               "fdr_family": "die 10 Between-Tests dieses Modellblocks"
@@ -3332,9 +3332,9 @@
             "contrib_pp": {
               "cite_share": 10.2,
               "size": 11.16,
-              "relprice": -0.29
+              "relprice": -0.28
             },
-            "explained_pp": 21.07
+            "explained_pp": 21.08
           },
           "Barmenia": {
             "vs": "Allianz",
@@ -3362,9 +3362,9 @@
             "contrib_pp": {
               "cite_share": 11.49,
               "size": 16.12,
-              "relprice": 0.47
+              "relprice": 0.48
             },
-            "explained_pp": 28.08
+            "explained_pp": 28.09
           },
           "Die Bayerische": {
             "vs": "Allianz",
@@ -3382,9 +3382,9 @@
             "contrib_pp": {
               "cite_share": 11.35,
               "size": 8.68,
-              "relprice": 0.6
+              "relprice": 0.61
             },
-            "explained_pp": 20.63
+            "explained_pp": 20.64
           },
           "Generali": {
             "vs": "Allianz",
@@ -3392,9 +3392,9 @@
             "contrib_pp": {
               "cite_share": 16.89,
               "size": 12.4,
-              "relprice": 2.57
+              "relprice": 2.58
             },
-            "explained_pp": 31.86
+            "explained_pp": 31.87
           },
           "HUK-Coburg": {
             "vs": "Allianz",
@@ -3412,9 +3412,9 @@
             "contrib_pp": {
               "cite_share": 9.1,
               "size": 18.6,
-              "relprice": 1.86
+              "relprice": 1.87
             },
-            "explained_pp": 29.56
+            "explained_pp": 29.57
           },
           "Signal Iduna": {
             "vs": "Allianz",
@@ -3422,9 +3422,9 @@
             "contrib_pp": {
               "cite_share": 10.97,
               "size": 16.12,
-              "relprice": 0.85
+              "relprice": 0.86
             },
-            "explained_pp": 27.94
+            "explained_pp": 27.95
           },
           "VHV": {
             "vs": "Allianz",
@@ -3432,9 +3432,9 @@
             "contrib_pp": {
               "cite_share": 15.68,
               "size": 17.36,
-              "relprice": 2.75
+              "relprice": 2.76
             },
-            "explained_pp": 35.79
+            "explained_pp": 35.8
           },
           "Württembergische": {
             "vs": "Allianz",
@@ -3492,32 +3492,32 @@
               "prob_direction": 1.0,
               "effect_std_pp": 5.26,
               "se_iid": 0.1971,
-              "se_cluster": 0.2257,
+              "se_cluster": 0.2258,
               "se_inflation": 1.15,
               "n_clusters": 15,
               "wild_cluster_p": 0.0244,
-              "wild_cluster_t": 3.996,
+              "wild_cluster_t": 3.994,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": 0.775,
+                "min": 0.774,
                 "max": 1.073,
                 "sign_stable": true,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": 0.896,
+                  "ADAC": 0.895,
                   "ARAG": 1.073,
                   "AXA": 0.868,
                   "Allianz": 0.948,
                   "Barmenia": 0.898,
                   "CosmosDirekt": 0.969,
                   "DEVK": 0.883,
-                  "Die Bayerische": 0.898,
+                  "Die Bayerische": 0.897,
                   "ERGO": 0.813,
                   "Generali": 0.882,
                   "HUK-Coburg": 0.79,
                   "HanseMerkur": 1.065,
-                  "Signal Iduna": 0.775,
-                  "VHV": 0.903,
+                  "Signal Iduna": 0.774,
+                  "VHV": 0.902,
                   "Württembergische": 0.885
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
@@ -3533,7 +3533,7 @@
               "coef": 0.0,
               "prob_direction": 0.5,
               "effect_std_pp": 0.0,
-              "se_iid": 2.4949,
+              "se_iid": 2.4948,
               "se_cluster": null,
               "se_inflation": null,
               "n_clusters": 15
@@ -3541,8 +3541,8 @@
             "between": {
               "coef": 0.248,
               "prob_direction": 1.0,
-              "effect_std_pp": 6.19,
-              "se_iid": 0.0439,
+              "effect_std_pp": 6.18,
+              "se_iid": 0.0438,
               "se_cluster": 0.059,
               "se_inflation": 1.34,
               "n_clusters": 15,
@@ -3557,7 +3557,7 @@
                 "per_brand": {
                   "ADAC": 0.237,
                   "ARAG": 0.207,
-                  "AXA": 0.25,
+                  "AXA": 0.249,
                   "Allianz": 0.248,
                   "Barmenia": 0.248,
                   "CosmosDirekt": 0.247,
@@ -3581,57 +3581,57 @@
           },
           "relprice": {
             "within": {
-              "coef": 1.119,
-              "prob_direction": 0.821,
+              "coef": 1.122,
+              "prob_direction": 0.822,
               "effect_std_pp": 0.76,
-              "se_iid": 1.3473,
-              "se_cluster": 1.2167,
+              "se_iid": 1.3468,
+              "se_cluster": 1.2172,
               "se_inflation": 0.9,
               "n_clusters": 15,
-              "wild_cluster_p": 0.4867,
-              "wild_cluster_t": 0.92,
+              "wild_cluster_p": 0.4862,
+              "wild_cluster_t": 0.922,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.5617,
+              "wild_cluster_p_fdr": 0.5609,
               "fdr_note": "Benjamini-Hochberg ueber die 10 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 10,
               "fdr_family": "die 10 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -2.25,
+              "coef": -2.255,
               "prob_direction": 0.769,
               "effect_std_pp": -0.8,
-              "se_iid": 2.4945,
-              "se_cluster": 3.0608,
+              "se_iid": 2.4958,
+              "se_cluster": 3.0623,
               "se_inflation": 1.23,
               "n_clusters": 15,
-              "wild_cluster_p": 0.5617,
-              "wild_cluster_t": -0.735,
+              "wild_cluster_p": 0.5609,
+              "wild_cluster_t": -0.736,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -3.834,
-                "max": 0.945,
+                "min": -3.839,
+                "max": 0.943,
                 "sign_stable": false,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": -3.813,
-                  "ARAG": -2.744,
-                  "AXA": -3.072,
-                  "Allianz": -2.592,
-                  "Barmenia": -2.356,
-                  "CosmosDirekt": -1.963,
-                  "DEVK": -1.595,
-                  "Die Bayerische": -2.255,
-                  "ERGO": -1.792,
-                  "Generali": -1.752,
-                  "HUK-Coburg": -1.078,
-                  "HanseMerkur": 0.945,
-                  "Signal Iduna": -3.834,
-                  "VHV": -2.574,
-                  "Württembergische": -2.607
+                  "ADAC": -3.821,
+                  "ARAG": -2.749,
+                  "AXA": -3.076,
+                  "Allianz": -2.594,
+                  "Barmenia": -2.362,
+                  "CosmosDirekt": -1.966,
+                  "DEVK": -1.601,
+                  "Die Bayerische": -2.26,
+                  "ERGO": -1.795,
+                  "Generali": -1.756,
+                  "HUK-Coburg": -1.084,
+                  "HanseMerkur": 0.943,
+                  "Signal Iduna": -3.839,
+                  "VHV": -2.579,
+                  "Württembergische": -2.612
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.5617,
+              "wild_cluster_p_fdr": 0.5609,
               "fdr_note": "Benjamini-Hochberg ueber die 10 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 10,
               "fdr_family": "die 10 Between-Tests dieses Modellblocks"
@@ -3666,9 +3666,9 @@
             "contrib_pp": {
               "cite_share": 10.2,
               "size": 11.16,
-              "relprice": -0.29
+              "relprice": -0.28
             },
-            "explained_pp": 21.07
+            "explained_pp": 21.08
           },
           "Barmenia": {
             "vs": "Allianz",
@@ -3696,9 +3696,9 @@
             "contrib_pp": {
               "cite_share": 11.49,
               "size": 16.12,
-              "relprice": 0.47
+              "relprice": 0.48
             },
-            "explained_pp": 28.08
+            "explained_pp": 28.09
           },
           "Die Bayerische": {
             "vs": "Allianz",
@@ -3716,9 +3716,9 @@
             "contrib_pp": {
               "cite_share": 11.35,
               "size": 8.68,
-              "relprice": 0.6
+              "relprice": 0.61
             },
-            "explained_pp": 20.63
+            "explained_pp": 20.64
           },
           "Generali": {
             "vs": "Allianz",
@@ -3726,9 +3726,9 @@
             "contrib_pp": {
               "cite_share": 16.89,
               "size": 12.4,
-              "relprice": 2.57
+              "relprice": 2.58
             },
-            "explained_pp": 31.86
+            "explained_pp": 31.87
           },
           "HUK-Coburg": {
             "vs": "Allianz",
@@ -3746,9 +3746,9 @@
             "contrib_pp": {
               "cite_share": 9.1,
               "size": 18.6,
-              "relprice": 1.86
+              "relprice": 1.87
             },
-            "explained_pp": 29.56
+            "explained_pp": 29.57
           },
           "Signal Iduna": {
             "vs": "Allianz",
@@ -3756,9 +3756,9 @@
             "contrib_pp": {
               "cite_share": 10.97,
               "size": 16.12,
-              "relprice": 0.85
+              "relprice": 0.86
             },
-            "explained_pp": 27.94
+            "explained_pp": 27.95
           },
           "VHV": {
             "vs": "Allianz",
@@ -3766,9 +3766,9 @@
             "contrib_pp": {
               "cite_share": 15.68,
               "size": 17.36,
-              "relprice": 2.75
+              "relprice": 2.76
             },
-            "explained_pp": 35.79
+            "explained_pp": 35.8
           },
           "Württembergische": {
             "vs": "Allianz",
@@ -3814,16 +3814,16 @@
           "size_pp": 8.68
         },
         "authority_capped": false,
-        "price_pp": 0.6,
+        "price_pp": 0.61,
         "price_capped": false,
-        "rest_pp": 3.57,
+        "rest_pp": 3.56,
         "price_source": "full_joint",
         "n_days": 5,
         "days_range": [
           "2026-10-06",
           "2026-11-03"
         ],
-        "note": "Autoritaet = Quellpraesenz 11.35 pp + Groesse 8.68 pp, Preis 0.6 pp - alle drei aus DEMSELBEN 3-Treiber-Modell (full_joint, Treiber kontrollieren einander), stabilisiert ueber 5 saubere Tage. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis."
+        "note": "Autoritaet = Quellpraesenz 11.35 pp + Groesse 8.68 pp, Preis 0.61 pp - alle drei aus DEMSELBEN 3-Treiber-Modell (full_joint, Treiber kontrollieren einander), stabilisiert ueber 5 saubere Tage. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis."
       },
       "combined": {
         "available": true,
@@ -3835,16 +3835,16 @@
           "size_pp": 8.68
         },
         "authority_capped": false,
-        "price_pp": 0.6,
+        "price_pp": 0.61,
         "price_capped": false,
-        "rest_pp": 3.57,
+        "rest_pp": 3.56,
         "price_source": "full_joint",
         "n_days": 5,
         "days_range": [
           "2026-10-06",
           "2026-11-03"
         ],
-        "note": "Autoritaet = Quellpraesenz 11.35 pp + Groesse 8.68 pp, Preis 0.6 pp - alle drei aus DEMSELBEN 3-Treiber-Modell (full_joint, Treiber kontrollieren einander), stabilisiert ueber 5 saubere Tage. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis."
+        "note": "Autoritaet = Quellpraesenz 11.35 pp + Groesse 8.68 pp, Preis 0.61 pp - alle drei aus DEMSELBEN 3-Treiber-Modell (full_joint, Treiber kontrollieren einander), stabilisiert ueber 5 saubere Tage. Zerlegung ueber gemittelte Zellwerte, kein Kausalnachweis."
       }
     },
     "note": "Level-Modell (Mundlak/CRE): Zielgroesse = SoV-NIVEAU je Marke x Thema; Treiber = Zitations-Footprint (cite_share = eigene-Domain-Zitate / alle Zitate im Thema). WITHIN = bewegt mehr eigener Footprint im Thema die Sichtbarkeit (Marke gegen sich selbst ueber Themen, Themen-FE kontrolliert). BETWEEN = Marken-Mittel des Footprints; erklaert den Autoritaets-/Marken-Vorsprung (warum Allianz sichtbarer ist) statt ihn wie ein reiner Marken-FE zu verstecken. gap_decomposition = Anteil des SoV-Abstands zum Marktfuehrer, der durch Footprint erklaert ist. coef-Einheit = Pp SoV je Pp Zitationsanteil. Mit 6 Themen explorativ. Quelle: data/geo_snapshot.json."
@@ -3891,12 +3891,12 @@
               "coef": 1.672,
               "prob_direction": 1.0,
               "effect_std_pp": 9.75,
-              "se_iid": 0.1683,
-              "se_cluster": 0.2678,
+              "se_iid": 0.1684,
+              "se_cluster": 0.2679,
               "se_inflation": 1.59,
               "n_clusters": 15,
               "wild_cluster_p": 0.0044,
-              "wild_cluster_t": 6.246,
+              "wild_cluster_t": 6.241,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
                 "min": 1.262,
@@ -3904,20 +3904,20 @@
                 "sign_stable": true,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": 1.604,
+                  "ADAC": 1.603,
                   "ARAG": 1.741,
-                  "AXA": 1.677,
+                  "AXA": 1.676,
                   "Allianz": 1.262,
                   "Barmenia": 1.669,
-                  "CosmosDirekt": 1.755,
-                  "DEVK": 1.637,
+                  "CosmosDirekt": 1.754,
+                  "DEVK": 1.636,
                   "Die Bayerische": 1.654,
-                  "ERGO": 1.709,
-                  "Generali": 1.679,
+                  "ERGO": 1.708,
+                  "Generali": 1.678,
                   "HUK-Coburg": 1.678,
                   "HanseMerkur": 1.773,
                   "Signal Iduna": 1.697,
-                  "VHV": 1.676,
+                  "VHV": 1.675,
                   "Württembergische": 1.658
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
@@ -3930,57 +3930,57 @@
           },
           "relprice": {
             "within": {
-              "coef": 1.071,
-              "prob_direction": 0.801,
+              "coef": 1.074,
+              "prob_direction": 0.802,
               "effect_std_pp": 0.73,
-              "se_iid": 1.5942,
-              "se_cluster": 1.2674,
-              "se_inflation": 0.79,
+              "se_iid": 1.5936,
+              "se_cluster": 1.2678,
+              "se_inflation": 0.8,
               "n_clusters": 15,
-              "wild_cluster_p": 0.5201,
-              "wild_cluster_t": 0.845,
+              "wild_cluster_p": 0.5194,
+              "wild_cluster_t": 0.847,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.6935,
+              "wild_cluster_p_fdr": 0.6925,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 8,
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -1.967,
+              "coef": -1.98,
               "prob_direction": 0.666,
-              "effect_std_pp": -0.7,
-              "se_iid": 2.9512,
-              "se_cluster": 4.6001,
+              "effect_std_pp": -0.71,
+              "se_iid": 2.9528,
+              "se_cluster": 4.6025,
               "se_inflation": 1.56,
               "n_clusters": 15,
-              "wild_cluster_p": 0.7568,
-              "wild_cluster_t": -0.428,
+              "wild_cluster_p": 0.7553,
+              "wild_cluster_t": -0.43,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -4.413,
-                "max": 3.324,
+                "min": -4.431,
+                "max": 3.317,
                 "sign_stable": false,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": -4.413,
-                  "ARAG": -2.793,
-                  "AXA": -2.022,
-                  "Allianz": -3.376,
-                  "Barmenia": -2.081,
-                  "CosmosDirekt": -1.606,
-                  "DEVK": -1.178,
-                  "Die Bayerische": -2.398,
-                  "ERGO": -2.575,
-                  "Generali": -1.973,
-                  "HUK-Coburg": -1.739,
-                  "HanseMerkur": 3.324,
-                  "Signal Iduna": -2.029,
-                  "VHV": -2.172,
-                  "Württembergische": -2.292
+                  "ADAC": -4.431,
+                  "ARAG": -2.804,
+                  "AXA": -2.038,
+                  "Allianz": -3.375,
+                  "Barmenia": -2.094,
+                  "CosmosDirekt": -1.616,
+                  "DEVK": -1.191,
+                  "Die Bayerische": -2.411,
+                  "ERGO": -2.588,
+                  "Generali": -1.986,
+                  "HUK-Coburg": -1.752,
+                  "HanseMerkur": 3.317,
+                  "Signal Iduna": -2.042,
+                  "VHV": -2.187,
+                  "Württembergische": -2.305
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.7568,
+              "wild_cluster_p_fdr": 0.7553,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 8,
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
@@ -3994,9 +3994,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 19.7,
-              "relprice": -1.08
+              "relprice": -1.09
             },
-            "explained_pp": 18.62
+            "explained_pp": 18.61
           },
           "ARAG": {
             "vs": "Allianz",
@@ -4021,36 +4021,36 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 30.1,
-              "relprice": -0.87
+              "relprice": -0.88
             },
-            "explained_pp": 29.23
+            "explained_pp": 29.22
           },
           "CosmosDirekt": {
             "vs": "Allianz",
             "actual_gap_pp": 34.2,
             "contrib_pp": {
               "cite_share": 29.76,
-              "relprice": 0.39
+              "relprice": 0.4
             },
-            "explained_pp": 30.15
+            "explained_pp": 30.16
           },
           "DEVK": {
             "vs": "Allianz",
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 21.3,
-              "relprice": 0.41
+              "relprice": 0.42
             },
-            "explained_pp": 21.71
+            "explained_pp": 21.72
           },
           "Die Bayerische": {
             "vs": "Allianz",
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 24.48,
-              "relprice": -0.39
+              "relprice": -0.38
             },
-            "explained_pp": 24.09
+            "explained_pp": 24.1
           },
           "ERGO": {
             "vs": "Allianz",
@@ -4066,9 +4066,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 31.3,
-              "relprice": 2.25
+              "relprice": 2.26
             },
-            "explained_pp": 33.55
+            "explained_pp": 33.56
           },
           "HUK-Coburg": {
             "vs": "Allianz",
@@ -4084,9 +4084,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 16.86,
-              "relprice": 1.62
+              "relprice": 1.64
             },
-            "explained_pp": 18.48
+            "explained_pp": 18.5
           },
           "Signal Iduna": {
             "vs": "Allianz",
@@ -4102,9 +4102,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 29.06,
-              "relprice": 2.41
+              "relprice": 2.43
             },
-            "explained_pp": 31.47
+            "explained_pp": 31.49
           },
           "Württembergische": {
             "vs": "Allianz",
@@ -4145,12 +4145,12 @@
               "coef": 1.672,
               "prob_direction": 1.0,
               "effect_std_pp": 9.75,
-              "se_iid": 0.1683,
-              "se_cluster": 0.2678,
+              "se_iid": 0.1684,
+              "se_cluster": 0.2679,
               "se_inflation": 1.59,
               "n_clusters": 15,
               "wild_cluster_p": 0.0044,
-              "wild_cluster_t": 6.246,
+              "wild_cluster_t": 6.241,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
                 "min": 1.262,
@@ -4158,20 +4158,20 @@
                 "sign_stable": true,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": 1.604,
+                  "ADAC": 1.603,
                   "ARAG": 1.741,
-                  "AXA": 1.677,
+                  "AXA": 1.676,
                   "Allianz": 1.262,
                   "Barmenia": 1.669,
-                  "CosmosDirekt": 1.755,
-                  "DEVK": 1.637,
+                  "CosmosDirekt": 1.754,
+                  "DEVK": 1.636,
                   "Die Bayerische": 1.654,
-                  "ERGO": 1.709,
-                  "Generali": 1.679,
+                  "ERGO": 1.708,
+                  "Generali": 1.678,
                   "HUK-Coburg": 1.678,
                   "HanseMerkur": 1.773,
                   "Signal Iduna": 1.697,
-                  "VHV": 1.676,
+                  "VHV": 1.675,
                   "Württembergische": 1.658
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
@@ -4184,57 +4184,57 @@
           },
           "relprice": {
             "within": {
-              "coef": 1.071,
-              "prob_direction": 0.801,
+              "coef": 1.074,
+              "prob_direction": 0.802,
               "effect_std_pp": 0.73,
-              "se_iid": 1.5942,
-              "se_cluster": 1.2674,
-              "se_inflation": 0.79,
+              "se_iid": 1.5936,
+              "se_cluster": 1.2678,
+              "se_inflation": 0.8,
               "n_clusters": 15,
-              "wild_cluster_p": 0.5201,
-              "wild_cluster_t": 0.845,
+              "wild_cluster_p": 0.5194,
+              "wild_cluster_t": 0.847,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.6935,
+              "wild_cluster_p_fdr": 0.6925,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 8,
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -1.967,
+              "coef": -1.98,
               "prob_direction": 0.666,
-              "effect_std_pp": -0.7,
-              "se_iid": 2.9512,
-              "se_cluster": 4.6001,
+              "effect_std_pp": -0.71,
+              "se_iid": 2.9528,
+              "se_cluster": 4.6025,
               "se_inflation": 1.56,
               "n_clusters": 15,
-              "wild_cluster_p": 0.7568,
-              "wild_cluster_t": -0.428,
+              "wild_cluster_p": 0.7553,
+              "wild_cluster_t": -0.43,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -4.413,
-                "max": 3.324,
+                "min": -4.431,
+                "max": 3.317,
                 "sign_stable": false,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": -4.413,
-                  "ARAG": -2.793,
-                  "AXA": -2.022,
-                  "Allianz": -3.376,
-                  "Barmenia": -2.081,
-                  "CosmosDirekt": -1.606,
-                  "DEVK": -1.178,
-                  "Die Bayerische": -2.398,
-                  "ERGO": -2.575,
-                  "Generali": -1.973,
-                  "HUK-Coburg": -1.739,
-                  "HanseMerkur": 3.324,
-                  "Signal Iduna": -2.029,
-                  "VHV": -2.172,
-                  "Württembergische": -2.292
+                  "ADAC": -4.431,
+                  "ARAG": -2.804,
+                  "AXA": -2.038,
+                  "Allianz": -3.375,
+                  "Barmenia": -2.094,
+                  "CosmosDirekt": -1.616,
+                  "DEVK": -1.191,
+                  "Die Bayerische": -2.411,
+                  "ERGO": -2.588,
+                  "Generali": -1.986,
+                  "HUK-Coburg": -1.752,
+                  "HanseMerkur": 3.317,
+                  "Signal Iduna": -2.042,
+                  "VHV": -2.187,
+                  "Württembergische": -2.305
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.7568,
+              "wild_cluster_p_fdr": 0.7553,
               "fdr_note": "Benjamini-Hochberg ueber die 8 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 8,
               "fdr_family": "die 8 Between-Tests dieses Modellblocks"
@@ -4248,9 +4248,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 19.7,
-              "relprice": -1.08
+              "relprice": -1.09
             },
-            "explained_pp": 18.62
+            "explained_pp": 18.61
           },
           "ARAG": {
             "vs": "Allianz",
@@ -4275,36 +4275,36 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 30.1,
-              "relprice": -0.87
+              "relprice": -0.88
             },
-            "explained_pp": 29.23
+            "explained_pp": 29.22
           },
           "CosmosDirekt": {
             "vs": "Allianz",
             "actual_gap_pp": 34.2,
             "contrib_pp": {
               "cite_share": 29.76,
-              "relprice": 0.39
+              "relprice": 0.4
             },
-            "explained_pp": 30.15
+            "explained_pp": 30.16
           },
           "DEVK": {
             "vs": "Allianz",
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 21.3,
-              "relprice": 0.41
+              "relprice": 0.42
             },
-            "explained_pp": 21.71
+            "explained_pp": 21.72
           },
           "Die Bayerische": {
             "vs": "Allianz",
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 24.48,
-              "relprice": -0.39
+              "relprice": -0.38
             },
-            "explained_pp": 24.09
+            "explained_pp": 24.1
           },
           "ERGO": {
             "vs": "Allianz",
@@ -4320,9 +4320,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 31.3,
-              "relprice": 2.25
+              "relprice": 2.26
             },
-            "explained_pp": 33.55
+            "explained_pp": 33.56
           },
           "HUK-Coburg": {
             "vs": "Allianz",
@@ -4338,9 +4338,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 16.86,
-              "relprice": 1.62
+              "relprice": 1.64
             },
-            "explained_pp": 18.48
+            "explained_pp": 18.5
           },
           "Signal Iduna": {
             "vs": "Allianz",
@@ -4356,9 +4356,9 @@
             "actual_gap_pp": 35.42,
             "contrib_pp": {
               "cite_share": 29.06,
-              "relprice": 2.41
+              "relprice": 2.43
             },
-            "explained_pp": 31.47
+            "explained_pp": 31.49
           },
           "Württembergische": {
             "vs": "Allianz",
@@ -4387,57 +4387,57 @@
         "drivers_eff": {
           "relprice": {
             "within": {
-              "coef": -0.872,
-              "prob_direction": 0.809,
+              "coef": -0.868,
+              "prob_direction": 0.808,
               "effect_std_pp": -0.59,
-              "se_iid": 1.5221,
-              "se_cluster": 0.9963,
-              "se_inflation": 0.65,
+              "se_iid": 1.5212,
+              "se_cluster": 0.9975,
+              "se_inflation": 0.66,
               "n_clusters": 15,
-              "wild_cluster_p": 0.4071,
-              "wild_cluster_t": -0.875,
+              "wild_cluster_p": 0.4093,
+              "wild_cluster_t": -0.87,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.4071,
+              "wild_cluster_p_fdr": 0.4093,
               "fdr_note": "Benjamini-Hochberg ueber die 4 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 4,
               "fdr_family": "die 4 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -6.033,
+              "coef": -6.058,
               "prob_direction": 0.98,
-              "effect_std_pp": -2.15,
-              "se_iid": 2.6476,
-              "se_cluster": 2.9432,
-              "se_inflation": 1.11,
+              "effect_std_pp": -2.16,
+              "se_iid": 2.6467,
+              "se_cluster": 2.9519,
+              "se_inflation": 1.12,
               "n_clusters": 15,
-              "wild_cluster_p": 0.0679,
-              "wild_cluster_t": -2.05,
+              "wild_cluster_p": 0.0672,
+              "wild_cluster_t": -2.052,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -7.844,
-                "max": -3.926,
+                "min": -7.862,
+                "max": -3.929,
                 "sign_stable": true,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": -6.913,
-                  "ARAG": -5.808,
-                  "AXA": -7.844,
-                  "Allianz": -3.926,
-                  "Barmenia": -6.588,
-                  "CosmosDirekt": -5.406,
-                  "DEVK": -6.084,
-                  "Die Bayerische": -6.386,
-                  "ERGO": -5.644,
-                  "Generali": -5.889,
-                  "HUK-Coburg": -4.647,
-                  "HanseMerkur": -7.748,
-                  "Signal Iduna": -5.405,
-                  "VHV": -5.957,
-                  "Württembergische": -6.441
+                  "ADAC": -6.94,
+                  "ARAG": -5.833,
+                  "AXA": -7.862,
+                  "Allianz": -3.929,
+                  "Barmenia": -6.614,
+                  "CosmosDirekt": -5.43,
+                  "DEVK": -6.109,
+                  "Die Bayerische": -6.411,
+                  "ERGO": -5.671,
+                  "Generali": -5.916,
+                  "HUK-Coburg": -4.676,
+                  "HanseMerkur": -7.778,
+                  "Signal Iduna": -5.432,
+                  "VHV": -5.987,
+                  "Württembergische": -6.466
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.1358,
+              "wild_cluster_p_fdr": 0.1344,
               "fdr_note": "Benjamini-Hochberg ueber die 4 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 4,
               "fdr_family": "die 4 Between-Tests dieses Modellblocks"
@@ -4466,9 +4466,9 @@
             "vs": "Allianz",
             "actual_gap_pp": 11.31,
             "contrib_pp": {
-              "relprice": -0.77
+              "relprice": -0.76
             },
-            "explained_pp": -0.77
+            "explained_pp": -0.76
           },
           "Barmenia": {
             "vs": "Allianz",
@@ -4482,17 +4482,17 @@
             "vs": "Allianz",
             "actual_gap_pp": 17.8,
             "contrib_pp": {
-              "relprice": 1.2
+              "relprice": 1.22
             },
-            "explained_pp": 1.2
+            "explained_pp": 1.22
           },
           "DEVK": {
             "vs": "Allianz",
             "actual_gap_pp": 12.74,
             "contrib_pp": {
-              "relprice": 1.27
+              "relprice": 1.28
             },
-            "explained_pp": 1.27
+            "explained_pp": 1.28
           },
           "Die Bayerische": {
             "vs": "Allianz",
@@ -4506,49 +4506,49 @@
             "vs": "Allianz",
             "actual_gap_pp": 12.59,
             "contrib_pp": {
-              "relprice": 1.62
+              "relprice": 1.64
             },
-            "explained_pp": 1.62
+            "explained_pp": 1.64
           },
           "Generali": {
             "vs": "Allianz",
             "actual_gap_pp": 18.72,
             "contrib_pp": {
-              "relprice": 6.89
+              "relprice": 6.93
             },
-            "explained_pp": 6.89
+            "explained_pp": 6.93
           },
           "HUK-Coburg": {
             "vs": "Allianz",
             "actual_gap_pp": 3.49,
             "contrib_pp": {
-              "relprice": -1.93
+              "relprice": -1.92
             },
-            "explained_pp": -1.93
+            "explained_pp": -1.92
           },
           "HanseMerkur": {
             "vs": "Allianz",
             "actual_gap_pp": 10.09,
             "contrib_pp": {
-              "relprice": 4.98
+              "relprice": 5.01
             },
-            "explained_pp": 4.98
+            "explained_pp": 5.01
           },
           "Signal Iduna": {
             "vs": "Allianz",
             "actual_gap_pp": 12.17,
             "contrib_pp": {
-              "relprice": 2.29
+              "relprice": 2.31
             },
-            "explained_pp": 2.29
+            "explained_pp": 2.31
           },
           "VHV": {
             "vs": "Allianz",
             "actual_gap_pp": 17.38,
             "contrib_pp": {
-              "relprice": 7.38
+              "relprice": 7.42
             },
-            "explained_pp": 7.38
+            "explained_pp": 7.42
           },
           "Württembergische": {
             "vs": "Allianz",
@@ -4569,57 +4569,57 @@
         "drivers_eff": {
           "relprice": {
             "within": {
-              "coef": -0.872,
-              "prob_direction": 0.809,
+              "coef": -0.868,
+              "prob_direction": 0.808,
               "effect_std_pp": -0.59,
-              "se_iid": 1.5221,
-              "se_cluster": 0.9963,
-              "se_inflation": 0.65,
+              "se_iid": 1.5212,
+              "se_cluster": 0.9975,
+              "se_inflation": 0.66,
               "n_clusters": 15,
-              "wild_cluster_p": 0.4071,
-              "wild_cluster_t": -0.875,
+              "wild_cluster_p": 0.4093,
+              "wild_cluster_t": -0.87,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
-              "wild_cluster_p_fdr": 0.4071,
+              "wild_cluster_p_fdr": 0.4093,
               "fdr_note": "Benjamini-Hochberg ueber die 4 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 4,
               "fdr_family": "die 4 Between-Tests dieses Modellblocks"
             },
             "between": {
-              "coef": -6.033,
+              "coef": -6.058,
               "prob_direction": 0.98,
-              "effect_std_pp": -2.15,
-              "se_iid": 2.6476,
-              "se_cluster": 2.9432,
-              "se_inflation": 1.11,
+              "effect_std_pp": -2.16,
+              "se_iid": 2.6467,
+              "se_cluster": 2.9519,
+              "se_inflation": 1.12,
               "n_clusters": 15,
-              "wild_cluster_p": 0.0679,
-              "wild_cluster_t": -2.05,
+              "wild_cluster_p": 0.0672,
+              "wild_cluster_t": -2.052,
               "wild_cluster_note": "Wild-Cluster-Bootstrap mit deterministischer Rademacher-Stichprobe (G=15 Marken > 12: vollstaendige Enumeration von 2^15 zu teuer). Fester Seed 42, 4095 Draws; reproduzierbar. Kleinstmoeglicher p-Wert ~0.0002.",
               "between_loo": {
-                "min": -7.844,
-                "max": -3.926,
+                "min": -7.862,
+                "max": -3.929,
                 "sign_stable": true,
                 "n_refits": 15,
                 "per_brand": {
-                  "ADAC": -6.913,
-                  "ARAG": -5.808,
-                  "AXA": -7.844,
-                  "Allianz": -3.926,
-                  "Barmenia": -6.588,
-                  "CosmosDirekt": -5.406,
-                  "DEVK": -6.084,
-                  "Die Bayerische": -6.386,
-                  "ERGO": -5.644,
-                  "Generali": -5.889,
-                  "HUK-Coburg": -4.647,
-                  "HanseMerkur": -7.748,
-                  "Signal Iduna": -5.405,
-                  "VHV": -5.957,
-                  "Württembergische": -6.441
+                  "ADAC": -6.94,
+                  "ARAG": -5.833,
+                  "AXA": -7.862,
+                  "Allianz": -3.929,
+                  "Barmenia": -6.614,
+                  "CosmosDirekt": -5.43,
+                  "DEVK": -6.109,
+                  "Die Bayerische": -6.411,
+                  "ERGO": -5.671,
+                  "Generali": -5.916,
+                  "HUK-Coburg": -4.676,
+                  "HanseMerkur": -7.778,
+                  "Signal Iduna": -5.432,
+                  "VHV": -5.987,
+                  "Württembergische": -6.466
                 },
                 "note": "Vorzeichen des Between-Effekts, wenn jeweils eine Marke weggelassen wird. sign_stable=false heisst: Der Effekt haengt an einzelnen Marken."
               },
-              "wild_cluster_p_fdr": 0.1358,
+              "wild_cluster_p_fdr": 0.1344,
               "fdr_note": "Benjamini-Hochberg ueber die 4 Between-Tests dieses Modellblocks. Signifikant nach Korrektur: nein (alpha=0.05). EINSCHRAENKUNG: BH setzt unabhaengige (oder positiv abhaengige) Tests voraus. Die Kanaele hier sind es nicht - 'combined' ist eine Mischung aus 'grounded' und 'ungrounded' und teilt deren Daten. Die Korrektur ist deshalb eine Naeherung; q-Werte knapp um 0,05 nicht ueberinterpretieren.",
               "fdr_n_tests": 4,
               "fdr_family": "die 4 Between-Tests dieses Modellblocks"
@@ -4648,9 +4648,9 @@
             "vs": "Allianz",
             "actual_gap_pp": 11.31,
             "contrib_pp": {
-              "relprice": -0.77
+              "relprice": -0.76
             },
-            "explained_pp": -0.77
+            "explained_pp": -0.76
           },
           "Barmenia": {
             "vs": "Allianz",
@@ -4664,17 +4664,17 @@
             "vs": "Allianz",
             "actual_gap_pp": 17.8,
             "contrib_pp": {
-              "relprice": 1.2
+              "relprice": 1.22
             },
-            "explained_pp": 1.2
+            "explained_pp": 1.22
           },
           "DEVK": {
             "vs": "Allianz",
             "actual_gap_pp": 12.74,
             "contrib_pp": {
-              "relprice": 1.27
+              "relprice": 1.28
             },
-            "explained_pp": 1.27
+            "explained_pp": 1.28
           },
           "Die Bayerische": {
             "vs": "Allianz",
@@ -4688,49 +4688,49 @@
             "vs": "Allianz",
             "actual_gap_pp": 12.59,
             "contrib_pp": {
-              "relprice": 1.62
+              "relprice": 1.64
             },
-            "explained_pp": 1.62
+            "explained_pp": 1.64
           },
           "Generali": {
             "vs": "Allianz",
             "actual_gap_pp": 18.72,
             "contrib_pp": {
-              "relprice": 6.89
+              "relprice": 6.93
             },
-            "explained_pp": 6.89
+            "explained_pp": 6.93
           },
           "HUK-Coburg": {
             "vs": "Allianz",
             "actual_gap_pp": 3.49,
             "contrib_pp": {
-              "relprice": -1.93
+              "relprice": -1.92
             },
-            "explained_pp": -1.93
+            "explained_pp": -1.92
           },
           "HanseMerkur": {
             "vs": "Allianz",
             "actual_gap_pp": 10.09,
             "contrib_pp": {
-              "relprice": 4.98
+              "relprice": 5.01
             },
-            "explained_pp": 4.98
+            "explained_pp": 5.01
           },
           "Signal Iduna": {
             "vs": "Allianz",
             "actual_gap_pp": 12.17,
             "contrib_pp": {
-              "relprice": 2.29
+              "relprice": 2.31
             },
-            "explained_pp": 2.29
+            "explained_pp": 2.31
           },
           "VHV": {
             "vs": "Allianz",
             "actual_gap_pp": 17.38,
             "contrib_pp": {
-              "relprice": 7.38
+              "relprice": 7.42
             },
-            "explained_pp": 7.38
+            "explained_pp": 7.42
           },
           "Württembergische": {
             "vs": "Allianz",
@@ -4788,7 +4788,7 @@
         "between_coef": {
           "size": 0.248,
           "cite_share": 0.902,
-          "relprice": -2.25
+          "relprice": -2.255
         },
         "driver_reliability": {
           "size": {
@@ -4803,7 +4803,7 @@
           },
           "relprice": {
             "prob_direction": 0.769,
-            "wild_cluster_p": 0.5617,
+            "wild_cluster_p": 0.5609,
             "loo_sign_stable": false
           }
         },
@@ -4818,7 +4818,7 @@
             "sov": 35.416,
             "size": 100.0,
             "cite_share": 18.722,
-            "relprice": 1.589
+            "relprice": 1.587
           },
           "HanseMerkur": {
             "sov": 0.0,
@@ -4836,7 +4836,7 @@
             "sov": 13.233,
             "size": 55.0,
             "cite_share": 7.409,
-            "relprice": 1.46
+            "relprice": 1.462
           },
           "Generali": {
             "sov": 0.0,
@@ -4949,7 +4949,7 @@
         "between_coef": {
           "size": 0.248,
           "cite_share": 0.902,
-          "relprice": -2.25
+          "relprice": -2.255
         },
         "driver_reliability": {
           "size": {
@@ -4964,7 +4964,7 @@
           },
           "relprice": {
             "prob_direction": 0.769,
-            "wild_cluster_p": 0.5617,
+            "wild_cluster_p": 0.5609,
             "loo_sign_stable": false
           }
         },
@@ -4979,7 +4979,7 @@
             "sov": 35.416,
             "size": 100.0,
             "cite_share": 18.722,
-            "relprice": 1.589
+            "relprice": 1.587
           },
           "HanseMerkur": {
             "sov": 0.0,
@@ -4997,7 +4997,7 @@
             "sov": 13.233,
             "size": 55.0,
             "cite_share": 7.409,
-            "relprice": 1.46
+            "relprice": 1.462
           },
           "Generali": {
             "sov": 0.0,
@@ -5495,7 +5495,7 @@
   "citation_target": {
     "ziel": "Zitate je Marke (Peec citation_count, Summe ueber die Domains der Marke)",
     "quelle": "data/peec_snapshots/<ENDE>_sources.json",
-    "n_messpunkte": 96,
+    "n_messpunkte": 97,
     "messpunkte": [
       "2026-07-19",
       "2026-07-29",
@@ -5592,14 +5592,15 @@
       "2026-11-02",
       "2026-11-03",
       "2026-11-04",
-      "2026-11-05"
+      "2026-11-05",
+      "2026-11-06"
     ],
     "min_messpunkte": 3,
     "methode": "Je Intervall zwischen zwei Snapshots: delta_Zitate je Marke gegen die Ereigniszahl je Typ im selben Fenster — dieselbe Event-Study-Logik wie beim SoV-Modell, nur mit der frueheren Zielgroesse in der Wirkungskette.",
     "grenzen": "Peec-Zitatzahlen stammen aus einem rollierenden 30-Tage-Fenster; zwei aufeinanderfolgende Snapshots ueberlappen sich also stark. Die Reihe ist gegluettet und traege — Effekte zeigen sich verzoegert und daempft. Ausserdem deckt der Export nur die Top-Domains ab, nicht den Long Tail.",
     "intervalle_uebersprungen_bruch": 97,
     "available": true,
-    "n_intervalle": 1794,
+    "n_intervalle": 1813,
     "marken": [
       "ADAC",
       "ARAG",
@@ -5626,99 +5627,99 @@
     "impact": {
       "page_change": {
         "label": "Seitenaenderungen (Wettbewerb)",
-        "pearson_r": 0.09126227857278439,
-        "avg_citation_effect": 120.626,
-        "effect_se": 24.187,
-        "ci95_low": 73.219,
-        "ci95_high": 168.033,
+        "pearson_r": 0.0916814543220612,
+        "avg_citation_effect": 121.672,
+        "effect_se": 24.186,
+        "ci95_low": 74.267,
+        "ci95_high": 169.077,
         "significant": true,
-        "p_value": 1e-06,
-        "n_intervals": 1794,
+        "p_value": 0.0,
+        "n_intervals": 1813,
         "n_with_event": 173,
         "type_confidence": "belastbar",
         "available": true
       },
       "page_new": {
         "label": "Neue Seiten",
-        "pearson_r": 0.15156900639623974,
-        "avg_citation_effect": 93.667,
-        "effect_se": 54.63,
-        "ci95_low": -13.408,
-        "ci95_high": 200.742,
+        "pearson_r": 0.15100144241958086,
+        "avg_citation_effect": 94.737,
+        "effect_se": 54.629,
+        "ci95_low": -12.336,
+        "ci95_high": 201.81,
         "significant": false,
-        "p_value": 0.086424,
-        "n_intervals": 1794,
+        "p_value": 0.082885,
+        "n_intervals": 1813,
         "n_with_event": 42,
         "type_confidence": "belastbar",
         "available": true
       },
       "page_removed": {
         "label": "Geloeschte Seiten",
-        "pearson_r": -0.027397376549181916,
-        "avg_citation_effect": 45.545,
-        "effect_se": 87.07,
-        "ci95_low": -167.515,
-        "ci95_high": 258.605,
+        "pearson_r": -0.02705486703322596,
+        "avg_citation_effect": 46.615,
+        "effect_se": 87.069,
+        "ci95_low": -166.443,
+        "ci95_high": 259.674,
         "significant": false,
-        "p_value": 0.600916,
-        "n_intervals": 1794,
+        "p_value": 0.592387,
+        "n_intervals": 1813,
         "n_with_event": 7,
         "type_confidence": "vorlaeufig",
         "available": true
       },
       "press_mention": {
         "label": "Pressemitteilungen",
-        "pearson_r": -0.0269041696575546,
-        "avg_citation_effect": -12.912,
-        "effect_se": 41.322,
-        "ci95_low": -93.904,
-        "ci95_high": 68.079,
+        "pearson_r": -0.030715270061828018,
+        "avg_citation_effect": -17.129,
+        "effect_se": 41.128,
+        "ci95_low": -97.74,
+        "ci95_high": 63.482,
         "significant": false,
-        "p_value": 0.754679,
-        "n_intervals": 1794,
-        "n_with_event": 80,
+        "p_value": 0.677057,
+        "n_intervals": 1813,
+        "n_with_event": 81,
         "type_confidence": "belastbar",
         "available": true
       },
       "news_mention": {
         "label": "News-Erwaehnungen",
-        "pearson_r": 0.01306254000088136,
-        "avg_citation_effect": 0.74,
-        "effect_se": 14.856,
-        "ci95_low": -28.379,
-        "ci95_high": 29.858,
+        "pearson_r": 0.012052298578600032,
+        "avg_citation_effect": -1.129,
+        "effect_se": 14.807,
+        "ci95_low": -30.151,
+        "ci95_high": 27.894,
         "significant": false,
-        "p_value": 0.960287,
-        "n_intervals": 1794,
-        "n_with_event": 219,
+        "p_value": 0.939244,
+        "n_intervals": 1813,
+        "n_with_event": 222,
         "type_confidence": "belastbar",
         "available": true
       },
       "linkedin_post": {
         "label": "LinkedIn-Posts",
-        "pearson_r": 0.1088677784520599,
-        "avg_citation_effect": 78.084,
-        "effect_se": 18.464,
-        "ci95_low": 41.895,
-        "ci95_high": 114.274,
+        "pearson_r": 0.11008506366571127,
+        "avg_citation_effect": 78.908,
+        "effect_se": 18.398,
+        "ci95_low": 42.848,
+        "ci95_high": 114.969,
         "significant": true,
-        "p_value": 2.3e-05,
-        "n_intervals": 1794,
-        "n_with_event": 263,
+        "p_value": 1.8e-05,
+        "n_intervals": 1813,
+        "n_with_event": 264,
         "type_confidence": "belastbar",
         "available": true
       },
       "instagram_post": {
         "label": "Instagram-Posts",
-        "pearson_r": 0.2076510825611319,
-        "avg_citation_effect": 101.417,
-        "effect_se": 17.355,
-        "ci95_low": 67.402,
-        "ci95_high": 135.432,
+        "pearson_r": 0.2078483660599423,
+        "avg_citation_effect": 101.702,
+        "effect_se": 17.256,
+        "ci95_low": 67.88,
+        "ci95_high": 135.523,
         "significant": true,
         "p_value": 0.0,
-        "n_intervals": 1794,
-        "n_with_event": 308,
+        "n_intervals": 1813,
+        "n_with_event": 310,
         "type_confidence": "belastbar",
         "available": true
       },
@@ -5730,70 +5731,70 @@
       },
       "review_change": {
         "label": "Bewertungs-Trend (±)",
-        "pearson_r": 0.05059422580028468,
-        "avg_citation_effect": 43.129,
-        "effect_se": 18.295,
-        "ci95_low": 7.269,
-        "ci95_high": 78.988,
+        "pearson_r": 0.05150145539420123,
+        "avg_citation_effect": 44.221,
+        "effect_se": 18.291,
+        "ci95_low": 8.37,
+        "ci95_high": 80.072,
         "significant": true,
-        "p_value": 0.018407,
-        "n_intervals": 1794,
+        "p_value": 0.015624,
+        "n_intervals": 1813,
         "n_with_event": 70,
         "type_confidence": "belastbar",
         "available": true
       },
       "review_volume": {
         "label": "Bewertungs-Volumen",
-        "pearson_r": 0.08372816273641648,
-        "avg_citation_effect": 79.384,
-        "effect_se": 23.602,
-        "ci95_low": 33.124,
-        "ci95_high": 125.643,
+        "pearson_r": 0.08424559962197865,
+        "avg_citation_effect": 80.458,
+        "effect_se": 23.599,
+        "ci95_low": 34.204,
+        "ci95_high": 126.711,
         "significant": true,
-        "p_value": 0.00077,
-        "n_intervals": 1794,
+        "p_value": 0.000651,
+        "n_intervals": 1813,
         "n_with_event": 47,
         "type_confidence": "belastbar",
         "available": true
       },
       "price_change": {
         "label": "Preis-Aenderungen (gemessen)",
-        "pearson_r": -0.01146533560044018,
-        "avg_citation_effect": -24.118,
-        "effect_se": 10.07,
-        "ci95_low": -46.555,
-        "ci95_high": -1.682,
+        "pearson_r": -0.010887471033113813,
+        "avg_citation_effect": -23.042,
+        "effect_se": 10.064,
+        "ci95_low": -45.464,
+        "ci95_high": -0.621,
         "significant": true,
-        "p_value": 0.016621,
-        "n_intervals": 1794,
+        "p_value": 0.02204,
+        "n_intervals": 1813,
         "n_with_event": 11,
         "type_confidence": "moderat",
         "available": true
       },
       "wikipedia_change": {
         "label": "Wikipedia-Ausbau (±)",
-        "pearson_r": -0.0703412115761521,
-        "avg_citation_effect": -126.855,
-        "effect_se": 34.816,
-        "ci95_low": -201.536,
-        "ci95_high": -52.174,
+        "pearson_r": -0.06931628173235534,
+        "avg_citation_effect": -125.767,
+        "effect_se": 34.814,
+        "ci95_low": -200.444,
+        "ci95_high": -51.091,
         "significant": true,
-        "p_value": 0.000269,
-        "n_intervals": 1794,
+        "p_value": 0.000303,
+        "n_intervals": 1813,
         "n_with_event": 15,
         "type_confidence": "moderat",
         "available": true
       },
       "portal_rank_change": {
         "label": "Portal-Rang Check24 (±)",
-        "pearson_r": -0.02803707769124747,
-        "avg_citation_effect": -31.749,
-        "effect_se": 12.098,
-        "ci95_low": -55.462,
-        "ci95_high": -8.037,
+        "pearson_r": -0.02684894301061867,
+        "avg_citation_effect": -30.646,
+        "effect_se": 12.092,
+        "ci95_low": -54.347,
+        "ci95_high": -6.946,
         "significant": true,
-        "p_value": 0.008683,
-        "n_intervals": 1794,
+        "p_value": 0.011265,
+        "n_intervals": 1813,
         "n_with_event": 44,
         "type_confidence": "belastbar",
         "available": true
@@ -5806,14 +5807,14 @@
       },
       "price_announcement": {
         "label": "Beitragsanpassung (angekuendigt)",
-        "pearson_r": 0.03484646173892981,
-        "avg_citation_effect": 38.25,
-        "effect_se": 26.588,
-        "ci95_low": -16.308,
-        "ci95_high": 92.808,
+        "pearson_r": 0.03543234799760974,
+        "avg_citation_effect": 39.328,
+        "effect_se": 26.585,
+        "ci95_low": -15.224,
+        "ci95_high": 93.881,
         "significant": false,
-        "p_value": 0.150253,
-        "n_intervals": 1794,
+        "p_value": 0.139049,
+        "n_intervals": 1813,
         "n_with_event": 28,
         "type_confidence": "belastbar",
         "available": true
@@ -15606,104 +15607,104 @@
   },
   "external_source_authority": {
     "available": true,
-    "quelle": "2026-11-05_sources.json",
+    "quelle": "2026-11-06_sources.json",
     "autoritaetstabelle": [
       {
         "domain": "ergo.de",
-        "citations": 39480,
+        "citations": 38951,
         "klasse": "You",
         "zitiert_marken": 9
       },
       {
         "domain": "finanztip.de",
-        "citations": 35388,
+        "citations": 34806,
         "klasse": "Editorial",
         "zitiert_marken": 30
       },
       {
         "domain": "transparent-beraten.de",
-        "citations": 24500,
+        "citations": 24637,
         "klasse": "Broker",
         "zitiert_marken": 29
       },
       {
         "domain": "check24.de",
-        "citations": 23951,
+        "citations": 23904,
         "klasse": "Aggregator",
         "zitiert_marken": 29
       },
       {
         "domain": "test.de",
-        "citations": 21488,
+        "citations": 21151,
         "klasse": "Editorial",
         "zitiert_marken": 30
       },
       {
         "domain": "allianz.de",
-        "citations": 21429,
+        "citations": 20994,
         "klasse": "Competitor",
         "zitiert_marken": 21
       },
       {
         "domain": "verivox.de",
-        "citations": 10425,
+        "citations": 10390,
         "klasse": "Aggregator",
         "zitiert_marken": 30
       },
       {
         "domain": "handelsblatt.com",
-        "citations": 10027,
+        "citations": 10044,
         "klasse": "Editorial",
         "zitiert_marken": 30
       },
       {
         "domain": "huk.de",
-        "citations": 9089,
+        "citations": 9048,
         "klasse": "Competitor",
         "zitiert_marken": 22
       },
       {
         "domain": "youtube.com",
-        "citations": 8307,
+        "citations": 8374,
         "klasse": "UGC",
         "zitiert_marken": 30
       },
       {
         "domain": "cosmosdirekt.de",
-        "citations": 8183,
+        "citations": 8134,
         "klasse": "Competitor",
         "zitiert_marken": 22
       },
       {
         "domain": "verbraucherzentrale.de",
-        "citations": 6558,
+        "citations": 6551,
         "klasse": "Institutional",
         "zitiert_marken": 8
       },
       {
         "domain": "deutsche-familienversicherung.de",
-        "citations": 6399,
+        "citations": 6470,
         "klasse": "Competitor",
         "zitiert_marken": 17
       },
       {
         "domain": "testsieger-berichte.de",
-        "citations": 6190,
+        "citations": 6118,
         "klasse": "Editorial",
         "zitiert_marken": 27
       },
       {
-        "domain": "adac.de",
-        "citations": 6139,
-        "klasse": "Competitor",
-        "zitiert_marken": 6
+        "domain": "finanzberatung-bierl.de",
+        "citations": 6094,
+        "klasse": "Broker",
+        "zitiert_marken": 30
       }
     ],
     "event_deckung": {
-      "n_presse_news_events": 3459,
+      "n_presse_news_events": 3466,
       "auf_zitierten_quellen": 263,
-      "anteil_auf_zitierten_quellen": 0.076,
-      "nicht_zitiert": 3196
+      "anteil_auf_zitierten_quellen": 0.0759,
+      "nicht_zitiert": 3203
     },
     "top_autoritaetsquellen_ohne_event": [
       "ergo.de",
@@ -15720,7 +15721,7 @@
   },
   "citation_authority_signal": {
     "available": true,
-    "n_snapshots": 96,
+    "n_snapshots": 97,
     "snapshots": [
       "2026-07-19",
       "2026-07-29",
@@ -15817,131 +15818,132 @@
       "2026-11-02",
       "2026-11-03",
       "2026-11-04",
-      "2026-11-05"
+      "2026-11-05",
+      "2026-11-06"
     ],
     "zielgroesse": "autoritaetsgewichteter Zitations-Anteil je Marke (Seitentyp-gewichtet: Comparison/Category hoch, Homepage/Profile niedrig)",
     "ranking_aktuell": [
       {
         "brand": "ERGO",
-        "anteil_pct": 8.478,
-        "delta_pp": 1.4
+        "anteil_pct": 8.395,
+        "delta_pp": 1.32
       },
       {
         "brand": "Allianz",
-        "anteil_pct": 7.974,
-        "delta_pp": -1.72
+        "anteil_pct": 7.951,
+        "delta_pp": -1.74
       },
       {
         "brand": "AXA",
-        "anteil_pct": 4.904,
-        "delta_pp": -0.07
+        "anteil_pct": 4.956,
+        "delta_pp": -0.02
       },
       {
         "brand": "HUK-Coburg",
-        "anteil_pct": 4.511,
-        "delta_pp": -1.07
+        "anteil_pct": 4.544,
+        "delta_pp": -1.04
       },
       {
         "brand": "Württembergische",
-        "anteil_pct": 4.246,
-        "delta_pp": 0.6
+        "anteil_pct": 4.254,
+        "delta_pp": 0.61
       },
       {
         "brand": "Signal Iduna",
-        "anteil_pct": 3.95,
-        "delta_pp": -0.3
+        "anteil_pct": 3.975,
+        "delta_pp": -0.27
       },
       {
         "brand": "WGV",
-        "anteil_pct": 3.762,
+        "anteil_pct": 3.767,
         "delta_pp": -1.62
       },
       {
         "brand": "Gothaer",
-        "anteil_pct": 3.715,
-        "delta_pp": -0.43
-      },
-      {
-        "brand": "R+V",
-        "anteil_pct": 3.708,
-        "delta_pp": -0.29
-      },
-      {
-        "brand": "ARAG",
-        "anteil_pct": 3.673,
-        "delta_pp": -0.37
+        "anteil_pct": 3.736,
+        "delta_pp": -0.4
       },
       {
         "brand": "HanseMerkur",
-        "anteil_pct": 3.664,
-        "delta_pp": -0.56
+        "anteil_pct": 3.698,
+        "delta_pp": -0.52
+      },
+      {
+        "brand": "ARAG",
+        "anteil_pct": 3.695,
+        "delta_pp": -0.35
+      },
+      {
+        "brand": "R+V",
+        "anteil_pct": 3.673,
+        "delta_pp": -0.33
       },
       {
         "brand": "Barmenia",
-        "anteil_pct": 3.41,
-        "delta_pp": 0.17
+        "anteil_pct": 3.452,
+        "delta_pp": 0.21
       },
       {
         "brand": "CosmosDirekt",
-        "anteil_pct": 3.399,
-        "delta_pp": 0.77
+        "anteil_pct": 3.414,
+        "delta_pp": 0.78
       },
       {
         "brand": "Die Bayerische",
-        "anteil_pct": 3.325,
-        "delta_pp": 0.47
+        "anteil_pct": 3.286,
+        "delta_pp": 0.43
       },
       {
         "brand": "Debeka",
-        "anteil_pct": 3.206,
-        "delta_pp": -0.2
+        "anteil_pct": 3.133,
+        "delta_pp": -0.28
       }
     ],
     "groesste_bewegungen": [
       {
         "brand": "Allianz",
-        "anteil_pct": 7.974,
-        "delta_pp": -1.72
+        "anteil_pct": 7.951,
+        "delta_pp": -1.74
       },
       {
         "brand": "WGV",
-        "anteil_pct": 3.762,
+        "anteil_pct": 3.767,
         "delta_pp": -1.62
       },
       {
         "brand": "ERGO",
-        "anteil_pct": 8.478,
-        "delta_pp": 1.4
+        "anteil_pct": 8.395,
+        "delta_pp": 1.32
       },
       {
         "brand": "HUK-Coburg",
-        "anteil_pct": 4.511,
-        "delta_pp": -1.07
+        "anteil_pct": 4.544,
+        "delta_pp": -1.04
       },
       {
         "brand": "Zurich",
-        "anteil_pct": 2.753,
-        "delta_pp": -0.88
+        "anteil_pct": 2.727,
+        "delta_pp": -0.91
       },
       {
         "brand": "Alte Leipziger",
-        "anteil_pct": 2.39,
-        "delta_pp": -0.84
-      },
-      {
-        "brand": "VHV",
-        "anteil_pct": 2.422,
-        "delta_pp": -0.78
+        "anteil_pct": 2.402,
+        "delta_pp": -0.83
       },
       {
         "brand": "CosmosDirekt",
-        "anteil_pct": 3.399,
-        "delta_pp": 0.77
+        "anteil_pct": 3.414,
+        "delta_pp": 0.78
+      },
+      {
+        "brand": "VHV",
+        "anteil_pct": 2.436,
+        "delta_pp": -0.77
       }
     ],
     "sov_kopplung": {
       "available": false,
-      "grund": "Nur 96 Snapshots, und die Peec-30-Tage-Fenster ueberlappen stark -> die Reihe ist traege. Fuer die Kopplung Zitat-Anteil -> SoV braucht es mehrere NICHT-ueberlappende Snapshots (ab ca. 5-6 Wochen)."
+      "grund": "Nur 97 Snapshots, und die Peec-30-Tage-Fenster ueberlappen stark -> die Reihe ist traege. Fuer die Kopplung Zitat-Anteil -> SoV braucht es mehrere NICHT-ueberlappende Snapshots (ab ca. 5-6 Wochen)."
     },
     "note": "Externe Sichtbarkeit als autoritaetsgewichtete Zitat-Reihe. Anteile statt Absolutzahlen (Snapshot-Abdeckung schwankt); Marken, die nicht in allen Snapshots vorkommen, sind ausgeblendet (Eintritts-Artefakt). Waechst und schaerft sich mit jedem Montags-Snapshot; wird dann zum autoritaetsgewichteten externen Event-Kanal statt der wirkungslosen Presse-Erwaehnungen."
   },
@@ -16484,16 +16486,16 @@
           {
             "lag": -14,
             "r": 0.072,
-            "effekt_pp": 0.172,
-            "p": 0.157979,
+            "effekt_pp": 0.169,
+            "p": 0.160014,
             "gesichert": false,
             "lead": true
           },
           {
             "lag": -7,
             "r": 0.051,
-            "effekt_pp": 0.17,
-            "p": 0.206832,
+            "effekt_pp": 0.169,
+            "p": 0.205464,
             "gesichert": false,
             "lead": true
           },
@@ -16564,8 +16566,8 @@
           {
             "lag": -14,
             "r": -0.01,
-            "effekt_pp": 0.068,
-            "p": 0.599528,
+            "effekt_pp": 0.067,
+            "p": 0.601972,
             "gesichert": false,
             "lead": true
           },
@@ -16573,7 +16575,7 @@
             "lag": -7,
             "r": 0.008,
             "effekt_pp": 0.204,
-            "p": 0.162141,
+            "p": 0.160997,
             "gesichert": false,
             "lead": true
           },
@@ -17465,12 +17467,12 @@
     }
   },
   "press_by_citation": {
-    "n_presse_events": 3459,
+    "n_presse_events": 3466,
     "je_klasse": {
-      "zitiert_marke": 736,
-      "nicht_zitiert": 1345,
-      "zitiert_redaktionell": 776,
-      "unbekannt": 602
+      "zitiert_marke": 737,
+      "nicht_zitiert": 1344,
+      "zitiert_redaktionell": 777,
+      "unbekannt": 608
     },
     "klassen_label": {
       "zitiert_redaktionell": "Presse in zitierten Redaktionsmedien",
@@ -17479,7 +17481,7 @@
     },
     "methode": "Presse- und News-Ereignisse getrennt danach, ob die Domain, auf der der Artikel erschien, von den Sprachmodellen ueberhaupt zitiert wird. Quelle der Einordnung: data/content_citations.json, gesetzt von scripts/enrich_press_events.py als detail.zitat_klasse.",
     "grenzen": "Beobachtung, kein Eingriff: Marken, die es in zitierte Medien schaffen, unterscheiden sich auch sonst von denen, die es nicht schaffen. Ein Unterschied zwischen den Klassen ist deshalb kein Wirkungsnachweis der Platzierung. Die Klasse 'unbekannt' bedeutet, dass sich das Medium nicht zuordnen liess - nicht, dass es nicht zitiert wird.",
-    "abdeckung": 0.826,
+    "abdeckung": 0.8246,
     "available": true,
     "wirkung_je_klasse": {
       "zitiert_redaktionell": {
@@ -17488,7 +17490,7 @@
         "avg_sov_effect_pp": -0.189,
         "n_intervals": 756,
         "n_with_event": 80,
-        "n_events": 776,
+        "n_events": 777,
         "significant_iid": false,
         "p_iid": 0.195952,
         "effect_se_cluster_pp": 0.146,
@@ -17506,7 +17508,7 @@
         "avg_sov_effect_pp": 0.124,
         "n_intervals": 756,
         "n_with_event": 162,
-        "n_events": 1345,
+        "n_events": 1344,
         "significant_iid": false,
         "p_iid": 0.465218,
         "effect_se_cluster_pp": 0.22500617270451667,
@@ -17524,7 +17526,7 @@
         "avg_sov_effect_pp": 0.246,
         "n_intervals": 756,
         "n_with_event": 93,
-        "n_events": 736,
+        "n_events": 737,
         "significant_iid": false,
         "p_iid": 0.25257,
         "effect_se_cluster_pp": 0.215,
@@ -17541,57 +17543,57 @@
       {
         "domain": "test.de",
         "n_artikel": 10,
-        "zitate": 21488
+        "zitate": 21151
       },
       {
         "domain": "handelsblatt.com",
         "n_artikel": 48,
-        "zitate": 10027
+        "zitate": 10044
       },
       {
         "domain": "versicherungsbote.de",
         "n_artikel": 215,
-        "zitate": 5680
+        "zitate": 5714
       },
       {
         "domain": "faz.net",
         "n_artikel": 17,
-        "zitate": 4765
+        "zitate": 4815
       },
       {
         "domain": "versicherungsjournal.de",
-        "n_artikel": 79,
-        "zitate": 3361
+        "n_artikel": 80,
+        "zitate": 3436
       },
       {
         "domain": "pfefferminzia.de",
         "n_artikel": 14,
-        "zitate": 2226
-      },
-      {
-        "domain": "dasinvestment.com",
-        "n_artikel": 119,
-        "zitate": 1894
+        "zitate": 2241
       },
       {
         "domain": "procontra-online.de",
         "n_artikel": 94,
-        "zitate": 1881
+        "zitate": 1920
+      },
+      {
+        "domain": "dasinvestment.com",
+        "n_artikel": 119,
+        "zitate": 1907
       },
       {
         "domain": "cash-online.de",
         "n_artikel": 95,
-        "zitate": 1419
+        "zitate": 1387
       },
       {
         "domain": "versicherungswirtschaft-heute.de",
         "n_artikel": 77,
-        "zitate": 1278
+        "zitate": 1224
       },
       {
         "domain": "chip.de",
         "n_artikel": 8,
-        "zitate": 873
+        "zitate": 886
       }
     ],
     "vergleich": {
@@ -20133,7 +20135,7 @@
         "price_change": {
           "label": "Preis-Aenderungen (gemessen)",
           "available": false,
-          "grund": "nach Artefaktfilter zu wenige Preisereignisse (n=3 von 28, noetig sind 5)",
+          "grund": "nach Artefaktfilter zu wenige Preisereignisse (n=3 von 29, noetig sind 5)",
           "pearson_r": null,
           "spearman_r": null,
           "avg_sov_effect_pp": null,
@@ -20154,10 +20156,10 @@
           "significant_iid": null,
           "n_intervals": 70,
           "n_with_event": 3,
-          "n_price_events_roh": 28,
+          "n_price_events_roh": 29,
           "n_price_events_nach_filter": 3,
           "type_confidence": "unzureichend",
-          "type_confidence_grund": "25 der 28 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen."
+          "type_confidence_grund": "26 der 29 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen."
         }
       },
       "multivariate": {
@@ -21518,7 +21520,7 @@
         "price_change": {
           "label": "Preis-Aenderungen (gemessen)",
           "available": false,
-          "grund": "nach Artefaktfilter zu wenige Preisereignisse (n=1 von 7, noetig sind 5)",
+          "grund": "nach Artefaktfilter zu wenige Preisereignisse (n=2 von 8, noetig sind 5)",
           "pearson_r": null,
           "spearman_r": null,
           "avg_sov_effect_pp": null,
@@ -21539,10 +21541,10 @@
           "significant_iid": null,
           "n_intervals": 17,
           "n_with_event": 0,
-          "n_price_events_roh": 7,
-          "n_price_events_nach_filter": 1,
+          "n_price_events_roh": 8,
+          "n_price_events_nach_filter": 2,
           "type_confidence": "unzureichend",
-          "type_confidence_grund": "6 der 7 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen."
+          "type_confidence_grund": "6 der 8 Preis-Ereignisse waren eine oszillierende Rueckkehr auf den Vorwert (Scraper-Artefakt) und wurden ausgeschlossen."
         }
       },
       "multivariate": {

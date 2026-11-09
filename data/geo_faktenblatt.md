@@ -27,20 +27,20 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 08.11.2026 um 12:31 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-08.
+Dieses Faktenblatt wurde am 09.11.2026 um 07:24 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-09.
 
 Gemessen wird seit 76 Messtagen, von 2026-05-14 bis 2026-11-03. Daraus entstehen 756 Intervall-Beobachtungen ueber 26 Marken.
 
 Der eigene Crawl laeuft seit dem 10.08.2026 woechentlich statt taeglich, sonntags gegen 23:10 UTC. Presse, News und Bewertungen werden weiterhin taeglich erhoben. Wenn also in einer Tagesuebersicht an mehreren Tagen kaum Seiten-Ereignisse stehen, ist das der Normalzustand zwischen zwei Laeufen und kein Ausfall.
 
-Achtung, veraltete Bestandteile: Peec-Wochenexport (letzter Stand 2026-10-28). Auskuenfte, die darauf beruhen, sind entsprechend zu kennzeichnen.
+Alle 8 ueberwachten Bestandteile der Pipeline sind aktuell; keiner gilt als veraltet.
 
 
 ## Was die Sichtbarkeit treibt — die Kernaussage
 
 Die kuerzeste ehrliche Zusammenfassung lautet: Ein einziger Treiber traegt fast alles, und er heisst Quellpraesenz. Damit ist nicht die Zahl der eigenen Seiten gemeint, sondern wie oft die Marke in dem vorkommt, was Sprachmodelle zitieren. Alle einzelnen operativen Massnahmen sind dagegen zu klein, um in dieser Messung ueberhaupt sichtbar zu werden.
 
-**Quellpraesenz.** Marken mit hoeherer Quellpraesenz sind sichtbarer: +5,91 Prozentpunkte Sichtbarkeit je einer Standardabweichung mehr Zitations-Footprint, gerechnet ueber 26 Marken. Der Befund ist nach Korrektur fuer Mehrfachtests gesichert (Wild-Cluster-p 0,0098, q 0,0196). Es bleibt ein beobachteter Zusammenhang, kein Kausalnachweis: gemessen wurde, nicht eingegriffen.
+**Quellpraesenz.** Marken mit hoeherer Quellpraesenz sind sichtbarer: +5,95 Prozentpunkte Sichtbarkeit je einer Standardabweichung mehr Zitations-Footprint, gerechnet ueber 26 Marken. Der Befund ist nach Korrektur fuer Mehrfachtests gesichert (Wild-Cluster-p 0,0117, q 0,0234). Es bleibt ein beobachteter Zusammenhang, kein Kausalnachweis: gemessen wurde, nicht eingegriffen.
 
 
 ## Der einzige kausal belegte Befund: die Websuche
@@ -86,16 +86,16 @@ Nicht schaetzbar, mit Grund — diese Arten verschwinden nicht aus der Auswertun
 
 - Domain-/Subdomain-Aenderungen: Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
 
-Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,023 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,4 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
+Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,023 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,6 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
 
 
 ## Was es in die Zitate schafft
 
 - ERGO: 50 von 1.175 getrackten Seiten sind in Zitaten aufgetaucht, also 4,26 Prozent. Das ist die eigene Marke.
-- Allianz: 52 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,80 Prozent.
-- ADAC: 7 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 1,08 Prozent.
+- Allianz: 51 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,69 Prozent.
+- ADAC: 6 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 0,93 Prozent.
 - LV 1871: 13 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 2,42 Prozent.
-- ARAG: 13 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,77 Prozent.
+- ARAG: 12 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,56 Prozent.
 - HDI: 0 von 288 getrackten Seiten sind in Zitaten aufgetaucht, also 0,00 Prozent.
 - Die Bayerische: 4 von 285 getrackten Seiten sind in Zitaten aufgetaucht, also 1,40 Prozent.
 - R+V: 2 von 240 getrackten Seiten sind in Zitaten aufgetaucht, also 0,83 Prozent.
@@ -120,20 +120,20 @@ Zur Wirkung des Preises auf die Sichtbarkeit: Gemeint ist nicht das Ereignis 'Pr
 
 ## Presse, News und Bewertungen
 
-Stand der Presseauswertung: 2026-11-08.
+Stand der Presseauswertung: 2026-11-09.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
 - ERGO: 3 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 52 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-10-14. Haeufigste Themen: Allgemein (52), Gesundheit & Pflege (13), Digitalisierung & KI (7).
-- Allianz: 11 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 57 eigene Mitteilungen und 21 externe Berichte. Juengster Beitrag 2026-11-08. Haeufigste Themen: Allgemein (57), Gesundheit & Pflege (6), Finanzen & Vorsorge (5).
-- AXA: 2 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 31 externe Berichte. Juengster Beitrag 2026-11-06. Haeufigste Themen: Allgemein (56), Gesundheit & Pflege (10), Finanzen & Vorsorge (9).
-- HUK-Coburg: 4 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 66 eigene Mitteilungen und 41 externe Berichte. Juengster Beitrag 2026-11-05. Haeufigste Themen: Allgemein (60), KFZ & Mobilität (22), Unternehmen & Strategie (7).
-- Generali: 10 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 61 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-10-29. Haeufigste Themen: Allgemein (62), Gesundheit & Pflege (8), Finanzen & Vorsorge (7).
-- Signal Iduna: 2 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 52 eigene Mitteilungen und 35 externe Berichte. Juengster Beitrag 2026-10-27. Haeufigste Themen: Allgemein (51), Gesundheit & Pflege (9), Finanzen & Vorsorge (9).
-- R+V: 12 Beitraege in den letzten 30 Tagen, 12 in 90 Tagen. Davon insgesamt 58 eigene Mitteilungen und 20 externe Berichte. Juengster Beitrag 2026-11-08. Haeufigste Themen: Allgemein (58), Unternehmen & Strategie (5), Finanzen & Vorsorge (4).
-- DEVK: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 4 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-10-30. Haeufigste Themen: Allgemein (20), KFZ & Mobilität (5), Finanzen & Vorsorge (4).
-- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-11-06. Haeufigste Themen: Allgemein (56), Finanzen & Vorsorge (19), Digitalisierung & KI (5).
-- Cosmos Direkt: 3 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 55 eigene Mitteilungen und 25 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (56), Finanzen & Vorsorge (8), KFZ & Mobilität (7).
+- Allianz: 12 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 20 externe Berichte. Juengster Beitrag 2026-11-08. Haeufigste Themen: Allgemein (62), Gesundheit & Pflege (6), Finanzen & Vorsorge (4).
+- AXA: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 31 externe Berichte. Juengster Beitrag 2026-11-06. Haeufigste Themen: Allgemein (58), Gesundheit & Pflege (9), Finanzen & Vorsorge (8).
+- HUK-Coburg: 4 Beitraege in den letzten 30 Tagen, 10 in 90 Tagen. Davon insgesamt 67 eigene Mitteilungen und 40 externe Berichte. Juengster Beitrag 2026-11-08. Haeufigste Themen: Allgemein (61), KFZ & Mobilität (21), Unternehmen & Strategie (6).
+- Generali: 11 Beitraege in den letzten 30 Tagen, 17 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (66), Gesundheit & Pflege (6), Finanzen & Vorsorge (6).
+- Signal Iduna: 3 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 51 eigene Mitteilungen und 35 externe Berichte. Juengster Beitrag 2026-11-06. Haeufigste Themen: Allgemein (50), Finanzen & Vorsorge (9), Gesundheit & Pflege (8).
+- R+V: 12 Beitraege in den letzten 30 Tagen, 12 in 90 Tagen. Davon insgesamt 58 eigene Mitteilungen und 19 externe Berichte. Juengster Beitrag 2026-11-08. Haeufigste Themen: Allgemein (58), Unternehmen & Strategie (5), Finanzen & Vorsorge (4).
+- DEVK: 2 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 4 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-04. Haeufigste Themen: Allgemein (20), Finanzen & Vorsorge (5), KFZ & Mobilität (5).
+- Hannoversche: 0 Beitraege in den letzten 30 Tagen, 1 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (56), Finanzen & Vorsorge (19), Digitalisierung & KI (5).
+- Cosmos Direkt: 3 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 57 eigene Mitteilungen und 26 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (57), Finanzen & Vorsorge (8), KFZ & Mobilität (7).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 
@@ -142,11 +142,11 @@ Stimmungsbild aus den erfassten Kundenbewertungen, in Prozent der Bewertungen je
 
 - ERGO: 65 Prozent positiv, 16 Prozent neutral, 19 Prozent kritisch.
 - Allianz: 76 Prozent positiv, 11 Prozent neutral, 13 Prozent kritisch.
-- AXA: 52 Prozent positiv, 22 Prozent neutral, 27 Prozent kritisch.
+- AXA: 51 Prozent positiv, 22 Prozent neutral, 27 Prozent kritisch.
 - HUK-Coburg: 71 Prozent positiv, 13 Prozent neutral, 16 Prozent kritisch.
-- Generali: 52 Prozent positiv, 22 Prozent neutral, 26 Prozent kritisch.
+- Generali: 53 Prozent positiv, 21 Prozent neutral, 26 Prozent kritisch.
 - Signal Iduna: 54 Prozent positiv, 21 Prozent neutral, 25 Prozent kritisch.
-- R+V: 45 Prozent positiv, 25 Prozent neutral, 30 Prozent kritisch.
+- R+V: 46 Prozent positiv, 24 Prozent neutral, 30 Prozent kritisch.
 - DEVK: 72 Prozent positiv, 13 Prozent neutral, 15 Prozent kritisch.
 - Hannoversche: 69 Prozent positiv, 14 Prozent neutral, 17 Prozent kritisch.
 - Cosmos Direkt: 61 Prozent positiv, 18 Prozent neutral, 22 Prozent kritisch.
@@ -164,7 +164,7 @@ Die beiden Quellen kommen bei den absoluten Niveaus zu deutlich verschiedenen We
 Ein wichtiger Unterschied betrifft die Prompts selbst: Enthaelt ein Prompt bereits den Markennamen, faellt die gemessene Sichtbarkeit der Marke naturgemaess viel hoeher aus. Als Marktbild gilt deshalb ausschliesslich die branding-neutrale Auswertung — nur Prompts ohne Markennamen. Zahlen aus der Ansicht mit Markennennung beantworten die Frage 'wie sichtbar sind wir, wenn gezielt nach uns gefragt wird' und duerfen nicht als Marktanteil ausgegeben werden.
 
 
-Stand der Zweitquellen-Auswertung: 2026-10-28, Fenster 2026-09-29..2026-10-28.
+Stand der Zweitquellen-Auswertung: 2026-11-08, Fenster 2026-10-10..2026-11-08.
 
 
 ## Was daraus folgt — die abgeleiteten Empfehlungen

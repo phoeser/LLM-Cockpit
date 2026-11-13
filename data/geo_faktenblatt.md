@@ -27,7 +27,7 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 12.11.2026 um 14:47 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-12.
+Dieses Faktenblatt wurde am 13.11.2026 um 13:41 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-13.
 
 Gemessen wird seit 77 Messtagen, von 2026-05-14 bis 2026-11-10. Daraus entstehen 764 Intervall-Beobachtungen ueber 26 Marken.
 
@@ -75,7 +75,7 @@ Die Einzelwerte, jeweils mit ihrem Urteil:
 - Beitragsanpassung (angekuendigt): nicht nachweisbar. Punktschaetzer +0,13 Prozentpunkte, 95-Prozent-Intervall von -0,61 bis +0,89 Prozentpunkten, beobachtet in 7 von 764 Intervallen ueber 2 Marken.
 - Seitenaenderungen (Wettbewerb): nicht nachweisbar. Punktschaetzer -0,09 Prozentpunkte, 95-Prozent-Intervall von -0,35 bis +0,08 Prozentpunkten, beobachtet in 361 von 764 Intervallen ueber 23 Marken.
 - Preis-Aenderungen (gemessen): nicht nachweisbar. Punktschaetzer -0,07 Prozentpunkte, 95-Prozent-Intervall von -0,41 bis +0,25 Prozentpunkten, beobachtet in 7 von 764 Intervallen ueber 3 Marken.
-- News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,07 Prozentpunkte, 95-Prozent-Intervall von -0,39 bis +0,59 Prozentpunkten, beobachtet in 188 von 764 Intervallen ueber 9 Marken.
+- News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,07 Prozentpunkte, 95-Prozent-Intervall von -0,38 bis +0,59 Prozentpunkten, beobachtet in 189 von 764 Intervallen ueber 9 Marken.
 - Portal-Rang Check24 (±): nicht nachweisbar. Punktschaetzer -0,06 Prozentpunkte, 95-Prozent-Intervall von -0,45 bis +0,31 Prozentpunkten, beobachtet in 26 von 764 Intervallen ueber 4 Marken.
 - Geloeschte Seiten: nicht nachweisbar. Punktschaetzer +0,06 Prozentpunkte, 95-Prozent-Intervall von -0,22 bis +0,34 Prozentpunkten, beobachtet in 10 von 764 Intervallen ueber 4 Marken.
 - LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,02 Prozentpunkte, 95-Prozent-Intervall von -0,20 bis +0,17 Prozentpunkten, beobachtet in 103 von 764 Intervallen ueber 9 Marken.
@@ -95,7 +95,7 @@ Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -
 - Allianz: 50 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,58 Prozent.
 - ADAC: 7 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 1,08 Prozent.
 - LV 1871: 12 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 2,23 Prozent.
-- ARAG: 12 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,56 Prozent.
+- ARAG: 13 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,77 Prozent.
 - HDI: 0 von 288 getrackten Seiten sind in Zitaten aufgetaucht, also 0,00 Prozent.
 - Die Bayerische: 4 von 285 getrackten Seiten sind in Zitaten aufgetaucht, also 1,40 Prozent.
 - R+V: 2 von 240 getrackten Seiten sind in Zitaten aufgetaucht, also 0,83 Prozent.
@@ -120,20 +120,20 @@ Zur Wirkung des Preises auf die Sichtbarkeit: Gemeint ist nicht das Ereignis 'Pr
 
 ## Presse, News und Bewertungen
 
-Stand der Presseauswertung: 2026-11-12.
+Stand der Presseauswertung: 2026-11-13.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
-- ERGO: 5 Beitraege in den letzten 30 Tagen, 8 in 90 Tagen. Davon insgesamt 52 eigene Mitteilungen und 31 externe Berichte. Juengster Beitrag 2026-11-12. Haeufigste Themen: Allgemein (54), Gesundheit & Pflege (13), Digitalisierung & KI (7).
-- Allianz: 14 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 21 externe Berichte. Juengster Beitrag 2026-11-12. Haeufigste Themen: Allgemein (62), Finanzen & Vorsorge (6), Gesundheit & Pflege (6).
-- AXA: 2 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 35 externe Berichte. Juengster Beitrag 2026-11-06. Haeufigste Themen: Allgemein (58), Gesundheit & Pflege (11), Digitalisierung & KI (8).
-- HUK-Coburg: 2 Beitraege in den letzten 30 Tagen, 6 in 90 Tagen. Davon insgesamt 67 eigene Mitteilungen und 40 externe Berichte. Juengster Beitrag 2026-11-05. Haeufigste Themen: Allgemein (66), KFZ & Mobilität (21), Unternehmen & Strategie (6).
-- Generali: 8 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 64 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-10-29. Haeufigste Themen: Allgemein (67), Finanzen & Vorsorge (7), Gesundheit & Pflege (6).
-- Signal Iduna: 4 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 51 eigene Mitteilungen und 33 externe Berichte. Juengster Beitrag 2026-11-10. Haeufigste Themen: Allgemein (49), Finanzen & Vorsorge (9), Gesundheit & Pflege (8).
-- R+V: 14 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 58 eigene Mitteilungen und 19 externe Berichte. Juengster Beitrag 2026-11-12. Haeufigste Themen: Allgemein (57), KFZ & Mobilität (5), Unternehmen & Strategie (5).
-- DEVK: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 4 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-10-30. Haeufigste Themen: Allgemein (19), KFZ & Mobilität (5), Finanzen & Vorsorge (4).
-- Hannoversche: 0 Beitraege in den letzten 30 Tagen, 1 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 32 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (58), Finanzen & Vorsorge (21), Digitalisierung & KI (5).
-- Cosmos Direkt: 3 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (61), Finanzen & Vorsorge (8), KFZ & Mobilität (7).
+- ERGO: 3 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 52 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-09. Haeufigste Themen: Allgemein (53), Gesundheit & Pflege (13), Digitalisierung & KI (7).
+- Allianz: 13 Beitraege in den letzten 30 Tagen, 15 in 90 Tagen. Davon insgesamt 61 eigene Mitteilungen und 20 externe Berichte. Juengster Beitrag 2026-11-13. Haeufigste Themen: Allgemein (59), Finanzen & Vorsorge (6), Gesundheit & Pflege (6).
+- AXA: 2 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 35 externe Berichte. Juengster Beitrag 2026-11-06. Haeufigste Themen: Allgemein (57), Gesundheit & Pflege (11), Finanzen & Vorsorge (10).
+- HUK-Coburg: 3 Beitraege in den letzten 30 Tagen, 7 in 90 Tagen. Davon insgesamt 66 eigene Mitteilungen und 40 externe Berichte. Juengster Beitrag 2026-11-05. Haeufigste Themen: Allgemein (62), KFZ & Mobilität (22), Unternehmen & Strategie (7).
+- Generali: 10 Beitraege in den letzten 30 Tagen, 16 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 32 externe Berichte. Juengster Beitrag 2026-11-13. Haeufigste Themen: Allgemein (70), Finanzen & Vorsorge (7), Unternehmen & Strategie (5).
+- Signal Iduna: 4 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 53 eigene Mitteilungen und 37 externe Berichte. Juengster Beitrag 2026-11-10. Haeufigste Themen: Allgemein (52), Finanzen & Vorsorge (10), Gesundheit & Pflege (9).
+- R+V: 13 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 58 eigene Mitteilungen und 18 externe Berichte. Juengster Beitrag 2026-11-13. Haeufigste Themen: Allgemein (58), KFZ & Mobilität (5), Unternehmen & Strategie (5).
+- DEVK: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 4 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-10-30. Haeufigste Themen: Allgemein (18), KFZ & Mobilität (5), Unternehmen & Strategie (3).
+- Hannoversche: 0 Beitraege in den letzten 30 Tagen, 1 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 34 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (61), Finanzen & Vorsorge (22), Digitalisierung & KI (5).
+- Cosmos Direkt: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 28 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (60), Finanzen & Vorsorge (8), Digitalisierung & KI (7).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 

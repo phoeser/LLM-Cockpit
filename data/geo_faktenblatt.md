@@ -27,13 +27,13 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 16.11.2026 um 14:30 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-16.
+Dieses Faktenblatt wurde am 17.11.2026 um 15:28 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-17.
 
-Gemessen wird seit 77 Messtagen, von 2026-05-14 bis 2026-11-10. Daraus entstehen 764 Intervall-Beobachtungen ueber 26 Marken.
+Gemessen wird seit 78 Messtagen, von 2026-05-14 bis 2026-11-17. Daraus entstehen 772 Intervall-Beobachtungen ueber 26 Marken.
 
 Der eigene Crawl laeuft seit dem 10.08.2026 woechentlich statt taeglich, sonntags gegen 23:10 UTC. Presse, News und Bewertungen werden weiterhin taeglich erhoben. Wenn also in einer Tagesuebersicht an mehreren Tagen kaum Seiten-Ereignisse stehen, ist das der Normalzustand zwischen zwei Laeufen und kein Ausfall.
 
-Alle 8 ueberwachten Bestandteile der Pipeline sind aktuell; keiner gilt als veraltet.
+Achtung, veraltete Bestandteile: Peec-Wochenexport (letzter Stand 2026-11-08). Auskuenfte, die darauf beruhen, sind entsprechend zu kennzeichnen.
 
 
 ## Was die Sichtbarkeit treibt — die Kernaussage
@@ -68,31 +68,31 @@ Der Grund dafuer ist rechnerisch und war vorher absehbar. Zu jeder Ereignisart g
 
 Die Einzelwerte, jeweils mit ihrem Urteil:
 
-- Bewertungs-Trend (±): nicht nachweisbar. Punktschaetzer -0,21 Prozentpunkte, 95-Prozent-Intervall von -0,68 bis +0,10 Prozentpunkten, beobachtet in 74 von 764 Intervallen ueber 9 Marken.
-- Neue Seiten: nicht nachweisbar. Punktschaetzer -0,20 Prozentpunkte, 95-Prozent-Intervall von -0,51 bis +0,07 Prozentpunkten, beobachtet in 86 von 764 Intervallen ueber 17 Marken.
-- Pressemitteilungen: nicht nachweisbar. Punktschaetzer +0,19 Prozentpunkte, 95-Prozent-Intervall von -0,18 bis +0,61 Prozentpunkten, beobachtet in 119 von 764 Intervallen ueber 9 Marken.
-- Bewertungs-Volumen: nicht nachweisbar. Punktschaetzer -0,18 Prozentpunkte, 95-Prozent-Intervall von -1,01 bis +0,25 Prozentpunkten, beobachtet in 61 von 764 Intervallen ueber 7 Marken.
-- Beitragsanpassung (angekuendigt): nicht nachweisbar. Punktschaetzer +0,13 Prozentpunkte, 95-Prozent-Intervall von -0,61 bis +0,89 Prozentpunkten, beobachtet in 7 von 764 Intervallen ueber 2 Marken.
-- Seitenaenderungen (Wettbewerb): nicht nachweisbar. Punktschaetzer -0,09 Prozentpunkte, 95-Prozent-Intervall von -0,35 bis +0,08 Prozentpunkten, beobachtet in 361 von 764 Intervallen ueber 23 Marken.
-- Preis-Aenderungen (gemessen): nicht nachweisbar. Punktschaetzer -0,07 Prozentpunkte, 95-Prozent-Intervall von -0,41 bis +0,25 Prozentpunkten, beobachtet in 7 von 764 Intervallen ueber 3 Marken.
-- News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,07 Prozentpunkte, 95-Prozent-Intervall von -0,38 bis +0,59 Prozentpunkten, beobachtet in 189 von 764 Intervallen ueber 9 Marken.
-- Portal-Rang Check24 (±): nicht nachweisbar. Punktschaetzer -0,06 Prozentpunkte, 95-Prozent-Intervall von -0,45 bis +0,31 Prozentpunkten, beobachtet in 26 von 764 Intervallen ueber 4 Marken.
-- Geloeschte Seiten: nicht nachweisbar. Punktschaetzer +0,06 Prozentpunkte, 95-Prozent-Intervall von -0,22 bis +0,34 Prozentpunkten, beobachtet in 10 von 764 Intervallen ueber 4 Marken.
-- LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,02 Prozentpunkte, 95-Prozent-Intervall von -0,20 bis +0,17 Prozentpunkten, beobachtet in 103 von 764 Intervallen ueber 9 Marken.
-- Wikipedia-Ausbau (±): nicht nachweisbar. Punktschaetzer -0,01 Prozentpunkte, 95-Prozent-Intervall von -0,19 bis +0,17 Prozentpunkten, beobachtet in 17 von 764 Intervallen ueber 6 Marken.
-- Instagram-Posts: nicht nachweisbar. Punktschaetzer +0,01 Prozentpunkte, 95-Prozent-Intervall von -0,14 bis +0,16 Prozentpunkten, beobachtet in 111 von 764 Intervallen ueber 10 Marken.
+- Bewertungs-Trend (±): nicht nachweisbar. Punktschaetzer -0,21 Prozentpunkte, 95-Prozent-Intervall von -0,67 bis +0,10 Prozentpunkten, beobachtet in 75 von 772 Intervallen ueber 9 Marken.
+- Neue Seiten: nicht nachweisbar. Punktschaetzer -0,20 Prozentpunkte, 95-Prozent-Intervall von -0,50 bis +0,07 Prozentpunkten, beobachtet in 89 von 772 Intervallen ueber 17 Marken.
+- Pressemitteilungen: nicht nachweisbar. Punktschaetzer +0,19 Prozentpunkte, 95-Prozent-Intervall von -0,18 bis +0,61 Prozentpunkten, beobachtet in 120 von 772 Intervallen ueber 9 Marken.
+- Bewertungs-Volumen: nicht nachweisbar. Punktschaetzer -0,18 Prozentpunkte, 95-Prozent-Intervall von -0,96 bis +0,24 Prozentpunkten, beobachtet in 64 von 772 Intervallen ueber 7 Marken.
+- Beitragsanpassung (angekuendigt): nicht nachweisbar. Punktschaetzer +0,12 Prozentpunkte, 95-Prozent-Intervall von -0,61 bis +0,88 Prozentpunkten, beobachtet in 7 von 772 Intervallen ueber 2 Marken.
+- Seitenaenderungen (Wettbewerb): nicht nachweisbar. Punktschaetzer -0,09 Prozentpunkte, 95-Prozent-Intervall von -0,35 bis +0,08 Prozentpunkten, beobachtet in 367 von 772 Intervallen ueber 23 Marken.
+- News-Erwaehnungen: nicht nachweisbar. Punktschaetzer +0,07 Prozentpunkte, 95-Prozent-Intervall von -0,37 bis +0,58 Prozentpunkten, beobachtet in 194 von 772 Intervallen ueber 9 Marken.
+- Preis-Aenderungen (gemessen): nicht nachweisbar. Punktschaetzer -0,06 Prozentpunkte, 95-Prozent-Intervall von -0,44 bis +0,32 Prozentpunkten, beobachtet in 9 von 772 Intervallen ueber 3 Marken.
+- Portal-Rang Check24 (±): nicht nachweisbar. Punktschaetzer -0,06 Prozentpunkte, 95-Prozent-Intervall von -0,42 bis +0,29 Prozentpunkten, beobachtet in 28 von 772 Intervallen ueber 4 Marken.
+- Geloeschte Seiten: nicht nachweisbar. Punktschaetzer +0,05 Prozentpunkte, 95-Prozent-Intervall von -0,22 bis +0,34 Prozentpunkten, beobachtet in 10 von 772 Intervallen ueber 4 Marken.
+- LinkedIn-Posts: nicht nachweisbar. Punktschaetzer -0,01 Prozentpunkte, 95-Prozent-Intervall von -0,20 bis +0,17 Prozentpunkten, beobachtet in 105 von 772 Intervallen ueber 9 Marken.
+- Instagram-Posts: nicht nachweisbar. Punktschaetzer +0,01 Prozentpunkte, 95-Prozent-Intervall von -0,14 bis +0,16 Prozentpunkten, beobachtet in 113 von 772 Intervallen ueber 10 Marken.
+- Wikipedia-Ausbau (±): nicht nachweisbar. Punktschaetzer -0,00 Prozentpunkte, 95-Prozent-Intervall von -0,17 bis +0,17 Prozentpunkten, beobachtet in 18 von 772 Intervallen ueber 6 Marken.
 
 Nicht schaetzbar, mit Grund — diese Arten verschwinden nicht aus der Auswertung, sondern stehen mit ihrer Begruendung da:
 
 - Domain-/Subdomain-Aenderungen: Cluster-robuste Schaetzung nicht moeglich (1 Marke(n) mit Ereignis, 26 Cluster insgesamt). Ohne Variation zwischen Marken laesst sich die Unsicherheit nicht ehrlich beziffern; die iid-Felder unterstellen Unabhaengigkeit, die hier nicht gegeben ist.
 
-Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,022 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,5 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
+Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -0,022 gegenueber einer reinen Marken-Basislinie — die Treiber verbessern die Vorhersage also nicht. Die Placebo-Rate betraegt 2,8 Prozent: so oft erzeugen reine Zufallsdaten einen scheinbar gesicherten Effekt. Erwartet waeren rund fuenf Prozent, der niedrigere Wert spricht fuer eine eher konservative Rechnung.
 
 
 ## Was es in die Zitate schafft
 
-- ERGO: 50 von 1.178 getrackten Seiten sind in Zitaten aufgetaucht, also 4,24 Prozent. Das ist die eigene Marke.
-- Allianz: 48 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,36 Prozent.
+- ERGO: 50 von 1.179 getrackten Seiten sind in Zitaten aufgetaucht, also 4,24 Prozent. Das ist die eigene Marke.
+- Allianz: 46 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,13 Prozent.
 - ADAC: 7 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 1,08 Prozent.
 - LV 1871: 11 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 2,05 Prozent.
 - ARAG: 12 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,56 Prozent.
@@ -120,20 +120,20 @@ Zur Wirkung des Preises auf die Sichtbarkeit: Gemeint ist nicht das Ereignis 'Pr
 
 ## Presse, News und Bewertungen
 
-Stand der Presseauswertung: 2026-11-16.
+Stand der Presseauswertung: 2026-11-17.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
-- ERGO: 2 Beitraege in den letzten 30 Tagen, 6 in 90 Tagen. Davon insgesamt 53 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-11-16. Haeufigste Themen: Allgemein (53), Gesundheit & Pflege (13), Digitalisierung & KI (6).
-- Allianz: 12 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 61 eigene Mitteilungen und 20 externe Berichte. Juengster Beitrag 2026-11-15. Haeufigste Themen: Allgemein (60), Gesundheit & Pflege (6), Finanzen & Vorsorge (4).
-- AXA: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 33 externe Berichte. Juengster Beitrag 2026-10-30. Haeufigste Themen: Allgemein (56), Digitalisierung & KI (10), Finanzen & Vorsorge (10).
-- HUK-Coburg: 3 Beitraege in den letzten 30 Tagen, 8 in 90 Tagen. Davon insgesamt 68 eigene Mitteilungen und 43 externe Berichte. Juengster Beitrag 2026-11-12. Haeufigste Themen: Allgemein (62), KFZ & Mobilität (26), Unternehmen & Strategie (7).
-- Generali: 9 Beitraege in den letzten 30 Tagen, 15 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-11-13. Haeufigste Themen: Allgemein (67), Finanzen & Vorsorge (8), Unternehmen & Strategie (6).
-- Signal Iduna: 0 Beitraege in den letzten 30 Tagen, 1 in 90 Tagen. Davon insgesamt 51 eigene Mitteilungen und 34 externe Berichte. Juengster Beitrag 2026-10-16. Haeufigste Themen: Allgemein (51), Finanzen & Vorsorge (11), Gesundheit & Pflege (9).
-- R+V: 9 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 15 externe Berichte. Juengster Beitrag 2026-11-15. Haeufigste Themen: Allgemein (56), KFZ & Mobilität (5), Unternehmen & Strategie (5).
-- DEVK: 2 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 4 eigene Mitteilungen und 32 externe Berichte. Juengster Beitrag 2026-11-16. Haeufigste Themen: Allgemein (18), KFZ & Mobilität (6), Finanzen & Vorsorge (5).
-- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 35 externe Berichte. Juengster Beitrag 2026-11-14. Haeufigste Themen: Allgemein (60), Finanzen & Vorsorge (21), Digitalisierung & KI (5).
-- Cosmos Direkt: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 56 eigene Mitteilungen und 24 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (55), Finanzen & Vorsorge (7), KFZ & Mobilität (7).
+- ERGO: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 53 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-16. Haeufigste Themen: Allgemein (55), Gesundheit & Pflege (13), Digitalisierung & KI (6).
+- Allianz: 11 Beitraege in den letzten 30 Tagen, 13 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 19 externe Berichte. Juengster Beitrag 2026-11-15. Haeufigste Themen: Allgemein (60), Gesundheit & Pflege (6), Digitalisierung & KI (5).
+- AXA: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-10-30. Haeufigste Themen: Allgemein (52), Finanzen & Vorsorge (11), Digitalisierung & KI (10).
+- HUK-Coburg: 5 Beitraege in den letzten 30 Tagen, 10 in 90 Tagen. Davon insgesamt 70 eigene Mitteilungen und 45 externe Berichte. Juengster Beitrag 2026-11-17. Haeufigste Themen: Allgemein (63), KFZ & Mobilität (29), Unternehmen & Strategie (8).
+- Generali: 8 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 65 eigene Mitteilungen und 28 externe Berichte. Juengster Beitrag 2026-11-13. Haeufigste Themen: Allgemein (65), Finanzen & Vorsorge (9), Unternehmen & Strategie (6).
+- Signal Iduna: 1 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 54 eigene Mitteilungen und 36 externe Berichte. Juengster Beitrag 2026-11-10. Haeufigste Themen: Allgemein (52), Finanzen & Vorsorge (11), Gesundheit & Pflege (9).
+- R+V: 14 Beitraege in den letzten 30 Tagen, 14 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 20 externe Berichte. Juengster Beitrag 2026-11-17. Haeufigste Themen: Allgemein (60), KFZ & Mobilität (5), Unternehmen & Strategie (5).
+- DEVK: 2 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 3 eigene Mitteilungen und 31 externe Berichte. Juengster Beitrag 2026-11-16. Haeufigste Themen: Allgemein (15), KFZ & Mobilität (6), Finanzen & Vorsorge (5).
+- Hannoversche: 0 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 37 externe Berichte. Juengster Beitrag 2026-10-07. Haeufigste Themen: Allgemein (61), Finanzen & Vorsorge (21), Digitalisierung & KI (5).
+- Cosmos Direkt: 1 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 58 eigene Mitteilungen und 22 externe Berichte. Juengster Beitrag 2026-11-01. Haeufigste Themen: Allgemein (56), KFZ & Mobilität (7), Finanzen & Vorsorge (6).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 

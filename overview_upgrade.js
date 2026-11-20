@@ -21,19 +21,30 @@
       (sub?'<div style="font-size:11px;color:#9ca3af;margin-top:2px">'+sub+'</div>':'')+'</div>';
   }
 
+  // Trend nur auf Markenebene (source==="snapshot", ohne Produkt-/LLM-Zeilen) und nur
+  // innerhalb des aktuellen Messregimes: Tage vor dem letzten Strukturbruch sind mit
+  // der heutigen Messung nicht vergleichbar (Audit K1, Fix 20.11.2026).
+  function lastBreak(){
+    var b=((window.CORRELATION_IMPACT||{}).structural_breaks)||[];
+    var d=null; b.forEach(function(x){ if(x&&x.date&&(!d||x.date>d)) d=x.date; });
+    return d;
+  }
   function ergoTrend(){
     var h=window.SOV_HISTORY;
     if(!Array.isArray(h)||!h.length) return null;
+    var brk=lastBreak();
     var byDate={};
-    h.forEach(function(r){ if(r.brand!=="ERGO"||r.sov_pct==null) return;
-      (byDate[r.date]=byDate[r.date]||[]).push(r.sov_pct); });
+    h.forEach(function(r){
+      if(r.brand!=="ERGO"||r.sov_pct==null||r.product||r.llm||r.source!=="snapshot") return;
+      if(brk&&r.date<=brk) return;
+      byDate[r.date]=r.sov_pct; });
     var days=Object.keys(byDate).sort();
-    if(days.length<2) return null;
-    function avg(a){ return a.reduce(function(x,y){return x+y;},0)/a.length; }
-    var last=avg(byDate[days[days.length-1]]);
+    if(days.length<2) return {last:days.length?byDate[days[0]]:null, delta:null, since:null, brk:brk};
+    var last=byDate[days[days.length-1]];
     var prevDay=days[Math.max(0,days.length-8)];
-    return { last:last, delta:last-avg(byDate[prevDay]), since:prevDay };
+    return { last:last, delta:last-byDate[prevDay], since:prevDay, brk:brk };
   }
+  function fmtDate(d){ if(!d) return ""; var p=d.split("-"); return p[2]+"."+p[1]+"."; }
 
   function build(){
     var host=document.querySelector('section[data-content="overview"]');
@@ -52,8 +63,11 @@
 
     // Kachel-Zeile
     var k='';
-    k+=kpi("📈","ERGO Sichtbarkeit (SoV gesamt)", pct(100*(ergo?ergo.share_of_voice:null)),
-      tr?("Trend seit "+tr.since+": "+pp(tr.delta)):"", tr&&tr.delta<0?"#b91c1c":"#067d3a");
+    var llms=(g.llms||[]).map(function(x){ return x==="chatgpt"?"ChatGPT ohne Websuche":x; }).join(", ");
+    var basis="eigener Crawl · "+(llms||"—")+" · "+rank.length+" Marken";
+    var trTxt=(tr&&tr.delta!=null)?("Trend seit "+fmtDate(tr.since)+": "+pp(tr.delta)):(tr&&tr.brk?("kein Trend über den Messwechsel "+fmtDate(tr.brk)+" hinweg"):"");
+    k+=kpi("📈","ERGO Sichtbarkeit (SoV)", pct(100*(ergo?ergo.share_of_voice:null)),
+      basis+(trTxt?"<br>"+trTxt:""), (tr&&tr.delta!=null&&tr.delta<0)?"#b91c1c":"#1a1a2e");
     k+=kpi("🏁","Rang unter "+rank.length+" Marken", ergoIdx>=0?("#"+(ergoIdx+1)):"—",
       leader?("Führer: "+leader.name+" "+pct(100*leader.share_of_voice)):"" );
     if(gd&&gd.contrib_pp){
@@ -63,8 +77,13 @@
     } else {
       k+=kpi("🧭","Haupttreiber","Quellpräsenz","Details im Reiter Korrelationsanalyse");
     }
-    k+=kpi("✔","Messung validiert (Peec AI)", val.spearman_r!=null?("ρ = "+String(val.spearman_r).replace(".",",")):"—",
-      val.n_common_cells?(val.n_common_cells+" gemeinsame Zellen, 2. Quelle"):"","#067d3a");
+    // Status aus der eigenen Schwelle ableiten (rho >= 0,8 = validiert), nicht fest (Audit K3, Fix 20.11.2026)
+    var rho=val.spearman_r, ok=(rho!=null&&rho>=0.8);
+    var f2=function(v){ return v==null?"—":String(Math.round(v*100)/100).replace(".",","); };
+    k+=kpi(ok?"✔":"⚠", ok?"Messung bestätigt (Peec AI)":"Gegenprobe mit Peec: nicht bestätigt",
+      rho!=null?("ρ = "+f2(rho)):"keine Angabe",
+      (val.n_common_cells?(val.n_common_cells+" gemeinsame Zellen · "):"")+"Pearson "+f2(val.pearson_r)+" · Schwelle ρ ≥ 0,8",
+      ok?"#067d3a":"#b45309");
 
     // SoV-Balken Top 6
     var mx=Math.max.apply(null,rank.slice(0,6).map(function(r){return r.share_of_voice;}));
@@ -77,10 +96,11 @@
         '<span style="width:52px;text-align:right;font-size:12px;font-weight:600">'+pct(100*r.share_of_voice)+'</span></div>';
     }).join('');
 
-    // Themen-Hotspots (Top 3 Gap zum Führer, gemini)
-    var hs=[];
+    // Themen-Hotspots (Top 3 Gap zum Führer) – aus der ersten aktiven Engine des Crawls,
+    // nicht fest aus Gemini (seit 05.10. abgeschaltet; Audit M1, Fix 20.11.2026)
+    var hs=[], hsLlm=(g.llms&&g.llms.length)?g.llms[0]:"chatgpt";
     Object.keys(g.products||{}).forEach(function(pid){
-      var br=(((g.products[pid].summary_by_llm)||{}).gemini||{}).brands||[];
+      var br=(((g.products[pid].summary_by_llm)||{})[hsLlm]||{}).brands||[];
       var e=null,a=null;
       br.forEach(function(b){ if(b.name==="ERGO")e=100*b.share_of_voice; if(b.name===(leader?leader.name:"Allianz"))a=100*b.share_of_voice; });
       if(e!=null&&a!=null) hs.push({n:g.products[pid].name||pid, gap:a-e});

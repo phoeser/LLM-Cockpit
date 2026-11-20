@@ -4711,18 +4711,44 @@ LEVEL_CELLS_FILE = Path("data/level_cells_history.jsonl")  # Marke x Thema x Tag
 PAGE_DATES_FILE = Path("data/page_dates.json")  # url -> published/modified (merge_geo_page_events.fetch_page_dates)
 
 
+# 20.11.2026 (Konsistenz-Audit K7): archive_level_cells.py schrieb fuer Marken, die der
+# eigene Crawl gar nicht misst (nur ueber zitierte Domains bekannt, z. B. ARAG, ADAC),
+# sov_* = 0.0 statt "nicht gemessen". Im Preis-/Treibermodell standen so 8 von 15
+# Marken mit struktureller Null - "nicht gemessen" wurde als "nie genannt" gezaehlt.
+# Ab dem Rueckbau auf die feste Markenliste (13.08.2026) gilt: SoV nur fuer Marken des
+# Crawls (geo_snapshot brand + competitors), alle anderen -> None (Zitate bleiben).
+MEASURED_SET_SINCE = "2026-08-13"
+
+
+def _measured_brands():
+    try:
+        g = json.loads(Path("data/geo_snapshot.json").read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    s = set(g.get("competitors") or [])
+    if g.get("brand"):
+        s.add(g["brand"])
+    return s or None
+
+
 def _load_level_cells():
     rows = []
     if not LEVEL_CELLS_FILE.exists():
         return rows
+    measured = _measured_brands()
     for line in LEVEL_CELLS_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
         line = line.strip()
         if not line:
             continue
         try:
-            rows.append(json.loads(line))
+            r = json.loads(line)
         except Exception:
-            pass
+            continue
+        if (measured and (r.get("date") or "") >= MEASURED_SET_SINCE
+                and r.get("brand") not in measured):
+            for k in ("sov_g", "sov_u", "sov_c"):
+                r[k] = None
+        rows.append(r)
     return rows
 
 
@@ -5062,19 +5088,54 @@ def price_level_pooled(max_days=45):
             "gap_explorer": gap_explorer,
             "streubild": streubild,
             "stability": stability,
-            "interpretation": (
-                "Gepoolt ueber %d saubere Tage. BEFUND: Der Within-Preis-Effekt (Marke mit "
-                "sich selbst ueber Produkte — die saubere kausale Identifikation) faellt nach "
-                "Rausch-Mittelung nahe null; der grenzwertige Ein-Tages-Within war groesstenteils "
-                "Tagesrauschen. Der BETWEEN-Effekt (guenstigere Marken sichtbarer und haeufiger "
-                "zitiert) ist stabil und richtungssicher, erlaubt aber keine Kausalaussage "
-                "(guenstige Anbieter unterscheiden sich auch in Groesse, Vertrieb, Bekanntheit)." % len(days)),
+            "interpretation": _price_interpretation(price_to_sov, len(days)),
             "note": ("Level-Modell auf ueber mehrere Tage GEMITTELTEN Zellwerten (Marke x Thema). "
                      "Mittelung reduziert das LLM-Tagesrauschen in der Zielgroesse; sie erzeugt "
                      "KEINE zusaetzlichen unabhaengigen Beobachtungen (Cluster bleibt die Marke). "
                      "Quelle: data/level_cells_history.jsonl.")}
 
 
+
+
+def _price_verdict(eff):
+    """Verdikt fuer einen Preis-Effekt aus seinen Kennzahlen (nicht fest formuliert)."""
+    if not isinstance(eff, dict) or eff.get("coef") is None:
+        return "nicht schaetzbar"
+    pdir = eff.get("prob_direction") or 0
+    p = eff.get("wild_cluster_p_fdr", eff.get("wild_cluster_p"))
+    loo = eff.get("between_loo")
+    stable = loo.get("sign_stable") if isinstance(loo, dict) else None
+    richtung = "guenstiger = sichtbarer" if eff["coef"] < 0 else "teurer = sichtbarer"
+    if p is not None and p < 0.05 and pdir >= 0.95 and stable is not False:
+        return "gesichert (%s; p=%.3f)" % (richtung, p)
+    if pdir >= 0.9 and stable is not False:
+        return "Richtung stabil (%s), aber nicht signifikant (p=%s)" % (
+            richtung, "—" if p is None else "%.2f" % p)
+    return ("nicht belegt: Richtung unklar (Richtungswahrscheinlichkeit %.0f %%%s, p=%s)" % (
+        100 * pdir, "; Vorzeichen kippt beim Weglassen einzelner Marken" if stable is False else "",
+        "—" if p is None else "%.2f" % p))
+
+
+def _price_interpretation(price_to_sov, n_days):
+    """20.11.2026 (Audit K6): Der Satz 'Between stabil und richtungssicher' stand fest im
+    Code und widersprach den Daten (prob_direction ~0,55, LOO instabil). Jetzt aus den
+    Kennzahlen des ungrounded-Segments (bzw. combined) erzeugt."""
+    seg = None
+    for lab in ("ungrounded", "combined", "grounded"):
+        b = price_to_sov.get(lab) or {}
+        if b.get("available", True) and b.get("drivers_eff"):
+            seg = (lab, b)
+            break
+    if not seg:
+        return "Gepoolt ueber %d saubere Tage: kein Segment mit genug Preis-Zellen." % n_days
+    lab, b = seg
+    rp = (b.get("drivers_eff") or {}).get("relprice") or {}
+    return ("Gepoolt ueber %d saubere Tage (Segment %s, %s Marken). Preis INNERHALB einer Marke "
+            "ueber Produkte: %s. Preis ZWISCHEN Marken: %s. Auch ein gesicherter Between-Effekt "
+            "waere keine Kausalaussage (guenstige Anbieter unterscheiden sich auch in Groesse, "
+            "Vertrieb, Bekanntheit)." % (n_days, lab, b.get("n_brands", "?"),
+                                        _price_verdict(rp.get("within")),
+                                        _price_verdict(rp.get("between"))))
 
 
 def _augment_structure_with_pooled_price(res):

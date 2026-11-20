@@ -99,7 +99,9 @@ def extract_cells(snap):
 
         for b in (set(sov) | set(cite)):
             def _sov(engs):
-                if not engs:
+                # 20.11.2026 (Audit K7): Marke ohne SoV-Messung (nur ueber zitierte
+                # Domains bekannt) -> None statt 0.0; "nicht gemessen" ist kein "nie genannt".
+                if not engs or b not in sov:
                     return None
                 vals = [sov.get(b, {}).get(e, 0.0) for e in engs]
                 return round(sum(vals) / len(vals), 4)

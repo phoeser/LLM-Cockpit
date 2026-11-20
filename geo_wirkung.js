@@ -240,6 +240,15 @@
          return L.indexOf("gemini")<0 && L.indexOf("perplexity")<0; }catch(e){ return false; }
   }
   var OWN_AUS_TXT="<b>Eigener Crawl ohne Websuche-Kanal</b> — seit 05.10.2026 fragt der eigene Crawl nur noch ChatGPT ohne Websuche ab (Kostenbremse). Den grounded-Kanal misst nur noch Peec. Keine Ersatz-Nullen.";
+  // 20.11.2026 (Audit K4/B2): Peec-Werte hier stammen aus ALLEN Prompts, auch den
+  // ERGO-nennenden. Etikett aus peec_neutral_sov.json, Markenzahlen aus den Daten.
+  function peecBasisTxt(){
+    var ns=window.PEEC_NEUTRAL_SOV||{}, b=ns.n_branded_prompts, n=ns.n_prompts;
+    if(b!=null&&n) return "alle "+n+" Peec-Prompts, davon "+b+" ("+Math.round(100*b/n)+" %) nennen ERGO selbst – kein neutrales Marktbild";
+    return "alle Peec-Prompts inkl. ERGO-nennender – kein neutrales Marktbild";
+  }
+  function ownCrawlBrands(){ var g=window.GEO_SNAPSHOT||{}; return (g.totals_ranking&&g.totals_ranking.length)||null; }
+  function peecBrandsN(){ var ns=window.PEEC_NEUTRAL_SOV||{}; return (ns.brands_in_export&&ns.brands_in_export.length)||null; }
   function chanLbl(){ return gwMode==="g"?"Grounded (Web-Suche)":(gwMode==="u"?"UI / ChatGPT":"Alle Engines"); }
   function h(n,txt){ return '<div style="font-size:14px;font-weight:700;color:'+INK+';margin:18px 0 2px">'+n+' · '+txt+'</div>'; }
   function sub(txt){ return '<div style="font-size:11.5px;color:'+MUTE+';margin:1px 0 10px">'+txt+'</div>'; }
@@ -296,7 +305,7 @@
       badge:badge("Wirkungsmetrik","lead"),
       value: P&&P.vis!=null? pctS(P.vis,1) : null,
       accent:"#067d3a", sub: P&&P.vis!=null?("ø ueber "+P.nThemes+" Themen"):"",
-      plain: (P&&P.vis!=null)? "Anteil der Antworten, in denen ERGO im Text vorkommt (Peec-Visibility, Kanal "+chanLbl()+")."
+      plain: (P&&P.vis!=null)? "Anteil der Antworten, in denen ERGO im Text vorkommt (Peec-Visibility, Kanal "+chanLbl()+"). <b>Basis: "+peecBasisTxt()+"</b>; neutrale Sicht im Peec-Reiter."
              : "<b>Noch keine Peec-Zellen ladbar</b> (data/peec_cells.csv) — Wert erscheint nach Reload. Keine Ersatz-Null.",
       foot:"Quelle: Peec · visibility-Spalte je Thema, ueber Themen gemittelt" }));
     // 2) Sichtbarkeit eigener Crawl (separat)
@@ -421,7 +430,7 @@
         '<th style="padding:5px 8px;border-left:1px solid #eef2f7" title="Peec-Visibility − eigene Appearance">Differenz</th>'+
         '<th style="padding:5px 8px" title="Spearman-Rangkorrelation der Markenreihenfolge (SoV), 1,0 = identisch">Rang-ρ</th></tr></thead>'+
       '<tbody>'+rows+'</tbody></table></div>'+
-      '<div style="font-size:11px;color:'+MUTE+';margin-top:8px">Alles ERGO-zentriert. <b>Differenz</b> = Peec-Visibility − eigene Appearance (Niveau-Unterschiede sind methodisch normal: Peec verteilt ueber 26 Marken, der eigene Crawl ueber 7). <b>Rang-ρ</b> ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Markenreihenfolge. Kanal: '+chanLbl()+'.</div>'+
+      '<div style="font-size:11px;color:'+MUTE+';margin-top:8px">Alles ERGO-zentriert. <b>Differenz</b> = Peec-Visibility − eigene Appearance (Niveau-Unterschiede sind methodisch normal: Peec verteilt ueber '+(peecBrandsN()||'—')+' Marken, der eigene Crawl ueber '+(ownCrawlBrands()||'—')+'). Peec-Basis: '+peecBasisTxt()+'. <b>Rang-ρ</b> ≥ 0,8 (gruen) = beide Quellen sehen dieselbe Markenreihenfolge. Kanal: '+chanLbl()+'.</div>'+
     '</div>';
   }
 

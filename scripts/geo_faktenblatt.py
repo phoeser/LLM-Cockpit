@@ -458,12 +458,15 @@ def kap_preise(pcd, ci):
             )
     grund = pfad(ci, "price_level_pooled", "gap_explorer", "grounded", "driver_reliability",
                  "relprice", default={})
+    # 20.11.2026 (Audit K6): Der Satz "Richtung ueber alle Messtage stabil" war fest und
+    # widersprach den Daten. Jetzt aus dem gepoolten Modell abgeleitet.
+    _interp = pfad(ci, "price_level_pooled", "interpretation", default=None)
     t.append(
         "\nZur Wirkung des Preises auf die Sichtbarkeit: Gemeint ist nicht das Ereignis "
-        "'Preis geaendert', sondern das Preisniveau im Vergleich zum Wettbewerb. Die Richtung "
-        "ist ueber alle Messtage stabil — teurer geht mit weniger Sichtbarkeit einher —, aber "
-        "nach Korrektur fuer Mehrfachtests uebersteht kein Schnitt die Signifikanzschwelle. "
-        "Richtung ja, Nachweis nein. Als Ereignis betrachtet ist der Preis gar nicht schaetzbar: "
+        "'Preis geaendert', sondern das Preisniveau im Vergleich zum Wettbewerb. "
+        + (("Aktueller Stand des Modells: " + _interp + " ") if _interp else
+           "Ein Preiseffekt ist derzeit nicht belegt. ")
+        + "Als Ereignis betrachtet ist der Preis gar nicht schaetzbar: "
         "an den meisten Tagen aendert sich keine einzige Zelle, und die wenigen Aenderungen "
         "waren ueberwiegend ein Hin- und Zurueckspringen auf den Vorwert, also ein Messartefakt "
         "des Erhebungsverfahrens.\n"

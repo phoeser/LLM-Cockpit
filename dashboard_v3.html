@@ -4179,7 +4179,9 @@ window.BERATER_DATA = null;/* BERATER_DATA_END */;
     var pick = sel ? sel.value : '';
     var COL = (typeof GEO_BRAND_COLORS!=='undefined') ? GEO_BRAND_COLORS : {};
     var byBrand = {}, dateSet = {};
-    var histRows = hist.filter(function(r){ return (r.llm||'') === pick && r.sov_pct!=null; });
+    /* 20.11.2026 (Audit K2): nur Markenebene. Vorher fielen bei "gesamt" auch Produktzeilen
+       (snapshot_product) und backfill_event durch; je Tag gewann die letzte Zeile = ein Produkt. */
+    var histRows = hist.filter(function(r){ return r.sov_pct!=null && !r.product && (pick ? ((r.llm||'')===pick && r.source==='snapshot_llm') : (!r.llm && r.source==='snapshot')); });
     if (histRows.length) {
       histRows.forEach(function(r){ dateSet[r.date]=1; byBrand[r.brand]=byBrand[r.brand]||{}; byBrand[r.brand][r.date]=r.sov_pct; });
     } else if (!pick) {

@@ -27,7 +27,7 @@ werden.
 
 ## Stand der Daten
 
-Dieses Faktenblatt wurde am 21.11.2026 um 14:01 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-21.
+Dieses Faktenblatt wurde am 22.11.2026 um 13:48 Uhr UTC erzeugt. Die Auswertung stammt vom 2026-11-22.
 
 Gemessen wird seit 78 Messtagen, von 2026-05-14 bis 2026-11-17. Daraus entstehen 772 Intervall-Beobachtungen ueber 26 Marken.
 
@@ -92,7 +92,7 @@ Zur Guete des Modells insgesamt: Die Vorhersagekraft der Treiber liegt bei R² -
 ## Was es in die Zitate schafft
 
 - ERGO: 50 von 1.179 getrackten Seiten sind in Zitaten aufgetaucht, also 4,24 Prozent. Das ist die eigene Marke.
-- Allianz: 48 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,36 Prozent.
+- Allianz: 50 von 896 getrackten Seiten sind in Zitaten aufgetaucht, also 5,58 Prozent.
 - ADAC: 7 von 647 getrackten Seiten sind in Zitaten aufgetaucht, also 1,08 Prozent.
 - LV 1871: 12 von 537 getrackten Seiten sind in Zitaten aufgetaucht, also 2,23 Prozent.
 - ARAG: 12 von 469 getrackten Seiten sind in Zitaten aufgetaucht, also 2,56 Prozent.
@@ -120,20 +120,20 @@ Zur Wirkung des Preises auf die Sichtbarkeit: Gemeint ist nicht das Ereignis 'Pr
 
 ## Presse, News und Bewertungen
 
-Stand der Presseauswertung: 2026-11-21.
+Stand der Presseauswertung: 2026-11-22.
 
 Erfasst werden je Marke eigene Pressemitteilungen und externe Berichterstattung. Die Gesamtzahlen sind gedeckelt und deshalb nicht als Marktanteil an der Berichterstattung lesbar — aussagekraeftig ist der Vergleich der letzten 30 Tage:
 
 - ERGO: 1 Beitraege in den letzten 30 Tagen, 4 in 90 Tagen. Davon insgesamt 50 eigene Mitteilungen und 29 externe Berichte. Juengster Beitrag 2026-11-16. Haeufigste Themen: Allgemein (51), Gesundheit & Pflege (12), Finanzen & Vorsorge (6).
-- Allianz: 14 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 91 eigene Mitteilungen und 15 externe Berichte. Juengster Beitrag 2026-11-20. Haeufigste Themen: Allgemein (77), Digitalisierung & KI (10), Gesundheit & Pflege (6).
-- AXA: 1 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-05. Haeufigste Themen: Allgemein (57), Gesundheit & Pflege (10), Finanzen & Vorsorge (9).
-- HUK-Coburg: 4 Beitraege in den letzten 30 Tagen, 10 in 90 Tagen. Davon insgesamt 68 eigene Mitteilungen und 44 externe Berichte. Juengster Beitrag 2026-11-21. Haeufigste Themen: Allgemein (64), KFZ & Mobilität (25), Unternehmen & Strategie (8).
-- Generali: 10 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 63 eigene Mitteilungen und 31 externe Berichte. Juengster Beitrag 2026-11-19. Haeufigste Themen: Allgemein (66), Finanzen & Vorsorge (10), Gesundheit & Pflege (7).
-- Signal Iduna: 3 Beitraege in den letzten 30 Tagen, 10 in 90 Tagen. Davon insgesamt 51 eigene Mitteilungen und 98 externe Berichte. Juengster Beitrag 2026-11-11. Haeufigste Themen: Allgemein (82), Digitalisierung & KI (15), Finanzen & Vorsorge (14).
-- R+V: 9 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 13 externe Berichte. Juengster Beitrag 2026-11-20. Haeufigste Themen: Allgemein (54), Finanzen & Vorsorge (7), Unternehmen & Strategie (5).
-- DEVK: 4 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 3 eigene Mitteilungen und 33 externe Berichte. Juengster Beitrag 2026-11-19. Haeufigste Themen: Allgemein (16), Finanzen & Vorsorge (7), KFZ & Mobilität (5).
-- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 33 externe Berichte. Juengster Beitrag 2026-11-02. Haeufigste Themen: Allgemein (60), Finanzen & Vorsorge (19), Digitalisierung & KI (5).
-- Cosmos Direkt: 2 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 57 eigene Mitteilungen und 25 externe Berichte. Juengster Beitrag 2026-11-03. Haeufigste Themen: Allgemein (55), KFZ & Mobilität (8), Finanzen & Vorsorge (8).
+- Allianz: 3 Beitraege in den letzten 30 Tagen, 18 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 96 externe Berichte. Juengster Beitrag 2026-11-20. Haeufigste Themen: Allgemein (104), Digitalisierung & KI (14), Finanzen & Vorsorge (12).
+- AXA: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 28 externe Berichte. Juengster Beitrag 2026-11-05. Haeufigste Themen: Allgemein (56), Gesundheit & Pflege (11), Finanzen & Vorsorge (9).
+- HUK-Coburg: 4 Beitraege in den letzten 30 Tagen, 9 in 90 Tagen. Davon insgesamt 65 eigene Mitteilungen und 44 externe Berichte. Juengster Beitrag 2026-11-21. Haeufigste Themen: Allgemein (62), KFZ & Mobilität (25), Unternehmen & Strategie (8).
+- Generali: 9 Beitraege in den letzten 30 Tagen, 17 in 90 Tagen. Davon insgesamt 62 eigene Mitteilungen und 30 externe Berichte. Juengster Beitrag 2026-11-17. Haeufigste Themen: Allgemein (65), Finanzen & Vorsorge (8), Gesundheit & Pflege (7).
+- Signal Iduna: 1 Beitraege in den letzten 30 Tagen, 3 in 90 Tagen. Davon insgesamt 52 eigene Mitteilungen und 38 externe Berichte. Juengster Beitrag 2026-11-16. Haeufigste Themen: Allgemein (50), Gesundheit & Pflege (10), KFZ & Mobilität (8).
+- R+V: 17 Beitraege in den letzten 30 Tagen, 38 in 90 Tagen. Davon insgesamt 59 eigene Mitteilungen und 100 externe Berichte. Juengster Beitrag 2026-11-20. Haeufigste Themen: Allgemein (97), Finanzen & Vorsorge (34), Unternehmen & Strategie (13).
+- DEVK: 9 Beitraege in den letzten 30 Tagen, 22 in 90 Tagen. Davon insgesamt 3 eigene Mitteilungen und 99 externe Berichte. Juengster Beitrag 2026-11-19. Haeufigste Themen: Allgemein (52), Finanzen & Vorsorge (19), Digitalisierung & KI (9).
+- Hannoversche: 1 Beitraege in den letzten 30 Tagen, 2 in 90 Tagen. Davon insgesamt 60 eigene Mitteilungen und 33 externe Berichte. Juengster Beitrag 2026-11-02. Haeufigste Themen: Allgemein (61), Finanzen & Vorsorge (18), Digitalisierung & KI (6).
+- Cosmos Direkt: 2 Beitraege in den letzten 30 Tagen, 5 in 90 Tagen. Davon insgesamt 58 eigene Mitteilungen und 26 externe Berichte. Juengster Beitrag 2026-11-03. Haeufigste Themen: Allgemein (56), Finanzen & Vorsorge (9), KFZ & Mobilität (8).
 
 Wichtig zur Einordnung von Presse-Arbeit: Der weit ueberwiegende Teil der erfassten Presse- und News-Ereignisse liegt auf Quellen, die Sprachmodelle gar nicht zitieren. Die Quellen, die tatsaechlich zitiert werden — die eigenen Markenseiten, grosse Ratgeber- und Testportale — werden bisher nicht als Ereignis verfolgt. Das ist die wahrscheinlichste Erklaerung dafuer, warum externe Ereignisse in der Messung so wenig bewegen: nicht weil Presse nicht wirkt, sondern weil die gemessene Presse nicht dort stattfindet, wo die Modelle schoepfen.
 
